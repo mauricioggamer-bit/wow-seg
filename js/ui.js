@@ -9,7 +9,8 @@ const UI = (() => {
     currentView: 'warband',
     dash: { filter: 'all', group1: 'warband', group2: 'personaje', order: 'prioridad', filterWarband: '', filterPriority: '', filterTime: '', filterEstado: '', filterSearch: '' },
     priorityFilter: { priority: '1', warband: '' },
-    timeFilter: { time: 'rapido', warband: '' }
+    timeFilter: { time: 'rapido', warband: '' },
+    misionesFilter: { filterPersonaje: '', filterWarband: '', filterTipo: '', filterPriority: '', filterTime: '', filterEstado: '', filterSearch: '' }
   };
 
   const CLASS_MAP = {
@@ -538,6 +539,13 @@ const UI = (() => {
   function setDashFilterTime(v) { state.dash.filterTime = v; render(); }
   function setDashFilterEstado(v) { state.dash.filterEstado = v; render(); }
   function setDashFilterSearch(v) { state.dash.filterSearch = v; render(); }
+  function setMisionesFilterPersonaje(v) { state.misionesFilter.filterPersonaje = v; render(); }
+  function setMisionesFilterWarband(v) { state.misionesFilter.filterWarband = v; render(); }
+  function setMisionesFilterTipo(v) { state.misionesFilter.filterTipo = v; render(); }
+  function setMisionesFilterPriority(v) { state.misionesFilter.filterPriority = v; render(); }
+  function setMisionesFilterTime(v) { state.misionesFilter.filterTime = v; render(); }
+  function setMisionesFilterEstado(v) { state.misionesFilter.filterEstado = v; render(); }
+  function setMisionesFilterSearch(v) { state.misionesFilter.filterSearch = v; render(); }
   function setPriorityTab(v) { state.priorityFilter.priority = v; render(); }
   function setPriorityWarband(v) { state.priorityFilter.warband = v; render(); }
   function setTimeTab(v) { state.timeFilter.time = v; render(); }
@@ -597,6 +605,85 @@ const UI = (() => {
     if (cfg.filterSearch) {
       const q = cfg.filterSearch.toLowerCase();
       items = items.filter(t => t.nombre.toLowerCase().includes(q) || (t.personaje || '').toLowerCase().includes(q));
+    }
+    return items;
+  }
+
+  // ===== MISIONES FILTERS =====
+  function renderMisionesFilterControls(cfg) {
+    const warbands = DATA.getWarbands();
+    const personajes = DATA.getPersonajes();
+    const todos = personajes.map(p => p.nombre);
+    return `
+      <div class="filter-bar mb-1" style="gap:3px">
+        <span class="text-xs text-muted" style="margin-right:2px">Pers:</span>
+        <select onchange="UI.setMisionesFilterPersonaje(this.value)" style="font-size:0.6rem;padding:2px 4px;max-width:90px">
+          <option value="">Todos</option>
+          ${todos.map(n => `<option value="${n}" ${cfg.filterPersonaje === n ? 'selected' : ''}>${n}</option>`).join('')}
+        </select>
+        <span class="text-xs text-muted" style="margin-left:4px">Wb:</span>
+        <select onchange="UI.setMisionesFilterWarband(this.value)" style="font-size:0.6rem;padding:2px 4px;max-width:80px">
+          <option value="">Todos</option>
+          ${warbands.map(w => `<option value="${w.nombre}" ${cfg.filterWarband === w.nombre ? 'selected' : ''}>${w.nombre}</option>`).join('')}
+        </select>
+        <span class="text-xs text-muted" style="margin-left:4px">Tipo:</span>
+        <select onchange="UI.setMisionesFilterTipo(this.value)" style="font-size:0.6rem;padding:2px 4px;max-width:80px">
+          <option value="">Todos</option>
+          <option value="weekly" ${cfg.filterTipo === 'weekly' ? 'selected' : ''}>Semanal</option>
+          <option value="daily" ${cfg.filterTipo === 'daily' ? 'selected' : ''}>Diaria</option>
+          <option value="farm_libre" ${cfg.filterTipo === 'farm_libre' ? 'selected' : ''}>Farm</option>
+          <option value="mision" ${cfg.filterTipo === 'mision' ? 'selected' : ''}>Misión</option>
+          <option value="achievement" ${cfg.filterTipo === 'achievement' ? 'selected' : ''}>Logro</option>
+        </select>
+        <span class="text-xs text-muted" style="margin-left:4px">Prio:</span>
+        <select onchange="UI.setMisionesFilterPriority(this.value)" style="font-size:0.6rem;padding:2px 4px;max-width:55px">
+          <option value="">Todas</option>
+          <option value="1" ${cfg.filterPriority === '1' ? 'selected' : ''}>P1</option>
+          <option value="2" ${cfg.filterPriority === '2' ? 'selected' : ''}>P2</option>
+          <option value="3" ${cfg.filterPriority === '3' ? 'selected' : ''}>P3</option>
+        </select>
+        <span class="text-xs text-muted" style="margin-left:4px">Tpo:</span>
+        <select onchange="UI.setMisionesFilterTime(this.value)" style="font-size:0.6rem;padding:2px 4px;max-width:65px">
+          <option value="">Todos</option>
+          <option value="rapido" ${cfg.filterTime === 'rapido' ? 'selected' : ''}>≤15m</option>
+          <option value="medio" ${cfg.filterTime === 'medio' ? 'selected' : ''}>16-30</option>
+          <option value="largo" ${cfg.filterTime === 'largo' ? 'selected' : ''}>31-60</option>
+          <option value="maraton" ${cfg.filterTime === 'maraton' ? 'selected' : ''}>>60</option>
+        </select>
+        <span class="text-xs text-muted" style="margin-left:4px">Edo:</span>
+        <select onchange="UI.setMisionesFilterEstado(this.value)" style="font-size:0.6rem;padding:2px 4px;max-width:75px">
+          <option value="">Todos</option>
+          <option value="pendiente" ${cfg.filterEstado === 'pendiente' ? 'selected' : ''}>Pend.</option>
+          <option value="completada" ${cfg.filterEstado === 'completada' ? 'selected' : ''}>Hecho</option>
+        </select>
+        <input type="text" placeholder="🔍" value="${cfg.filterSearch}"
+               oninput="UI.setMisionesFilterSearch(this.value)"
+               style="font-size:0.6rem;padding:2px 4px;width:70px">
+      </div>
+    `;
+  }
+
+  function applyMisionesFilters(items) {
+    const cfg = state.misionesFilter;
+    const personajes = DATA.getPersonajes();
+    if (cfg.filterPersonaje) items = items.filter(m => m.personaje === cfg.filterPersonaje);
+    if (cfg.filterWarband) {
+      const wbChars = personajes.filter(p => p.warband === cfg.filterWarband).map(p => p.nombre);
+      items = items.filter(m => !m.personaje || wbChars.includes(m.personaje));
+    }
+    if (cfg.filterTipo) items = items.filter(m => m.tipo === cfg.filterTipo);
+    if (cfg.filterPriority) items = items.filter(m => m.prioridad === parseInt(cfg.filterPriority));
+    if (cfg.filterTime) {
+      if (cfg.filterTime === 'rapido') items = items.filter(m => (m.tiempo_min || 0) <= 15);
+      else if (cfg.filterTime === 'medio') items = items.filter(m => (m.tiempo_min || 0) >= 16 && (m.tiempo_min || 0) <= 30);
+      else if (cfg.filterTime === 'largo') items = items.filter(m => (m.tiempo_min || 0) >= 31 && (m.tiempo_min || 0) <= 60);
+      else if (cfg.filterTime === 'maraton') items = items.filter(m => (m.tiempo_min || 0) > 60);
+    }
+    if (cfg.filterEstado === 'pendiente') items = items.filter(m => m.estado !== 'completada');
+    else if (cfg.filterEstado === 'completada') items = items.filter(m => m.estado === 'completada');
+    if (cfg.filterSearch) {
+      const q = cfg.filterSearch.toLowerCase();
+      items = items.filter(m => m.nombre.toLowerCase().includes(q) || (m.personaje || '').toLowerCase().includes(q));
     }
     return items;
   }
@@ -687,8 +774,9 @@ const UI = (() => {
       });
     });
     const all = [...misiones, ...tareas];
+    const filtered = applyMisionesFilters(all);
     const grouped = {};
-    all.forEach(m => {
+    filtered.forEach(m => {
       const key = m.personaje || '(sin personaje)';
       if (!grouped[key]) grouped[key] = [];
       grouped[key].push(m);
@@ -700,12 +788,13 @@ const UI = (() => {
         <div class="wow-panel-header">
           <h2>🎯 Misiones</h2>
           <div class="flex gap-2 items-center">
-            <span class="text-sm text-muted">${all.length} ítems (${tareas.length} tareas · ${misiones.length} misiones)</span>
+            <span class="text-sm text-muted">${filtered.length} ítems (${tareas.length} tareas · ${misiones.length} misiones)</span>
             <button class="wow-btn wow-btn-sm wow-btn-primary" onclick="UI.showAddMisionModal()">+ Nueva</button>
           </div>
         </div>
         <div class="wow-panel-body" style="padding:6px 8px">
-          <div class="task-table-wrap">
+          ${renderMisionesFilterControls(state.misionesFilter)}
+          <div class="task-table-wrap" style="margin-top:4px">
             <table class="task-table">
               <thead>
                 <tr>
@@ -720,7 +809,7 @@ const UI = (() => {
                 </tr>
               </thead>
               <tbody>
-                ${all.length === 0 ? `
+                ${filtered.length === 0 ? `
                   <tr><td colspan="8" style="text-align:center;padding:16px;color:var(--text-muted);font-size:0.75rem">No hay misiones. ¡Creá una!</td></tr>
                 ` : orderedKeys.map(key => {
                   const items = grouped[key];
@@ -1323,6 +1412,8 @@ const UI = (() => {
     addWarbandFromInput, renameWarbandPrompt, deleteWarbandPrompt,
     selectCharFromTable,
     showAddMisionModal, toggleMision, editMision, deleteMision, toggleTareaMision, editTareaMision, deleteTareaMision,
-    setPriorityTab, setPriorityWarband, setTimeTab, setTimeWarband
+    setPriorityTab, setPriorityWarband, setTimeTab, setTimeWarband,
+    setMisionesFilterPersonaje, setMisionesFilterWarband, setMisionesFilterTipo,
+    setMisionesFilterPriority, setMisionesFilterTime, setMisionesFilterEstado, setMisionesFilterSearch
   };
 })();

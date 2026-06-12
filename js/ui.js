@@ -669,60 +669,75 @@ const UI = (() => {
     const el = document.getElementById('dashboardPanel');
     if (!el) return;
     const misiones = DATA.getMisiones();
-    const pendientes = misiones.filter(m => m.estado !== 'completada');
-    const completadas = misiones.filter(m => m.estado === 'completada');
+    const grouped = {};
+    misiones.forEach(m => {
+      const key = m.personaje || '(sin personaje)';
+      if (!grouped[key]) grouped[key] = [];
+      grouped[key].push(m);
+    });
+    const orderedKeys = Object.keys(grouped).sort((a, b) => a === '(sin personaje)' ? -1 : b === '(sin personaje)' ? 1 : a.localeCompare(b));
 
     el.innerHTML = `
       <div class="wow-panel">
         <div class="wow-panel-header">
           <h2>🎯 Misiones</h2>
           <div class="flex gap-2 items-center">
-            <span class="text-sm text-muted">${pendientes.length} pendientes</span>
+            <span class="text-sm text-muted">${misiones.length} misiones</span>
             <button class="wow-btn wow-btn-sm wow-btn-primary" onclick="UI.showAddMisionModal()">+ Nueva</button>
           </div>
         </div>
-        <div class="wow-panel-body">
-          ${pendientes.length === 0 && completadas.length === 0 ? `
-            <div class="empty-state"><p>No hay misiones. ¡Creá una!</p></div>
-          ` : ''}
-          ${pendientes.length > 0 ? `
-            <h4 class="text-sm mb-1" style="color:var(--gold-light)">Pendientes</h4>
-            <div style="display:flex;flex-direction:column;gap:4px;margin-bottom:12px">
-              ${pendientes.map(m => renderMisionCard(m)).join('')}
-            </div>
-          ` : ''}
-          ${completadas.length > 0 ? `
-            <h4 class="text-sm mb-1 mt-2" style="color:var(--text-muted)">Completadas</h4>
-            <div style="display:flex;flex-direction:column;gap:4px">
-              ${completadas.map(m => renderMisionCard(m)).join('')}
-            </div>
-          ` : ''}
-        </div>
-      </div>
-    `;
-  }
-
-  function renderMisionCard(m) {
-    const typeClass = m.tipo === 'achievement' ? 'mission-type--achievement' : m.tipo === 'daily' ? 'mission-type--daily' : m.tipo === 'weekly' ? 'mission-type--weekly' : 'mission-type--mision';
-    const personajes = DATA.getPersonajes();
-    const charOpts = '<option value="">(sin personaje)</option>' + personajes.map(p => `<option value="${p.nombre}" ${m.personaje === p.nombre ? 'selected' : ''}>${p.nombre}</option>`).join('');
-    return `
-      <div class="mission-card ${m.estado === 'completada' ? 'completada' : ''}">
-        <input type="checkbox" class="mission-check" ${m.estado === 'completada' ? 'checked' : ''}
-               onchange="UI.toggleMision('${m.id}')">
-        <div class="mission-info">
-          <div class="mission-name" style="cursor:pointer" onclick="UI.editMision('${m.id}')">${m.nombre}</div>
-          <div class="mission-meta">
-            <span class="text-xs" style="color:var(--gold);font-weight:600">${m.personaje || 'General'}</span>
-            <span class="mission-type ${typeClass}">${m.tipo}</span>
-            <span class="text-xs text-muted">P${m.prioridad}</span>
-            ${m.tiempo_min > 0 ? `<span class="text-xs text-muted">${m.tiempo_min}min</span>` : ''}
-            <span class="text-xs text-muted">${formatDate(m.creada)}</span>
+        <div class="wow-panel-body" style="padding:6px 8px">
+          <div class="task-table-wrap">
+            <table class="task-table">
+              <thead>
+                <tr>
+                  <th style="width:24px"></th>
+                  <th style="width:100px">Personaje</th>
+                  <th>Misión</th>
+                  <th style="width:55px">Tipo</th>
+                  <th style="width:40px">Prio</th>
+                  <th style="width:45px">Tiempo</th>
+                  <th style="width:70px">Estado</th>
+                  <th style="width:50px"></th>
+                </tr>
+              </thead>
+              <tbody>
+                ${misiones.length === 0 ? `
+                  <tr><td colspan="8" style="text-align:center;padding:16px;color:var(--text-muted);font-size:0.75rem">No hay misiones. ¡Creá una!</td></tr>
+                ` : orderedKeys.map(key => {
+                  const items = grouped[key];
+                  const pend = items.filter(m => m.estado !== 'completada').length;
+                  return `
+                    <tr class="dash-group-header" style="background:transparent;cursor:pointer" onclick="const n=this.nextElementSibling;while(n&&!n.classList.contains('dash-group-header')&&n.tagName==='TR'){n.classList.toggle('hidden');n=n.nextElementSibling}">
+                      <td colspan="8" style="padding:3px 6px;font-size:0.65rem;font-weight:600">
+                        <span class="arrow" style="font-size:0.5rem;display:inline-block;margin-right:4px">▼</span>
+                        ${key === '(sin personaje)' ? '📋 Sin personaje' : `👤 ${key}`}
+                        <span class="text-xs text-muted" style="margin-left:6px">${items.length} misiones · ${pend} pendientes</span>
+                      </td>
+                    </tr>
+                    ${items.sort((a,b) => a.prioridad - b.prioridad).map(m => `
+                      <tr class="${m.estado === 'completada' ? 'done' : ''}" style="${m.estado === 'completada' ? 'opacity:0.55' : ''}">
+                        <td>
+                          <input type="checkbox" class="task-check" ${m.estado === 'completada' ? 'checked' : ''}
+                                 onchange="UI.toggleMision('${m.id}')">
+                        </td>
+                        <td><span class="text-xs" style="color:var(--gold);font-weight:600">${m.personaje || '—'}</span></td>
+                        <td style="font-size:0.7rem;cursor:pointer" onclick="UI.editMision('${m.id}')">${m.nombre}</td>
+                        <td><span class="text-xs text-muted">${m.tipo}</span></td>
+                        <td><span class="text-xs text-muted">P${m.prioridad}</span></td>
+                        <td class="text-xs text-muted">${m.tiempo_min || 0}min</td>
+                        <td><span class="text-xs ${m.estado === 'completada' ? 'text-muted' : ''}" style="${m.estado !== 'completada' ? 'color:var(--gold)' : ''}">${m.estado === 'completada' ? '✓ Hecho' : '○ Pendiente'}</span></td>
+                        <td style="white-space:nowrap">
+                          <button onclick="UI.editMision('${m.id}')" title="Editar" style="background:none;border:none;cursor:pointer;font-size:0.7rem;padding:0 2px">✏️</button>
+                          <button onclick="UI.deleteMision('${m.id}')" title="Eliminar" style="background:none;border:none;cursor:pointer;font-size:0.7rem;padding:0 2px">🗑️</button>
+                        </td>
+                      </tr>
+                    `).join('')}
+                  `;
+                }).join('')}
+              </tbody>
+            </table>
           </div>
-        </div>
-        <div class="mission-actions">
-          <button onclick="UI.editMision('${m.id}')" title="Editar">✏️</button>
-          <button onclick="UI.deleteMision('${m.id}')" title="Eliminar">🗑️</button>
         </div>
       </div>
     `;

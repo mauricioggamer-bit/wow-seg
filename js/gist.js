@@ -31,6 +31,7 @@ const GIST = (() => {
       const raw = localStorage.getItem(CONFIG_KEY);
       if (raw) config = { ...config, ...JSON.parse(raw) };
     } catch {}
+    lastHash = localStorage.getItem('wowseg_gist_lasthash') || '';
     const tok = localStorage.getItem(TOKEN_KEY) || sessionStorage.getItem(TOKEN_KEY) || '';
     if (tok) {
       sessionStorage.setItem(TOKEN_KEY, tok);
@@ -47,6 +48,7 @@ const GIST = (() => {
       intervalMinutes: config.intervalMinutes,
       rememberToken: config.rememberToken
     }));
+    localStorage.setItem('wowseg_gist_lasthash', lastHash);
     const tok = getToken();
     if (tok) {
       localStorage.setItem(TOKEN_KEY, tok);
@@ -95,22 +97,22 @@ const GIST = (() => {
       const remoteStr = remote?.files?.[config.fileName]?.content || '';
       const remoteHash = remoteStr ? simpleHash(remoteStr) : '';
 
-      if (forcePush || !remoteHash || localHash === lastHash) {
-        await updateGist(token, config.gistId, config.fileName, localStr);
+      if (!remoteHash || localHash === remoteHash) {
+        if (localHash !== lastHash) {
+          await updateGist(token, config.gistId, config.fileName, localStr);
+          setStatus('Subido OK', 'ok');
+        } else {
+          setStatus('Sin cambios', 'ok');
+        }
         lastHash = localHash;
-        setStatus('Subido OK', 'ok');
-      } else if (remoteHash === lastHash) {
-        await updateGist(token, config.gistId, config.fileName, localStr);
-        lastHash = localHash;
-        setStatus('Subido OK', 'ok');
-      } else if (!lastHash) {
+      } else if (localHash === lastHash) {
         DATA.importJSON(remoteStr);
-        lastHash = remoteHash;
+        lastHash = simpleHash(DATA.exportJSON());
         setStatus('Descargado OK', 'ok');
       } else {
-        DATA.importJSON(remoteStr);
-        lastHash = remoteHash;
-        setStatus('Descargado (conflicto: prevaleció remoto)', 'warn');
+        await updateGist(token, config.gistId, config.fileName, localStr);
+        lastHash = localHash;
+        setStatus('Subido OK', 'ok');
       }
     } catch (e) {
       if (e.message && (e.message.includes('401') || e.message.includes('403'))) {
@@ -194,6 +196,7 @@ const GIST = (() => {
     clearTimeout(syncTimer);
     saveConfig();
     localStorage.removeItem(TOKEN_KEY);
+    localStorage.removeItem('wowseg_gist_lasthash');
     sessionStorage.removeItem(TOKEN_KEY);
     setStatus('Desconectado', 'idle');
   }

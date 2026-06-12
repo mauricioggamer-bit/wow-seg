@@ -7,7 +7,9 @@ const UI = (() => {
     filterActivo: 'todos',
     search: '',
     currentView: 'warband',
-    dash: { filter: 'all', group1: 'warband', group2: 'personaje', order: 'prioridad', filterWarband: '', filterPriority: '', filterTime: '', filterEstado: '', filterSearch: '' }
+    dash: { filter: 'all', group1: 'warband', group2: 'personaje', order: 'prioridad', filterWarband: '', filterPriority: '', filterTime: '', filterEstado: '', filterSearch: '' },
+    priorityFilter: { priority: '1', warband: '' },
+    timeFilter: { time: 'rapido', warband: '' }
   };
 
   const CLASS_MAP = {
@@ -19,6 +21,25 @@ const UI = (() => {
   };
 
   const LABELS = { all: 'Todas', weekly: 'Semanal', daily: 'Diaria', farm_libre: 'Farm' };
+  const PRIORITY_TABS = [
+    { key: '1', label: 'P1' },
+    { key: '2', label: 'P2' },
+    { key: '3', label: 'P3' },
+    { key: '', label: 'Todas' }
+  ];
+  const TIME_TABS = [
+    { key: 'rapido', label: '🟢 Rápido' },
+    { key: 'medio', label: '🟡 Medio' },
+    { key: 'largo', label: '🟠 Largo' },
+    { key: 'marathon', label: '🔴 Marathon' },
+    { key: '', label: 'Todas' }
+  ];
+  const TIME_RANGES = [
+    { key: 'rapido', label: '🟢 Rápido (≤15min)', fn: t => t.tiempo_min <= 15 },
+    { key: 'medio', label: '🟡 Medio (16-30min)', fn: t => t.tiempo_min >= 16 && t.tiempo_min <= 30 },
+    { key: 'largo', label: '🟠 Largo (31-60min)', fn: t => t.tiempo_min >= 31 && t.tiempo_min <= 60 },
+    { key: 'marathon', label: '🔴 Marathon (>60min)', fn: t => t.tiempo_min > 60 }
+  ];
 
   function clsClass(className) {
     return 'class-' + (CLASS_MAP[className] || 'warrior');
@@ -317,7 +338,7 @@ const UI = (() => {
         <div class="task-info">
           <div class="task-name">${t.nombre}</div>
           <div class="task-meta">
-            <span class="task-priority priority-${t.prioridad}">P${t.prioridad}</span>
+            <span class="text-xs text-muted">P${t.prioridad}</span>
             <span>${t.tiempo_min} min</span>
             <span>${t.cooldown}</span>
             ${t.recompensa ? `<span class="task-reward">🎁 ${t.recompensa}</span>` : ''}
@@ -474,7 +495,7 @@ const UI = (() => {
                           </div>
                         ` : ''}
                         <div class="task-list" style="gap:1px">
-                          ${tasks.map(t => renderDashTaskItem(t)).join('')}
+                  ${tasks.map(t => renderDashTaskItem(t, false)).join('')}
                         </div>
                       </div>
                     `;
@@ -489,8 +510,8 @@ const UI = (() => {
     `;
   }
 
-  function renderDashTaskItem(t) {
-    const label = t.personaje ? `<span class="text-xs" style="color:var(--gold);font-weight:600">${t.personaje}</span>` : '';
+  function renderDashTaskItem(t, showChar = true) {
+    const label = showChar && t.personaje ? `<span class="text-xs" style="color:var(--gold);font-weight:600">${t.personaje}</span>` : '';
     return `
       <div class="task-item ${t.hecho ? 'done' : ''}" style="padding:4px 6px">
         <input type="checkbox" class="task-check" ${t.hecho ? 'checked' : ''}
@@ -498,7 +519,7 @@ const UI = (() => {
         <div class="task-info">
           <div class="task-name" style="font-size:0.75rem">${label} ${t.nombre}</div>
           <div class="task-meta" style="font-size:0.6rem">
-            <span class="task-priority priority-${t.prioridad}" style="padding:0 3px;font-size:0.55rem">P${t.prioridad}</span>
+            <span class="text-xs text-muted">P${t.prioridad}</span>
             <span>${t.tiempo_min}min</span>
             <span>${t.cooldown}</span>
             ${t.recompensa ? `<span class="task-reward">🎁 ${t.recompensa}</span>` : ''}
@@ -517,6 +538,10 @@ const UI = (() => {
   function setDashFilterTime(v) { state.dash.filterTime = v; render(); }
   function setDashFilterEstado(v) { state.dash.filterEstado = v; render(); }
   function setDashFilterSearch(v) { state.dash.filterSearch = v; render(); }
+  function setPriorityTab(v) { state.priorityFilter.priority = v; render(); }
+  function setPriorityWarband(v) { state.priorityFilter.warband = v; render(); }
+  function setTimeTab(v) { state.timeFilter.time = v; render(); }
+  function setTimeWarband(v) { state.timeFilter.warband = v; render(); }
 
   // ===== TABLA VIEW =====
   function renderTablaFilterControls(cfg) {
@@ -836,22 +861,21 @@ const UI = (() => {
   function renderPriorityView() {
     const el = document.getElementById('dashboardPanel');
     if (!el) return;
-    const tasks = getAllTaskItems().filter(t => !t.hecho);
-    const missions = DATA.getMisiones().filter(m => m.estado !== 'completada');
-    const taskGroups = { 1: [], 2: [], 3: [] };
-    tasks.forEach(t => taskGroups[t.prioridad].push(t));
-    const missionGroups = { 1: [], 2: [], 3: [] };
-    missions.forEach(m => missionGroups[m.prioridad].push(m));
+    const pf = state.priorityFilter;
+    let tasks = getAllTaskItems().filter(t => !t.hecho);
+    let missions = DATA.getMisiones().filter(m => m.estado !== 'completada');
+    if (pf.priority) { tasks = tasks.filter(t => t.prioridad === parseInt(pf.priority)); missions = missions.filter(m => m.prioridad === parseInt(pf.priority)); }
+    if (pf.warband) { tasks = tasks.filter(t => t.warband === pf.warband); const wbChars = DATA.getPersonajes().filter(c => c.warband === pf.warband).map(c => c.nombre); missions = missions.filter(m => !m.personaje || wbChars.includes(m.personaje)); }
     el.innerHTML = `
       <div class="wow-panel">
-        <div class="wow-panel-header">
-          <h2>⚡ Prioridad</h2>
-          <span class="text-sm text-muted">${tasks.length} tareas · ${missions.length} misiones</span>
-        </div>
-        <div class="wow-panel-body">
-          ${renderCompactSection('Tareas Pendientes', taskGroups, [1,2,3], 'P', 'task')}
-          ${renderCompactSection('Misiones Pendientes', missionGroups, [1,2,3], 'P', 'mission')}
-          ${tasks.length === 0 && missions.length === 0 ? '<div class="empty-state"><p>Todo completado 🎉</p></div>' : ''}
+        <div class="wow-panel-body" style="padding:4px 6px">
+          ${renderTabBar(PRIORITY_TABS, pf.priority, 'UI.setPriorityTab')}
+          ${renderTabBar(getWarbandTabs(), pf.warband, 'UI.setPriorityWarband')}
+          <div style="margin-top:4px">
+            ${renderViewList('Tareas Pendientes', tasks, missions.length > 0, 'task')}
+            ${renderViewList('Misiones Pendientes', missions, tasks.length > 0, 'mission')}
+            ${tasks.length === 0 && missions.length === 0 ? '<div class="empty-state" style="padding:12px"><p>Todo completado 🎉</p></div>' : ''}
+          </div>
         </div>
       </div>
     `;
@@ -861,56 +885,44 @@ const UI = (() => {
   function renderTimeView() {
     const el = document.getElementById('dashboardPanel');
     if (!el) return;
-    const tasks = getAllTaskItems().filter(t => !t.hecho);
-    const missions = DATA.getMisiones().filter(m => m.estado !== 'completada' && (m.tiempo_min || 0) > 0);
-    const ranges = [
-      { key: 'rapido', label: '🟢 Rápido (≤15min)', fn: t => t.tiempo_min <= 15 },
-      { key: 'medio', label: '🟡 Medio (16-30min)', fn: t => t.tiempo_min >= 16 && t.tiempo_min <= 30 },
-      { key: 'largo', label: '🟠 Largo (31-60min)', fn: t => t.tiempo_min >= 31 && t.tiempo_min <= 60 },
-      { key: 'marathon', label: '🔴 Marathon (>60min)', fn: t => t.tiempo_min > 60 }
-    ];
-    const taskGroups = {};
-    const missionGroups = {};
-    ranges.forEach(r => { taskGroups[r.key] = []; missionGroups[r.key] = []; });
-    tasks.forEach(t => { const g = ranges.find(r => r.fn(t)); if (g) taskGroups[g.key].push(t); });
-    missions.forEach(m => { const g = ranges.find(r => r.fn(m)); if (g) missionGroups[g.key].push(m); });
+    const tf = state.timeFilter;
+    let tasks = getAllTaskItems().filter(t => !t.hecho);
+    let missions = DATA.getMisiones().filter(m => m.estado !== 'completada' && (m.tiempo_min || 0) > 0);
+    if (tf.time) { const r = TIME_RANGES.find(x => x.key === tf.time); if (r) { tasks = tasks.filter(r.fn); missions = missions.filter(r.fn); } }
+    if (tf.warband) { tasks = tasks.filter(t => t.warband === tf.warband); const wbChars = DATA.getPersonajes().filter(c => c.warband === tf.warband).map(c => c.nombre); missions = missions.filter(m => !m.personaje || wbChars.includes(m.personaje)); }
     el.innerHTML = `
       <div class="wow-panel">
-        <div class="wow-panel-header">
-          <h2>⏱ Tiempo</h2>
-          <span class="text-sm text-muted">${tasks.length} tareas · ${missions.length} misiones</span>
-        </div>
-        <div class="wow-panel-body">
-          ${renderCompactSection('Tareas por Tiempo', taskGroups, ranges.map(r => r.key), r => ranges.find(x => x.key === r).label, 'task')}
-          ${renderCompactSection('Misiones por Tiempo', missionGroups, ranges.map(r => r.key), r => ranges.find(x => x.key === r).label, 'mission')}
-          ${tasks.length === 0 && missions.length === 0 ? '<div class="empty-state"><p>Todo completado 🎉</p></div>' : ''}
+        <div class="wow-panel-body" style="padding:4px 6px">
+          ${renderTabBar(TIME_TABS, tf.time, 'UI.setTimeTab')}
+          ${renderTabBar(getWarbandTabs(), tf.warband, 'UI.setTimeWarband')}
+          <div style="margin-top:4px">
+            ${renderViewList('Tareas por Tiempo', tasks, missions.length > 0, 'task')}
+            ${renderViewList('Misiones por Tiempo', missions, tasks.length > 0, 'mission')}
+            ${tasks.length === 0 && missions.length === 0 ? '<div class="empty-state" style="padding:12px"><p>Todo completado 🎉</p></div>' : ''}
+          </div>
         </div>
       </div>
     `;
   }
 
-  function renderCompactSection(title, groups, orderedKeys, labelFn, type) {
-    const hasItems = orderedKeys.some(k => groups[k] && groups[k].length > 0);
-    if (!hasItems) return '';
+  function getWarbandTabs() {
+    return [{ key: '', label: 'Todas' }, ...DATA.getWarbands().map(w => ({ key: w.nombre, label: `${w.nombre} (${w.personajes.length})` }))];
+  }
+
+  function renderTabBar(tabs, current, callback) {
+    return `<div class="warband-tabs" style="margin:0">${tabs.map(t =>
+      `<button class="warband-tab ${t.key === current ? 'active' : ''}" onclick="${callback}('${t.key}')">${t.label || t.key}</button>`
+    ).join('')}</div>`;
+  }
+
+  function renderViewList(title, items, hasOtherSection, type) {
+    if (items.length === 0) return '';
+    const margin = hasOtherSection ? 'mb-2' : '';
     return `
-      <h4 class="text-sm mb-1 mt-1" style="color:var(--text-secondary)">${title}</h4>
-      ${orderedKeys.map(k => {
-        const items = groups[k] || [];
-        if (items.length === 0) return '';
-        const lbl = typeof labelFn === 'function' ? labelFn(k) : labelFn + k;
-        return `
-          <div class="dash-group" style="margin-bottom:2px">
-            <div class="dash-group-header" onclick="this.classList.toggle('collapsed');this.nextElementSibling.classList.toggle('hidden')">
-              <span class="arrow">▼</span>
-              <span style="flex:1;font-weight:600;font-size:0.65rem">${lbl}</span>
-              <span class="text-xs text-muted">${items.length}</span>
-            </div>
-            <div class="task-list" style="gap:1px">
-              ${items.map(t => type === 'mission' ? renderCompactMissionItem(t) : renderCompactTaskItem(t)).join('')}
-            </div>
-          </div>
-        `;
-      }).join('')}
+      <h4 class="text-sm mb-1 mt-1 ${margin}" style="color:var(--text-secondary)">${title} <span class="text-xs text-muted">(${items.length})</span></h4>
+      <div class="task-list" style="gap:1px">
+        ${items.map(t => type === 'mission' ? renderCompactMissionItem(t) : renderCompactTaskItem(t)).join('')}
+      </div>
     `;
   }
 
@@ -925,6 +937,7 @@ const UI = (() => {
             <span>${t.nombre}</span>
           </div>
           <div class="task-meta" style="font-size:0.55rem">
+            <span class="text-xs text-muted">P${t.prioridad}</span>
             <span>${t.tiempo_min}min</span>
             <span class="text-muted">${t.cooldown}</span>
           </div>
@@ -944,6 +957,7 @@ const UI = (() => {
             <span>${m.nombre}</span>
           </div>
           <div class="task-meta" style="font-size:0.55rem">
+            <span class="text-xs text-muted">P${m.prioridad}</span>
             <span>${m.tiempo_min || 0}min</span>
             <span class="text-muted">${m.tipo}</span>
           </div>
@@ -1202,6 +1216,7 @@ const UI = (() => {
     showMoveCharModal, showManageWarbandsModal,
     addWarbandFromInput, renameWarbandPrompt, deleteWarbandPrompt,
     selectCharFromTable,
-    showAddMisionModal, toggleMision, editMision, deleteMision
+    showAddMisionModal, toggleMision, editMision, deleteMision,
+    setPriorityTab, setPriorityWarband, setTimeTab, setTimeWarband
   };
 })();

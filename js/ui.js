@@ -240,6 +240,7 @@ const UI = (() => {
           <div class="flex gap-2 items-center">
             <span class="text-sm ${c.activo ? '' : 'text-muted'}">${c.activo ? '● Activo' : '○ Inactivo'}</span>
             <button class="wow-btn wow-btn-sm wow-btn-primary" onclick="UI.showAddMisionModal()" style="font-size:0.6rem;padding:2px 6px">+ Misión</button>
+            <button onclick="UI.showEditCharModal('${c.nombre}')" title="Editar personaje" style="background:none;border:none;cursor:pointer;font-size:0.7rem;padding:0 2px">✏️</button>
           </div>
         </div>
         <div class="wow-panel-body">
@@ -1461,6 +1462,63 @@ const UI = (() => {
     AUTH.clearSession(); GIST.disconnect(); location.reload();
   }
 
+  function showEditCharModal(charName) {
+    const c = DATA.getPersonaje(charName);
+    if (!c) return;
+    const CLASES = ['Guerrero','Paladín','Cazador','Pícaro','Sacerdote','DK','Chamán','Mago','Brujo','Monje','Druida','DH','Evocadora','Maga'];
+    const RAZAS = ['Orco','Blood Elf','Tauren','Troll','Goblin','Mag\'har','Nightborne','Highmountain','Zandalari','Vulpera','Undead','Earthen','Pandaren','Human','Night Elf','Draenei','Gnome','Dwarf','Void Elf','Light Draenei','Haranir','Dracthyr'];
+    showModal('Editar Personaje', `
+      <p class="text-sm text-muted mb-2"><strong class="text-gold">${charName}</strong></p>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px">
+        <div class="form-group">
+          <label>Clase</label>
+          <select id="editCharClase" style="width:100%">${CLASES.map(cl => `<option value="${cl}" ${c.clase === cl ? 'selected' : ''}>${cl}</option>`).join('')}</select>
+        </div>
+        <div class="form-group">
+          <label>Nivel</label>
+          <input type="number" id="editCharNivel" value="${c.nivel}" min="1" max="90" style="width:100%">
+        </div>
+        <div class="form-group">
+          <label>Facción</label>
+          <select id="editCharFaccion" style="width:100%">
+            <option value="Horda" ${c.faccion === 'Horda' ? 'selected' : ''}>Horda</option>
+            <option value="Alianza" ${c.faccion === 'Alianza' ? 'selected' : ''}>Alianza</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Raza</label>
+          <select id="editCharRaza" style="width:100%">${RAZAS.map(r => `<option value="${r}" ${c.raza === r ? 'selected' : ''}>${r}</option>`).join('')}</select>
+        </div>
+        <div class="form-group">
+          <label>Reino</label>
+          <input type="text" id="editCharReino" value="${c.reino}" style="width:100%">
+        </div>
+        <div class="form-group">
+          <label>Misión Principal</label>
+          <input type="text" id="editCharMision" value="${c.mision_principal || ''}" style="width:100%">
+        </div>
+        <div class="form-group">
+          <label>Activo</label>
+          <select id="editCharActivo" style="width:100%">
+            <option value="true" ${c.activo ? 'selected' : ''}>Sí</option>
+            <option value="false" ${!c.activo ? 'selected' : ''}>No</option>
+          </select>
+        </div>
+      </div>
+    `, 'Cancelar', () => {
+      DATA.updatePersonaje(charName, {
+        clase: document.getElementById('editCharClase').value,
+        nivel: parseInt(document.getElementById('editCharNivel').value) || 1,
+        faccion: document.getElementById('editCharFaccion').value,
+        raza: document.getElementById('editCharRaza').value,
+        reino: document.getElementById('editCharReino').value.trim(),
+        mision_principal: document.getElementById('editCharMision').value.trim() || null,
+        activo: document.getElementById('editCharActivo').value === 'true'
+      });
+      render(); GIST.doSync(); closeModal(); showAlert('✅ Personaje actualizado');
+    }, 'Guardar');
+  }
+
   function showMoveCharModal(charName) {
     const warbands = DATA.getWarbands().filter(w => w.nombre !== 'nada');
     const char = DATA.getPersonaje(charName);
@@ -1553,7 +1611,7 @@ const UI = (() => {
     showExportModal, showImportModal, downloadJSON, downloadCSV,
     showGistModal, gistConnect, gistDisconnect, logout,
     showModal, closeModal, confirmModal, showAlert, handleImportFile,
-    showMoveCharModal, showManageWarbandsModal,
+    showEditCharModal, showMoveCharModal, showManageWarbandsModal,
     addWarbandFromInput, renameWarbandPrompt, deleteWarbandPrompt,
     selectCharFromTable,
     showAddMisionModal, toggleMision, editMision, deleteMision, toggleTareaMision, editTareaMision, deleteTareaMision,

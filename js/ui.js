@@ -10,7 +10,7 @@ const UI = (() => {
     dash: { filter: 'all', group1: 'warband', group2: 'personaje', order: 'prioridad', filterWarband: '', filterPriority: '', filterTime: '', filterEstado: '', filterSearch: '' },
     priorityFilter: { priority: '1', warband: '' },
     timeFilter: { time: 'rapido', warband: '' },
-    misionesFilter: { filterPersonaje: '', filterWarband: '', filterTipo: '', filterPriority: '', filterTime: '', filterEstado: '', filterSearch: '' }
+    misionesFilter: { filterPersonaje: '', filterWarband: '', filterTipo: '', filterExpansion: '', filterPriority: '', filterTime: '', filterEstado: '', filterSearch: '' }
   };
 
   const CLASS_MAP = {
@@ -542,6 +542,7 @@ const UI = (() => {
   function setMisionesFilterPersonaje(v) { state.misionesFilter.filterPersonaje = v; render(); }
   function setMisionesFilterWarband(v) { state.misionesFilter.filterWarband = v; render(); }
   function setMisionesFilterTipo(v) { state.misionesFilter.filterTipo = v; render(); }
+  function setMisionesFilterExpansion(v) { state.misionesFilter.filterExpansion = v; render(); }
   function setMisionesFilterPriority(v) { state.misionesFilter.filterPriority = v; render(); }
   function setMisionesFilterTime(v) { state.misionesFilter.filterTime = v; render(); }
   function setMisionesFilterEstado(v) { state.misionesFilter.filterEstado = v; render(); }
@@ -635,6 +636,21 @@ const UI = (() => {
           <option value="mision" ${cfg.filterTipo === 'mision' ? 'selected' : ''}>Misión</option>
           <option value="achievement" ${cfg.filterTipo === 'achievement' ? 'selected' : ''}>Logro</option>
         </select>
+        <span class="text-xs text-muted" style="margin-left:4px">Exp:</span>
+        <select onchange="UI.setMisionesFilterExpansion(this.value)" style="font-size:0.6rem;padding:2px 4px;max-width:75px">
+          <option value="">Todas</option>
+          <option value="tww" ${cfg.filterExpansion === 'tww' ? 'selected' : ''}>TWW</option>
+          <option value="dragonflight" ${cfg.filterExpansion === 'dragonflight' ? 'selected' : ''}>DF</option>
+          <option value="shadowlands" ${cfg.filterExpansion === 'shadowlands' ? 'selected' : ''}>SL</option>
+          <option value="legion" ${cfg.filterExpansion === 'legion' ? 'selected' : ''}>Legion</option>
+          <option value="bfa" ${cfg.filterExpansion === 'bfa' ? 'selected' : ''}>BFA</option>
+          <option value="draenor" ${cfg.filterExpansion === 'draenor' ? 'selected' : ''}>Draenor</option>
+          <option value="mop" ${cfg.filterExpansion === 'mop' ? 'selected' : ''}>MOP</option>
+          <option value="cata" ${cfg.filterExpansion === 'cata' ? 'selected' : ''}>Cata</option>
+          <option value="wotlk" ${cfg.filterExpansion === 'wotlk' ? 'selected' : ''}>WOTLK</option>
+          <option value="midnight" ${cfg.filterExpansion === 'midnight' ? 'selected' : ''}>Mid.</option>
+          <option value="classic" ${cfg.filterExpansion === 'classic' ? 'selected' : ''}>Classic</option>
+        </select>
         <span class="text-xs text-muted" style="margin-left:4px">Prio:</span>
         <select onchange="UI.setMisionesFilterPriority(this.value)" style="font-size:0.6rem;padding:2px 4px;max-width:55px">
           <option value="">Todas</option>
@@ -672,6 +688,7 @@ const UI = (() => {
       items = items.filter(m => !m.personaje || wbChars.includes(m.personaje));
     }
     if (cfg.filterTipo) items = items.filter(m => m.tipo === cfg.filterTipo);
+    if (cfg.filterExpansion) items = items.filter(m => m.expansion === cfg.filterExpansion);
     if (cfg.filterPriority) items = items.filter(m => m.prioridad === parseInt(cfg.filterPriority));
     if (cfg.filterTime) {
       if (cfg.filterTime === 'rapido') items = items.filter(m => (m.tiempo_min || 0) <= 15);
@@ -765,6 +782,8 @@ const UI = (() => {
           nombre: t.nombre,
           personaje: p.nombre,
           tipo: t.tipo,
+          expansion: t.expansion || '',
+          tags: t.tags || [],
           prioridad: t.prioridad,
           tiempo_min: t.tiempo_min || 0,
           estado: t.hecho ? 'completada' : 'pendiente',
@@ -802,6 +821,7 @@ const UI = (() => {
                   <th style="width:100px">Personaje</th>
                   <th>Misión</th>
                   <th style="width:55px">Tipo</th>
+                  <th style="width:55px">Exp</th>
                   <th style="width:40px">Prio</th>
                   <th style="width:45px">Tiempo</th>
                   <th style="width:70px">Estado</th>
@@ -810,13 +830,13 @@ const UI = (() => {
               </thead>
               <tbody>
                 ${filtered.length === 0 ? `
-                  <tr><td colspan="8" style="text-align:center;padding:16px;color:var(--text-muted);font-size:0.75rem">No hay misiones. ¡Creá una!</td></tr>
+                  <tr><td colspan="9" style="text-align:center;padding:16px;color:var(--text-muted);font-size:0.75rem">No hay misiones. ¡Creá una!</td></tr>
                 ` : orderedKeys.map(key => {
                   const items = grouped[key];
                   const pend = items.filter(m => m.estado !== 'completada').length;
                   return `
                     <tr class="dash-group-header" style="background:transparent;cursor:pointer" onclick="const n=this.nextElementSibling;while(n&&!n.classList.contains('dash-group-header')&&n.tagName==='TR'){n.classList.toggle('hidden');n=n.nextElementSibling}">
-                      <td colspan="8" style="padding:3px 6px;font-size:0.65rem;font-weight:600">
+                      <td colspan="9" style="padding:3px 6px;font-size:0.65rem;font-weight:600">
                         <span class="arrow" style="font-size:0.5rem;display:inline-block;margin-right:4px">▼</span>
                         ${key === '(sin personaje)' ? '📋 Sin personaje' : `👤 ${key}`}
                         <span class="text-xs text-muted" style="margin-left:6px">${items.length} ítems · ${pend} pendientes</span>
@@ -840,8 +860,9 @@ const UI = (() => {
                                  onchange="${toggleCall}">
                         </td>
                         <td><span class="text-xs" style="color:var(--gold);font-weight:600">${m.personaje || '—'}</span></td>
-                        <td style="font-size:0.7rem;cursor:pointer" onclick="${editCall}">${m.nombre}</td>
+                        <td style="font-size:0.7rem;cursor:pointer" onclick="${editCall}">${m.nombre}${m.tags && m.tags.length ? ' ' + m.tags.map(tag => `<span class="tag-badge">${tag}</span>`).join('') : ''}</td>
                         <td><span class="text-xs text-muted">${m.tipo}</span></td>
+                        <td><span class="text-xs" style="color:var(--gold);font-weight:500">${m.expansion || '—'}</span></td>
                         <td><span class="text-xs text-muted">P${m.prioridad}</span></td>
                         <td class="text-xs text-muted">${m.tiempo_min || 0}min</td>
                         <td><span class="text-xs ${m.estado === 'completada' ? 'text-muted' : ''}" style="${m.estado !== 'completada' ? 'color:var(--gold)' : ''}">${m.estado === 'completada' ? '✓ Hecho' : '○ Pendiente'}</span></td>
@@ -883,7 +904,7 @@ const UI = (() => {
         <label>Personaje (opcional)</label>
         <select id="misionPersonaje" style="width:100%">${charOpts}</select>
       </div>
-      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px">
         <div class="form-group">
           <label>Tipo</label>
           <select id="misionTipo" style="width:100%">
@@ -891,6 +912,23 @@ const UI = (() => {
             <option value="achievement">Logro</option>
             <option value="daily">Diaria</option>
             <option value="weekly">Semanal</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Expansión</label>
+          <select id="misionExpansion" style="width:100%">
+            <option value="">(ninguna)</option>
+            <option value="tww">TWW</option>
+            <option value="dragonflight">Dragonflight</option>
+            <option value="shadowlands">Shadowlands</option>
+            <option value="legion">Legion</option>
+            <option value="bfa">BFA</option>
+            <option value="draenor">Draenor</option>
+            <option value="mop">MOP</option>
+            <option value="cata">Cata</option>
+            <option value="wotlk">WOTLK</option>
+            <option value="midnight">Midnight</option>
+            <option value="classic">Classic</option>
           </select>
         </div>
         <div class="form-group">
@@ -906,13 +944,20 @@ const UI = (() => {
           <input type="number" id="misionTiempo" value="30" min="0" style="width:100%">
         </div>
       </div>
+      <div class="form-group">
+        <label>Etiquetas (separadas por coma)</label>
+        <input type="text" id="misionTags" placeholder="raids, mounts, weekly" style="width:100%">
+      </div>
     `, 'Cancelar', () => {
       const nombre = document.getElementById('misionNombre').value.trim();
       if (!nombre) { showAlert('❌ Ingresá un nombre'); return; }
+      const tags = document.getElementById('misionTags').value.split(',').map(s => s.trim()).filter(Boolean);
       DATA.addMision({
         nombre,
         personaje: document.getElementById('misionPersonaje').value,
         tipo: document.getElementById('misionTipo').value,
+        expansion: document.getElementById('misionExpansion').value,
+        tags,
         estado: 'pendiente',
         prioridad: parseInt(document.getElementById('misionPrioridad').value),
         tiempo_min: parseInt(document.getElementById('misionTiempo').value) || 0
@@ -939,7 +984,7 @@ const UI = (() => {
         <label>Personaje</label>
         <select id="misionPersonajeEdit" style="width:100%">${charOpts}</select>
       </div>
-      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px">
         <div class="form-group">
           <label>Tipo</label>
           <select id="misionTipoEdit" style="width:100%">
@@ -947,6 +992,23 @@ const UI = (() => {
             <option value="achievement" ${m.tipo === 'achievement' ? 'selected' : ''}>Logro</option>
             <option value="daily" ${m.tipo === 'daily' ? 'selected' : ''}>Diaria</option>
             <option value="weekly" ${m.tipo === 'weekly' ? 'selected' : ''}>Semanal</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Expansión</label>
+          <select id="misionExpansionEdit" style="width:100%">
+            <option value="">(ninguna)</option>
+            <option value="tww" ${m.expansion === 'tww' ? 'selected' : ''}>TWW</option>
+            <option value="dragonflight" ${m.expansion === 'dragonflight' ? 'selected' : ''}>Dragonflight</option>
+            <option value="shadowlands" ${m.expansion === 'shadowlands' ? 'selected' : ''}>Shadowlands</option>
+            <option value="legion" ${m.expansion === 'legion' ? 'selected' : ''}>Legion</option>
+            <option value="bfa" ${m.expansion === 'bfa' ? 'selected' : ''}>BFA</option>
+            <option value="draenor" ${m.expansion === 'draenor' ? 'selected' : ''}>Draenor</option>
+            <option value="mop" ${m.expansion === 'mop' ? 'selected' : ''}>MOP</option>
+            <option value="cata" ${m.expansion === 'cata' ? 'selected' : ''}>Cata</option>
+            <option value="wotlk" ${m.expansion === 'wotlk' ? 'selected' : ''}>WOTLK</option>
+            <option value="midnight" ${m.expansion === 'midnight' ? 'selected' : ''}>Midnight</option>
+            <option value="classic" ${m.expansion === 'classic' ? 'selected' : ''}>Classic</option>
           </select>
         </div>
         <div class="form-group">
@@ -962,13 +1024,20 @@ const UI = (() => {
           <input type="number" id="misionTiempoEdit" value="${m.tiempo_min || 30}" min="0" style="width:100%">
         </div>
       </div>
+      <div class="form-group">
+        <label>Etiquetas (separadas por coma)</label>
+        <input type="text" id="misionTagsEdit" value="${(m.tags || []).join(', ')}" style="width:100%">
+      </div>
     `, 'Cancelar', () => {
       const nombre = document.getElementById('misionNombreEdit').value.trim();
       if (!nombre) { showAlert('❌ Ingresá un nombre'); return; }
+      const tags = document.getElementById('misionTagsEdit').value.split(',').map(s => s.trim()).filter(Boolean);
       DATA.updateMision(id, {
         nombre,
         personaje: document.getElementById('misionPersonajeEdit').value,
         tipo: document.getElementById('misionTipoEdit').value,
+        expansion: document.getElementById('misionExpansionEdit').value,
+        tags,
         prioridad: parseInt(document.getElementById('misionPrioridadEdit').value),
         tiempo_min: parseInt(document.getElementById('misionTiempoEdit').value) || 0
       });
@@ -1019,6 +1088,23 @@ const UI = (() => {
           </select>
         </div>
         <div class="form-group">
+          <label>Expansión</label>
+          <select id="tareaExpansionEdit" style="width:100%">
+            <option value="">(ninguna)</option>
+            <option value="tww" ${t.expansion === 'tww' ? 'selected' : ''}>TWW</option>
+            <option value="dragonflight" ${t.expansion === 'dragonflight' ? 'selected' : ''}>Dragonflight</option>
+            <option value="shadowlands" ${t.expansion === 'shadowlands' ? 'selected' : ''}>Shadowlands</option>
+            <option value="legion" ${t.expansion === 'legion' ? 'selected' : ''}>Legion</option>
+            <option value="bfa" ${t.expansion === 'bfa' ? 'selected' : ''}>BFA</option>
+            <option value="draenor" ${t.expansion === 'draenor' ? 'selected' : ''}>Draenor</option>
+            <option value="mop" ${t.expansion === 'mop' ? 'selected' : ''}>MOP</option>
+            <option value="cata" ${t.expansion === 'cata' ? 'selected' : ''}>Cata</option>
+            <option value="wotlk" ${t.expansion === 'wotlk' ? 'selected' : ''}>WOTLK</option>
+            <option value="midnight" ${t.expansion === 'midnight' ? 'selected' : ''}>Midnight</option>
+            <option value="classic" ${t.expansion === 'classic' ? 'selected' : ''}>Classic</option>
+          </select>
+        </div>
+        <div class="form-group">
           <label>Prioridad</label>
           <select id="tareaPrioridadEdit" style="width:100%">
             <option value="1" ${t.prioridad === 1 ? 'selected' : ''}>P1</option>
@@ -1026,17 +1112,24 @@ const UI = (() => {
             <option value="3" ${t.prioridad === 3 ? 'selected' : ''}>P3</option>
           </select>
         </div>
+        <div class="form-group">
+          <label>Tiempo (min)</label>
+          <input type="number" id="tareaTiempoEdit" value="${t.tiempo_min || 30}" min="0" style="width:100%">
+        </div>
       </div>
       <div class="form-group">
-        <label>Tiempo (min)</label>
-        <input type="number" id="tareaTiempoEdit" value="${t.tiempo_min || 30}" min="0" style="width:100%">
+        <label>Etiquetas (separadas por coma)</label>
+        <input type="text" id="tareaTagsEdit" value="${(t.tags || []).join(', ')}" style="width:100%">
       </div>
     `, 'Cancelar', () => {
       const nombre = document.getElementById('tareaNombreEdit').value.trim();
       if (!nombre) { showAlert('❌ Ingresá un nombre'); return; }
+      const tags = document.getElementById('tareaTagsEdit').value.split(',').map(s => s.trim()).filter(Boolean);
       DATA.updateTarea(charName, taskId, {
         nombre,
         tipo: document.getElementById('tareaTipoEdit').value,
+        expansion: document.getElementById('tareaExpansionEdit').value,
+        tags,
         prioridad: parseInt(document.getElementById('tareaPrioridadEdit').value),
         tiempo_min: parseInt(document.getElementById('tareaTiempoEdit').value) || 0
       });
@@ -1413,7 +1506,7 @@ const UI = (() => {
     selectCharFromTable,
     showAddMisionModal, toggleMision, editMision, deleteMision, toggleTareaMision, editTareaMision, deleteTareaMision,
     setPriorityTab, setPriorityWarband, setTimeTab, setTimeWarband,
-    setMisionesFilterPersonaje, setMisionesFilterWarband, setMisionesFilterTipo,
+    setMisionesFilterPersonaje, setMisionesFilterWarband, setMisionesFilterTipo, setMisionesFilterExpansion,
     setMisionesFilterPriority, setMisionesFilterTime, setMisionesFilterEstado, setMisionesFilterSearch
   };
 })();

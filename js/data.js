@@ -2,6 +2,33 @@ const DATA = (() => {
   const STORAGE_KEY = 'wowseg_data';
   const RESET_KEY = 'wowseg_last_reset';
 
+  const CHAR_EXPANSION = {
+    "Fariat": "midnight", "Mawgul": "legion", "Orna": "tww", "Alezethar": "dragonflight",
+    "Fangrim": "tww", "Kraiser": "shadowlands", "Elbet": "shadowlands", "Archondris": "shadowlands",
+    "Unalaq": "shadowlands", "Xaigon": "legion", "Stormfeng": "legion", "Thaelune": "bfa",
+    "Grogor": "bfa", "Izadur": "draenor", "Onuki": "draenor", "Secenio": "draenor",
+    "Pogara": "draenor", "Ulnok": "mop", "Womak": "mop", "Razzlowe": "mop", "Zulgeku": "mop",
+    "Dykaios": "cata", "Carandor": "cata", "Lisarah": "cata",
+    "Nietzlock": "wotlk", "Healtonjohn": "wotlk", "Wasprepared": "wotlk", "Shockandroll": "wotlk"
+  };
+
+  const MISION_EXPANSION = { "m1": "wotlk", "m2": "wotlk", "m3": "tww" };
+
+  function propagateExpansion(data) {
+    (data.personajes || []).forEach(p => {
+      const exp = CHAR_EXPANSION[p.nombre] || '';
+      (p.tareas || []).forEach(t => {
+        if (!t.expansion) t.expansion = exp;
+        if (!t.tags) t.tags = [];
+      });
+    });
+    (data.misiones || []).forEach(m => {
+      if (!m.expansion) m.expansion = MISION_EXPANSION[m.id] || '';
+      if (!m.tags) m.tags = [];
+    });
+    return data;
+  }
+
   function getData() {
     const raw = localStorage.getItem(STORAGE_KEY);
     if (!raw) {
@@ -10,10 +37,15 @@ const DATA = (() => {
     }
     try {
       const data = JSON.parse(raw);
+      const needsExp = !data.personajes[0]?.tareas?.[0]?.expansion;
       if (data.personajes && data.personajes.length > 0 && !data.personajes[0].tareas) {
         const merged = mergeSeed(data);
         saveData(merged);
         return merged;
+      }
+      if (needsExp) {
+        propagateExpansion(data);
+        saveData(data);
       }
       return data;
     } catch {
@@ -32,11 +64,13 @@ const DATA = (() => {
     if (!data.misiones) data.misiones = seed.misiones || [];
     if (!data.warbands) data.warbands = seed.warbands || [];
     data._meta = { ...seed._meta, ...data._meta };
-    return data;
+    return propagateExpansion(data);
   }
 
   function initSeed() {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(SEED_DATA));
+    const data = JSON.parse(JSON.stringify(SEED_DATA));
+    propagateExpansion(data);
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
     checkWeeklyReset();
   }
 
@@ -205,7 +239,7 @@ const DATA = (() => {
     const data = getData();
     if (!data.misiones) data.misiones = [];
     const id = 'm' + Date.now();
-    data.misiones.push({ id, ...m, creada: new Date().toISOString() });
+    data.misiones.push({ id, expansion: '', tags: [], ...m, creada: new Date().toISOString() });
     saveData(data);
     return id;
   }

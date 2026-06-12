@@ -47,6 +47,9 @@ const DATA = (() => {
         propagateExpansion(data);
         saveData(data);
       }
+      if (data._meta && data._meta.ultimo_reset_semanal) {
+        localStorage.setItem(RESET_KEY, data._meta.ultimo_reset_semanal);
+      }
       return data;
     } catch {
       initSeed();
@@ -69,6 +72,7 @@ const DATA = (() => {
 
   function initSeed() {
     const data = JSON.parse(JSON.stringify(SEED_DATA));
+    data._meta.schema_version = 2;
     propagateExpansion(data);
     localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
     checkWeeklyReset();
@@ -76,6 +80,9 @@ const DATA = (() => {
 
   function saveData(data) {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+    if (data._meta && data._meta.ultimo_reset_semanal) {
+      localStorage.setItem(RESET_KEY, data._meta.ultimo_reset_semanal);
+    }
     return data;
   }
 
@@ -159,8 +166,8 @@ const DATA = (() => {
           });
         });
         data._meta.ultimo_reset_semanal = todayStr;
-        saveData(data);
         localStorage.setItem(RESET_KEY, todayStr);
+        saveData(data);
         return true;
       }
     }
@@ -185,14 +192,51 @@ const DATA = (() => {
     return JSON.stringify(getData(), null, 2);
   }
 
-  function exportCSV() {
-    const chars = getPersonajes();
-    const rows = [['Nombre', 'Clase', 'Nivel', 'Facción', 'Raza', 'Reino', 'Warband', 'Misión Principal', 'Activo', 'Tareas Hechas', 'Total Tareas']];
-    chars.forEach(c => {
-      const done = c.tareas.filter(t => t.hecho).length;
-      rows.push([c.nombre, c.clase, c.nivel, c.faccion, c.raza, c.reino, c.warband, c.mision_principal || '', c.activo ? 'Sí' : 'No', done, c.tareas.length]);
-    });
-    return rows.map(r => r.map(v => typeof v === 'string' && v.includes(',') ? `"${v}"` : v).join(',')).join('\n');
+  function exportFullBackup() {
+    let gistConfig = null;
+    try {
+      const raw = localStorage.getItem('wowseg_gist_config');
+      if (raw) gistConfig = JSON.parse(raw);
+    } catch {}
+    return JSON.stringify({
+      _export: {
+        version: 2,
+        exported_at: new Date().toISOString(),
+        app_name: 'WoW Seg Warband Tracker',
+        data: Object.assign(getData(), { misiones: getMisiones() }),
+        preferences: {
+          theme: localStorage.getItem('wowseg_theme') || 'dark',
+          fontsize: localStorage.getItem('wowseg_fontsize') || 'medium'
+        },
+        gist: gistConfig ? { config: gistConfig, hash: localStorage.getItem('wowseg_gist_lasthash') || '' } : null,
+        reset_last: localStorage.getItem(RESET_KEY) || null
+      }
+    }, null, 2);
+  }
+
+  function importFullBackup(jsonStr) {
+    try {
+      const pkg = JSON.parse(jsonStr);
+      if (!pkg._export || !pkg._export.data) throw new Error('Estructura de backup inválida');
+      if (!pkg._export.data.personajes || !pkg._export.data.warbands) throw new Error('Datos inválidos');
+      saveData(pkg._export.data);
+      if (pkg._export.reset_last) {
+        localStorage.setItem(RESET_KEY, pkg._export.reset_last);
+      }
+      if (pkg._export.preferences) {
+        const prefs = pkg._export.preferences;
+        if (prefs.theme) localStorage.setItem('wowseg_theme', prefs.theme);
+        if (prefs.fontsize) localStorage.setItem('wowseg_fontsize', prefs.fontsize);
+      }
+      if (pkg._export.gist && pkg._export.gist.config) {
+        localStorage.setItem('wowseg_gist_config', JSON.stringify(pkg._export.gist.config));
+        if (pkg._export.gist.hash) localStorage.setItem('wowseg_gist_lasthash', pkg._export.gist.hash);
+      }
+      checkWeeklyReset();
+      return true;
+    } catch (e) {
+      throw new Error('Backup inválido: ' + e.message);
+    }
   }
 
   function getStats() {
@@ -343,9 +387,10 @@ const DATA = (() => {
     getData, initSeed, saveData,
     getPersonajes, getWarbands, getMeta,
     getPersonaje, updatePersonaje, updateTarea, deleteTarea, toggleTarea,
-    checkWeeklyReset, importJSON, exportJSON, exportCSV, getStats,
+    checkWeeklyReset, importJSON, exportJSON, getStats,
     moveCharToWarband, addWarband, renameWarband, deleteWarband,
     resetDailyTasks,
-    getMisiones, addMision, updateMision, deleteMision, toggleMision
+    getMisiones, addMision, updateMision, deleteMision, toggleMision,
+    exportFullBackup, importFullBackup
   };
 })();

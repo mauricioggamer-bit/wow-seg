@@ -1066,20 +1066,20 @@ const UI = (() => {
   function showExportModal() {
     showModal('Exportar Datos', `
       <div class="form-group">
-        <label>JSON</label>
+        <label>Backup completo (JSON)</label>
         <textarea id="exportJsonArea" rows="12" style="width:100%;background:var(--bg-input);border:1px solid var(--border-subtle);border-radius:3px;padding:8px;color:var(--text-primary);font-size:0.75rem;font-family:monospace" readonly></textarea>
       </div>
       <div class="flex gap-2">
-        <button class="wow-btn wow-btn-primary" onclick="UI.downloadJSON()">📥 Descargar JSON</button>
-        <button class="wow-btn" onclick="UI.downloadCSV()">📥 Descargar CSV</button>
+        <button class="wow-btn wow-btn-primary" onclick="UI.downloadJSON()">📥 Descargar</button>
+        <button class="wow-btn" onclick="UI.copyJSON()">📋 Copiar</button>
       </div>
     `, 'Cerrar');
-    document.getElementById('exportJsonArea').value = DATA.exportJSON();
+    document.getElementById('exportJsonArea').value = DATA.exportFullBackup();
   }
 
   function showImportModal() {
-    showModal('Importar Datos', `
-      <p class="text-sm text-muted mb-2">Pegá el JSON completo o seleccioná un archivo</p>
+    showModal('Importar Backup', `
+      <p class="text-sm text-muted mb-2">Pegá el backup completo o seleccioná un archivo .json</p>
       <div class="form-group">
         <textarea id="importJsonArea" rows="10" style="width:100%;background:var(--bg-input);border:1px solid var(--border-subtle);border-radius:3px;padding:8px;color:var(--text-primary);font-size:0.75rem;font-family:monospace" placeholder="Pegá el JSON aquí..."></textarea>
       </div>
@@ -1091,31 +1091,36 @@ const UI = (() => {
       const text = document.getElementById('importJsonArea').value;
       if (text.trim()) {
         try {
-          DATA.importJSON(text);
-          state.selectedChar = null;
-          render();
-          GIST.doSync();
+          DATA.importFullBackup(text);
           closeModal();
-          showAlert('✅ Datos importados correctamente');
+          showAlert('✅ Backup importado — recargando...');
+          setTimeout(() => location.reload(), 800);
         } catch (e) { showAlert('❌ ' + e.message); }
       }
     }, 'Importar');
   }
 
   function downloadJSON() {
-    const blob = new Blob([DATA.exportJSON()], { type: 'application/json' });
-    downloadBlob(blob, 'wowseg-data.json');
-  }
-
-  function downloadCSV() {
-    const blob = new Blob([DATA.exportCSV()], { type: 'text/csv' });
-    downloadBlob(blob, 'wowseg-personajes.csv');
+    const blob = new Blob([DATA.exportFullBackup()], { type: 'application/json' });
+    downloadBlob(blob, 'wowseg-backup-completo.json');
   }
 
   function downloadBlob(blob, name) {
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a'); a.href = url; a.download = name; a.click();
     URL.revokeObjectURL(url);
+  }
+
+  function copyJSON() {
+    const el = document.getElementById('exportJsonArea');
+    if (!el) return;
+    navigator.clipboard.writeText(el.value).then(() => {
+      showAlert('✅ Copiado al portapapeles');
+    }).catch(() => {
+      el.select();
+      document.execCommand('copy');
+      showAlert('✅ Copiado al portapapeles');
+    });
   }
 
   function showGistModal() {
@@ -1347,7 +1352,7 @@ const UI = (() => {
     render, selectWarband, selectChar, toggleTask, setView,
     setSearch, setFilterClase, setFilterReino, setFilterActivo,
     resetAllDailies,
-    showExportModal, showImportModal, downloadJSON, downloadCSV,
+    showExportModal, showImportModal, downloadJSON, copyJSON,
     showGistModal, gistConnect, gistDisconnect, logout,
     showModal, closeModal, confirmModal, showAlert, handleImportFile,
     showEditCharModal, showMoveCharModal, showManageWarbandsModal,

@@ -257,6 +257,49 @@ const UI = (() => {
             <div class="task-list">${otherTasks.map(t => renderTaskItem(c.nombre, t)).join('')}</div>
           ` : ''}
           ${c.tareas.length === 0 ? '<div class="empty-state"><p>Este personaje no tiene tareas</p></div>' : ''}
+          ${renderCharMisionesSection(nombre)}
+        </div>
+      </div>
+    `;
+  }
+
+  function renderCharMisionesSection(charName) {
+    const misiones = DATA.getMisiones().filter(m => m.personaje === charName);
+    if (misiones.length === 0) return `
+      <div class="flex gap-2 items-center mt-2" style="border-top:1px solid var(--border);padding-top:6px">
+        <h4 class="text-sm" style="color:var(--text-muted)">Misiones</h4>
+        <span class="text-xs text-muted">0</span>
+      </div>
+    `;
+    const pend = misiones.filter(m => m.estado !== 'completada').length;
+    return `
+      <div class="mt-2" style="border-top:1px solid var(--border);padding-top:6px">
+        <div class="flex gap-2 items-center mb-1">
+          <h4 class="text-sm" style="color:var(--gold-light)">Misiones</h4>
+          <span class="text-xs text-muted">${pend} pendientes · ${misiones.length} total</span>
+        </div>
+        <div class="task-list">${misiones.map(m => renderMisionDetailItem(m)).join('')}</div>
+      </div>
+    `;
+  }
+
+  function renderMisionDetailItem(m) {
+    return `
+      <div class="task-item ${m.estado === 'completada' ? 'done' : ''}" style="position:relative">
+        <input type="checkbox" class="task-check" ${m.estado === 'completada' ? 'checked' : ''}
+               onchange="UI.toggleMision('${m.id}')">
+        <div class="task-info">
+          <div class="task-name" style="cursor:pointer" onclick="UI.editMision('${m.id}')">${m.nombre}</div>
+          <div class="task-meta">
+            <span class="text-xs text-muted">P${m.prioridad}</span>
+            <span>${m.tiempo_min || 0} min</span>
+            <span>${m.tipo}</span>
+            ${m.expansion ? `<span style="color:var(--gold);font-size:0.6rem">${m.expansion}</span>` : ''}
+          </div>
+        </div>
+        <div style="display:flex;gap:2px;align-items:center;flex-shrink:0">
+          <button onclick="UI.editMision('${m.id}')" title="Editar" style="background:none;border:none;cursor:pointer;font-size:0.65rem;padding:0 2px">✏️</button>
+          <button onclick="UI.deleteMision('${m.id}')" title="Eliminar" style="background:none;border:none;cursor:pointer;font-size:0.65rem;padding:0 2px">🗑️</button>
         </div>
       </div>
     `;

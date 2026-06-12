@@ -990,6 +990,7 @@ a:hover { color: var(--gold-light); }
 .mission-type--mision { background: #c9a84c22; color: var(--gold-light); border: 1px solid #c9a84c44; }
 .mission-type--achievement { background: #A335EE22; color: var(--rarity-epic); border: 1px solid #A335EE44; }
 .mission-type--daily { background: #0070DD22; color: var(--rarity-rare); border: 1px solid #0070DD44; }
+.mission-type--weekly { background: #00AA0022; color: var(--health-green); border: 1px solid #00AA0044; }
 
 .mission-actions { display: flex; gap: 2px; flex-shrink: 0; }
 

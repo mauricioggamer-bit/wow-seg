@@ -65,8 +65,8 @@ const SEED_DATA = {
     { nombre: "nada", personajes: ["Skyrme", "Gottraps", "Robindude", "Moonpie", "Shockolatada", "Burbujeante", "Voidnorris", "Whatwasthat", "Zapboy", "Darkbril", "Bahluk", "Noataq", "Tevo", "Zulmorjin", "Kazgreedix", "Zulmondi"], tareas_disponibles: [] }
   ],
   misiones: [
-    { id: "m1", nombre: "Completar ICC en todos los personajes WOTLK", personaje: "", tipo: "achievement", estado: "pendiente", prioridad: 2, creada: "2026-06-12T10:00:00" },
-    { id: "m2", nombre: "Farmear Invincible", personaje: "Nietzlock", tipo: "mision", estado: "pendiente", prioridad: 1, creada: "2026-06-12T10:00:00" },
-    { id: "m3", nombre: "Subir Fangrim a 80", personaje: "Fangrim", tipo: "daily", estado: "pendiente", prioridad: 3, creada: "2026-06-12T10:00:00" }
+    { id: "m1", nombre: "Completar ICC en todos los personajes WOTLK", personaje: "", tipo: "achievement", estado: "pendiente", prioridad: 2, tiempo_min: 0, creada: "2026-06-12T10:00:00" },
+    { id: "m2", nombre: "Farmear Invincible", personaje: "Nietzlock", tipo: "mision", estado: "pendiente", prioridad: 1, tiempo_min: 30, creada: "2026-06-12T10:00:00" },
+    { id: "m3", nombre: "Subir Fangrim a 80", personaje: "Fangrim", tipo: "daily", estado: "pendiente", prioridad: 3, tiempo_min: 45, creada: "2026-06-12T10:00:00" }
   ]
 };

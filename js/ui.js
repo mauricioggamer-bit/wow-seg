@@ -167,11 +167,8 @@ const UI = (() => {
           <div onclick="UI.selectChar('${c.nombre}')" style="flex:1;cursor:pointer">
             <div class="char-name ${clsClass(c.clase)}">${c.nombre}</div>
             <div class="char-info">
-              <span class="char-class ${clsClass(c.clase)}">${c.clase}</span>
-              <span>Nvl ${c.nivel}</span>
               <span class="${c.faccion === 'Horda' ? 'faction-horda' : 'faction-alliance'}">${c.faccion}</span>
-              <span>${c.raza}</span>
-              <span class="text-muted">${c.reino}</span>
+              <span>Nvl ${c.nivel}</span>
             </div>
           </div>
           <button class="wow-btn wow-btn-icon" onclick="event.stopPropagation();UI.showMoveCharModal('${c.nombre}')"
@@ -216,6 +213,7 @@ const UI = (() => {
           </div>
           <div class="flex gap-2 items-center">
             <span class="text-sm ${c.activo ? '' : 'text-muted'}">${c.activo ? '● Activo' : '○ Inactivo'}</span>
+            <button class="wow-btn wow-btn-sm wow-btn-primary" onclick="UI.showAddMisionModal()" style="font-size:0.6rem;padding:2px 6px">+ Misión</button>
           </div>
         </div>
         <div class="wow-panel-body">
@@ -676,7 +674,7 @@ const UI = (() => {
   }
 
   function renderMisionCard(m) {
-    const typeClass = m.tipo === 'achievement' ? 'mission-type--achievement' : m.tipo === 'daily' ? 'mission-type--daily' : 'mission-type--mision';
+    const typeClass = m.tipo === 'achievement' ? 'mission-type--achievement' : m.tipo === 'daily' ? 'mission-type--daily' : m.tipo === 'weekly' ? 'mission-type--weekly' : 'mission-type--mision';
     const personajes = DATA.getPersonajes();
     const charOpts = '<option value="">(sin personaje)</option>' + personajes.map(p => `<option value="${p.nombre}" ${m.personaje === p.nombre ? 'selected' : ''}>${p.nombre}</option>`).join('');
     return `
@@ -688,7 +686,8 @@ const UI = (() => {
           <div class="mission-meta">
             <span class="text-xs" style="color:var(--gold);font-weight:600">${m.personaje || 'General'}</span>
             <span class="mission-type ${typeClass}">${m.tipo}</span>
-            <span class="task-priority priority-${m.prioridad}" style="font-size:0.55rem;padding:0 4px">P${m.prioridad}</span>
+            <span class="text-xs text-muted">P${m.prioridad}</span>
+            ${m.tiempo_min > 0 ? `<span class="text-xs text-muted">${m.tiempo_min}min</span>` : ''}
             <span class="text-xs text-muted">${formatDate(m.creada)}</span>
           </div>
         </div>
@@ -721,7 +720,7 @@ const UI = (() => {
         <label>Personaje (opcional)</label>
         <select id="misionPersonaje" style="width:100%">${charOpts}</select>
       </div>
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px">
         <div class="form-group">
           <label>Tipo</label>
           <select id="misionTipo" style="width:100%">
@@ -739,6 +738,10 @@ const UI = (() => {
             <option value="3">P3 - Baja</option>
           </select>
         </div>
+        <div class="form-group">
+          <label>Tiempo (min)</label>
+          <input type="number" id="misionTiempo" value="30" min="0" style="width:100%">
+        </div>
       </div>
     `, 'Cancelar', () => {
       const nombre = document.getElementById('misionNombre').value.trim();
@@ -748,7 +751,8 @@ const UI = (() => {
         personaje: document.getElementById('misionPersonaje').value,
         tipo: document.getElementById('misionTipo').value,
         estado: 'pendiente',
-        prioridad: parseInt(document.getElementById('misionPrioridad').value)
+        prioridad: parseInt(document.getElementById('misionPrioridad').value),
+        tiempo_min: parseInt(document.getElementById('misionTiempo').value) || 0
       });
       render();
       GIST.doSync();
@@ -772,7 +776,7 @@ const UI = (() => {
         <label>Personaje</label>
         <select id="misionPersonajeEdit" style="width:100%">${charOpts}</select>
       </div>
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px">
         <div class="form-group">
           <label>Tipo</label>
           <select id="misionTipoEdit" style="width:100%">
@@ -790,6 +794,10 @@ const UI = (() => {
             <option value="3" ${m.prioridad === 3 ? 'selected' : ''}>P3 - Baja</option>
           </select>
         </div>
+        <div class="form-group">
+          <label>Tiempo (min)</label>
+          <input type="number" id="misionTiempoEdit" value="${m.tiempo_min || 30}" min="0" style="width:100%">
+        </div>
       </div>
     `, 'Cancelar', () => {
       const nombre = document.getElementById('misionNombreEdit').value.trim();
@@ -798,7 +806,8 @@ const UI = (() => {
         nombre,
         personaje: document.getElementById('misionPersonajeEdit').value,
         tipo: document.getElementById('misionTipoEdit').value,
-        prioridad: parseInt(document.getElementById('misionPrioridadEdit').value)
+        prioridad: parseInt(document.getElementById('misionPrioridadEdit').value),
+        tiempo_min: parseInt(document.getElementById('misionTiempoEdit').value) || 0
       });
       render();
       GIST.doSync();

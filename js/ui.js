@@ -7,10 +7,9 @@ const UI = (() => {
     filterActivo: 'todos',
     search: '',
     currentView: 'warband',
-    dash: { filter: 'all', group1: 'warband', group2: 'personaje', order: 'prioridad', filterWarband: '', filterPriority: '', filterTime: '', filterEstado: '', filterSearch: '' },
+    tablaFilter: { filterPersonaje: '', filterWarband: '', filterTipo: '', filterExpansion: '', filterPriority: '', filterTime: '', filterEstado: '', filterSearch: '', filterClase: '', filterFaccion: '', filterReino: '', filterActivo: '', filterCooldown: '' },
     priorityFilter: { priority: '1', warband: '' },
-    timeFilter: { time: 'rapido', warband: '' },
-    misionesFilter: { filterPersonaje: '', filterWarband: '', filterTipo: '', filterExpansion: '', filterPriority: '', filterTime: '', filterEstado: '', filterSearch: '' }
+    timeFilter: { time: 'rapido', warband: '' }
   };
 
   const CLASS_MAP = {
@@ -66,9 +65,7 @@ const UI = (() => {
     } else {
       if (wbTabs) wbTabs.style.display = 'none';
       document.getElementById('dashboardPanel').style.display = 'block';
-      if (state.currentView === 'dashboard') renderDashboard();
-      else if (state.currentView === 'tabla') renderTabla();
-      else if (state.currentView === 'misiones') renderMisiones();
+      if (state.currentView === 'tabla') renderTablaUnificada();
       else if (state.currentView === 'priority') renderPriorityView();
       else if (state.currentView === 'time') renderTimeView();
     }
@@ -79,9 +76,7 @@ const UI = (() => {
     if (!el) return;
     el.innerHTML = `
       <button class="warband-tab ${state.currentView === 'warband' ? 'active' : ''}" onclick="UI.setView('warband')">📁 Warband</button>
-      <button class="warband-tab ${state.currentView === 'dashboard' ? 'active' : ''}" onclick="UI.setView('dashboard')">📊 Tablero</button>
       <button class="warband-tab ${state.currentView === 'tabla' ? 'active' : ''}" onclick="UI.setView('tabla')">📋 Tabla</button>
-      <button class="warband-tab ${state.currentView === 'misiones' ? 'active' : ''}" onclick="UI.setView('misiones')">🎯 Misiones</button>
       <button class="warband-tab ${state.currentView === 'priority' ? 'active' : ''}" onclick="UI.setView('priority')">⚡ Prioridad</button>
       <button class="warband-tab ${state.currentView === 'time' ? 'active' : ''}" onclick="UI.setView('time')">⏱ Tiempo</button>
     `;
@@ -422,143 +417,6 @@ const UI = (() => {
     return items;
   }
 
-  function getTimeRange(min) {
-    if (min <= 15) return '🟢 Rapido (≤15min)';
-    if (min <= 30) return '🟡 Medio (16-30min)';
-    if (min <= 60) return '🟠 Largo (31-60min)';
-    return '🔴 Marathon (>60min)';
-  }
-
-  function getGroupKey(item, g) {
-    if (g === 'warband') return item.warband;
-    if (g === 'personaje') return item.personaje;
-    if (g === 'prioridad') return 'P' + item.prioridad;
-    if (g === 'tiempo') return getTimeRange(item.tiempo_min);
-    return '';
-  }
-
-  function getGroupSortKey(key, g) {
-    if (g === 'prioridad') return key === 'P1' ? '1' : key === 'P2' ? '2' : '3';
-    if (g === 'tiempo' || g === 'warband' || g === 'personaje') return key;
-    return key;
-  }
-
-  function sortTaskList(items, order) {
-    const s = [...items];
-    if (order === 'prioridad') return s.sort((a, b) => a.prioridad - b.prioridad);
-    if (order === 'tiempo_asc') return s.sort((a, b) => a.tiempo_min - b.tiempo_min);
-    if (order === 'tiempo_desc') return s.sort((a, b) => b.tiempo_min - a.tiempo_min);
-    if (order === 'nombre_asc') return s.sort((a, b) => (a.personaje || '').localeCompare(b.personaje || ''));
-    if (order === 'nombre_desc') return s.sort((a, b) => (b.personaje || '').localeCompare(a.personaje || ''));
-    return s;
-  }
-
-  function renderDashControls(cfg, prefix, showGroups) {
-    return `
-      <div class="dash-controls">
-        <span class="dash-label">Filtro:</span>
-        <select onchange="UI.setDashFilter(this.value)">
-          ${['all','weekly','daily','farm_libre'].map(v =>
-            `<option value="${v}" ${cfg.filter === v ? 'selected' : ''}>${LABELS[v]}</option>`
-          ).join('')}
-        </select>
-        ${showGroups ? `
-          <span class="dash-label">G1:</span>
-          <select onchange="UI.setDashGroup1(this.value)">
-            ${['warband','personaje','prioridad','tiempo','none'].map(v =>
-              `<option value="${v}" ${cfg.group1 === v ? 'selected' : ''}>${v.charAt(0).toUpperCase() + v.slice(1)}</option>`
-            ).join('')}
-          </select>
-          <span class="dash-label">G2:</span>
-          <select onchange="UI.setDashGroup2(this.value)">
-            ${['personaje','warband','prioridad','tiempo','none'].map(v =>
-              `<option value="${v}" ${cfg.group2 === v ? 'selected' : ''}>${v.charAt(0).toUpperCase() + v.slice(1)}</option>`
-            ).join('')}
-          </select>
-        ` : ''}
-        <span class="dash-label">Orden:</span>
-        <select onchange="UI.setDashOrder(this.value)">
-          ${[['prioridad','Prioridad'],['tiempo_asc','Tiempo ↑'],['tiempo_desc','Tiempo ↓'],['nombre_asc','Nombre ↑'],['nombre_desc','Nombre ↓']].map(([v,l]) =>
-            `<option value="${v}" ${cfg.order === v ? 'selected' : ''}>${l}</option>`
-          ).join('')}
-        </select>
-      </div>
-    `;
-  }
-
-  // ===== DASHBOARD (MINIMAL) =====
-  function renderDashboard() {
-    const el = document.getElementById('dashboardPanel');
-    if (!el) return;
-    const cfg = state.dash;
-    let items = getAllTaskItems();
-    if (cfg.filter !== 'all') items = items.filter(t => t.cooldown === cfg.filter);
-    items = sortTaskList(items, cfg.order);
-
-    let g1 = cfg.group1;
-    let g2 = cfg.group2;
-    if (g1 === 'none' && g2 === 'none') { g1 = 'warband'; g2 = 'personaje'; }
-
-    const grouped = {};
-    items.forEach(item => {
-      const k1 = g1 === 'none' ? '_all' : getGroupKey(item, g1);
-      if (!grouped[k1]) grouped[k1] = {};
-      const k2 = (g2 === 'none' || g1 === 'none') ? '_all' : getGroupKey(item, g2);
-      if (!grouped[k1][k2]) grouped[k1][k2] = [];
-      grouped[k1][k2].push(item);
-    });
-
-    const g1Keys = Object.keys(grouped).sort((a, b) => getGroupSortKey(a, g1).localeCompare(getGroupSortKey(b, g1)));
-
-    el.innerHTML = `
-      <div class="dash-minimal">
-        ${renderDashControls(cfg, '', true)}
-        <div style="display:flex;flex-direction:column;gap:2px;margin-top:4px">
-          ${g1Keys.map(k1 => {
-            const sub = grouped[k1];
-            const subKeys = Object.keys(sub).sort((a, b) => getGroupSortKey(a, g2).localeCompare(getGroupSortKey(b, g2)));
-            const totalTasks = subKeys.reduce((s, k) => s + sub[k].length, 0);
-            const doneTasks = subKeys.reduce((s, k) => s + sub[k].filter(t => t.hecho).length, 0);
-            const totalMin = subKeys.reduce((s, k) => s + sub[k].reduce((ss, t) => ss + (t.tiempo_min || 0), 0), 0);
-            const g1Label = k1 === '_all' ? 'Todas' : k1;
-
-            return `
-              <div class="dash-group">
-                <div class="dash-group-header" onclick="this.classList.toggle('collapsed');this.nextElementSibling.classList.toggle('hidden')">
-                  <span class="arrow">▼</span>
-                  <span style="flex:1;font-weight:600">${g1Label}</span>
-                  <span class="text-xs text-muted">${doneTasks}/${totalTasks} · ${totalMin}min</span>
-                </div>
-                <div>
-                  ${subKeys.map(k2 => {
-                    const tasks = sub[k2];
-                    const d2 = tasks.filter(t => t.hecho).length;
-                    const m2 = tasks.reduce((s, t) => s + (t.tiempo_min || 0), 0);
-                    const g2Label = k2 === '_all' ? '' : k2;
-                    return `
-                      <div style="margin-bottom:${g2Label ? '2px' : '0'}">
-                        ${g2Label ? `
-                          <div style="display:flex;justify-content:space-between;align-items:center;padding:2px 6px;margin-bottom:1px">
-                            <span class="text-xs" style="font-weight:600;color:var(--text-secondary)">${g2Label}</span>
-                            <span class="text-xs text-muted">${d2}/${tasks.length} · ${m2}min</span>
-                          </div>
-                        ` : ''}
-                        <div class="task-list" style="gap:1px">
-                  ${tasks.map(t => renderDashTaskItem(t, false)).join('')}
-                        </div>
-                      </div>
-                    `;
-                  }).join('')}
-                </div>
-              </div>
-            `;
-          }).join('')}
-        </div>
-        ${items.length === 0 ? '<div class="empty-state"><p>No hay tareas con los filtros seleccionados</p></div>' : ''}
-      </div>
-    `;
-  }
-
   function renderDashTaskItem(t, showChar = true) {
     const label = showChar && t.personaje ? `<span class="text-xs" style="color:var(--gold);font-weight:600">${t.personaje}</span>` : '';
     const charName = t.personaje || '';
@@ -583,105 +441,113 @@ const UI = (() => {
     `;
   }
 
-  function setDashFilter(v) { state.dash.filter = v; render(); }
-  function setDashGroup1(v) { state.dash.group1 = v; render(); }
-  function setDashGroup2(v) { state.dash.group2 = v; render(); }
-  function setDashOrder(v) { state.dash.order = v; render(); }
-  function setDashFilterWarband(v) { state.dash.filterWarband = v; render(); }
-  function setDashFilterPriority(v) { state.dash.filterPriority = v; render(); }
-  function setDashFilterTime(v) { state.dash.filterTime = v; render(); }
-  function setDashFilterEstado(v) { state.dash.filterEstado = v; render(); }
-  function setDashFilterSearch(v) { state.dash.filterSearch = v; render(); }
-  function setMisionesFilterPersonaje(v) { state.misionesFilter.filterPersonaje = v; render(); }
-  function setMisionesFilterWarband(v) { state.misionesFilter.filterWarband = v; render(); }
-  function setMisionesFilterTipo(v) { state.misionesFilter.filterTipo = v; render(); }
-  function setMisionesFilterExpansion(v) { state.misionesFilter.filterExpansion = v; render(); }
-  function setMisionesFilterPriority(v) { state.misionesFilter.filterPriority = v; render(); }
-  function setMisionesFilterTime(v) { state.misionesFilter.filterTime = v; render(); }
-  function setMisionesFilterEstado(v) { state.misionesFilter.filterEstado = v; render(); }
-  function setMisionesFilterSearch(v) { state.misionesFilter.filterSearch = v; render(); }
+  function selectCharFromTable(nombre) {
+    state.currentView = 'warband';
+    state.selectedChar = nombre;
+    state.currentWarband = DATA.getPersonaje(nombre)?.warband || state.currentWarband;
+    render();
+  }
+
   function setPriorityTab(v) { state.priorityFilter.priority = v; render(); }
   function setPriorityWarband(v) { state.priorityFilter.warband = v; render(); }
   function setTimeTab(v) { state.timeFilter.time = v; render(); }
   function setTimeWarband(v) { state.timeFilter.warband = v; render(); }
 
-  // ===== TABLA VIEW =====
-  function renderTablaFilterControls(cfg) {
-    const warbands = DATA.getWarbands();
-    return `
-      <div class="filter-bar mb-1" style="gap:3px">
-        <span class="text-xs text-muted" style="margin-right:2px">Warband:</span>
-        <select onchange="UI.setDashFilterWarband(this.value)" style="font-size:0.6rem;padding:2px 5px">
-          <option value="">Todos</option>
-          ${warbands.map(w => `<option value="${w.nombre}" ${cfg.filterWarband === w.nombre ? 'selected' : ''}>${w.nombre}</option>`).join('')}
-        </select>
-        <span class="text-xs text-muted" style="margin-left:4px">Prioridad:</span>
-        <select onchange="UI.setDashFilterPriority(this.value)" style="font-size:0.6rem;padding:2px 5px">
-          <option value="">Todas</option>
-          <option value="1" ${cfg.filterPriority === '1' ? 'selected' : ''}>P1</option>
-          <option value="2" ${cfg.filterPriority === '2' ? 'selected' : ''}>P2</option>
-          <option value="3" ${cfg.filterPriority === '3' ? 'selected' : ''}>P3</option>
-        </select>
-        <span class="text-xs text-muted" style="margin-left:4px">Tiempo:</span>
-        <select onchange="UI.setDashFilterTime(this.value)" style="font-size:0.6rem;padding:2px 5px">
-          <option value="">Todos</option>
-          <option value="rapido" ${cfg.filterTime === 'rapido' ? 'selected' : ''}>≤15min</option>
-          <option value="medio" ${cfg.filterTime === 'medio' ? 'selected' : ''}>16-30</option>
-          <option value="largo" ${cfg.filterTime === 'largo' ? 'selected' : ''}>31-60</option>
-          <option value="maraton" ${cfg.filterTime === 'maraton' ? 'selected' : ''}>>60</option>
-        </select>
-        <span class="text-xs text-muted" style="margin-left:4px">Estado:</span>
-        <select onchange="UI.setDashFilterEstado(this.value)" style="font-size:0.6rem;padding:2px 5px">
-          <option value="">Todos</option>
-          <option value="pendiente" ${cfg.filterEstado === 'pendiente' ? 'selected' : ''}>Pendientes</option>
-          <option value="hecho" ${cfg.filterEstado === 'hecho' ? 'selected' : ''}>Completadas</option>
-        </select>
-        <input type="text" placeholder="Buscar..." value="${cfg.filterSearch}"
-               oninput="UI.setDashFilterSearch(this.value)"
-               style="font-size:0.6rem;padding:2px 5px;width:100px">
-      </div>
-    `;
+  // ===== TABLA UNIFICADA =====
+  function renderTablaUnificada() {
+    const el = document.getElementById('dashboardPanel');
+    if (!el) return;
+    const cfg = state.tablaFilter;
+    const tareas = getAllTaskItems().map(t => ({ ...t, _origen: 'tarea', _charName: t.personaje }));
+    const misiones = DATA.getMisiones().map(m => ({
+      id: m.id, nombre: m.nombre, personaje: m.personaje || '', tipo: m.tipo,
+      expansion: m.expansion || '', tags: m.tags || [], prioridad: m.prioridad,
+      tiempo_min: m.tiempo_min || 0, recompensa: '', cooldown: m.tipo,
+      estado: m.estado, hecho: m.estado === 'completada', clase: '', warband: '',
+      faccion: '', reino: '', activo: true, nivel: 0,
+      _origen: 'mision', _charName: m.personaje || ''
+    }));
+    let all = [...tareas, ...misiones];
+    all = applyTablaFiltros(all);
+    el.innerHTML = `
+      <div class="wow-panel">
+        <div class="wow-panel-header">
+          <h2>📋 Tabla Unificada</h2>
+          <div class="flex gap-2 items-center">
+            <span class="text-sm text-muted">${all.length} ítems</span>
+            <button class="wow-btn wow-btn-sm wow-btn-primary" onclick="UI.showAddMisionModal()">+ Nueva</button>
+          </div>
+        </div>
+        <div class="wow-panel-body" style="padding:6px 8px">
+          ${renderTablaFiltros(cfg)}
+          <div class="task-table-wrap" style="margin-top:4px">
+            <table class="task-table">
+              <thead>
+                <tr>
+                  <th style="width:24px"></th>
+                  <th style="width:85px">Personaje</th>
+                  <th>Nombre</th>
+                  <th style="width:48px">Tipo</th>
+                  <th style="width:38px">Exp</th>
+                  <th style="width:32px">Prio</th>
+                  <th style="width:40px">Tiempo</th>
+                  <th style="width:42px">Cool.</th>
+                  <th>Recompensa</th>
+                  <th style="width:52px">Estado</th>
+                  <th style="width:42px"></th>
+                </tr>
+              </thead>
+              <tbody>
+                ${all.length === 0 ? '<tr><td colspan="11" style="text-align:center;padding:16px;color:var(--text-muted);font-size:0.75rem">No hay ítems. ¡Creá una tarea o misión!</td></tr>'
+                  : all.map(item => {
+                    const isTarea = item._origen === 'tarea';
+                    const charName = item._charName || '';
+                    const toggleCall = isTarea ? `UI.toggleTareaMision('${charName}','${item.id}')` : `UI.toggleMision('${item.id}')`;
+                    const editCall = isTarea ? `UI.editTareaMision('${charName}','${item.id}')` : `UI.editMision('${item.id}')`;
+                    const deleteCall = isTarea ? `UI.deleteTareaMision('${charName}','${item.id}')` : `UI.deleteMision('${item.id}')`;
+                    const done = isTarea ? item.hecho : item.estado === 'completada';
+                    return `<tr class="${done ? 'done' : ''}" style="${done ? 'opacity:0.55' : ''}">
+                      <td><input type="checkbox" class="task-check" ${done ? 'checked' : ''} onchange="${toggleCall}"></td>
+                      <td class="char-cell ${clsClass(item.clase)}" onclick="UI.selectCharFromTable('${charName}')" style="cursor:pointer;font-size:0.7rem">${item.personaje || '—'}</td>
+                      <td style="font-size:0.7rem;cursor:pointer" onclick="${editCall}">${item.nombre}${item.tags && item.tags.length ? ' ' + item.tags.map(tag => `<span class="tag-badge">${tag}</span>`).join('') : ''}</td>
+                      <td><span class="text-xs text-muted">${item.tipo}</span></td>
+                      <td><span class="text-xs" style="color:var(--gold);font-weight:500">${item.expansion || '—'}</span></td>
+                      <td><span class="text-xs text-muted">P${item.prioridad}</span></td>
+                      <td class="text-xs text-muted">${item.tiempo_min}min</td>
+                      <td class="text-xs text-muted">${item.cooldown}</td>
+                      <td class="text-xs">${item.recompensa ? '<span class="task-reward">🎁 ' + item.recompensa + '</span>' : ''}</td>
+                      <td><span class="text-xs ${done ? 'text-muted' : ''}" style="${!done ? 'color:var(--gold)' : ''}">${done ? '✓ Hecho' : '○ Pendiente'}</span></td>
+                      <td style="white-space:nowrap">
+                        <button onclick="${editCall}" title="Editar" style="background:none;border:none;cursor:pointer;font-size:0.65rem;padding:0 2px">✏️</button>
+                        <button onclick="${deleteCall}" title="Eliminar" style="background:none;border:none;cursor:pointer;font-size:0.65rem;padding:0 2px">🗑️</button>
+                      </td>
+                    </tr>`;
+                  }).join('')}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>`;
   }
 
-  function applyTablaFilters(items) {
-    const cfg = state.dash;
-    if (cfg.filter !== 'all') items = items.filter(t => t.cooldown === cfg.filter);
-    if (cfg.filterWarband) items = items.filter(t => t.warband === cfg.filterWarband);
-    if (cfg.filterPriority) items = items.filter(t => t.prioridad === parseInt(cfg.filterPriority));
-    if (cfg.filterTime) {
-      if (cfg.filterTime === 'rapido') items = items.filter(t => t.tiempo_min <= 15);
-      else if (cfg.filterTime === 'medio') items = items.filter(t => t.tiempo_min >= 16 && t.tiempo_min <= 30);
-      else if (cfg.filterTime === 'largo') items = items.filter(t => t.tiempo_min >= 31 && t.tiempo_min <= 60);
-      else if (cfg.filterTime === 'maraton') items = items.filter(t => t.tiempo_min > 60);
-    }
-    if (cfg.filterEstado === 'pendiente') items = items.filter(t => !t.hecho);
-    else if (cfg.filterEstado === 'hecho') items = items.filter(t => t.hecho);
-    if (cfg.filterSearch) {
-      const q = cfg.filterSearch.toLowerCase();
-      items = items.filter(t => t.nombre.toLowerCase().includes(q) || (t.personaje || '').toLowerCase().includes(q));
-    }
-    return items;
-  }
-
-  // ===== MISIONES FILTERS =====
-  function renderMisionesFilterControls(cfg) {
+  function renderTablaFiltros(cfg) {
     const warbands = DATA.getWarbands();
     const personajes = DATA.getPersonajes();
     const todos = personajes.map(p => p.nombre);
     return `
-      <div class="filter-bar mb-1" style="gap:3px">
-        <span class="text-xs text-muted" style="margin-right:2px">Pers:</span>
-        <select onchange="UI.setMisionesFilterPersonaje(this.value)" style="font-size:0.6rem;padding:2px 4px;max-width:90px">
+      <div class="filter-bar mb-1" style="gap:2px;flex-wrap:wrap">
+        <span class="text-xs text-muted">Pers:</span>
+        <select onchange="UI.setTablaFilterPersonaje(this.value)" style="font-size:0.55rem;padding:1px 3px;max-width:80px">
           <option value="">Todos</option>
           ${todos.map(n => `<option value="${n}" ${cfg.filterPersonaje === n ? 'selected' : ''}>${n}</option>`).join('')}
         </select>
-        <span class="text-xs text-muted" style="margin-left:4px">Wb:</span>
-        <select onchange="UI.setMisionesFilterWarband(this.value)" style="font-size:0.6rem;padding:2px 4px;max-width:80px">
+        <span class="text-xs text-muted">Wb:</span>
+        <select onchange="UI.setTablaFilterWarband(this.value)" style="font-size:0.55rem;padding:1px 3px;max-width:70px">
           <option value="">Todos</option>
           ${warbands.map(w => `<option value="${w.nombre}" ${cfg.filterWarband === w.nombre ? 'selected' : ''}>${w.nombre}</option>`).join('')}
         </select>
-        <span class="text-xs text-muted" style="margin-left:4px">Tipo:</span>
-        <select onchange="UI.setMisionesFilterTipo(this.value)" style="font-size:0.6rem;padding:2px 4px;max-width:80px">
+        <span class="text-xs text-muted">Tipo:</span>
+        <select onchange="UI.setTablaFilterTipo(this.value)" style="font-size:0.55rem;padding:1px 3px;max-width:70px">
           <option value="">Todos</option>
           <option value="weekly" ${cfg.filterTipo === 'weekly' ? 'selected' : ''}>Semanal</option>
           <option value="daily" ${cfg.filterTipo === 'daily' ? 'selected' : ''}>Diaria</option>
@@ -689,8 +555,8 @@ const UI = (() => {
           <option value="mision" ${cfg.filterTipo === 'mision' ? 'selected' : ''}>Misión</option>
           <option value="achievement" ${cfg.filterTipo === 'achievement' ? 'selected' : ''}>Logro</option>
         </select>
-        <span class="text-xs text-muted" style="margin-left:4px">Exp:</span>
-        <select onchange="UI.setMisionesFilterExpansion(this.value)" style="font-size:0.6rem;padding:2px 4px;max-width:75px">
+        <span class="text-xs text-muted">Exp:</span>
+        <select onchange="UI.setTablaFilterExpansion(this.value)" style="font-size:0.55rem;padding:1px 3px;max-width:65px">
           <option value="">Todas</option>
           <option value="tww" ${cfg.filterExpansion === 'tww' ? 'selected' : ''}>TWW</option>
           <option value="dragonflight" ${cfg.filterExpansion === 'dragonflight' ? 'selected' : ''}>DF</option>
@@ -704,36 +570,69 @@ const UI = (() => {
           <option value="midnight" ${cfg.filterExpansion === 'midnight' ? 'selected' : ''}>Mid.</option>
           <option value="classic" ${cfg.filterExpansion === 'classic' ? 'selected' : ''}>Classic</option>
         </select>
-        <span class="text-xs text-muted" style="margin-left:4px">Prio:</span>
-        <select onchange="UI.setMisionesFilterPriority(this.value)" style="font-size:0.6rem;padding:2px 4px;max-width:55px">
-          <option value="">Todas</option>
-          <option value="1" ${cfg.filterPriority === '1' ? 'selected' : ''}>P1</option>
+        <span class="text-xs text-muted">Prio:</span>
+        <select onchange="UI.setTablaFilterPriority(this.value)" style="font-size:0.55rem;padding:1px 3px;max-width:50px">
+          <option value="">Todas</option><option value="1" ${cfg.filterPriority === '1' ? 'selected' : ''}>P1</option>
           <option value="2" ${cfg.filterPriority === '2' ? 'selected' : ''}>P2</option>
           <option value="3" ${cfg.filterPriority === '3' ? 'selected' : ''}>P3</option>
         </select>
-        <span class="text-xs text-muted" style="margin-left:4px">Tpo:</span>
-        <select onchange="UI.setMisionesFilterTime(this.value)" style="font-size:0.6rem;padding:2px 4px;max-width:65px">
+        <span class="text-xs text-muted">Tpo:</span>
+        <select onchange="UI.setTablaFilterTime(this.value)" style="font-size:0.55rem;padding:1px 3px;max-width:55px">
           <option value="">Todos</option>
           <option value="rapido" ${cfg.filterTime === 'rapido' ? 'selected' : ''}>≤15m</option>
           <option value="medio" ${cfg.filterTime === 'medio' ? 'selected' : ''}>16-30</option>
           <option value="largo" ${cfg.filterTime === 'largo' ? 'selected' : ''}>31-60</option>
           <option value="maraton" ${cfg.filterTime === 'maraton' ? 'selected' : ''}>>60</option>
         </select>
-        <span class="text-xs text-muted" style="margin-left:4px">Edo:</span>
-        <select onchange="UI.setMisionesFilterEstado(this.value)" style="font-size:0.6rem;padding:2px 4px;max-width:75px">
+        <span class="text-xs text-muted">Edo:</span>
+        <select onchange="UI.setTablaFilterEstado(this.value)" style="font-size:0.55rem;padding:1px 3px;max-width:65px">
           <option value="">Todos</option>
           <option value="pendiente" ${cfg.filterEstado === 'pendiente' ? 'selected' : ''}>Pend.</option>
           <option value="completada" ${cfg.filterEstado === 'completada' ? 'selected' : ''}>Hecho</option>
         </select>
         <input type="text" placeholder="🔍" value="${cfg.filterSearch}"
-               oninput="UI.setMisionesFilterSearch(this.value)"
-               style="font-size:0.6rem;padding:2px 4px;width:70px">
+               oninput="UI.setTablaFilterSearch(this.value)"
+               style="font-size:0.55rem;padding:1px 3px;width:60px">
       </div>
-    `;
+      <div class="filter-bar" style="gap:2px;flex-wrap:wrap;margin-top:2px">
+        <span class="text-xs text-muted">Clase:</span>
+        <select onchange="UI.setTablaFilterClase(this.value)" style="font-size:0.55rem;padding:1px 3px;max-width:80px">
+          <option value="">Todas</option>
+          ${[...new Set(DATA.getPersonajes().map(c => c.clase))].sort().map(cl =>
+            `<option value="${cl}" ${cfg.filterClase === cl ? 'selected' : ''}>${cl}</option>`
+          ).join('')}
+        </select>
+        <span class="text-xs text-muted">Facción:</span>
+        <select onchange="UI.setTablaFilterFaccion(this.value)" style="font-size:0.55rem;padding:1px 3px;max-width:65px">
+          <option value="">Todas</option>
+          <option value="Horda" ${cfg.filterFaccion === 'Horda' ? 'selected' : ''}>Horda</option>
+          <option value="Alianza" ${cfg.filterFaccion === 'Alianza' ? 'selected' : ''}>Alianza</option>
+        </select>
+        <span class="text-xs text-muted">Reino:</span>
+        <select onchange="UI.setTablaFilterReino(this.value)" style="font-size:0.55rem;padding:1px 3px;max-width:70px">
+          <option value="">Todos</option>
+          ${[...new Set(DATA.getPersonajes().map(c => c.reino))].sort().map(r =>
+            `<option value="${r}" ${cfg.filterReino === r ? 'selected' : ''}>${r}</option>`
+          ).join('')}
+        </select>
+        <span class="text-xs text-muted">Activo:</span>
+        <select onchange="UI.setTablaFilterActivo(this.value)" style="font-size:0.55rem;padding:1px 3px;max-width:60px">
+          <option value="">Todos</option>
+          <option value="si" ${cfg.filterActivo === 'si' ? 'selected' : ''}>Sí</option>
+          <option value="no" ${cfg.filterActivo === 'no' ? 'selected' : ''}>No</option>
+        </select>
+        <span class="text-xs text-muted">Cool:</span>
+        <select onchange="UI.setTablaFilterCooldown(this.value)" style="font-size:0.55rem;padding:1px 3px;max-width:70px">
+          <option value="">Todos</option>
+          <option value="weekly" ${cfg.filterCooldown === 'weekly' ? 'selected' : ''}>Semanal</option>
+          <option value="daily" ${cfg.filterCooldown === 'daily' ? 'selected' : ''}>Diaria</option>
+          <option value="farm_libre" ${cfg.filterCooldown === 'farm_libre' ? 'selected' : ''}>Farm</option>
+        </select>
+      </div>`;
   }
 
-  function applyMisionesFilters(items) {
-    const cfg = state.misionesFilter;
+  function applyTablaFiltros(items) {
+    const cfg = state.tablaFilter;
     const personajes = DATA.getPersonajes();
     if (cfg.filterPersonaje) items = items.filter(m => m.personaje === cfg.filterPersonaje);
     if (cfg.filterWarband) {
@@ -749,8 +648,14 @@ const UI = (() => {
       else if (cfg.filterTime === 'largo') items = items.filter(m => (m.tiempo_min || 0) >= 31 && (m.tiempo_min || 0) <= 60);
       else if (cfg.filterTime === 'maraton') items = items.filter(m => (m.tiempo_min || 0) > 60);
     }
-    if (cfg.filterEstado === 'pendiente') items = items.filter(m => m.estado !== 'completada');
-    else if (cfg.filterEstado === 'completada') items = items.filter(m => m.estado === 'completada');
+    if (cfg.filterEstado === 'pendiente') items = items.filter(m => !m.hecho && m.estado !== 'completada');
+    else if (cfg.filterEstado === 'completada') items = items.filter(m => m.hecho || m.estado === 'completada');
+    if (cfg.filterClase) items = items.filter(m => m.clase === cfg.filterClase);
+    if (cfg.filterFaccion) items = items.filter(m => m.faccion === cfg.filterFaccion);
+    if (cfg.filterReino) items = items.filter(m => m.reino === cfg.filterReino);
+    if (cfg.filterActivo === 'si') items = items.filter(m => m.activo !== false);
+    else if (cfg.filterActivo === 'no') items = items.filter(m => m.activo === false);
+    if (cfg.filterCooldown) items = items.filter(m => m.cooldown === cfg.filterCooldown);
     if (cfg.filterSearch) {
       const q = cfg.filterSearch.toLowerCase();
       items = items.filter(m => m.nombre.toLowerCase().includes(q) || (m.personaje || '').toLowerCase().includes(q));
@@ -758,183 +663,19 @@ const UI = (() => {
     return items;
   }
 
-  function renderTabla() {
-    const el = document.getElementById('dashboardPanel');
-    if (!el) return;
-    const cfg = state.dash;
-    let items = getAllTaskItems();
-    items = applyTablaFilters(items);
-    items = sortTaskList(items, cfg.order);
-
-    el.innerHTML = `
-      <div class="wow-panel">
-        <div class="wow-panel-header">
-          <h2>📋 Tabla de Tareas</h2>
-          <div class="flex gap-2 items-center">
-            <span class="text-sm text-muted">${items.length} tareas</span>
-          </div>
-        </div>
-        <div class="wow-panel-body" style="padding:6px 8px">
-          ${renderTablaFilterControls(cfg)}
-          <div class="task-table-wrap" style="margin-top:4px">
-            <table class="task-table">
-              <thead>
-                <tr>
-                  <th style="width:24px"></th>
-                  <th style="width:100px">Personaje</th>
-                  <th>Tarea</th>
-                  <th style="width:45px">Prioridad</th>
-                  <th style="width:45px">Tiempo</th>
-                  <th style="width:55px">Tipo</th>
-                  <th>Recompensa</th>
-                </tr>
-              </thead>
-              <tbody>
-                ${items.length === 0 ? `
-                  <tr><td colspan="7" style="text-align:center;padding:16px;color:var(--text-muted);font-size:0.75rem">No hay tareas</td></tr>
-                ` : items.map(t => `
-                  <tr>
-                    <td>
-                      <input type="checkbox" class="task-check" ${t.hecho ? 'checked' : ''}
-                             onchange="UI.toggleTask('${t.personaje}','${t.id}')">
-                    </td>
-                    <td class="char-cell ${clsClass(t.clase)}" onclick="UI.selectCharFromTable('${t.personaje}')">${t.personaje}</td>
-                    <td style="font-size:0.7rem">${t.nombre}</td>
-                    <td><span class="task-priority priority-${t.prioridad}" style="font-size:0.5rem;padding:0 3px">P${t.prioridad}</span></td>
-                    <td class="time-cell">${t.tiempo_min}min</td>
-                    <td><span class="text-xs text-muted">${t.cooldown}</span></td>
-                    <td class="text-xs">${t.recompensa ? `<span class="task-reward">🎁 ${t.recompensa}</span>` : ''}</td>
-                  </tr>
-                `).join('')}
-              </tbody>
-            </table>
-          </div>
-        </div>
-      </div>
-    `;
-  }
-
-  function selectCharFromTable(nombre) {
-    state.currentView = 'warband';
-    state.selectedChar = nombre;
-    state.currentWarband = DATA.getPersonaje(nombre)?.warband || state.currentWarband;
-    render();
-  }
-
-  // ===== MISIONES VIEW =====
-  function renderMisiones() {
-    const el = document.getElementById('dashboardPanel');
-    if (!el) return;
-    const misiones = DATA.getMisiones().map(m => ({ ...m, _isTarea: false }));
-    const personajes = DATA.getPersonajes();
-    const tareas = [];
-    personajes.forEach(p => {
-      (p.tareas || []).forEach(t => {
-        tareas.push({
-          id: t.id,
-          nombre: t.nombre,
-          personaje: p.nombre,
-          tipo: t.tipo,
-          expansion: t.expansion || '',
-          tags: t.tags || [],
-          prioridad: t.prioridad,
-          tiempo_min: t.tiempo_min || 0,
-          estado: t.hecho ? 'completada' : 'pendiente',
-          _isTarea: true,
-          _charName: p.nombre
-        });
-      });
-    });
-    const all = [...misiones, ...tareas];
-    const filtered = applyMisionesFilters(all);
-    const grouped = {};
-    filtered.forEach(m => {
-      const key = m.personaje || '(sin personaje)';
-      if (!grouped[key]) grouped[key] = [];
-      grouped[key].push(m);
-    });
-    const orderedKeys = Object.keys(grouped).sort((a, b) => a === '(sin personaje)' ? -1 : b === '(sin personaje)' ? 1 : a.localeCompare(b));
-
-    el.innerHTML = `
-      <div class="wow-panel">
-        <div class="wow-panel-header">
-          <h2>🎯 Misiones</h2>
-          <div class="flex gap-2 items-center">
-            <span class="text-sm text-muted">${filtered.length} ítems (${tareas.length} tareas · ${misiones.length} misiones)</span>
-            <button class="wow-btn wow-btn-sm wow-btn-primary" onclick="UI.showAddMisionModal()">+ Nueva</button>
-          </div>
-        </div>
-        <div class="wow-panel-body" style="padding:6px 8px">
-          ${renderMisionesFilterControls(state.misionesFilter)}
-          <div class="task-table-wrap" style="margin-top:4px">
-            <table class="task-table">
-              <thead>
-                <tr>
-                  <th style="width:24px"></th>
-                  <th style="width:100px">Personaje</th>
-                  <th>Misión</th>
-                  <th style="width:55px">Tipo</th>
-                  <th style="width:55px">Exp</th>
-                  <th style="width:40px">Prio</th>
-                  <th style="width:45px">Tiempo</th>
-                  <th style="width:70px">Estado</th>
-                  <th style="width:50px"></th>
-                </tr>
-              </thead>
-              <tbody>
-                ${filtered.length === 0 ? `
-                  <tr><td colspan="9" style="text-align:center;padding:16px;color:var(--text-muted);font-size:0.75rem">No hay misiones. ¡Creá una!</td></tr>
-                ` : orderedKeys.map(key => {
-                  const items = grouped[key];
-                  const pend = items.filter(m => m.estado !== 'completada').length;
-                  return `
-                    <tr class="dash-group-header" style="background:transparent;cursor:pointer" onclick="const n=this.nextElementSibling;while(n&&!n.classList.contains('dash-group-header')&&n.tagName==='TR'){n.classList.toggle('hidden');n=n.nextElementSibling}">
-                      <td colspan="9" style="padding:3px 6px;font-size:0.65rem;font-weight:600">
-                        <span class="arrow" style="font-size:0.5rem;display:inline-block;margin-right:4px">▼</span>
-                        ${key === '(sin personaje)' ? '📋 Sin personaje' : `👤 ${key}`}
-                        <span class="text-xs text-muted" style="margin-left:6px">${items.length} ítems · ${pend} pendientes</span>
-                      </td>
-                    </tr>
-                    ${items.sort((a,b) => a.prioridad - b.prioridad).map(m => {
-                      const isTarea = m._isTarea;
-                      const toggleCall = isTarea
-                        ? `UI.toggleTareaMision('${m._charName}','${m.id}')`
-                        : `UI.toggleMision('${m.id}')`;
-                      const editCall = isTarea
-                        ? `UI.editTareaMision('${m._charName}','${m.id}')`
-                        : `UI.editMision('${m.id}')`;
-                      const deleteCall = isTarea
-                        ? `UI.deleteTareaMision('${m._charName}','${m.id}')`
-                        : `UI.deleteMision('${m.id}')`;
-                      return `
-                      <tr class="${m.estado === 'completada' ? 'done' : ''}" style="${m.estado === 'completada' ? 'opacity:0.55' : ''}">
-                        <td>
-                          <input type="checkbox" class="task-check" ${m.estado === 'completada' ? 'checked' : ''}
-                                 onchange="${toggleCall}">
-                        </td>
-                        <td><span class="text-xs" style="color:var(--gold);font-weight:600">${m.personaje || '—'}</span></td>
-                        <td style="font-size:0.7rem;cursor:pointer" onclick="${editCall}">${m.nombre}${m.tags && m.tags.length ? ' ' + m.tags.map(tag => `<span class="tag-badge">${tag}</span>`).join('') : ''}</td>
-                        <td><span class="text-xs text-muted">${m.tipo}</span></td>
-                        <td><span class="text-xs" style="color:var(--gold);font-weight:500">${m.expansion || '—'}</span></td>
-                        <td><span class="text-xs text-muted">P${m.prioridad}</span></td>
-                        <td class="text-xs text-muted">${m.tiempo_min || 0}min</td>
-                        <td><span class="text-xs ${m.estado === 'completada' ? 'text-muted' : ''}" style="${m.estado !== 'completada' ? 'color:var(--gold)' : ''}">${m.estado === 'completada' ? '✓ Hecho' : '○ Pendiente'}</span></td>
-                        <td style="white-space:nowrap">
-                          <button onclick="${editCall}" title="Editar" style="background:none;border:none;cursor:pointer;font-size:0.7rem;padding:0 2px">✏️</button>
-                          <button onclick="${deleteCall}" title="Eliminar" style="background:none;border:none;cursor:pointer;font-size:0.7rem;padding:0 2px">🗑️</button>
-                        </td>
-                      </tr>
-                      `;
-                    }).join('')}
-                  `;
-                }).join('')}
-              </tbody>
-            </table>
-          </div>
-        </div>
-      </div>
-    `;
-  }
+  function setTablaFilterPersonaje(v) { state.tablaFilter.filterPersonaje = v; render(); }
+  function setTablaFilterWarband(v) { state.tablaFilter.filterWarband = v; render(); }
+  function setTablaFilterTipo(v) { state.tablaFilter.filterTipo = v; render(); }
+  function setTablaFilterExpansion(v) { state.tablaFilter.filterExpansion = v; render(); }
+  function setTablaFilterPriority(v) { state.tablaFilter.filterPriority = v; render(); }
+  function setTablaFilterTime(v) { state.tablaFilter.filterTime = v; render(); }
+  function setTablaFilterEstado(v) { state.tablaFilter.filterEstado = v; render(); }
+  function setTablaFilterSearch(v) { state.tablaFilter.filterSearch = v; render(); }
+  function setTablaFilterClase(v) { state.tablaFilter.filterClase = v; render(); }
+  function setTablaFilterFaccion(v) { state.tablaFilter.filterFaccion = v; render(); }
+  function setTablaFilterReino(v) { state.tablaFilter.filterReino = v; render(); }
+  function setTablaFilterActivo(v) { state.tablaFilter.filterActivo = v; render(); }
+  function setTablaFilterCooldown(v) { state.tablaFilter.filterCooldown = v; render(); }
 
   function toggleMision(id) {
     DATA.toggleMision(id);
@@ -1605,8 +1346,6 @@ const UI = (() => {
   return {
     render, selectWarband, selectChar, toggleTask, setView,
     setSearch, setFilterClase, setFilterReino, setFilterActivo,
-    setDashFilter, setDashGroup1, setDashGroup2, setDashOrder,
-    setDashFilterWarband, setDashFilterPriority, setDashFilterTime, setDashFilterEstado, setDashFilterSearch,
     resetAllDailies,
     showExportModal, showImportModal, downloadJSON, downloadCSV,
     showGistModal, gistConnect, gistDisconnect, logout,
@@ -1616,7 +1355,8 @@ const UI = (() => {
     selectCharFromTable,
     showAddMisionModal, toggleMision, editMision, deleteMision, toggleTareaMision, editTareaMision, deleteTareaMision,
     setPriorityTab, setPriorityWarband, setTimeTab, setTimeWarband,
-    setMisionesFilterPersonaje, setMisionesFilterWarband, setMisionesFilterTipo, setMisionesFilterExpansion,
-    setMisionesFilterPriority, setMisionesFilterTime, setMisionesFilterEstado, setMisionesFilterSearch
+    setTablaFilterPersonaje, setTablaFilterWarband, setTablaFilterTipo, setTablaFilterExpansion,
+    setTablaFilterPriority, setTablaFilterTime, setTablaFilterEstado, setTablaFilterSearch,
+    setTablaFilterClase, setTablaFilterFaccion, setTablaFilterReino, setTablaFilterActivo, setTablaFilterCooldown
   };
 })();

@@ -63,5 +63,10 @@ const SEED_DATA = {
     { nombre: "Shadowlands", personajes: ["Kraiser", "Elbet", "Archondris", "Unalaq"], tareas_disponibles: [{ id: "sl_zereth", nombre: "Weekly Zereth Mortis", tipo: "weekly", cooldown: "weekly", tiempo_min: 20, prioridad: 2, recompensa: "anima / cosmetics" }, { id: "sl_bosses", nombre: "Raids SL (2-3 bosses)", tipo: "weekly", cooldown: "weekly", tiempo_min: 30, prioridad: 2, recompensa: "transmog / mounts" }, { id: "sl_covenant", nombre: "Covenant campaign", tipo: "weekly", cooldown: "weekly", tiempo_min: 25, prioridad: 2, recompensa: "progreso campaña" }, { id: "sl_zona", nombre: "Weekly zona SL (misc)", tipo: "weekly", cooldown: "weekly", tiempo_min: 15, prioridad: 3, recompensa: "anima" }] },
     { nombre: "WOTLK", personajes: ["Nietzlock", "Healtonjohn", "Wasprepared", "Shockandroll"], tareas_disponibles: [{ id: "wotlk_icc", nombre: "ICC - Icecrown Citadel", tipo: "weekly", cooldown: "weekly", tiempo_min: 45, prioridad: 2, recompensa: "mount: Invincible" }] },
     { nombre: "nada", personajes: ["Skyrme", "Gottraps", "Robindude", "Moonpie", "Shockolatada", "Burbujeante", "Voidnorris", "Whatwasthat", "Zapboy", "Darkbril", "Bahluk", "Noataq", "Tevo", "Zulmorjin", "Kazgreedix", "Zulmondi"], tareas_disponibles: [] }
+  ],
+  misiones: [
+    { id: "m1", nombre: "Completar ICC en todos los personajes WOTLK", personaje: "", tipo: "achievement", estado: "pendiente", prioridad: 2, creada: "2026-06-12T10:00:00" },
+    { id: "m2", nombre: "Farmear Invincible", personaje: "Nietzlock", tipo: "mision", estado: "pendiente", prioridad: 1, creada: "2026-06-12T10:00:00" },
+    { id: "m3", nombre: "Subir Fangrim a 80", personaje: "Fangrim", tipo: "daily", estado: "pendiente", prioridad: 3, creada: "2026-06-12T10:00:00" }
   ]
 };

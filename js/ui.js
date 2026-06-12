@@ -6,7 +6,8 @@ const UI = (() => {
     filterReino: '',
     filterActivo: 'todos',
     search: '',
-    viewMode: 'cards'
+    currentView: 'warband',
+    dash: { filter: 'all', group1: 'warband', group2: 'personaje', order: 'prioridad', filterWarband: '', filterPriority: '', filterTime: '', filterEstado: '', filterSearch: '' }
   };
 
   const CLASS_MAP = {
@@ -17,6 +18,8 @@ const UI = (() => {
     'Maga': 'mage'
   };
 
+  const LABELS = { all: 'Todas', weekly: 'Semanal', daily: 'Diaria', farm_libre: 'Farm' };
+
   function clsClass(className) {
     return 'class-' + (CLASS_MAP[className] || 'warrior');
   }
@@ -24,17 +27,43 @@ const UI = (() => {
   function render() {
     DATA.checkWeeklyReset();
     renderHeaderStats();
-    renderWarbandTabs();
-    const wb = state.currentWarband || DATA.getWarbands()[0]?.nombre;
-    if (wb) {
-      state.currentWarband = wb;
-      renderWarbandContent(wb);
-    }
-    if (state.selectedChar) {
-      renderCharDetail(state.selectedChar);
+    renderViewTabs();
+
+    document.getElementById('warbandLayout').style.display = 'none';
+    document.getElementById('dashboardPanel').style.display = 'none';
+    const wbTabs = document.getElementById('warbandTabs');
+
+    if (state.currentView === 'warband') {
+      document.getElementById('warbandLayout').style.display = 'grid';
+      if (wbTabs) wbTabs.style.display = '';
+      renderWarbandTabs();
+      const wb = state.currentWarband || DATA.getWarbands()[0]?.nombre;
+      if (wb) { state.currentWarband = wb; renderWarbandContent(wb); }
+      if (state.selectedChar) renderCharDetail(state.selectedChar);
+      else renderAllTasks(state.currentWarband);
     } else {
-      renderEmptyDetail();
+      if (wbTabs) wbTabs.style.display = 'none';
+      document.getElementById('dashboardPanel').style.display = 'block';
+      if (state.currentView === 'dashboard') renderDashboard();
+      else if (state.currentView === 'tabla') renderTabla();
+      else if (state.currentView === 'misiones') renderMisiones();
     }
+  }
+
+  function renderViewTabs() {
+    const el = document.getElementById('viewTabs');
+    if (!el) return;
+    el.innerHTML = `
+      <button class="warband-tab ${state.currentView === 'warband' ? 'active' : ''}" onclick="UI.setView('warband')">📁 Warband</button>
+      <button class="warband-tab ${state.currentView === 'dashboard' ? 'active' : ''}" onclick="UI.setView('dashboard')">📊 Tablero</button>
+      <button class="warband-tab ${state.currentView === 'tabla' ? 'active' : ''}" onclick="UI.setView('tabla')">📋 Tabla</button>
+      <button class="warband-tab ${state.currentView === 'misiones' ? 'active' : ''}" onclick="UI.setView('misiones')">🎯 Misiones</button>
+    `;
+  }
+
+  function setView(v) {
+    state.currentView = v;
+    render();
   }
 
   function renderHeaderStats() {
@@ -45,13 +74,15 @@ const UI = (() => {
       <span class="stat-item"><span class="stat-value">${stats.total}</span> personajes</span>
       <span class="stat-item"><span class="stat-value">${stats.activos}</span> activos</span>
       <span class="stat-item"><span class="stat-value">${stats.warbands}</span> warbands</span>
-      <span class="stat-item"><span class="stat-value">${stats.weeklyDone}/${stats.weeklyTotal}</span> tareas semanales</span>
+      <span class="stat-item"><span class="stat-value">${stats.weeklyDone}/${stats.weeklyTotal}</span> semanales</span>
+      <span class="stat-item"><span class="stat-value">${stats.dailyDone}/${stats.dailyTotal}</span> diarias</span>
       <span class="stat-item" style="color: ${stats.weeklyPct >= 50 ? 'var(--health-green)' : stats.weeklyPct >= 25 ? 'var(--orange)' : 'var(--red)'}">
         ${stats.weeklyPct}%
       </span>
     `;
   }
 
+  // ===== WARBAND VIEW =====
   function renderWarbandTabs() {
     const el = document.getElementById('warbandTabs');
     if (!el) return;
@@ -72,13 +103,9 @@ const UI = (() => {
 
   function renderWarbandContent(wbName) {
     const panel = document.getElementById('warbandPanel');
-    const detail = document.getElementById('charDetail');
     if (!panel) return;
     const chars = DATA.getPersonajes().filter(c => c.warband === wbName);
-    const wb = DATA.getWarbands().find(w => w.nombre === wbName);
-
     let filtered = applyFilters(chars);
-
     panel.innerHTML = `
       <div class="wow-panel">
         <div class="wow-panel-header">
@@ -87,27 +114,25 @@ const UI = (() => {
         </div>
         <div class="wow-panel-body">
           <div class="filter-bar mb-2">
-            <input type="text" id="searchInput" placeholder="Buscar personaje..." value="${state.search}"
-                   oninput="UI.setSearch(this.value)">
-            <select id="filterClase" onchange="UI.setFilterClase(this.value)">
+            <input type="text" placeholder="Buscar..." value="${state.search}" oninput="UI.setSearch(this.value)">
+            <select onchange="UI.setFilterClase(this.value)">
               <option value="">Todas las clases</option>
               ${[...new Set(DATA.getPersonajes().map(c => c.clase))].sort().map(cl =>
                 `<option value="${cl}" ${state.filterClase === cl ? 'selected' : ''}>${cl}</option>`
               ).join('')}
             </select>
-            <select id="filterReino" onchange="UI.setFilterReino(this.value)">
+            <select onchange="UI.setFilterReino(this.value)">
               <option value="">Todos los reinos</option>
               ${[...new Set(DATA.getPersonajes().map(c => c.reino))].sort().map(r =>
                 `<option value="${r}" ${state.filterReino === r ? 'selected' : ''}>${r}</option>`
               ).join('')}
             </select>
-            <select id="filterActivo" onchange="UI.setFilterActivo(this.value)">
+            <select onchange="UI.setFilterActivo(this.value)">
               <option value="todos" ${state.filterActivo === 'todos' ? 'selected' : ''}>Todos</option>
               <option value="activos" ${state.filterActivo === 'activos' ? 'selected' : ''}>Activos</option>
               <option value="inactivos" ${state.filterActivo === 'inactivos' ? 'selected' : ''}>Inactivos</option>
             </select>
           </div>
-
           <div class="char-grid">
             ${filtered.length === 0
               ? '<div class="empty-state"><p>No se encontraron personajes</p></div>'
@@ -125,17 +150,10 @@ const UI = (() => {
       const q = state.search.toLowerCase();
       result = result.filter(c => c.nombre.toLowerCase().includes(q));
     }
-    if (state.filterClase) {
-      result = result.filter(c => c.clase === state.filterClase);
-    }
-    if (state.filterReino) {
-      result = result.filter(c => c.reino === state.filterReino);
-    }
-    if (state.filterActivo === 'activos') {
-      result = result.filter(c => c.activo);
-    } else if (state.filterActivo === 'inactivos') {
-      result = result.filter(c => !c.activo);
-    }
+    if (state.filterClase) result = result.filter(c => c.clase === state.filterClase);
+    if (state.filterReino) result = result.filter(c => c.reino === state.filterReino);
+    if (state.filterActivo === 'activos') result = result.filter(c => c.activo);
+    else if (state.filterActivo === 'inactivos') result = result.filter(c => !c.activo);
     return result;
   }
 
@@ -144,18 +162,23 @@ const UI = (() => {
     const total = c.tareas.length;
     const isSelected = state.selectedChar === c.nombre;
     return `
-      <div class="char-card ${isSelected ? 'active' : ''} ${c.activo ? '' : 'inactive'}"
-           onclick="UI.selectChar('${c.nombre}')">
-        <div class="char-name ${clsClass(c.clase)}">${c.nombre}</div>
-        <div class="char-info">
-          <span class="char-class ${clsClass(c.clase)}">${c.clase}</span>
-          <span>Nvl ${c.nivel}</span>
-          <span class="${c.faccion === 'Horda' ? 'faction-horda' : 'faction-alliance'}">${c.faccion}</span>
-          <span>${c.raza}</span>
-          <span class="text-muted">${c.reino}</span>
+      <div class="char-card ${isSelected ? 'active' : ''} ${c.activo ? '' : 'inactive'}">
+        <div style="display:flex;align-items:flex-start;justify-content:space-between">
+          <div onclick="UI.selectChar('${c.nombre}')" style="flex:1;cursor:pointer">
+            <div class="char-name ${clsClass(c.clase)}">${c.nombre}</div>
+            <div class="char-info">
+              <span class="char-class ${clsClass(c.clase)}">${c.clase}</span>
+              <span>Nvl ${c.nivel}</span>
+              <span class="${c.faccion === 'Horda' ? 'faction-horda' : 'faction-alliance'}">${c.faccion}</span>
+              <span>${c.raza}</span>
+              <span class="text-muted">${c.reino}</span>
+            </div>
+          </div>
+          <button class="wow-btn wow-btn-icon" onclick="event.stopPropagation();UI.showMoveCharModal('${c.nombre}')"
+                  title="Mover de warband" style="flex-shrink:0;width:28px;height:28px;font-size:0.8rem">↗</button>
         </div>
         ${total > 0 ? `
-          <div class="char-tasks-bar">
+          <div class="char-tasks-bar" onclick="UI.selectChar('${c.nombre}')" style="cursor:pointer">
             ${c.tareas.map(t => `
               <span class="task-dot ${t.hecho ? 'done' : 'pending'}" title="${t.nombre}: ${t.hecho ? '✓' : '✗'}"></span>
             `).join('')}
@@ -167,11 +190,7 @@ const UI = (() => {
   }
 
   function selectChar(nombre) {
-    if (state.selectedChar === nombre) {
-      state.selectedChar = null;
-    } else {
-      state.selectedChar = nombre;
-    }
+    state.selectedChar = state.selectedChar === nombre ? null : nombre;
     render();
     const detail = document.getElementById('charDetail');
     if (detail && state.selectedChar) {
@@ -184,12 +203,10 @@ const UI = (() => {
     if (!el) return;
     const c = DATA.getPersonaje(nombre);
     if (!c) { renderEmptyDetail(); return; }
-
-    const weeklyTasks = c.tareas.filter(t => t.tipo === 'weekly');
-    const otherTasks = c.tareas.filter(t => t.tipo !== 'weekly');
+    const weeklyTasks = c.tareas.filter(t => t.cooldown === 'weekly');
+    const otherTasks = c.tareas.filter(t => t.cooldown !== 'weekly');
     const doneWeekly = weeklyTasks.filter(t => t.hecho).length;
     const totalWeekly = weeklyTasks.length;
-
     el.innerHTML = `
       <div class="wow-panel">
         <div class="wow-panel-header">
@@ -207,27 +224,89 @@ const UI = (() => {
             <span class="text-muted">${c.reino}</span>
             <span class="text-gold">${c.mision_principal || 'Sin misión principal'}</span>
           </div>
-
           ${weeklyTasks.length > 0 ? `
-            <h4 class="text-sm mb-1" style="color:var(--gold-light)">Tareas Semanales (${doneWeekly}/${totalWeekly})</h4>
-            <div class="task-list mb-2">
-              ${weeklyTasks.map(t => renderTaskItem(c.nombre, t)).join('')}
-            </div>
+            <h4 class="text-sm mb-1" style="color:var(--gold-light)">Semanales (${doneWeekly}/${totalWeekly})</h4>
+            <div class="task-list mb-2">${weeklyTasks.map(t => renderTaskItem(c.nombre, t)).join('')}</div>
           ` : ''}
-
           ${otherTasks.length > 0 ? `
             <h4 class="text-sm mb-1 mt-2" style="color:var(--text-secondary)">Otras Tareas</h4>
-            <div class="task-list">
-              ${otherTasks.map(t => renderTaskItem(c.nombre, t)).join('')}
-            </div>
+            <div class="task-list">${otherTasks.map(t => renderTaskItem(c.nombre, t)).join('')}</div>
           ` : ''}
-
-          ${c.tareas.length === 0 ? '<div class="empty-state"><p>Este personaje no tiene tareas asignadas</p></div>' : ''}
+          ${c.tareas.length === 0 ? '<div class="empty-state"><p>Este personaje no tiene tareas</p></div>' : ''}
         </div>
       </div>
     `;
   }
 
+  function renderEmptyDetail() {
+    const el = document.getElementById('charDetail');
+    if (!el) return;
+    el.innerHTML = `
+      <div class="wow-panel">
+        <div class="wow-panel-body">
+          <div class="empty-state">
+            <div style="font-size:2rem;margin-bottom:8px">🐉</div>
+            <p>Seleccioná un personaje para ver sus tareas</p>
+          </div>
+        </div>
+      </div>
+    `;
+  }
+
+  function renderAllTasks(wbName) {
+    const el = document.getElementById('charDetail');
+    if (!el) return;
+    const chars = DATA.getPersonajes().filter(c => c.warband === wbName && c.activo);
+    const allTasks = [];
+    chars.forEach(c => {
+      c.tareas.forEach(t => {
+        allTasks.push({ ...t, personaje: c.nombre, clase: c.clase, raza: c.raza, nivel: c.nivel });
+      });
+    });
+    if (allTasks.length === 0) { renderEmptyDetail(); return; }
+    const done = allTasks.filter(t => t.hecho).length;
+    const totalMin = allTasks.reduce((s, t) => s + (t.tiempo_min || 0), 0);
+
+    const grouped = {};
+    allTasks.forEach(t => {
+      if (!grouped[t.personaje]) grouped[t.personaje] = [];
+      grouped[t.personaje].push(t);
+    });
+
+    el.innerHTML = `
+      <div class="wow-panel">
+        <div class="wow-panel-header">
+          <h2>${wbName}</h2>
+          <span class="text-sm text-muted">${done}/${allTasks.length} · ${totalMin}min</span>
+        </div>
+        <div class="wow-panel-body" style="padding:6px 10px">
+          ${Object.keys(grouped).map(pName => {
+            const tasks = grouped[pName];
+            const d = tasks.filter(t => t.hecho).length;
+            const c = DATA.getPersonajes().find(x => x.nombre === pName);
+            return `
+              <div style="margin-bottom:4px">
+                <div style="display:flex;justify-content:space-between;align-items:center;padding:2px 4px;cursor:pointer" onclick="UI.selectChar('${pName}')">
+                  <span class="${c ? clsClass(c.clase) : ''}" style="font-weight:600;font-size:0.75rem">${pName}</span>
+                  <span class="text-xs text-muted">${d}/${tasks.length}</span>
+                </div>
+                <div class="task-list" style="padding-left:4px;gap:1px">
+                  ${tasks.map(t => renderDashTaskItem(t)).join('')}
+                </div>
+              </div>
+            `;
+          }).join('')}
+        </div>
+      </div>
+    `;
+  }
+
+  function setSearch(val) { state.search = val; renderWarbandContent(state.currentWarband); }
+  function setFilterClase(val) { state.filterClase = val; renderWarbandContent(state.currentWarband); }
+  function setFilterReino(val) { state.filterReino = val; renderWarbandContent(state.currentWarband); }
+  function setFilterActivo(val) { state.filterActivo = val; renderWarbandContent(state.currentWarband); }
+
+  // ===== TASK ITEM =====
   function renderTaskItem(charName, t) {
     return `
       <div class="task-item ${t.hecho ? 'done' : ''}">
@@ -248,26 +327,9 @@ const UI = (() => {
   }
 
   function toggleTask(charName, taskId) {
-    const t = DATA.toggleTarea(charName, taskId);
-    renderHeaderStats();
-    renderWarbandContent(state.currentWarband);
-    renderCharDetail(state.selectedChar);
+    DATA.toggleTarea(charName, taskId);
+    render();
     GIST.doSync();
-  }
-
-  function renderEmptyDetail() {
-    const el = document.getElementById('charDetail');
-    if (!el) return;
-    el.innerHTML = `
-      <div class="wow-panel">
-        <div class="wow-panel-body">
-          <div class="empty-state">
-            <div style="font-size:2rem;margin-bottom:8px">🐉</div>
-            <p>Seleccioná un personaje para ver sus tareas</p>
-          </div>
-        </div>
-      </div>
-    `;
   }
 
   function formatDate(iso) {
@@ -276,16 +338,500 @@ const UI = (() => {
     return d.toLocaleDateString('es-AR', { day: 'numeric', month: 'short' });
   }
 
-  function setSearch(val) { state.search = val; renderWarbandContent(state.currentWarband); }
-  function setFilterClase(val) { state.filterClase = val; renderWarbandContent(state.currentWarband); }
-  function setFilterReino(val) { state.filterReino = val; renderWarbandContent(state.currentWarband); }
-  function setFilterActivo(val) { state.filterActivo = val; renderWarbandContent(state.currentWarband); }
+  // ===== DASHBOARD DATA HELPERS =====
+  function getAllTaskItems() {
+    const items = [];
+    DATA.getPersonajes().forEach(p => {
+      if (!p.activo) return;
+      p.tareas.forEach(t => {
+        items.push({ ...t, personaje: p.nombre, clase: p.clase, warband: p.warband, nivel: p.nivel, faccion: p.faccion });
+      });
+    });
+    return items;
+  }
 
+  function getTimeRange(min) {
+    if (min <= 15) return '🟢 Rapido (≤15min)';
+    if (min <= 30) return '🟡 Medio (16-30min)';
+    if (min <= 60) return '🟠 Largo (31-60min)';
+    return '🔴 Marathon (>60min)';
+  }
+
+  function getGroupKey(item, g) {
+    if (g === 'warband') return item.warband;
+    if (g === 'personaje') return item.personaje;
+    if (g === 'prioridad') return 'P' + item.prioridad;
+    if (g === 'tiempo') return getTimeRange(item.tiempo_min);
+    return '';
+  }
+
+  function getGroupSortKey(key, g) {
+    if (g === 'prioridad') return key === 'P1' ? '1' : key === 'P2' ? '2' : '3';
+    if (g === 'tiempo' || g === 'warband' || g === 'personaje') return key;
+    return key;
+  }
+
+  function sortTaskList(items, order) {
+    const s = [...items];
+    if (order === 'prioridad') return s.sort((a, b) => a.prioridad - b.prioridad);
+    if (order === 'tiempo_asc') return s.sort((a, b) => a.tiempo_min - b.tiempo_min);
+    if (order === 'tiempo_desc') return s.sort((a, b) => b.tiempo_min - a.tiempo_min);
+    if (order === 'nombre_asc') return s.sort((a, b) => (a.personaje || '').localeCompare(b.personaje || ''));
+    if (order === 'nombre_desc') return s.sort((a, b) => (b.personaje || '').localeCompare(a.personaje || ''));
+    return s;
+  }
+
+  function renderDashControls(cfg, prefix, showGroups) {
+    return `
+      <div class="dash-controls">
+        <span class="dash-label">Filtro:</span>
+        <select onchange="UI.setDashFilter(this.value)">
+          ${['all','weekly','daily','farm_libre'].map(v =>
+            `<option value="${v}" ${cfg.filter === v ? 'selected' : ''}>${LABELS[v]}</option>`
+          ).join('')}
+        </select>
+        ${showGroups ? `
+          <span class="dash-label">G1:</span>
+          <select onchange="UI.setDashGroup1(this.value)">
+            ${['warband','personaje','prioridad','tiempo','none'].map(v =>
+              `<option value="${v}" ${cfg.group1 === v ? 'selected' : ''}>${v.charAt(0).toUpperCase() + v.slice(1)}</option>`
+            ).join('')}
+          </select>
+          <span class="dash-label">G2:</span>
+          <select onchange="UI.setDashGroup2(this.value)">
+            ${['personaje','warband','prioridad','tiempo','none'].map(v =>
+              `<option value="${v}" ${cfg.group2 === v ? 'selected' : ''}>${v.charAt(0).toUpperCase() + v.slice(1)}</option>`
+            ).join('')}
+          </select>
+        ` : ''}
+        <span class="dash-label">Orden:</span>
+        <select onchange="UI.setDashOrder(this.value)">
+          ${[['prioridad','Prioridad'],['tiempo_asc','Tiempo ↑'],['tiempo_desc','Tiempo ↓'],['nombre_asc','Nombre ↑'],['nombre_desc','Nombre ↓']].map(([v,l]) =>
+            `<option value="${v}" ${cfg.order === v ? 'selected' : ''}>${l}</option>`
+          ).join('')}
+        </select>
+      </div>
+    `;
+  }
+
+  // ===== DASHBOARD (MINIMAL) =====
+  function renderDashboard() {
+    const el = document.getElementById('dashboardPanel');
+    if (!el) return;
+    const cfg = state.dash;
+    let items = getAllTaskItems();
+    if (cfg.filter !== 'all') items = items.filter(t => t.cooldown === cfg.filter);
+    items = sortTaskList(items, cfg.order);
+
+    let g1 = cfg.group1;
+    let g2 = cfg.group2;
+    if (g1 === 'none' && g2 === 'none') { g1 = 'warband'; g2 = 'personaje'; }
+
+    const grouped = {};
+    items.forEach(item => {
+      const k1 = g1 === 'none' ? '_all' : getGroupKey(item, g1);
+      if (!grouped[k1]) grouped[k1] = {};
+      const k2 = (g2 === 'none' || g1 === 'none') ? '_all' : getGroupKey(item, g2);
+      if (!grouped[k1][k2]) grouped[k1][k2] = [];
+      grouped[k1][k2].push(item);
+    });
+
+    const g1Keys = Object.keys(grouped).sort((a, b) => getGroupSortKey(a, g1).localeCompare(getGroupSortKey(b, g1)));
+
+    el.innerHTML = `
+      <div class="dash-minimal">
+        ${renderDashControls(cfg, '', true)}
+        <div style="display:flex;flex-direction:column;gap:2px;margin-top:4px">
+          ${g1Keys.map(k1 => {
+            const sub = grouped[k1];
+            const subKeys = Object.keys(sub).sort((a, b) => getGroupSortKey(a, g2).localeCompare(getGroupSortKey(b, g2)));
+            const totalTasks = subKeys.reduce((s, k) => s + sub[k].length, 0);
+            const doneTasks = subKeys.reduce((s, k) => s + sub[k].filter(t => t.hecho).length, 0);
+            const totalMin = subKeys.reduce((s, k) => s + sub[k].reduce((ss, t) => ss + (t.tiempo_min || 0), 0), 0);
+            const g1Label = k1 === '_all' ? 'Todas' : k1;
+
+            return `
+              <div class="dash-group">
+                <div class="dash-group-header" onclick="this.classList.toggle('collapsed');this.nextElementSibling.classList.toggle('hidden')">
+                  <span class="arrow">▼</span>
+                  <span style="flex:1;font-weight:600">${g1Label}</span>
+                  <span class="text-xs text-muted">${doneTasks}/${totalTasks} · ${totalMin}min</span>
+                </div>
+                <div>
+                  ${subKeys.map(k2 => {
+                    const tasks = sub[k2];
+                    const d2 = tasks.filter(t => t.hecho).length;
+                    const m2 = tasks.reduce((s, t) => s + (t.tiempo_min || 0), 0);
+                    const g2Label = k2 === '_all' ? '' : k2;
+                    return `
+                      <div style="margin-bottom:${g2Label ? '2px' : '0'}">
+                        ${g2Label ? `
+                          <div style="display:flex;justify-content:space-between;align-items:center;padding:2px 6px;margin-bottom:1px">
+                            <span class="text-xs" style="font-weight:600;color:var(--text-secondary)">${g2Label}</span>
+                            <span class="text-xs text-muted">${d2}/${tasks.length} · ${m2}min</span>
+                          </div>
+                        ` : ''}
+                        <div class="task-list" style="gap:1px">
+                          ${tasks.map(t => renderDashTaskItem(t)).join('')}
+                        </div>
+                      </div>
+                    `;
+                  }).join('')}
+                </div>
+              </div>
+            `;
+          }).join('')}
+        </div>
+        ${items.length === 0 ? '<div class="empty-state"><p>No hay tareas con los filtros seleccionados</p></div>' : ''}
+      </div>
+    `;
+  }
+
+  function renderDashTaskItem(t) {
+    const label = t.personaje ? `<span class="text-xs" style="color:var(--gold);font-weight:600">${t.personaje}</span>` : '';
+    return `
+      <div class="task-item ${t.hecho ? 'done' : ''}" style="padding:4px 6px">
+        <input type="checkbox" class="task-check" ${t.hecho ? 'checked' : ''}
+               onchange="UI.toggleTask('${t.personaje}','${t.id}')" style="width:14px;height:14px">
+        <div class="task-info">
+          <div class="task-name" style="font-size:0.75rem">${label} ${t.nombre}</div>
+          <div class="task-meta" style="font-size:0.6rem">
+            <span class="task-priority priority-${t.prioridad}" style="padding:0 3px;font-size:0.55rem">P${t.prioridad}</span>
+            <span>${t.tiempo_min}min</span>
+            <span>${t.cooldown}</span>
+            ${t.recompensa ? `<span class="task-reward">🎁 ${t.recompensa}</span>` : ''}
+          </div>
+        </div>
+      </div>
+    `;
+  }
+
+  function setDashFilter(v) { state.dash.filter = v; render(); }
+  function setDashGroup1(v) { state.dash.group1 = v; render(); }
+  function setDashGroup2(v) { state.dash.group2 = v; render(); }
+  function setDashOrder(v) { state.dash.order = v; render(); }
+  function setDashFilterWarband(v) { state.dash.filterWarband = v; render(); }
+  function setDashFilterPriority(v) { state.dash.filterPriority = v; render(); }
+  function setDashFilterTime(v) { state.dash.filterTime = v; render(); }
+  function setDashFilterEstado(v) { state.dash.filterEstado = v; render(); }
+  function setDashFilterSearch(v) { state.dash.filterSearch = v; render(); }
+
+  // ===== TABLA VIEW =====
+  function renderTablaFilterControls(cfg) {
+    const warbands = DATA.getWarbands();
+    return `
+      <div class="filter-bar mb-1" style="gap:3px">
+        <span class="text-xs text-muted" style="margin-right:2px">Warband:</span>
+        <select onchange="UI.setDashFilterWarband(this.value)" style="font-size:0.6rem;padding:2px 5px">
+          <option value="">Todos</option>
+          ${warbands.map(w => `<option value="${w.nombre}" ${cfg.filterWarband === w.nombre ? 'selected' : ''}>${w.nombre}</option>`).join('')}
+        </select>
+        <span class="text-xs text-muted" style="margin-left:4px">Prioridad:</span>
+        <select onchange="UI.setDashFilterPriority(this.value)" style="font-size:0.6rem;padding:2px 5px">
+          <option value="">Todas</option>
+          <option value="1" ${cfg.filterPriority === '1' ? 'selected' : ''}>P1</option>
+          <option value="2" ${cfg.filterPriority === '2' ? 'selected' : ''}>P2</option>
+          <option value="3" ${cfg.filterPriority === '3' ? 'selected' : ''}>P3</option>
+        </select>
+        <span class="text-xs text-muted" style="margin-left:4px">Tiempo:</span>
+        <select onchange="UI.setDashFilterTime(this.value)" style="font-size:0.6rem;padding:2px 5px">
+          <option value="">Todos</option>
+          <option value="rapido" ${cfg.filterTime === 'rapido' ? 'selected' : ''}>≤15min</option>
+          <option value="medio" ${cfg.filterTime === 'medio' ? 'selected' : ''}>16-30</option>
+          <option value="largo" ${cfg.filterTime === 'largo' ? 'selected' : ''}>31-60</option>
+          <option value="maraton" ${cfg.filterTime === 'maraton' ? 'selected' : ''}>>60</option>
+        </select>
+        <span class="text-xs text-muted" style="margin-left:4px">Estado:</span>
+        <select onchange="UI.setDashFilterEstado(this.value)" style="font-size:0.6rem;padding:2px 5px">
+          <option value="">Todos</option>
+          <option value="pendiente" ${cfg.filterEstado === 'pendiente' ? 'selected' : ''}>Pendientes</option>
+          <option value="hecho" ${cfg.filterEstado === 'hecho' ? 'selected' : ''}>Completadas</option>
+        </select>
+        <input type="text" placeholder="Buscar..." value="${cfg.filterSearch}"
+               oninput="UI.setDashFilterSearch(this.value)"
+               style="font-size:0.6rem;padding:2px 5px;width:100px">
+      </div>
+    `;
+  }
+
+  function applyTablaFilters(items) {
+    const cfg = state.dash;
+    if (cfg.filter !== 'all') items = items.filter(t => t.cooldown === cfg.filter);
+    if (cfg.filterWarband) items = items.filter(t => t.warband === cfg.filterWarband);
+    if (cfg.filterPriority) items = items.filter(t => t.prioridad === parseInt(cfg.filterPriority));
+    if (cfg.filterTime) {
+      if (cfg.filterTime === 'rapido') items = items.filter(t => t.tiempo_min <= 15);
+      else if (cfg.filterTime === 'medio') items = items.filter(t => t.tiempo_min >= 16 && t.tiempo_min <= 30);
+      else if (cfg.filterTime === 'largo') items = items.filter(t => t.tiempo_min >= 31 && t.tiempo_min <= 60);
+      else if (cfg.filterTime === 'maraton') items = items.filter(t => t.tiempo_min > 60);
+    }
+    if (cfg.filterEstado === 'pendiente') items = items.filter(t => !t.hecho);
+    else if (cfg.filterEstado === 'hecho') items = items.filter(t => t.hecho);
+    if (cfg.filterSearch) {
+      const q = cfg.filterSearch.toLowerCase();
+      items = items.filter(t => t.nombre.toLowerCase().includes(q) || (t.personaje || '').toLowerCase().includes(q));
+    }
+    return items;
+  }
+
+  function renderTabla() {
+    const el = document.getElementById('dashboardPanel');
+    if (!el) return;
+    const cfg = state.dash;
+    let items = getAllTaskItems();
+    items = applyTablaFilters(items);
+    items = sortTaskList(items, cfg.order);
+
+    el.innerHTML = `
+      <div class="wow-panel">
+        <div class="wow-panel-header">
+          <h2>📋 Tabla de Tareas</h2>
+          <div class="flex gap-2 items-center">
+            <span class="text-sm text-muted">${items.length} tareas</span>
+          </div>
+        </div>
+        <div class="wow-panel-body" style="padding:6px 8px">
+          ${renderTablaFilterControls(cfg)}
+          <div class="task-table-wrap" style="margin-top:4px">
+            <table class="task-table">
+              <thead>
+                <tr>
+                  <th style="width:24px"></th>
+                  <th style="width:100px">Personaje</th>
+                  <th>Tarea</th>
+                  <th style="width:45px">Prioridad</th>
+                  <th style="width:45px">Tiempo</th>
+                  <th style="width:55px">Tipo</th>
+                  <th>Recompensa</th>
+                </tr>
+              </thead>
+              <tbody>
+                ${items.length === 0 ? `
+                  <tr><td colspan="7" style="text-align:center;padding:16px;color:var(--text-muted);font-size:0.75rem">No hay tareas</td></tr>
+                ` : items.map(t => `
+                  <tr>
+                    <td>
+                      <input type="checkbox" class="task-check" ${t.hecho ? 'checked' : ''}
+                             onchange="UI.toggleTask('${t.personaje}','${t.id}')">
+                    </td>
+                    <td class="char-cell ${clsClass(t.clase)}" onclick="UI.selectCharFromTable('${t.personaje}')">${t.personaje}</td>
+                    <td style="font-size:0.7rem">${t.nombre}</td>
+                    <td><span class="task-priority priority-${t.prioridad}" style="font-size:0.5rem;padding:0 3px">P${t.prioridad}</span></td>
+                    <td class="time-cell">${t.tiempo_min}min</td>
+                    <td><span class="text-xs text-muted">${t.cooldown}</span></td>
+                    <td class="text-xs">${t.recompensa ? `<span class="task-reward">🎁 ${t.recompensa}</span>` : ''}</td>
+                  </tr>
+                `).join('')}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    `;
+  }
+
+  function selectCharFromTable(nombre) {
+    state.currentView = 'warband';
+    state.selectedChar = nombre;
+    state.currentWarband = DATA.getPersonaje(nombre)?.warband || state.currentWarband;
+    render();
+  }
+
+  // ===== MISIONES VIEW =====
+  function renderMisiones() {
+    const el = document.getElementById('dashboardPanel');
+    if (!el) return;
+    const misiones = DATA.getMisiones();
+    const pendientes = misiones.filter(m => m.estado !== 'completada');
+    const completadas = misiones.filter(m => m.estado === 'completada');
+
+    el.innerHTML = `
+      <div class="wow-panel">
+        <div class="wow-panel-header">
+          <h2>🎯 Misiones</h2>
+          <div class="flex gap-2 items-center">
+            <span class="text-sm text-muted">${pendientes.length} pendientes</span>
+            <button class="wow-btn wow-btn-sm wow-btn-primary" onclick="UI.showAddMisionModal()">+ Nueva</button>
+          </div>
+        </div>
+        <div class="wow-panel-body">
+          ${pendientes.length === 0 && completadas.length === 0 ? `
+            <div class="empty-state"><p>No hay misiones. ¡Creá una!</p></div>
+          ` : ''}
+          ${pendientes.length > 0 ? `
+            <h4 class="text-sm mb-1" style="color:var(--gold-light)">Pendientes</h4>
+            <div style="display:flex;flex-direction:column;gap:4px;margin-bottom:12px">
+              ${pendientes.map(m => renderMisionCard(m)).join('')}
+            </div>
+          ` : ''}
+          ${completadas.length > 0 ? `
+            <h4 class="text-sm mb-1 mt-2" style="color:var(--text-muted)">Completadas</h4>
+            <div style="display:flex;flex-direction:column;gap:4px">
+              ${completadas.map(m => renderMisionCard(m)).join('')}
+            </div>
+          ` : ''}
+        </div>
+      </div>
+    `;
+  }
+
+  function renderMisionCard(m) {
+    const typeClass = m.tipo === 'achievement' ? 'mission-type--achievement' : m.tipo === 'daily' ? 'mission-type--daily' : 'mission-type--mision';
+    const personajes = DATA.getPersonajes();
+    const charOpts = '<option value="">(sin personaje)</option>' + personajes.map(p => `<option value="${p.nombre}" ${m.personaje === p.nombre ? 'selected' : ''}>${p.nombre}</option>`).join('');
+    return `
+      <div class="mission-card ${m.estado === 'completada' ? 'completada' : ''}">
+        <input type="checkbox" class="mission-check" ${m.estado === 'completada' ? 'checked' : ''}
+               onchange="UI.toggleMision('${m.id}')">
+        <div class="mission-info">
+          <div class="mission-name" style="cursor:pointer" onclick="UI.editMision('${m.id}')">${m.nombre}</div>
+          <div class="mission-meta">
+            <span class="text-xs" style="color:var(--gold);font-weight:600">${m.personaje || 'General'}</span>
+            <span class="mission-type ${typeClass}">${m.tipo}</span>
+            <span class="task-priority priority-${m.prioridad}" style="font-size:0.55rem;padding:0 4px">P${m.prioridad}</span>
+            <span class="text-xs text-muted">${formatDate(m.creada)}</span>
+          </div>
+        </div>
+        <div class="mission-actions">
+          <button onclick="UI.editMision('${m.id}')" title="Editar">✏️</button>
+          <button onclick="UI.deleteMision('${m.id}')" title="Eliminar">🗑️</button>
+        </div>
+      </div>
+    `;
+  }
+
+  function toggleMision(id) {
+    DATA.toggleMision(id);
+    render();
+    GIST.doSync();
+  }
+
+  function showAddMisionModal() {
+    const personajes = DATA.getPersonajes();
+    const selectedChar = state.selectedChar || '';
+    const charOpts = '<option value="">(sin personaje)</option>' + personajes.map(p =>
+      `<option value="${p.nombre}" ${p.nombre === selectedChar ? 'selected' : ''}>${p.nombre}</option>`
+    ).join('');
+    showModal('Nueva Misión', `
+      <div class="form-group">
+        <label>Nombre de la misión</label>
+        <input type="text" id="misionNombre" placeholder="Ej: Farmear Invincible" style="width:100%">
+      </div>
+      <div class="form-group">
+        <label>Personaje (opcional)</label>
+        <select id="misionPersonaje" style="width:100%">${charOpts}</select>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+        <div class="form-group">
+          <label>Tipo</label>
+          <select id="misionTipo" style="width:100%">
+            <option value="mision">Misión</option>
+            <option value="achievement">Logro</option>
+            <option value="daily">Diaria</option>
+            <option value="weekly">Semanal</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Prioridad</label>
+          <select id="misionPrioridad" style="width:100%">
+            <option value="1">P1 - Alta</option>
+            <option value="2" selected>P2 - Media</option>
+            <option value="3">P3 - Baja</option>
+          </select>
+        </div>
+      </div>
+    `, 'Cancelar', () => {
+      const nombre = document.getElementById('misionNombre').value.trim();
+      if (!nombre) { showAlert('❌ Ingresá un nombre'); return; }
+      DATA.addMision({
+        nombre,
+        personaje: document.getElementById('misionPersonaje').value,
+        tipo: document.getElementById('misionTipo').value,
+        estado: 'pendiente',
+        prioridad: parseInt(document.getElementById('misionPrioridad').value)
+      });
+      render();
+      GIST.doSync();
+      closeModal();
+      showAlert('✅ Misión creada');
+    }, 'Crear');
+    setTimeout(() => document.getElementById('misionNombre').focus(), 100);
+  }
+
+  function editMision(id) {
+    const m = DATA.getMisiones().find(mx => mx.id === id);
+    if (!m) return;
+    const personajes = DATA.getPersonajes();
+    const charOpts = '<option value="">(sin personaje)</option>' + personajes.map(p => `<option value="${p.nombre}" ${m.personaje === p.nombre ? 'selected' : ''}>${p.nombre}</option>`).join('');
+    showModal('Editar Misión', `
+      <div class="form-group">
+        <label>Nombre</label>
+        <input type="text" id="misionNombreEdit" value="${m.nombre}" style="width:100%">
+      </div>
+      <div class="form-group">
+        <label>Personaje</label>
+        <select id="misionPersonajeEdit" style="width:100%">${charOpts}</select>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+        <div class="form-group">
+          <label>Tipo</label>
+          <select id="misionTipoEdit" style="width:100%">
+            <option value="mision" ${m.tipo === 'mision' ? 'selected' : ''}>Misión</option>
+            <option value="achievement" ${m.tipo === 'achievement' ? 'selected' : ''}>Logro</option>
+            <option value="daily" ${m.tipo === 'daily' ? 'selected' : ''}>Diaria</option>
+            <option value="weekly" ${m.tipo === 'weekly' ? 'selected' : ''}>Semanal</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Prioridad</label>
+          <select id="misionPrioridadEdit" style="width:100%">
+            <option value="1" ${m.prioridad === 1 ? 'selected' : ''}>P1 - Alta</option>
+            <option value="2" ${m.prioridad === 2 ? 'selected' : ''}>P2 - Media</option>
+            <option value="3" ${m.prioridad === 3 ? 'selected' : ''}>P3 - Baja</option>
+          </select>
+        </div>
+      </div>
+    `, 'Cancelar', () => {
+      const nombre = document.getElementById('misionNombreEdit').value.trim();
+      if (!nombre) { showAlert('❌ Ingresá un nombre'); return; }
+      DATA.updateMision(id, {
+        nombre,
+        personaje: document.getElementById('misionPersonajeEdit').value,
+        tipo: document.getElementById('misionTipoEdit').value,
+        prioridad: parseInt(document.getElementById('misionPrioridadEdit').value)
+      });
+      render();
+      GIST.doSync();
+      closeModal();
+    }, 'Guardar');
+  }
+
+  function deleteMision(id) {
+    const m = DATA.getMisiones().find(mx => mx.id === id);
+    if (!m) return;
+    showModal('Eliminar Misión', `
+      <p class="text-sm">¿Eliminar "<strong>${m.nombre}</strong>"?</p>
+    `, 'Cancelar', () => {
+      DATA.deleteMision(id);
+      render();
+      GIST.doSync();
+      closeModal();
+    }, 'Eliminar');
+  }
+
+  function resetAllDailies() {
+    DATA.resetDailyTasks();
+    render();
+    GIST.doSync();
+    showAlert('✅ Dailies reseteadas');
+  }
+
+  // ===== MODALS =====
   function showExportModal() {
     showModal('Exportar Datos', `
       <div class="form-group">
         <label>JSON</label>
-        <textarea id="exportJsonArea" rows="12" style="width:100%;background:var(--bg-input);border:1px solid var(--border);border-radius:3px;padding:8px;color:var(--text-primary);font-size:0.75rem;font-family:monospace" readonly></textarea>
+        <textarea id="exportJsonArea" rows="12" style="width:100%;background:var(--bg-input);border:1px solid var(--border-subtle);border-radius:3px;padding:8px;color:var(--text-primary);font-size:0.75rem;font-family:monospace" readonly></textarea>
       </div>
       <div class="flex gap-2">
         <button class="wow-btn wow-btn-primary" onclick="UI.downloadJSON()">📥 Descargar JSON</button>
@@ -299,7 +845,7 @@ const UI = (() => {
     showModal('Importar Datos', `
       <p class="text-sm text-muted mb-2">Pegá el JSON completo o seleccioná un archivo</p>
       <div class="form-group">
-        <textarea id="importJsonArea" rows="10" style="width:100%;background:var(--bg-input);border:1px solid var(--border);border-radius:3px;padding:8px;color:var(--text-primary);font-size:0.75rem;font-family:monospace" placeholder="Pegá el JSON aquí..."></textarea>
+        <textarea id="importJsonArea" rows="10" style="width:100%;background:var(--bg-input);border:1px solid var(--border-subtle);border-radius:3px;padding:8px;color:var(--text-primary);font-size:0.75rem;font-family:monospace" placeholder="Pegá el JSON aquí..."></textarea>
       </div>
       <div class="form-group">
         <label>O seleccioná un archivo .json</label>
@@ -315,9 +861,7 @@ const UI = (() => {
           GIST.doSync();
           closeModal();
           showAlert('✅ Datos importados correctamente');
-        } catch (e) {
-          showAlert('❌ ' + e.message);
-        }
+        } catch (e) { showAlert('❌ ' + e.message); }
       }
     }, 'Importar');
   }
@@ -334,10 +878,7 @@ const UI = (() => {
 
   function downloadBlob(blob, name) {
     const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = name;
-    a.click();
+    const a = document.createElement('a'); a.href = url; a.download = name; a.click();
     URL.revokeObjectURL(url);
   }
 
@@ -375,12 +916,9 @@ const UI = (() => {
     const gistId = document.getElementById('gistIdInput').value.trim();
     const fileName = document.getElementById('gistFileInput').value.trim() || 'wowseg-data.json';
     const remember = document.getElementById('gistRememberToken').checked;
-
     if (!token) { showAlert('❌ Ingresá un token'); return; }
-
     GIST.setConfigUpdate({ rememberToken: remember, fileName });
     GIST.setToken(token);
-
     if (gistId) {
       GIST.connect(gistId, token, fileName).then(ok => {
         if (ok) { closeModal(); showAlert('✅ Gist conectado'); render(); }
@@ -395,10 +933,7 @@ const UI = (() => {
   }
 
   function gistDisconnect() {
-    GIST.disconnect();
-    closeModal();
-    render();
-    showAlert('Gist desconectado');
+    GIST.disconnect(); closeModal(); render(); showAlert('Gist desconectado');
   }
 
   function showModal(title, bodyHTML, cancelText, onConfirm, confirmText) {
@@ -408,18 +943,11 @@ const UI = (() => {
         <div class="modal-footer">
           <button class="wow-btn" onclick="UI.closeModal()">${cancelText || 'Cancelar'}</button>
           <button class="wow-btn wow-btn-primary" onclick="UI.confirmModal()">${confirmText || 'Confirmar'}</button>
-        </div>
-      `;
+        </div>`;
     } else if (cancelText) {
-      footer = `
-        <div class="modal-footer">
-          <button class="wow-btn" onclick="UI.closeModal()">${cancelText}</button>
-        </div>
-      `;
+      footer = `<div class="modal-footer"><button class="wow-btn" onclick="UI.closeModal()">${cancelText}</button></div>`;
     }
-
     const overlay = document.getElementById('modalOverlay');
-    const content = document.getElementById('modalContent');
     overlay.innerHTML = `
       <div class="modal-content" style="position:relative">
         <div class="modal-header">
@@ -428,45 +956,119 @@ const UI = (() => {
         </div>
         <div class="modal-body">${bodyHTML}</div>
         ${footer}
-      </div>
-    `;
+      </div>`;
     overlay._onConfirm = onConfirm || null;
     overlay.classList.add('open');
   }
 
-  function closeModal() {
-    document.getElementById('modalOverlay').classList.remove('open');
-  }
-
-  let alertResolve = null;
+  function closeModal() { document.getElementById('modalOverlay').classList.remove('open'); }
   function confirmModal() {
     const overlay = document.getElementById('modalOverlay');
     if (overlay._onConfirm) overlay._onConfirm();
   }
-
   function showAlert(msg) {
-    showModal('', `
-      <div class="flex flex-wrap gap-2 items-center" style="justify-content:center;padding:20px">
-        <p class="text-sm">${msg}</p>
+    showModal('', `<div style="text-align:center;padding:20px"><p class="text-sm">${msg}</p></div>`, 'OK');
+  }
+
+  function logout() {
+    AUTH.clearSession(); GIST.disconnect(); location.reload();
+  }
+
+  function showMoveCharModal(charName) {
+    const warbands = DATA.getWarbands().filter(w => w.nombre !== 'nada');
+    const char = DATA.getPersonaje(charName);
+    if (!char) return;
+    const opts = warbands.filter(w => w.nombre !== char.warband).map(w => `<option value="${w.nombre}">${w.nombre}</option>`).join('');
+    showModal('Mover Personaje', `
+      <p class="text-sm text-muted mb-2">Mover <strong class="text-gold">${charName}</strong> (${char.clase}) a otro warband:</p>
+      <div class="form-group">
+        <select id="moveTargetSelect" style="width:100%;background:var(--bg-input);border:1px solid var(--border-subtle);border-radius:3px;padding:10px;color:var(--text-primary);font-size:0.85rem">${opts || '<option value="">No hay otros warbands</option>'}</select>
       </div>
-    `, 'OK');
+    `, 'Cancelar', () => {
+      const target = document.getElementById('moveTargetSelect').value;
+      if (target) {
+        DATA.moveCharToWarband(charName, target);
+        if (state.selectedChar === charName) state.selectedChar = null;
+        render(); GIST.doSync();
+      }
+      closeModal();
+    }, 'Mover');
+  }
+
+  function showManageWarbandsModal() {
+    const warbands = DATA.getWarbands();
+    const list = warbands.map(w => `
+      <div style="display:flex;align-items:center;gap:8px;padding:6px 0;border-bottom:1px solid var(--border-subtle)">
+        <span style="flex:1;font-size:0.85rem">${w.nombre} <span class="text-muted text-xs">(${w.personajes.length} personajes)</span></span>
+        ${w.nombre !== 'nada' ? `
+          <button class="wow-btn wow-btn-sm" onclick="UI.renameWarbandPrompt('${w.nombre}')">✏️</button>
+          <button class="wow-btn wow-btn-sm wow-btn-danger" onclick="UI.deleteWarbandPrompt('${w.nombre}')">🗑️</button>
+        ` : '<span class="text-xs text-muted">(fijo)</span>'}
+      </div>`).join('');
+    showModal('Administrar Warbands', `
+      <div style="margin-bottom:12px">${list}</div>
+      <div style="display:flex;gap:8px">
+        <input type="text" id="newWarbandInput" placeholder="Nombre del nuevo warband..." style="flex:1;background:var(--bg-input);border:1px solid var(--border-subtle);border-radius:3px;padding:8px 10px;color:var(--text-primary);font-size:0.8rem">
+        <button class="wow-btn wow-btn-primary" onclick="UI.addWarbandFromInput()">+ Agregar</button>
+      </div>`, 'Cerrar');
+  }
+
+  function addWarbandFromInput() {
+    const input = document.getElementById('newWarbandInput');
+    const name = input.value.trim();
+    if (!name) { showAlert('❌ Ingresá un nombre'); return; }
+    if (DATA.addWarband(name)) { render(); closeModal(); showAlert('✅ Warband "' + name + '" creado'); }
+    else { showAlert('❌ Ya existe un warband con ese nombre'); }
+  }
+
+  function renameWarbandPrompt(oldName) {
+    closeModal();
+    showModal('Renombrar Warband', `
+      <div class="form-group">
+        <label>Nombre actual: <strong>${oldName}</strong></label>
+        <input type="text" id="renameWarbandInput" value="${oldName}" style="width:100%;background:var(--bg-input);border:1px solid var(--border-subtle);border-radius:3px;padding:10px;color:var(--text-primary);font-size:0.85rem">
+      </div>`, 'Cancelar', () => {
+      const newName = document.getElementById('renameWarbandInput').value.trim();
+      if (!newName) { showAlert('❌ Ingresá un nombre'); return; }
+      if (DATA.renameWarband(oldName, newName)) {
+        if (state.currentWarband === oldName) state.currentWarband = newName;
+        render(); GIST.doSync(); closeModal(); showAlert('✅ Warband renombrado a "' + newName + '"');
+      } else { showAlert('❌ Ese nombre ya existe o no se encontró el warband'); }
+    }, 'Renombrar');
+  }
+
+  function deleteWarbandPrompt(name) {
+    const count = DATA.getPersonajes().filter(p => p.warband === name).length;
+    showModal('Eliminar Warband', `
+      <p class="text-sm mb-2">¿Eliminar <strong>${name}</strong>?</p>
+      <p class="text-xs text-muted">Los ${count} personajes se moverán a "nada".</p>`, 'Cancelar', () => {
+      DATA.deleteWarband(name);
+      if (state.currentWarband === name) state.currentWarband = 'nada';
+      state.selectedChar = null;
+      render(); GIST.doSync(); closeModal(); showAlert('✅ Warband eliminado');
+    }, 'Eliminar');
   }
 
   function handleImportFile() {
     const input = document.getElementById('importFileInput');
     if (!input || !input.files[0]) return;
     const reader = new FileReader();
-    reader.onload = e => {
-      document.getElementById('importJsonArea').value = e.target.result;
-    };
+    reader.onload = e => { document.getElementById('importJsonArea').value = e.target.result; };
     reader.readAsText(input.files[0]);
   }
 
   return {
-    render, selectWarband, selectChar, toggleTask,
+    render, selectWarband, selectChar, toggleTask, setView,
     setSearch, setFilterClase, setFilterReino, setFilterActivo,
+    setDashFilter, setDashGroup1, setDashGroup2, setDashOrder,
+    setDashFilterWarband, setDashFilterPriority, setDashFilterTime, setDashFilterEstado, setDashFilterSearch,
+    resetAllDailies,
     showExportModal, showImportModal, downloadJSON, downloadCSV,
-    showGistModal, gistConnect, gistDisconnect,
-    showModal, closeModal, confirmModal, showAlert, handleImportFile
+    showGistModal, gistConnect, gistDisconnect, logout,
+    showModal, closeModal, confirmModal, showAlert, handleImportFile,
+    showMoveCharModal, showManageWarbandsModal,
+    addWarbandFromInput, renameWarbandPrompt, deleteWarbandPrompt,
+    selectCharFromTable,
+    showAddMisionModal, toggleMision, editMision, deleteMision
   };
 })();

@@ -53,7 +53,7 @@ const DATA = (() => {
 
   function updateTarea(nombrePersonaje, tareaId, updates) {
     const data = getData();
-    const personaje = data.personajes.find(p => p.nombre === nombre);
+    const personaje = data.personajes.find(p => p.nombre === nombrePersonaje);
     if (!personaje) return null;
     const tarea = personaje.tareas.find(t => t.id === tareaId);
     if (!tarea) return null;
@@ -136,6 +136,8 @@ const DATA = (() => {
     const activos = chars.filter(c => c.activo);
     const totalWeekly = chars.reduce((s, c) => s + c.tareas.filter(t => t.cooldown === 'weekly').length, 0);
     const doneWeekly = chars.reduce((s, c) => s + c.tareas.filter(t => t.cooldown === 'weekly' && t.hecho).length, 0);
+    const totalDaily = chars.reduce((s, c) => s + c.tareas.filter(t => t.cooldown === 'daily').length, 0);
+    const doneDaily = chars.reduce((s, c) => s + c.tareas.filter(t => t.cooldown === 'daily' && t.hecho).length, 0);
     const warbands = getWarbands();
     return {
       total: chars.length,
@@ -143,14 +145,143 @@ const DATA = (() => {
       warbands: warbands.length,
       weeklyTotal: totalWeekly,
       weeklyDone: doneWeekly,
-      weeklyPct: totalWeekly > 0 ? Math.round(doneWeekly / totalWeekly * 100) : 0
+      weeklyPct: totalWeekly > 0 ? Math.round(doneWeekly / totalWeekly * 100) : 0,
+      dailyTotal: totalDaily,
+      dailyDone: doneDaily
     };
+  }
+
+  function resetDailyTasks() {
+    const data = getData();
+    data.personajes.forEach(p => {
+      p.tareas.forEach(t => {
+        if (t.cooldown === 'daily') {
+          t.hecho = false;
+          t.ultimo_completado = null;
+        }
+      });
+    });
+    saveData(data);
+  }
+
+  // ===== MISIONES =====
+  function getMisiones() {
+    const data = getData();
+    if (!data.misiones) data.misiones = [];
+    return data.misiones;
+  }
+
+  function addMision(m) {
+    const data = getData();
+    if (!data.misiones) data.misiones = [];
+    const id = 'm' + Date.now();
+    data.misiones.push({ id, ...m, creada: new Date().toISOString() });
+    saveData(data);
+    return id;
+  }
+
+  function updateMision(id, updates) {
+    const data = getData();
+    if (!data.misiones) return false;
+    const idx = data.misiones.findIndex(m => m.id === id);
+    if (idx === -1) return false;
+    data.misiones[idx] = { ...data.misiones[idx], ...updates };
+    saveData(data);
+    return true;
+  }
+
+  function deleteMision(id) {
+    const data = getData();
+    if (!data.misiones) return false;
+    data.misiones = data.misiones.filter(m => m.id !== id);
+    saveData(data);
+    return true;
+  }
+
+  function toggleMision(id) {
+    const data = getData();
+    if (!data.misiones) return false;
+    const m = data.misiones.find(mx => mx.id === id);
+    if (!m) return false;
+    m.estado = m.estado === 'completada' ? 'pendiente' : 'completada';
+    saveData(data);
+    return true;
+  }
+
+  function moveCharToWarband(charName, newWarband) {
+    const data = getData();
+    const char = data.personajes.find(p => p.nombre === charName);
+    if (!char) return false;
+    const oldWarband = char.warband;
+    if (oldWarband === newWarband) return false;
+
+    char.warband = newWarband;
+
+    const oldWb = data.warbands.find(w => w.nombre === oldWarband);
+    if (oldWb) {
+      oldWb.personajes = oldWb.personajes.filter(n => n !== charName);
+    }
+
+    let newWb = data.warbands.find(w => w.nombre === newWarband);
+    if (!newWb) {
+      data.warbands.push({ nombre: newWarband, personajes: [charName], tareas_disponibles: [] });
+    } else {
+      if (!newWb.personajes.includes(charName)) {
+        newWb.personajes.push(charName);
+      }
+    }
+
+    data._meta.total_personajes = data.personajes.length;
+    data._meta.total_activos = data.personajes.filter(p => p.activo).length;
+    saveData(data);
+    return true;
+  }
+
+  function addWarband(name) {
+    const data = getData();
+    if (data.warbands.find(w => w.nombre === name)) return false;
+    data.warbands.push({ nombre: name, personajes: [], tareas_disponibles: [] });
+    saveData(data);
+    return true;
+  }
+
+  function renameWarband(oldName, newName) {
+    const data = getData();
+    const wb = data.warbands.find(w => w.nombre === oldName);
+    if (!wb || data.warbands.find(w => w.nombre === newName)) return false;
+    wb.nombre = newName;
+    data.personajes.forEach(p => {
+      if (p.warband === oldName) p.warband = newName;
+    });
+    saveData(data);
+    return true;
+  }
+
+  function deleteWarband(name) {
+    const data = getData();
+    const idx = data.warbands.findIndex(w => w.nombre === name);
+    if (idx === -1) return false;
+    data.warbands.splice(idx, 1);
+    data.personajes.forEach(p => {
+      if (p.warband === name) p.warband = 'nada';
+    });
+    const nadaWb = data.warbands.find(w => w.nombre === 'nada');
+    if (nadaWb) {
+      nadaWb.personajes = data.personajes.filter(p => p.warband === 'nada').map(p => p.nombre);
+    }
+    data._meta.total_personajes = data.personajes.length;
+    data._meta.total_activos = data.personajes.filter(p => p.activo).length;
+    saveData(data);
+    return true;
   }
 
   return {
     getData, initSeed, saveData,
     getPersonajes, getWarbands, getMeta,
     getPersonaje, updatePersonaje, updateTarea, toggleTarea,
-    checkWeeklyReset, importJSON, exportJSON, exportCSV, getStats
+    checkWeeklyReset, importJSON, exportJSON, exportCSV, getStats,
+    moveCharToWarband, addWarband, renameWarband, deleteWarband,
+    resetDailyTasks,
+    getMisiones, addMision, updateMision, deleteMision, toggleMision
   };
 })();

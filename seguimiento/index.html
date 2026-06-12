@@ -3,72 +3,11 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>WoW Seg — Warband Tracker</title>
-  <link rel="stylesheet" href="../css/wow.css">
+  <title>Redirigiendo...</title>
+  <meta http-equiv="refresh" content="0;url=../index.html">
+  <script>location.href='../index.html'</script>
 </head>
 <body>
-  <!-- Header -->
-  <header class="main-header">
-    <div class="app-container">
-      <div class="header-left">
-        <div>
-          <div class="header-logo">WoW Seg</div>
-          <div class="header-subtitle">Warband Tracker</div>
-        </div>
-      </div>
-      <div class="header-actions">
-        <div class="stats-bar" id="headerStats"></div>
-        <button class="wow-btn wow-btn-sm" onclick="UI.showExportModal()" title="Exportar datos">📤 Export</button>
-        <button class="wow-btn wow-btn-sm" onclick="UI.showImportModal()" title="Importar datos">📥 Import</button>
-        <button class="wow-btn wow-btn-sm" onclick="UI.showGistModal()" title="Configurar Gist">☁️ Gist</button>
-        <span class="gist-status" id="gistStatus">Gist: desactivado</span>
-      </div>
-    </div>
-  </header>
-
-  <!-- Main Content -->
-  <div class="app-container" style="padding-top:12px;padding-bottom:40px">
-    <!-- Warband Tabs -->
-    <div class="warband-tabs" id="warbandTabs"></div>
-
-    <!-- Two Column Layout -->
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:8px">
-      <!-- Left: Warband Content -->
-      <div id="warbandPanel"></div>
-      <!-- Right: Character Detail -->
-      <div id="charDetail"></div>
-    </div>
-  </div>
-
-  <!-- Modal Overlay -->
-  <div class="modal-overlay" id="modalOverlay" onclick="if(event.target===this)UI.closeModal()"></div>
-
-  <!-- Hidden file input for import -->
-  <input type="file" id="importFileInput" accept=".json" style="display:none" onchange="UI.handleImportFile()">
-
-  <script src="../js/seed.js"></script>
-  <script src="../js/auth.js"></script>
-  <script src="../js/data.js"></script>
-  <script src="../js/gist.js"></script>
-  <script src="../js/ui.js"></script>
-  <script>
-    (function() {
-      if (!AUTH.hasValidSession()) {
-        window.location.href = '../';
-        return;
-      }
-
-      GIST.init({
-        onStatus: function(msg, tone) {
-          const el = document.getElementById('gistStatus');
-          if (!el) return;
-          el.textContent = msg;
-          el.className = 'gist-status ' + (tone === 'ok' ? 'ok' : tone === 'warn' ? 'warn' : tone === 'error' ? 'error' : tone === 'syncing' ? 'syncing' : '');
-        }
-      });
-
-      UI.render();
-    })();
-  </script>
+  <p><a href="../index.html">Ir al tracker</a></p>
 </body>
 </html>

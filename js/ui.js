@@ -376,11 +376,11 @@ const UI = (() => {
   // ===== TASK ITEM =====
   function renderTaskItem(charName, t) {
     return `
-      <div class="task-item ${t.hecho ? 'done' : ''}">
+      <div class="task-item ${t.hecho ? 'done' : ''}" style="position:relative">
         <input type="checkbox" class="task-check" ${t.hecho ? 'checked' : ''}
                onchange="UI.toggleTask('${charName}','${t.id}')">
         <div class="task-info">
-          <div class="task-name">${t.nombre}</div>
+          <div class="task-name" style="cursor:pointer" onclick="UI.editTareaMision('${charName}','${t.id}')">${t.nombre}</div>
           <div class="task-meta">
             <span class="text-xs text-muted">P${t.prioridad}</span>
             <span>${t.tiempo_min} min</span>
@@ -388,6 +388,10 @@ const UI = (() => {
             ${t.recompensa ? `<span class="task-reward">🎁 ${t.recompensa}</span>` : ''}
             ${t.ultimo_completado ? `<span class="text-xs text-muted">✓ ${formatDate(t.ultimo_completado)}</span>` : ''}
           </div>
+        </div>
+        <div style="display:flex;gap:2px;align-items:center;flex-shrink:0">
+          <button onclick="event.stopPropagation();UI.editTareaMision('${charName}','${t.id}')" title="Editar" style="background:none;border:none;cursor:pointer;font-size:0.65rem;padding:0 2px">✏️</button>
+          <button onclick="event.stopPropagation();UI.deleteTareaMision('${charName}','${t.id}')" title="Eliminar" style="background:none;border:none;cursor:pointer;font-size:0.65rem;padding:0 2px">🗑️</button>
         </div>
       </div>
     `;
@@ -556,18 +560,23 @@ const UI = (() => {
 
   function renderDashTaskItem(t, showChar = true) {
     const label = showChar && t.personaje ? `<span class="text-xs" style="color:var(--gold);font-weight:600">${t.personaje}</span>` : '';
+    const charName = t.personaje || '';
     return `
-      <div class="task-item ${t.hecho ? 'done' : ''}" style="padding:4px 6px">
+      <div class="task-item ${t.hecho ? 'done' : ''}" style="padding:4px 6px;position:relative">
         <input type="checkbox" class="task-check" ${t.hecho ? 'checked' : ''}
-               onchange="UI.toggleTask('${t.personaje}','${t.id}')" style="width:14px;height:14px">
+               onchange="UI.toggleTask('${charName}','${t.id}')" style="width:14px;height:14px">
         <div class="task-info">
-          <div class="task-name" style="font-size:0.75rem">${label} ${t.nombre}</div>
+          <div class="task-name" style="font-size:0.75rem;cursor:pointer" onclick="UI.editTareaMision('${charName}','${t.id}')">${label} ${t.nombre}</div>
           <div class="task-meta" style="font-size:0.6rem">
             <span class="text-xs text-muted">P${t.prioridad}</span>
             <span>${t.tiempo_min}min</span>
             <span>${t.cooldown}</span>
             ${t.recompensa ? `<span class="task-reward">🎁 ${t.recompensa}</span>` : ''}
           </div>
+        </div>
+        <div style="display:flex;gap:2px;align-items:center;flex-shrink:0">
+          <button onclick="event.stopPropagation();UI.editTareaMision('${charName}','${t.id}')" title="Editar" style="background:none;border:none;cursor:pointer;font-size:0.65rem;padding:0 2px">✏️</button>
+          <button onclick="event.stopPropagation();UI.deleteTareaMision('${charName}','${t.id}')" title="Eliminar" style="background:none;border:none;cursor:pointer;font-size:0.65rem;padding:0 2px">🗑️</button>
         </div>
       </div>
     `;

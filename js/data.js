@@ -9,11 +9,30 @@ const DATA = (() => {
       return getData();
     }
     try {
-      return JSON.parse(raw);
+      const data = JSON.parse(raw);
+      if (data.personajes && data.personajes.length > 0 && !data.personajes[0].tareas) {
+        const merged = mergeSeed(data);
+        saveData(merged);
+        return merged;
+      }
+      return data;
     } catch {
       initSeed();
       return getData();
     }
+  }
+
+  function mergeSeed(data) {
+    const seed = SEED_DATA;
+    data.personajes = data.personajes.map(p => {
+      const sp = seed.personajes.find(sp => sp.nombre === p.nombre);
+      if (sp) return { ...sp, ...p, tareas: p.tareas || sp.tareas || [] };
+      return { ...p, tareas: p.tareas || [] };
+    });
+    if (!data.misiones) data.misiones = seed.misiones || [];
+    if (!data.warbands) data.warbands = seed.warbands || [];
+    data._meta = { ...seed._meta, ...data._meta };
+    return data;
   }
 
   function initSeed() {

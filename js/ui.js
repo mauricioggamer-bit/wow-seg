@@ -668,9 +668,27 @@ const UI = (() => {
   function renderMisiones() {
     const el = document.getElementById('dashboardPanel');
     if (!el) return;
-    const misiones = DATA.getMisiones();
+    const misiones = DATA.getMisiones().map(m => ({ ...m, _isTarea: false }));
+    const personajes = DATA.getPersonajes();
+    const tareas = [];
+    personajes.forEach(p => {
+      (p.tareas || []).forEach(t => {
+        tareas.push({
+          id: t.id,
+          nombre: t.nombre,
+          personaje: p.nombre,
+          tipo: t.tipo,
+          prioridad: t.prioridad,
+          tiempo_min: t.tiempo_min || 0,
+          estado: t.hecho ? 'completada' : 'pendiente',
+          _isTarea: true,
+          _charName: p.nombre
+        });
+      });
+    });
+    const all = [...misiones, ...tareas];
     const grouped = {};
-    misiones.forEach(m => {
+    all.forEach(m => {
       const key = m.personaje || '(sin personaje)';
       if (!grouped[key]) grouped[key] = [];
       grouped[key].push(m);
@@ -682,7 +700,7 @@ const UI = (() => {
         <div class="wow-panel-header">
           <h2>🎯 Misiones</h2>
           <div class="flex gap-2 items-center">
-            <span class="text-sm text-muted">${misiones.length} misiones</span>
+            <span class="text-sm text-muted">${all.length} ítems (${tareas.length} tareas · ${misiones.length} misiones)</span>
             <button class="wow-btn wow-btn-sm wow-btn-primary" onclick="UI.showAddMisionModal()">+ Nueva</button>
           </div>
         </div>
@@ -702,7 +720,7 @@ const UI = (() => {
                 </tr>
               </thead>
               <tbody>
-                ${misiones.length === 0 ? `
+                ${all.length === 0 ? `
                   <tr><td colspan="8" style="text-align:center;padding:16px;color:var(--text-muted);font-size:0.75rem">No hay misiones. ¡Creá una!</td></tr>
                 ` : orderedKeys.map(key => {
                   const items = grouped[key];
@@ -712,27 +730,39 @@ const UI = (() => {
                       <td colspan="8" style="padding:3px 6px;font-size:0.65rem;font-weight:600">
                         <span class="arrow" style="font-size:0.5rem;display:inline-block;margin-right:4px">▼</span>
                         ${key === '(sin personaje)' ? '📋 Sin personaje' : `👤 ${key}`}
-                        <span class="text-xs text-muted" style="margin-left:6px">${items.length} misiones · ${pend} pendientes</span>
+                        <span class="text-xs text-muted" style="margin-left:6px">${items.length} ítems · ${pend} pendientes</span>
                       </td>
                     </tr>
-                    ${items.sort((a,b) => a.prioridad - b.prioridad).map(m => `
+                    ${items.sort((a,b) => a.prioridad - b.prioridad).map(m => {
+                      const isTarea = m._isTarea;
+                      const toggleCall = isTarea
+                        ? `UI.toggleTareaMision('${m._charName}','${m.id}')`
+                        : `UI.toggleMision('${m.id}')`;
+                      const editCall = isTarea
+                        ? `UI.editTareaMision('${m._charName}','${m.id}')`
+                        : `UI.editMision('${m.id}')`;
+                      const deleteCall = isTarea
+                        ? `UI.deleteTareaMision('${m._charName}','${m.id}')`
+                        : `UI.deleteMision('${m.id}')`;
+                      return `
                       <tr class="${m.estado === 'completada' ? 'done' : ''}" style="${m.estado === 'completada' ? 'opacity:0.55' : ''}">
                         <td>
                           <input type="checkbox" class="task-check" ${m.estado === 'completada' ? 'checked' : ''}
-                                 onchange="UI.toggleMision('${m.id}')">
+                                 onchange="${toggleCall}">
                         </td>
                         <td><span class="text-xs" style="color:var(--gold);font-weight:600">${m.personaje || '—'}</span></td>
-                        <td style="font-size:0.7rem;cursor:pointer" onclick="UI.editMision('${m.id}')">${m.nombre}</td>
+                        <td style="font-size:0.7rem;cursor:pointer" onclick="${editCall}">${m.nombre}</td>
                         <td><span class="text-xs text-muted">${m.tipo}</span></td>
                         <td><span class="text-xs text-muted">P${m.prioridad}</span></td>
                         <td class="text-xs text-muted">${m.tiempo_min || 0}min</td>
                         <td><span class="text-xs ${m.estado === 'completada' ? 'text-muted' : ''}" style="${m.estado !== 'completada' ? 'color:var(--gold)' : ''}">${m.estado === 'completada' ? '✓ Hecho' : '○ Pendiente'}</span></td>
                         <td style="white-space:nowrap">
-                          <button onclick="UI.editMision('${m.id}')" title="Editar" style="background:none;border:none;cursor:pointer;font-size:0.7rem;padding:0 2px">✏️</button>
-                          <button onclick="UI.deleteMision('${m.id}')" title="Eliminar" style="background:none;border:none;cursor:pointer;font-size:0.7rem;padding:0 2px">🗑️</button>
+                          <button onclick="${editCall}" title="Editar" style="background:none;border:none;cursor:pointer;font-size:0.7rem;padding:0 2px">✏️</button>
+                          <button onclick="${deleteCall}" title="Eliminar" style="background:none;border:none;cursor:pointer;font-size:0.7rem;padding:0 2px">🗑️</button>
                         </td>
                       </tr>
-                    `).join('')}
+                      `;
+                    }).join('')}
                   `;
                 }).join('')}
               </tbody>
@@ -866,6 +896,74 @@ const UI = (() => {
       <p class="text-sm">¿Eliminar "<strong>${m.nombre}</strong>"?</p>
     `, 'Cancelar', () => {
       DATA.deleteMision(id);
+      render();
+      GIST.doSync();
+      closeModal();
+    }, 'Eliminar');
+  }
+
+  // ===== TAREA MISION HELPERS (desde tabla Misiones) =====
+  function toggleTareaMision(charName, taskId) {
+    DATA.toggleTarea(charName, taskId);
+    render();
+    GIST.doSync();
+  }
+
+  function editTareaMision(charName, taskId) {
+    const personajes = DATA.getPersonajes();
+    const p = personajes.find(c => c.nombre === charName);
+    if (!p) return;
+    const t = p.tareas.find(tk => tk.id === taskId);
+    if (!t) return;
+    showModal(`Editar Tarea (${charName})`, `
+      <div class="form-group">
+        <label>Nombre</label>
+        <input type="text" id="tareaNombreEdit" value="${t.nombre}" style="width:100%">
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px">
+        <div class="form-group">
+          <label>Tipo</label>
+          <select id="tareaTipoEdit" style="width:100%">
+            <option value="weekly" ${t.tipo === 'weekly' ? 'selected' : ''}>Semanal</option>
+            <option value="daily" ${t.tipo === 'daily' ? 'selected' : ''}>Diaria</option>
+            <option value="farm_libre" ${t.tipo === 'farm_libre' ? 'selected' : ''}>Farm Libre</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Prioridad</label>
+          <select id="tareaPrioridadEdit" style="width:100%">
+            <option value="1" ${t.prioridad === 1 ? 'selected' : ''}>P1</option>
+            <option value="2" ${t.prioridad === 2 ? 'selected' : ''}>P2</option>
+            <option value="3" ${t.prioridad === 3 ? 'selected' : ''}>P3</option>
+          </select>
+        </div>
+      </div>
+      <div class="form-group">
+        <label>Tiempo (min)</label>
+        <input type="number" id="tareaTiempoEdit" value="${t.tiempo_min || 30}" min="0" style="width:100%">
+      </div>
+    `, 'Cancelar', () => {
+      const nombre = document.getElementById('tareaNombreEdit').value.trim();
+      if (!nombre) { showAlert('❌ Ingresá un nombre'); return; }
+      DATA.updateTarea(charName, taskId, {
+        nombre,
+        tipo: document.getElementById('tareaTipoEdit').value,
+        prioridad: parseInt(document.getElementById('tareaPrioridadEdit').value),
+        tiempo_min: parseInt(document.getElementById('tareaTiempoEdit').value) || 0
+      });
+      render();
+      GIST.doSync();
+      closeModal();
+      showAlert('✅ Tarea actualizada');
+    }, 'Guardar');
+    setTimeout(() => document.getElementById('tareaNombreEdit').focus(), 100);
+  }
+
+  function deleteTareaMision(charName, taskId) {
+    showModal('Eliminar Tarea', `
+      <p class="text-sm">¿Eliminar tarea de <strong>${charName}</strong>?</p>
+    `, 'Cancelar', () => {
+      DATA.deleteTarea(charName, taskId);
       render();
       GIST.doSync();
       closeModal();
@@ -1224,7 +1322,7 @@ const UI = (() => {
     showMoveCharModal, showManageWarbandsModal,
     addWarbandFromInput, renameWarbandPrompt, deleteWarbandPrompt,
     selectCharFromTable,
-    showAddMisionModal, toggleMision, editMision, deleteMision,
+    showAddMisionModal, toggleMision, editMision, deleteMision, toggleTareaMision, editTareaMision, deleteTareaMision,
     setPriorityTab, setPriorityWarband, setTimeTab, setTimeWarband
   };
 })();

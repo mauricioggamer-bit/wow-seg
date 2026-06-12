@@ -62,6 +62,15 @@ const DATA = (() => {
     return tarea;
   }
 
+  function deleteTarea(nombrePersonaje, tareaId) {
+    const data = getData();
+    const personaje = data.personajes.find(p => p.nombre === nombrePersonaje);
+    if (!personaje) return false;
+    personaje.tareas = personaje.tareas.filter(t => t.id !== tareaId);
+    saveData(data);
+    return true;
+  }
+
   function toggleTarea(nombrePersonaje, tareaId) {
     const tarea = updateTarea(nombrePersonaje, tareaId, null);
     const data = getData();
@@ -280,7 +289,7 @@ const DATA = (() => {
   return {
     getData, initSeed, saveData,
     getPersonajes, getWarbands, getMeta,
-    getPersonaje, updatePersonaje, updateTarea, toggleTarea,
+    getPersonaje, updatePersonaje, updateTarea, deleteTarea, toggleTarea,
     checkWeeklyReset, importJSON, exportJSON, exportCSV, getStats,
     moveCharToWarband, addWarband, renameWarband, deleteWarband,
     resetDailyTasks,

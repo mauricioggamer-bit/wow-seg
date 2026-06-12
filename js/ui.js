@@ -1044,12 +1044,6 @@ const UI = (() => {
         <label>Nombre del archivo</label>
         <input type="text" id="gistFileInput" value="${cfg.fileName}">
       </div>
-      <div class="form-group flex gap-2 items-center">
-        <label class="flex items-center gap-1" style="cursor:pointer">
-          <input type="checkbox" id="gistRememberToken" ${cfg.hasToken && cfg.rememberToken ? 'checked' : ''}>
-          <span class="text-sm">Recordar token</span>
-        </label>
-      </div>
       <div class="form-group" style="display:flex;gap:8px;flex-wrap:wrap">
         <button class="wow-btn wow-btn-primary" onclick="UI.gistConnect()">Conectar / Sync</button>
         <button class="wow-btn wow-btn-danger" onclick="UI.gistDisconnect()">Desconectar</button>
@@ -1062,9 +1056,8 @@ const UI = (() => {
     const token = document.getElementById('gistTokenInput').value;
     const gistId = document.getElementById('gistIdInput').value.trim();
     const fileName = document.getElementById('gistFileInput').value.trim() || 'wowseg-data.json';
-    const remember = document.getElementById('gistRememberToken').checked;
     if (!token) { showAlert('❌ Ingresá un token'); return; }
-    GIST.setConfigUpdate({ rememberToken: remember, fileName });
+    GIST.setConfigUpdate({ fileName });
     GIST.setToken(token);
     if (gistId) {
       GIST.connect(gistId, token, fileName).then(ok => {

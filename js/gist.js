@@ -21,6 +21,7 @@ const GIST = (() => {
     if (opts.onStatus) onStatus = opts.onStatus;
     loadConfig();
     if (config.enabled && config.gistId) {
+      doSync();
       scheduleSync();
     }
   }
@@ -30,10 +31,12 @@ const GIST = (() => {
       const raw = localStorage.getItem(CONFIG_KEY);
       if (raw) config = { ...config, ...JSON.parse(raw) };
     } catch {}
-    try {
-      const tok = localStorage.getItem(TOKEN_KEY);
-      if (tok && config.rememberToken) getToken = () => tok;
-    } catch {}
+    const tok = localStorage.getItem(TOKEN_KEY) || sessionStorage.getItem(TOKEN_KEY) || '';
+    if (tok) {
+      sessionStorage.setItem(TOKEN_KEY, tok);
+      localStorage.setItem(TOKEN_KEY, tok);
+      getToken = () => tok;
+    }
   }
 
   function saveConfig() {
@@ -44,18 +47,18 @@ const GIST = (() => {
       intervalMinutes: config.intervalMinutes,
       rememberToken: config.rememberToken
     }));
-    if (config.rememberToken) {
-      const tok = getToken();
-      if (tok) localStorage.setItem(TOKEN_KEY, tok);
-    } else {
-      localStorage.removeItem(TOKEN_KEY);
+    const tok = getToken();
+    if (tok) {
+      localStorage.setItem(TOKEN_KEY, tok);
+      sessionStorage.setItem(TOKEN_KEY, tok);
     }
   }
 
-  let getToken = () => sessionStorage.getItem(TOKEN_KEY) || '';
+  let getToken = () => sessionStorage.getItem(TOKEN_KEY) || localStorage.getItem(TOKEN_KEY) || '';
 
   function setToken(token) {
     sessionStorage.setItem(TOKEN_KEY, token);
+    localStorage.setItem(TOKEN_KEY, token);
     getToken = () => token;
   }
 
@@ -107,10 +110,15 @@ const GIST = (() => {
       } else {
         DATA.importJSON(remoteStr);
         lastHash = remoteHash;
-        setStatus('Descargado (conflicto resuelto: prevaleció remoto)', 'warn');
+        setStatus('Descargado (conflicto: prevaleció remoto)', 'warn');
       }
     } catch (e) {
-      setStatus('Error: ' + e.message, 'error');
+      if (e.message && (e.message.includes('401') || e.message.includes('403'))) {
+        disconnect();
+        setStatus('Token inválido — reconectá', 'error');
+      } else {
+        setStatus('Error: ' + e.message, 'error');
+      }
     }
 
     syncInFlight = false;

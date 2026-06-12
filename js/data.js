@@ -99,8 +99,10 @@ const DATA = (() => {
         data._meta.ultimo_reset_semanal = todayStr;
         saveData(data);
         localStorage.setItem(RESET_KEY, todayStr);
+        return true;
       }
     }
+    return false;
   }
 
   function importJSON(jsonStr) {

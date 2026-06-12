@@ -1,7 +1,7 @@
-html[data-size="small"]  { font-size: 14px; }
-html[data-size="medium"] { font-size: 18px; }
-html[data-size="large"]  { font-size: 20px; }
-html[data-size="xlarge"] { font-size: 22px; }
+html[data-size="small"]  { font-size: 18px; }
+html[data-size="medium"] { font-size: 22px; }
+html[data-size="large"]  { font-size: 24px; }
+html[data-size="xlarge"] { font-size: 26px; }
 
 :root {
   --font-display: 'Cinzel Decorative', 'Cinzel', serif;

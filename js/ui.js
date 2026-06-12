@@ -25,7 +25,7 @@ const UI = (() => {
   }
 
   function render() {
-    DATA.checkWeeklyReset();
+    if (DATA.checkWeeklyReset()) GIST.doSync();
     renderHeaderStats();
     renderViewTabs();
 

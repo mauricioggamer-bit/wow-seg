@@ -47,6 +47,8 @@ const UI = (() => {
       if (state.currentView === 'dashboard') renderDashboard();
       else if (state.currentView === 'tabla') renderTabla();
       else if (state.currentView === 'misiones') renderMisiones();
+      else if (state.currentView === 'priority') renderPriorityView();
+      else if (state.currentView === 'time') renderTimeView();
     }
   }
 
@@ -58,6 +60,8 @@ const UI = (() => {
       <button class="warband-tab ${state.currentView === 'dashboard' ? 'active' : ''}" onclick="UI.setView('dashboard')">📊 Tablero</button>
       <button class="warband-tab ${state.currentView === 'tabla' ? 'active' : ''}" onclick="UI.setView('tabla')">📋 Tabla</button>
       <button class="warband-tab ${state.currentView === 'misiones' ? 'active' : ''}" onclick="UI.setView('misiones')">🎯 Misiones</button>
+      <button class="warband-tab ${state.currentView === 'priority' ? 'active' : ''}" onclick="UI.setView('priority')">⚡ Prioridad</button>
+      <button class="warband-tab ${state.currentView === 'time' ? 'active' : ''}" onclick="UI.setView('time')">⏱ Tiempo</button>
     `;
   }
 
@@ -826,6 +830,126 @@ const UI = (() => {
       GIST.doSync();
       closeModal();
     }, 'Eliminar');
+  }
+
+  // ===== PRIORITY VIEW =====
+  function renderPriorityView() {
+    const el = document.getElementById('dashboardPanel');
+    if (!el) return;
+    const tasks = getAllTaskItems().filter(t => !t.hecho);
+    const missions = DATA.getMisiones().filter(m => m.estado !== 'completada');
+    const taskGroups = { 1: [], 2: [], 3: [] };
+    tasks.forEach(t => taskGroups[t.prioridad].push(t));
+    const missionGroups = { 1: [], 2: [], 3: [] };
+    missions.forEach(m => missionGroups[m.prioridad].push(m));
+    el.innerHTML = `
+      <div class="wow-panel">
+        <div class="wow-panel-header">
+          <h2>⚡ Prioridad</h2>
+          <span class="text-sm text-muted">${tasks.length} tareas · ${missions.length} misiones</span>
+        </div>
+        <div class="wow-panel-body">
+          ${renderCompactSection('Tareas Pendientes', taskGroups, [1,2,3], 'P', 'task')}
+          ${renderCompactSection('Misiones Pendientes', missionGroups, [1,2,3], 'P', 'mission')}
+          ${tasks.length === 0 && missions.length === 0 ? '<div class="empty-state"><p>Todo completado 🎉</p></div>' : ''}
+        </div>
+      </div>
+    `;
+  }
+
+  // ===== TIME VIEW =====
+  function renderTimeView() {
+    const el = document.getElementById('dashboardPanel');
+    if (!el) return;
+    const tasks = getAllTaskItems().filter(t => !t.hecho);
+    const missions = DATA.getMisiones().filter(m => m.estado !== 'completada' && (m.tiempo_min || 0) > 0);
+    const ranges = [
+      { key: 'rapido', label: '🟢 Rápido (≤15min)', fn: t => t.tiempo_min <= 15 },
+      { key: 'medio', label: '🟡 Medio (16-30min)', fn: t => t.tiempo_min >= 16 && t.tiempo_min <= 30 },
+      { key: 'largo', label: '🟠 Largo (31-60min)', fn: t => t.tiempo_min >= 31 && t.tiempo_min <= 60 },
+      { key: 'marathon', label: '🔴 Marathon (>60min)', fn: t => t.tiempo_min > 60 }
+    ];
+    const taskGroups = {};
+    const missionGroups = {};
+    ranges.forEach(r => { taskGroups[r.key] = []; missionGroups[r.key] = []; });
+    tasks.forEach(t => { const g = ranges.find(r => r.fn(t)); if (g) taskGroups[g.key].push(t); });
+    missions.forEach(m => { const g = ranges.find(r => r.fn(m)); if (g) missionGroups[g.key].push(m); });
+    el.innerHTML = `
+      <div class="wow-panel">
+        <div class="wow-panel-header">
+          <h2>⏱ Tiempo</h2>
+          <span class="text-sm text-muted">${tasks.length} tareas · ${missions.length} misiones</span>
+        </div>
+        <div class="wow-panel-body">
+          ${renderCompactSection('Tareas por Tiempo', taskGroups, ranges.map(r => r.key), r => ranges.find(x => x.key === r).label, 'task')}
+          ${renderCompactSection('Misiones por Tiempo', missionGroups, ranges.map(r => r.key), r => ranges.find(x => x.key === r).label, 'mission')}
+          ${tasks.length === 0 && missions.length === 0 ? '<div class="empty-state"><p>Todo completado 🎉</p></div>' : ''}
+        </div>
+      </div>
+    `;
+  }
+
+  function renderCompactSection(title, groups, orderedKeys, labelFn, type) {
+    const hasItems = orderedKeys.some(k => groups[k] && groups[k].length > 0);
+    if (!hasItems) return '';
+    return `
+      <h4 class="text-sm mb-1 mt-1" style="color:var(--text-secondary)">${title}</h4>
+      ${orderedKeys.map(k => {
+        const items = groups[k] || [];
+        if (items.length === 0) return '';
+        const lbl = typeof labelFn === 'function' ? labelFn(k) : labelFn + k;
+        return `
+          <div class="dash-group" style="margin-bottom:2px">
+            <div class="dash-group-header" onclick="this.classList.toggle('collapsed');this.nextElementSibling.classList.toggle('hidden')">
+              <span class="arrow">▼</span>
+              <span style="flex:1;font-weight:600;font-size:0.65rem">${lbl}</span>
+              <span class="text-xs text-muted">${items.length}</span>
+            </div>
+            <div class="task-list" style="gap:1px">
+              ${items.map(t => type === 'mission' ? renderCompactMissionItem(t) : renderCompactTaskItem(t)).join('')}
+            </div>
+          </div>
+        `;
+      }).join('')}
+    `;
+  }
+
+  function renderCompactTaskItem(t) {
+    return `
+      <div class="task-item ${t.hecho ? 'done' : ''}" style="padding:3px 6px;gap:4px;border-radius:2px">
+        <input type="checkbox" class="task-check" ${t.hecho ? 'checked' : ''}
+               onchange="UI.toggleTask('${t.personaje}','${t.id}')" style="width:14px;height:14px">
+        <div class="task-info">
+          <div class="task-name" style="font-size:0.7rem;display:flex;gap:4px;align-items:center">
+            <span class="text-xs" style="color:var(--gold);font-weight:600">${t.personaje}</span>
+            <span>${t.nombre}</span>
+          </div>
+          <div class="task-meta" style="font-size:0.55rem">
+            <span>${t.tiempo_min}min</span>
+            <span class="text-muted">${t.cooldown}</span>
+          </div>
+        </div>
+      </div>
+    `;
+  }
+
+  function renderCompactMissionItem(m) {
+    return `
+      <div class="task-item ${m.estado === 'completada' ? 'done' : ''}" style="padding:3px 6px;gap:4px;border-radius:2px">
+        <input type="checkbox" class="task-check" ${m.estado === 'completada' ? 'checked' : ''}
+               onchange="UI.toggleMision('${m.id}')" style="width:14px;height:14px">
+        <div class="task-info">
+          <div class="task-name" style="font-size:0.7rem;display:flex;gap:4px;align-items:center">
+            <span class="text-xs" style="color:var(--gold);font-weight:600">${m.personaje || 'General'}</span>
+            <span>${m.nombre}</span>
+          </div>
+          <div class="task-meta" style="font-size:0.55rem">
+            <span>${m.tiempo_min || 0}min</span>
+            <span class="text-muted">${m.tipo}</span>
+          </div>
+        </div>
+      </div>
+    `;
   }
 
   function resetAllDailies() {

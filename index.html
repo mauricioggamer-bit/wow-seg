@@ -6,6 +6,7 @@
   <title>WoW Seg — Warband Tracker</title>
   <link href="https://fonts.googleapis.com/css2?family=Cinzel+Decorative:wght@400;700;900&family=Cinzel:wght@400;600;700;900&family=Open+Sans:wght@300;400;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="css/wow.css">
+  <link rel="stylesheet" href="css/mapa.css">
   <script>
     (function() {
       var theme = localStorage.getItem('wowseg_theme') || 'dark';
@@ -204,6 +205,7 @@
       </div>
       <div id="dashboardPanel" style="display:none"></div>
       <div id="personajesPanel" style="display:none"></div>
+      <div id="mapaPanel" style="display:none"></div>
     </div>
 
     <div class="modal-overlay" id="modalOverlay" onclick="if(event.target===this)UI.closeModal()"></div>
@@ -215,6 +217,7 @@
   <script src="js/data.js?v=9"></script>
   <script src="js/gist.js?v=9"></script>
   <script src="js/ui.js?v=9"></script>
+  <script src="js/mapa.js?v=9"></script>
   <script>
     (function() {
       const landingSection = document.getElementById('landingSection');

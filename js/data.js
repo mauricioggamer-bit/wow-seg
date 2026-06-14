@@ -383,6 +383,17 @@ const DATA = (() => {
     return true;
   }
 
+  function getCharExpansion(nombre) {
+    return CHAR_EXPANSION[nombre] || '';
+  }
+
+  function getExpansionsList() {
+    const exps = new Set();
+    Object.values(CHAR_EXPANSION).forEach(e => exps.add(e));
+    (getMisiones() || []).forEach(m => { if (m.expansion) exps.add(m.expansion); });
+    return [...exps];
+  }
+
   return {
     getData, initSeed, saveData,
     getPersonajes, getWarbands, getMeta,
@@ -391,6 +402,7 @@ const DATA = (() => {
     moveCharToWarband, addWarband, renameWarband, deleteWarband,
     resetDailyTasks,
     getMisiones, addMision, updateMision, deleteMision, toggleMision,
-    exportFullBackup, importFullBackup
+    exportFullBackup, importFullBackup,
+    getCharExpansion, getExpansionsList
   };
 })();

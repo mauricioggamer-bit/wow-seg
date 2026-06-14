@@ -132,12 +132,14 @@ const UI = (() => {
 
   function render() {
     if (DATA.checkWeeklyReset()) GIST.doSync();
+    if (state.currentView !== 'mapa') MAPA.destroy();
     renderHeaderStats();
     renderViewTabs();
 
     document.getElementById('warbandLayout').style.display = 'none';
     document.getElementById('dashboardPanel').style.display = 'none';
     document.getElementById('personajesPanel').style.display = 'none';
+    document.getElementById('mapaPanel').style.display = 'none';
     // Clean up personajes Escape handler when leaving view
     document.removeEventListener('keydown', persEscapeHandler);
     const wbTabs = document.getElementById('warbandTabs');
@@ -155,6 +157,12 @@ const UI = (() => {
       pp.style.display = 'flex';
       if (wbTabs) wbTabs.style.display = 'none';
       renderPersonajesView();
+    } else if (state.currentView === 'mapa') {
+      if (wbTabs) wbTabs.style.display = 'none';
+      const mp = document.getElementById('mapaPanel');
+      mp.style.display = 'flex';
+      MAPA.resume();
+      MAPA.render();
     } else {
       if (wbTabs) wbTabs.style.display = 'none';
       document.getElementById('dashboardPanel').style.display = 'block';
@@ -173,6 +181,7 @@ const UI = (() => {
       <button class="warband-tab ${state.currentView === 'priority' ? 'active' : ''}" onclick="UI.setView('priority')">⚡ Prioridad</button>
       <button class="warband-tab ${state.currentView === 'time' ? 'active' : ''}" onclick="UI.setView('time')">⏱ Tiempo</button>
       <button class="warband-tab ${state.currentView === 'personajes' ? 'active' : ''}" onclick="UI.setView('personajes')">🎭 Personajes</button>
+      <button class="warband-tab ${state.currentView === 'mapa' ? 'active' : ''}" onclick="UI.setView('mapa')">🗺 Mapa</button>
     `;
   }
 

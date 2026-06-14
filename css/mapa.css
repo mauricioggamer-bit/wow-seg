@@ -1,0 +1,424 @@
+/* ══════════════════════════════════════════════════════════════
+   MAPA VIEW — WoW Expansion Interactive Map
+══════════════════════════════════════════════════════════════ */
+
+#mapaPanel {
+  display: none;
+  flex-direction: column;
+  height: calc(100vh - 100px);
+  margin-top: 6px;
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--r-md);
+  overflow: hidden;
+  background: var(--bg-base);
+  user-select: none;
+}
+#mapaPanel.open { display: flex; }
+
+/* ── EXPANSION SELECTOR ──────────────────────────────────── */
+
+.mapa-exp-selector {
+  display: flex;
+  gap: 3px;
+  padding: 5px 8px;
+  background: linear-gradient(180deg, #1a0c00, #0a0500);
+  border-bottom: 1px solid var(--border-main);
+  overflow-x: auto;
+  flex-shrink: 0;
+  scrollbar-width: thin;
+}
+.mapa-exp-btn {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  padding: 4px 10px;
+  border: 1px solid transparent;
+  border-radius: var(--r-sm);
+  background: transparent;
+  color: var(--text-muted);
+  cursor: pointer;
+  font-family: var(--font-body);
+  font-size: 0.65rem;
+  white-space: nowrap;
+  transition: all var(--t-fast) var(--ease);
+}
+.mapa-exp-btn:hover {
+  color: var(--text-primary);
+  background: var(--bg-raised);
+  border-color: var(--border-subtle);
+}
+.mapa-exp-btn.active {
+  color: var(--gold);
+  background: rgba(201, 168, 76, 0.12);
+  border-color: var(--gold-dim);
+  box-shadow: 0 0 10px rgba(201, 168, 76, 0.08);
+}
+.mapa-exp-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+.mapa-exp-count {
+  font-size: 0.55rem;
+  color: var(--text-dim);
+  margin-left: 2px;
+}
+
+/* ── MAIN LAYOUT ─────────────────────────────────────────── */
+
+.mapa-layout {
+  display: flex;
+  flex: 1;
+  overflow: hidden;
+}
+
+/* ── MAP AREA ────────────────────────────────────────────── */
+
+.mapa-area {
+  flex: 1;
+  position: relative;
+  overflow: hidden;
+  background: #0a0804;
+}
+.mapa-svg-wrap {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none;
+}
+.mapa-svg-wrap svg {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+.mapa-conexiones {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  z-index: 5;
+}
+
+/* ── CHARACTER CARD ──────────────────────────────────────── */
+
+.mapa-card {
+  position: absolute;
+  z-index: 10;
+  width: 150px;
+  padding: 6px 8px;
+  border-radius: var(--r-md);
+  cursor: grab;
+  font-family: var(--font-body);
+  transition: box-shadow var(--t-fast) var(--ease);
+  border: 1px solid var(--border-subtle);
+}
+.mapa-card.horda {
+  background: linear-gradient(135deg, #1f0808, #2a0a0a);
+  border-color: rgba(170, 17, 17, 0.4);
+  box-shadow: 0 2px 8px rgba(170, 17, 17, 0.15);
+}
+.mapa-card.alliance {
+  background: linear-gradient(135deg, #08142f, #0a1a3a);
+  border-color: rgba(26, 109, 181, 0.4);
+  box-shadow: 0 2px 8px rgba(26, 109, 181, 0.15);
+}
+.mapa-card:hover {
+  z-index: 20;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.5);
+}
+.mapa-card.dragging {
+  z-index: 50;
+  cursor: grabbing;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.6);
+  transform: scale(1.03);
+}
+.mapa-card.highlight {
+  z-index: 25;
+  box-shadow: 0 0 0 2px var(--gold), 0 4px 20px rgba(201, 168, 76, 0.3);
+}
+.mapa-card-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 4px;
+}
+.mapa-card-name {
+  font-size: 0.72rem;
+  font-weight: 700;
+  line-height: 1.2;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.mapa-card-class-icon {
+  font-size: 0.9rem;
+  flex-shrink: 0;
+}
+.mapa-card-info {
+  font-size: 0.55rem;
+  color: var(--text-muted);
+  margin-top: 1px;
+  line-height: 1.3;
+}
+.mapa-card-warband {
+  font-size: 0.5rem;
+  color: var(--text-dim);
+  margin-top: 1px;
+  padding: 1px 4px;
+  background: rgba(255,255,255,0.04);
+  border-radius: var(--r-sm);
+  display: inline-block;
+}
+.mapa-card-tasks {
+  display: flex;
+  gap: 2px;
+  margin-top: 3px;
+  flex-wrap: wrap;
+}
+.mapa-card-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+.mapa-card-dot.done { background: var(--health-green); }
+.mapa-card-dot.pending { background: var(--text-dim); }
+
+/* ── TASK SLIP ───────────────────────────────────────────── */
+
+.mapa-slip {
+  position: absolute;
+  z-index: 10;
+  width: 140px;
+  padding: 5px 7px;
+  border-radius: var(--r-sm);
+  cursor: grab;
+  font-family: var(--font-body);
+  transition: box-shadow var(--t-fast) var(--ease);
+  background: linear-gradient(135deg, #1a1508, #221c0a);
+  border: 1px solid rgba(201, 168, 76, 0.2);
+  box-shadow: 0 2px 6px rgba(0,0,0,0.3);
+}
+.mapa-slip:hover {
+  z-index: 20;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.4);
+}
+.mapa-slip.dragging {
+  z-index: 50;
+  cursor: grabbing;
+  box-shadow: 0 8px 20px rgba(0,0,0,0.5);
+  transform: scale(1.03);
+}
+.mapa-slip.highlight {
+  z-index: 25;
+  box-shadow: 0 0 0 2px var(--gold), 0 4px 16px rgba(201, 168, 76, 0.25);
+}
+.mapa-slip-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 3px;
+}
+.mapa-slip-name {
+  font-size: 0.62rem;
+  font-weight: 600;
+  line-height: 1.2;
+  color: var(--gold-light);
+}
+.mapa-slip-check {
+  width: 12px;
+  height: 12px;
+  cursor: pointer;
+  flex-shrink: 0;
+  margin-top: 1px;
+  accent-color: var(--health-green);
+}
+.mapa-slip-meta {
+  font-size: 0.5rem;
+  color: var(--text-muted);
+  margin-top: 2px;
+  display: flex;
+  gap: 4px;
+  flex-wrap: wrap;
+}
+.mapa-slip-type {
+  padding: 0 3px;
+  border-radius: 2px;
+  font-size: 0.5rem;
+  font-weight: 600;
+  text-transform: uppercase;
+}
+.mapa-slip-type.weekly { background: rgba(0,170,0,0.15); color: var(--health-green); }
+.mapa-slip-type.daily { background: rgba(0,112,221,0.15); color: var(--rarity-rare); }
+.mapa-slip-type.farm { background: rgba(163,53,238,0.15); color: var(--rarity-epic); }
+.mapa-slip-type.none { background: rgba(255,255,255,0.05); color: var(--text-dim); }
+.mapa-slip-reward {
+  font-size: 0.5rem;
+  color: var(--text-dim);
+  margin-top: 1px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* ── SIDEBAR ─────────────────────────────────────────────── */
+
+.mapa-sidebar {
+  width: 200px;
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  background: var(--bg-soft);
+  border-left: 1px solid var(--border-subtle);
+  overflow: hidden;
+}
+.mapa-sidebar-tabs {
+  display: flex;
+  border-bottom: 1px solid var(--border-subtle);
+  flex-shrink: 0;
+}
+.mapa-sidebar-tab {
+  flex: 1;
+  padding: 5px 4px;
+  border: none;
+  background: transparent;
+  color: var(--text-muted);
+  cursor: pointer;
+  font-family: var(--font-body);
+  font-size: 0.6rem;
+  text-align: center;
+  transition: all var(--t-fast) var(--ease);
+  border-bottom: 2px solid transparent;
+}
+.mapa-sidebar-tab:hover { color: var(--text-primary); }
+.mapa-sidebar-tab.active {
+  color: var(--gold);
+  border-bottom-color: var(--gold-dim);
+}
+.mapa-sidebar-content {
+  flex: 1;
+  overflow-y: auto;
+  padding: 4px 0;
+  scrollbar-width: thin;
+}
+.mapa-sidebar-item {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 8px;
+  cursor: pointer;
+  font-size: 0.6rem;
+  color: var(--text-secondary);
+  transition: background var(--t-fast) var(--ease);
+  border-left: 2px solid transparent;
+}
+.mapa-sidebar-item:hover {
+  background: var(--bg-raised);
+  color: var(--text-primary);
+}
+.mapa-sidebar-item.active {
+  border-left-color: var(--gold);
+  background: rgba(201, 168, 76, 0.08);
+  color: var(--gold-light);
+}
+.mapa-sidebar-item .item-icon { font-size: 0.7rem; width: 16px; text-align: center; flex-shrink: 0; }
+.mapa-sidebar-item .item-name { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.mapa-sidebar-item .item-count { color: var(--text-dim); font-size: 0.5rem; }
+.mapa-sidebar-filter {
+  padding: 3px 6px;
+  border-bottom: 1px solid var(--border-subtle);
+  flex-shrink: 0;
+}
+.mapa-sidebar-filter label {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 0.55rem;
+  color: var(--text-muted);
+  cursor: pointer;
+}
+.mapa-sidebar-filter input { width: 12px; height: 12px; cursor: pointer; }
+.mapa-sidebar-empty {
+  padding: 12px 8px;
+  font-size: 0.6rem;
+  color: var(--text-dim);
+  text-align: center;
+}
+
+/* ── STATS BAR ───────────────────────────────────────────── */
+
+.mapa-stats {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 4px 12px;
+  background: linear-gradient(0deg, #0a0500, #1a0c00);
+  border-top: 1px solid var(--border-main);
+  flex-shrink: 0;
+  font-size: 0.6rem;
+  color: var(--text-muted);
+}
+.mapa-stat { display: flex; align-items: center; gap: 3px; }
+.mapa-stat-value { color: var(--gold); font-weight: 600; }
+.mapa-stat-bar {
+  flex: 1;
+  max-width: 120px;
+  height: 6px;
+  background: var(--bg-raised);
+  border-radius: 3px;
+  overflow: hidden;
+}
+.mapa-stat-fill {
+  height: 100%;
+  border-radius: 3px;
+  transition: width var(--t-slow) var(--ease);
+}
+.mapa-stat-fill.green { background: var(--health-green); }
+.mapa-stat-fill.yellow { background: #c9a84c; }
+.mapa-stat-fill.red { background: var(--red); }
+
+/* ── CONNECTION MODE ─────────────────────────────────────── */
+
+.mapa-connect-btn {
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  padding: 2px 8px;
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--r-sm);
+  background: transparent;
+  color: var(--text-muted);
+  cursor: pointer;
+  font-size: 0.55rem;
+  font-family: var(--font-body);
+  transition: all var(--t-fast) var(--ease);
+  margin-left: auto;
+}
+.mapa-connect-btn:hover { color: var(--text-primary); border-color: var(--border-main); }
+.mapa-connect-btn.active { color: var(--gold); border-color: var(--gold-dim); background: rgba(201,168,76,0.08); }
+
+/* ── DRAG GHOST ──────────────────────────────────────────── */
+
+.mapa-drag-ghost {
+  position: fixed;
+  pointer-events: none;
+  z-index: 9999;
+  opacity: 0.7;
+  transform: scale(1.02);
+}
+
+/* ── RESPONSIVE ──────────────────────────────────────────── */
+
+@media (max-width: 900px) {
+  .mapa-sidebar { width: 160px; }
+  .mapa-card { width: 120px; }
+  .mapa-slip { width: 110px; }
+}
+@media (max-width: 700px) {
+  .mapa-sidebar { display: none; }
+  .mapa-stats { flex-wrap: wrap; gap: 6px; }
+}

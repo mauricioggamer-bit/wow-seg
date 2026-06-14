@@ -203,7 +203,7 @@ const DATA = (() => {
         version: 2,
         exported_at: new Date().toISOString(),
         app_name: 'WoW Seg Warband Tracker',
-        data: Object.assign(getData(), { misiones: getMisiones() }),
+        data: { ...getData(), misiones: getMisiones() },
         preferences: {
           theme: localStorage.getItem('wowseg_theme') || 'dark',
           fontsize: localStorage.getItem('wowseg_fontsize') || 'medium'

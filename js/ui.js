@@ -11,6 +11,14 @@ const UI = (() => {
     priorityFilter: { priority: '1', warband: '' },
     timeFilter: { time: 'rapido', warband: '' }
   };
+  
+  // Personajes view state
+  let persSelectedRace = null;
+  let persSelectedFaction = null;
+  let persSelectedClass = null;
+  let persFactionFilter = 'all';
+  let persLevelFilter = 'all';
+  let persSelectedChar = null;
 
   const CLASS_MAP = {
     'Guerrero': 'warrior', 'Paladín': 'paladin', 'Cazador': 'hunter',
@@ -18,6 +26,83 @@ const UI = (() => {
     'Chamán': 'shaman', 'Mago': 'mage', 'Brujo': 'warlock',
     'Monje': 'monk', 'Druida': 'druid', 'DH': 'dh', 'Evocadora': 'evoker',
     'Maga': 'mage'
+  };
+
+  const PERS_RACE_INFO = {
+    'Orco':          { icon: '💀', type: 'Salvaje' },
+    'Blood Elf':     { icon: '🔮', type: 'Élfico' },
+    'Tauren':        { icon: '🐂', type: 'Bestial' },
+    'Troll':         { icon: '🗿', type: 'Tribal' },
+    'Goblin':        { icon: '💰', type: 'Pequeño' },
+    "Mag'har":       { icon: '🏹', type: 'Salvaje' },
+    'Nightborne':    { icon: '🌌', type: 'Élfico' },
+    'Highmountain':  { icon: '🦌', type: 'Bestial' },
+    'Zandalari':     { icon: '🗿', type: 'Tribal' },
+    'Vulpera':       { icon: '🦊', type: 'Nómada' },
+    'Undead':        { icon: '☠', type: 'No-muerto' },
+    'Earthen':       { icon: '🪨', type: 'Elemental' },
+    'Pandaren':      { icon: '🐼', type: 'Neutral' },
+    'Human':         { icon: '👤', type: 'Humanoide' },
+    'Night Elf':     { icon: '🌙', type: 'Élfico' },
+    'Draenei':       { icon: '✦', type: 'Místico' },
+    'Gnome':         { icon: '⚙', type: 'Pequeño' },
+    'Dwarf':         { icon: '⛏', type: 'Humanoide' },
+    'Void Elf':      { icon: '🌑', type: 'Élfico' },
+    'Light Draenei': { icon: '✦', type: 'Luz' },
+    'Haranir':       { icon: '🌿', type: 'Místico' },
+    'Dracthyr':      { icon: '🐉', type: 'Dragón' }
+  };
+  const PERS_CLASS_ICONS = {
+    warrior: '⚔', paladin: '⚜', hunter: '🏹', rogue: '🗡',
+    priest: '✝', dk: '☠', shaman: '⚡', mage: '❄',
+    warlock: '👁', monk: '☯', druid: '🌿', dh: '◈', evoker: '🐉'
+  };
+  const PERS_CLASS_COLORS = {
+    warrior: '#c69b3a', paladin: '#f48cba', hunter: '#aad372', rogue: '#fff569',
+    priest: '#ffffff', dk: '#c41e3a', shaman: '#0070dd', mage: '#3fc7eb',
+    warlock: '#8788ee', monk: '#00ff96', druid: '#ff7c0a', dh: '#a330c9', evoker: '#33937f'
+  };
+  const PERS_CHAR_ARTS = {
+    warrior:  " \u2694\uFE0F\n \\o/\n /|\\\n/ | \\",
+    paladin:  " \u269C\n \\o/\n )|(  \n/===\\",
+    hunter:   " \uD83C\uDFF9\n \\o/\n /|\\\n/___\\",
+    rogue:    " \uD83D\uDDE1\n \\o/\n )|(  \n/ | \\",
+    priest:   " \u271D\n \\o/\n /|\\\n  |  ",
+    dk:       " \u2620\n \\o/\n /|\\\n[===]",
+    shaman:   " \u26A1\n \\o/\n /|\\\n/___\\",
+    mage:     " \u2744\n \\o/\n /|\\\n  |  ",
+    warlock:  " \uD83D\uDC41\n \\o/\n//|\\\\\n  |  ",
+    monk:     " \u262F\n \\o/\n (|) \n/ | \\",
+    druid:    " \uD83C\uDF3F\n \\o/\n /|\\\n(   )",
+    dh:       " \u25C8\n \\o/\n /X\\\n/ | \\",
+    evoker:   " \uD83D\uDC09\n \\o/\n /|\\\n~~~~~"
+  };
+  const PERS_BG_SCENES = {
+    alliance: [
+      "     _____         _____",
+      "    |=====|       |=====|     ___",
+      "    | [A] |       | [A] |    /|||\\",
+      "    |_____|       |_____|   / ||| \\",
+      "  __|_____|_______|_____|__/__|||||\\__",
+      " /   \\   /     \\   /   \\   /  |||||  \\",
+      "/     \\_/       \\_/     \\_/   |||||   \\",
+      "~~~~~~~~~~~ IRONFORGE ~~~~~~~~~~~~~~~~~~~"
+    ].join('\n'),
+    horde: [
+      "    /\\   /\\   /\\   /\\   /\\",
+      "   /  \\ /  \\ /  \\ /  \\ /  \\",
+      "  / [H]\\    /    \\    / [H] \\",
+      " /______\\  /______\\  /______\\",
+      " |  ||  |  |  ||  |  |  ||  |",
+      " |  ||  |  |  ||  |  |  ||  |",
+      "~~~~~~~~~~ ORGRIMMAR ~~~~~~~~~~~~~~~~"
+    ].join('\n'),
+    all: [
+      "  ___________/\\___________/\\________",
+      " /  ALIANZA  \\\\  /  HORDA  \\\\  /\\  /",
+      "/____________//\\/____________//\\/  \\/",
+      "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ ~~"
+    ].join('\n')
   };
 
   const LABELS = { all: 'Todas', weekly: 'Semanal', daily: 'Diaria', farm_libre: 'Farm' };
@@ -52,6 +137,9 @@ const UI = (() => {
 
     document.getElementById('warbandLayout').style.display = 'none';
     document.getElementById('dashboardPanel').style.display = 'none';
+    document.getElementById('personajesPanel').style.display = 'none';
+    // Clean up personajes Escape handler when leaving view
+    document.removeEventListener('keydown', persEscapeHandler);
     const wbTabs = document.getElementById('warbandTabs');
 
     if (state.currentView === 'warband') {
@@ -62,6 +150,11 @@ const UI = (() => {
       if (wb) { state.currentWarband = wb; renderWarbandContent(wb); }
       if (state.selectedChar) renderCharDetail(state.selectedChar);
       else renderAllTasks(state.currentWarband);
+    } else if (state.currentView === 'personajes') {
+      const pp = document.getElementById('personajesPanel');
+      pp.style.display = 'flex';
+      if (wbTabs) wbTabs.style.display = 'none';
+      renderPersonajesView();
     } else {
       if (wbTabs) wbTabs.style.display = 'none';
       document.getElementById('dashboardPanel').style.display = 'block';
@@ -79,6 +172,7 @@ const UI = (() => {
       <button class="warband-tab ${state.currentView === 'tabla' ? 'active' : ''}" onclick="UI.setView('tabla')">📋 Tabla</button>
       <button class="warband-tab ${state.currentView === 'priority' ? 'active' : ''}" onclick="UI.setView('priority')">⚡ Prioridad</button>
       <button class="warband-tab ${state.currentView === 'time' ? 'active' : ''}" onclick="UI.setView('time')">⏱ Tiempo</button>
+      <button class="warband-tab ${state.currentView === 'personajes' ? 'active' : ''}" onclick="UI.setView('personajes')">🎭 Personajes</button>
     `;
   }
 
@@ -1055,6 +1149,281 @@ const UI = (() => {
     `;
   }
 
+  // ===== PERSONAJES VIEW (WoW Character Selection) =====
+  function persEscapeHandler(e) {
+    if (e.key === 'Escape' && state.currentView === 'personajes') {
+      const modal = document.getElementById('modalOverlay');
+      if (modal && modal.classList.contains('open')) return;
+      e.preventDefault();
+      resetPersAll();
+    }
+  }
+
+  function renderPersonajesView() {
+    const panel = document.getElementById('personajesPanel');
+    if (!panel) return;
+    document.addEventListener('keydown', persEscapeHandler);
+    panel.innerHTML = `
+      <div class="pers-header">
+        <div class="pers-faction-title a">⚔ ALIANZA</div>
+        <div class="pers-center-title">
+          ✦ SELECCIÓN DE PERSONAJE ✦
+          <small>ELIGE TU RAZA · FILTRA TU CLASE</small>
+        </div>
+        <div class="pers-faction-title h">HORDA ⚔</div>
+      </div>
+      <div class="pers-body-row">
+        <div class="pers-race-panel" id="pers-panel-alliance"><div class="pers-panel-faction-label a">[ ALIANZA ]</div></div>
+        <div id="pers-panel-center">
+          <pre id="pers-bg-art"></pre>
+          <div id="pers-filter-bar"></div>
+          <div id="pers-char-grid"></div>
+          <div id="pers-class-bar-wrap"><div id="pers-class-bar"></div></div>
+        </div>
+        <div class="pers-race-panel" id="pers-panel-horde"><div class="pers-panel-faction-label h">[ HORDA ]</div></div>
+      </div>
+      <div id="pers-footer">
+        <button class="pers-foot-btn" onclick="UI.closePersonajes()">◄ VOLVER</button>
+        <div class="pers-realm-info">
+          Raganaros Realm · PvP · <span class="pers-realm-ping">⬤ 44ms</span>
+          <br>Personaje: <span id="pers-selected-label" style="color:var(--gold)">—</span>
+        </div>
+        <button class="pers-foot-btn primary" id="pers-btn-enter" disabled onclick="UI.editSelectedPersonaje()">EDITAR PERSONAJE ►</button>
+      </div>`;
+    buildPersRacePanels();
+    buildPersFilterBar();
+    buildPersClassBar();
+    renderPersCharGrid();
+    updatePersBgArt();
+    // Restore selected char state after re-render
+    if (persSelectedChar) {
+      const c = DATA.getPersonaje(persSelectedChar);
+      document.getElementById('pers-selected-label').textContent = c ? `${c.nombre} (Nv.${c.nivel} ${c.raza})` : persSelectedChar;
+      document.getElementById('pers-btn-enter').disabled = false;
+    } else {
+      document.getElementById('pers-selected-label').textContent = '—';
+      document.getElementById('pers-btn-enter').disabled = true;
+    }
+  }
+
+  function updatePersBgArt() {
+    const el = document.getElementById('pers-bg-art');
+    if (!el) return;
+    el.textContent = PERS_BG_SCENES[persFactionFilter] || PERS_BG_SCENES.all;
+  }
+
+  function buildPersRacePanels() {
+    const chars = DATA.getPersonajes();
+    const factions = { alliance: [], horde: [] };
+    const seen = { alliance: new Set(), horde: new Set() };
+    chars.forEach(c => {
+      const faction = c.faccion === 'Alianza' ? 'alliance' : 'horde';
+      if (!seen[faction].has(c.raza)) {
+        seen[faction].add(c.raza);
+        const info = PERS_RACE_INFO[c.raza] || { icon: '❓', type: '' };
+        factions[faction].push({ nombre: c.raza, icon: info.icon, type: info.type });
+      }
+    });
+    Object.keys(factions).forEach(f => factions[f].sort((a, b) => a.nombre.localeCompare(b.nombre)));
+    ['alliance','horde'].forEach(faction => {
+      const panel = document.getElementById(`pers-panel-${faction}`);
+      if (!panel) return;
+      const isSelected = (r) => persSelectedRace === r.nombre && persSelectedFaction === faction;
+      const cls = (r) => isSelected(r) ? (faction === 'alliance' ? 'active-a' : 'active-h') : '';
+      panel.innerHTML = `<div class="pers-panel-faction-label ${faction === 'alliance' ? 'a' : 'h'}">[ ${faction === 'alliance' ? 'ALIANZA' : 'HORDA'} ]</div>` +
+        factions[faction].map(r =>
+          `<button class="pers-race-btn ${cls(r)}" data-race="${r.nombre}" data-faction="${faction}">
+            <span class="pers-race-icon">${r.icon}</span>
+            <span><div class="pers-race-name">${r.nombre}</div><div class="pers-race-type">${r.type}</div></span>
+          </button>`
+        ).join('');
+      panel.querySelectorAll('.pers-race-btn').forEach(btn => {
+        btn.addEventListener('click', () => togglePersRace(btn));
+      });
+    });
+  }
+
+  function buildPersFilterBar() {
+    const el = document.getElementById('pers-filter-bar');
+    if (!el) return;
+    el.innerHTML = `
+      <span class="pers-filter-label">FACCIÓN:</span>
+      <button class="pers-filter-chip ${persFactionFilter === 'all' ? 'active' : ''}" data-pfaction="all">Todas</button>
+      <button class="pers-filter-chip ${persFactionFilter === 'alliance' ? 'active' : ''}" data-pfaction="alliance" style="color:#4a9eff88">Alianza</button>
+      <button class="pers-filter-chip ${persFactionFilter === 'horde' ? 'active' : ''}" data-pfaction="horde" style="color:#cc330088">Horda</button>
+      <span class="pers-filter-sep">|</span>
+      <span class="pers-filter-label">NIVEL:</span>
+      <button class="pers-filter-chip ${persLevelFilter === 'all' ? 'active' : ''}" data-plevel="all">Todos</button>
+      <button class="pers-filter-chip ${persLevelFilter === 'low' ? 'active' : ''}" data-plevel="low">1-60</button>
+      <button class="pers-filter-chip ${persLevelFilter === 'high' ? 'active' : ''}" data-plevel="high">61-80</button>`;
+    el.querySelectorAll('[data-pfaction]').forEach(chip => {
+      chip.addEventListener('click', () => {
+        persFactionFilter = chip.dataset.pfaction;
+        buildPersRacePanels();
+        buildPersFilterBar();
+        buildPersClassBar();
+        renderPersCharGrid();
+        updatePersBgArt();
+      });
+    });
+    el.querySelectorAll('[data-plevel]').forEach(chip => {
+      chip.addEventListener('click', () => {
+        persLevelFilter = chip.dataset.plevel;
+        buildPersFilterBar();
+        renderPersCharGrid();
+      });
+    });
+  }
+
+  function buildPersClassBar() {
+    const bar = document.getElementById('pers-class-bar');
+    if (!bar) return;
+    const classEntries = Object.entries(CLASS_MAP);
+    const deduped = [];
+    const seen = new Set();
+    classEntries.forEach(([label, key]) => {
+      if (!seen.has(key)) {
+        seen.add(key);
+        deduped.push({ label, key });
+      }
+    });
+    bar.innerHTML = deduped.map(({ label, key }) => {
+      const icon = PERS_CLASS_ICONS[key] || '❓';
+      const color = PERS_CLASS_COLORS[key] || '#c9a84c';
+      const active = persSelectedClass === key;
+      return `<button class="pers-class-btn ${active ? 'active' : ''}" data-pclass="${key}" ${active ? `style="border-color:${color};color:${color}"` : ''}>
+        <span class="pers-cbtn-icon">${icon}</span>
+        <span class="pers-cbtn-label">${label}</span>
+      </button>`;
+    }).join('');
+    bar.querySelectorAll('.pers-class-btn').forEach(btn => {
+      btn.addEventListener('click', () => togglePersClass(btn));
+    });
+  }
+
+  function renderPersCharGrid() {
+    const grid = document.getElementById('pers-char-grid');
+    if (!grid) return;
+    let chars = DATA.getPersonajes();
+    if (persFactionFilter === 'alliance') chars = chars.filter(c => c.faccion === 'Alianza');
+    else if (persFactionFilter === 'horde') chars = chars.filter(c => c.faccion === 'Horda');
+    if (persSelectedRace) chars = chars.filter(c => c.raza === persSelectedRace);
+    if (persSelectedClass) {
+      const revMap = {};
+      Object.entries(CLASS_MAP).forEach(([k, v]) => { revMap[v] = k; });
+      const targetClase = revMap[persSelectedClass];
+      chars = chars.filter(c => {
+        const clsKey = CLASS_MAP[c.clase] || '';
+        return clsKey === persSelectedClass || c.clase === targetClase;
+      });
+    }
+    if (persLevelFilter === 'low') chars = chars.filter(c => c.nivel <= 60);
+    else if (persLevelFilter === 'high') chars = chars.filter(c => c.nivel > 60);
+    if (chars.length === 0) {
+      grid.innerHTML = `<div class="pers-empty-state"><span class="big">⚠</span>No hay personajes que coincidan.<br><span style="color:var(--text-muted)">Intenta cambiar los filtros.</span></div>`;
+      return;
+    }
+    grid.innerHTML = chars.map(c => {
+      const clsKey = CLASS_MAP[c.clase] || 'warrior';
+      const color = PERS_CLASS_COLORS[clsKey] || '#c69b3a';
+      const art = PERS_CHAR_ARTS[clsKey] || PERS_CHAR_ARTS.warrior;
+      const faction = c.faccion === 'Alianza' ? 'a' : 'h';
+      const sel = persSelectedChar === c.nombre;
+      return `<div class="pers-char-card ${sel ? 'selected-' + faction : ''}" data-pchar="${c.nombre}">
+        <span class="pers-card-faction-tag ${faction}">${c.faccion === 'Alianza' ? '⚔A' : '⚔H'}</span>
+        <pre class="pers-card-art" style="color:${color};text-shadow:0 0 8px ${color}66">${art}</pre>
+        <div class="pers-card-name">${c.nombre}</div>
+        <div class="pers-card-meta">Nv.${c.nivel} ${c.raza}<br>${c.clase}</div>
+      </div>`;
+    }).join('') +
+    `<div class="pers-char-card add-new">
+      <span class="pers-add-icon">+</span>
+      <span style="font-size:10px;color:var(--text-muted)">Nuevo<br>personaje</span>
+    </div>`;
+    grid.querySelectorAll('.pers-char-card[data-pchar]').forEach(card => {
+      card.addEventListener('click', () => selectPersChar(card.dataset.pchar));
+    });
+  }
+
+  function togglePersRace(btn) {
+    const race = btn.dataset.race;
+    const faction = btn.dataset.faction;
+    if (persSelectedRace === race && persSelectedFaction === faction) {
+      persSelectedRace = null;
+      persSelectedFaction = null;
+    } else {
+      persSelectedRace = race;
+      persSelectedFaction = faction;
+      persFactionFilter = faction === 'alliance' ? 'alliance' : 'horde';
+    }
+    persSelectedChar = null;
+    buildPersRacePanels();
+    buildPersFilterBar();
+    buildPersClassBar();
+    renderPersCharGrid();
+    updatePersBgArt();
+    document.getElementById('pers-selected-label').textContent = '—';
+    document.getElementById('pers-btn-enter').disabled = true;
+  }
+
+  function togglePersClass(btn) {
+    const key = btn.dataset.pclass;
+    if (persSelectedClass === key) {
+      persSelectedClass = null;
+    } else {
+      persSelectedClass = key;
+    }
+    persSelectedChar = null;
+    buildPersRacePanels();
+    buildPersFilterBar();
+    buildPersClassBar();
+    renderPersCharGrid();
+    updatePersBgArt();
+    document.getElementById('pers-selected-label').textContent = '—';
+    document.getElementById('pers-btn-enter').disabled = true;
+  }
+
+  function selectPersChar(charName) {
+    if (persSelectedChar === charName) {
+      persSelectedChar = null;
+      document.getElementById('pers-selected-label').textContent = '—';
+      document.getElementById('pers-btn-enter').disabled = true;
+    } else {
+      persSelectedChar = charName;
+      const c = DATA.getPersonaje(charName);
+      document.getElementById('pers-selected-label').textContent = c ? `${c.nombre} (Nv.${c.nivel} ${c.raza})` : charName;
+      document.getElementById('pers-btn-enter').disabled = false;
+    }
+    renderPersCharGrid();
+  }
+
+  function editSelectedPersonaje() {
+    if (!persSelectedChar) return;
+    showEditCharModal(persSelectedChar);
+  }
+
+  function closePersonajes() {
+    document.removeEventListener('keydown', persEscapeHandler);
+    persSelectedRace = null;
+    persSelectedFaction = null;
+    persSelectedClass = null;
+    persFactionFilter = 'all';
+    persLevelFilter = 'all';
+    persSelectedChar = null;
+    state.currentView = 'warband';
+    render();
+  }
+
+  function resetPersAll() {
+    persSelectedRace = null;
+    persSelectedFaction = null;
+    persSelectedClass = null;
+    persFactionFilter = 'all';
+    persLevelFilter = 'all';
+    persSelectedChar = null;
+    render();
+  }
+
   function resetAllDailies() {
     DATA.resetDailyTasks();
     render();
@@ -1362,6 +1731,7 @@ const UI = (() => {
     setPriorityTab, setPriorityWarband, setTimeTab, setTimeWarband,
     setTablaFilterPersonaje, setTablaFilterWarband, setTablaFilterTipo, setTablaFilterExpansion,
     setTablaFilterPriority, setTablaFilterTime, setTablaFilterEstado, setTablaFilterSearch,
-    setTablaFilterClase, setTablaFilterFaccion, setTablaFilterReino, setTablaFilterActivo, setTablaFilterCooldown
+    setTablaFilterClase, setTablaFilterFaccion, setTablaFilterReino, setTablaFilterActivo, setTablaFilterCooldown,
+    togglePersRace, togglePersClass, selectPersChar, editSelectedPersonaje, closePersonajes, resetPersAll
   };
 })();

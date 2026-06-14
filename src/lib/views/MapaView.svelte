@@ -1,67 +1,529 @@
 <script lang="ts">
-  import { personajesStore } from '../stores/data'
-  import { EXPANSIONS } from '../constants'
+  import { onMount, onDestroy } from 'svelte'
+  import { personajesStore, dataStore, misionesStore } from '../stores/data'
+  import { CLASS_MAP, PERS_CLASS_ICONS, PERS_CLASS_COLORS, EXPANSIONS } from '../constants'
+  import mapa_svgs from '../data/mapa_svgs'
 
-  let selectedExp = $state('tww')
-  let expansion = $derived(EXPANSIONS.find(e => e.id === selectedExp))
-  let charsInExp = $derived($personajesStore.filter(c => {
-    return c.tareas.some(t => t.expansion === selectedExp) || false
-  }))
+  const STORAGE_POS = 'wowseg_mapa_positions'
+  const STORAGE_EXP = 'wowseg_mapa_expansion'
+  const MAP_W = 1000
+  const MAP_H = 750
+
+  const FACTION_COLORS: Record<string, string> = { Horda: '#AA1111', Alianza: '#1A6DB5' }
+
+  const BADGE_LETTERS: Record<string, string> = {
+    midnight: 'M', tww: 'TW', dragonflight: 'DF', shadowlands: 'SL',
+    bfa: 'BFA', legion: 'L', draenor: 'WD', mop: 'MOP', cata: 'C', wotlk: 'W',
+    classic: 'C', outland: 'TBC',
+  }
+
+  let activeExp = $state(localStorage.getItem(STORAGE_EXP) || EXPANSIONS[0]?.id || 'tww')
+  let positions = $state<Record<string, { x: number; y: number }>>({})
+  let dragging: string | null = $state(null)
+  let sidebarTab = $state('chars')
+  let showInactivos = $state(true)
+  let highlight: string | null = $state(null)
+  let containerRect = $state<DOMRect | null>(null)
+  let mapAreaEl: HTMLDivElement | undefined = $state(undefined)
+  let dragStartX = 0, dragStartY = 0
+  let dragOrigX = 0, dragOrigY = 0
+  let wasDragged = false
+
+  let charsForExp = $derived(
+    $personajesStore.filter(c => {
+      if (!c.activo && !showInactivos) return false
+      return c.tareas.some(t => t.expansion === activeExp) || $misionesStore.some(m => m.personaje === c.nombre && m.expansion === activeExp)
+    })
+  )
+
+  function loadPositions() {
+    try {
+      const raw = localStorage.getItem(STORAGE_POS)
+      if (raw) positions = JSON.parse(raw)
+      else positions = {}
+    } catch { positions = {} }
+  }
+
+  function savePositions() {
+    localStorage.setItem(STORAGE_POS, JSON.stringify(positions))
+  }
+
+  function getPos(id: string): { x: number; y: number } | null {
+    return positions[id] || null
+  }
+
+  function setPos(id: string, x: number, y: number) {
+    positions = { ...positions, [id]: { x, y } }
+  }
+
+  function autoLayout(chars: typeof charsForExp, cw: number, ch: number) {
+    if (!cw || !ch) return
+    const padX = 80, padY = 40
+    const availW = cw - padX * 2
+    const availH = ch - padY * 2
+    const cols = Math.min(chars.length, 4)
+    const rows = Math.ceil(chars.length / cols)
+    const cellW = availW / cols
+    const cellH = availH / rows
+    let changed = false
+    chars.forEach((c, i) => {
+      const id = 'char_' + c.nombre
+      if (getPos(id)) return
+      changed = true
+      const col = i % cols
+      const row = Math.floor(i / cols)
+      const cx = padX + cellW * (col + 0.5)
+      const cy = padY + cellH * (row + 0.5)
+      setPos(id, (cx / cw) * MAP_W, (cy / ch) * MAP_H)
+      c.tareas.forEach((t, ti) => {
+        const tid = 'task_' + c.nombre + '_' + t.id
+        if (getPos(tid)) return
+        const tx = padX + cellW * (col + 0.5) + 80 + ti * 60
+        const ty = padY + cellH * (row + 0.5) - 30 + ti * 30
+        setPos(tid, (tx / cw) * MAP_W, (ty / ch) * MAP_H)
+      })
+    })
+    if (changed) savePositions()
+  }
+
+  let connections = $derived.by(() => {
+    if (!mapAreaEl || !containerRect) return ''
+    const scX = containerRect.width / MAP_W
+    const scY = containerRect.height / MAP_H
+    let lines = ''
+    for (const c of charsForExp) {
+      for (const t of c.tareas) {
+        const cp = getPos('char_' + c.nombre)
+        const sp = getPos('task_' + c.nombre + '_' + t.id)
+        if (!cp || !sp) continue
+        const x1 = cp.x * scX
+        const y1 = cp.y * scY
+        const x2 = sp.x * scX
+        const y2 = sp.y * scY
+        const color = FACTION_COLORS[c.faccion] || '#888'
+        const opacity = t.hecho ? '0.3' : '0.5'
+        lines += `<line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}" stroke="${color}" stroke-width="1.5" opacity="${opacity}"/>`
+        lines += `<circle cx="${x1}" cy="${y1}" r="3" fill="${color}" opacity="${opacity}"/>`
+        lines += `<circle cx="${x2}" cy="${y2}" r="2" fill="${color}" opacity="${opacity}"/>`
+      }
+    }
+    return lines
+  })
+
+  let allTasks = $derived.by(() => {
+    const tasks: Array<Record<string, any>> = []
+    for (const c of charsForExp) {
+      for (const t of c.tareas) {
+        tasks.push({ ...t, personaje: c.nombre, faccion: c.faccion, clase: c.clase })
+      }
+    }
+    return tasks
+  })
+
+  let groups = $derived.by(() => {
+    const g: Record<string, typeof charsForExp> = {}
+    for (const c of charsForExp) {
+      if (!g[c.warband]) g[c.warband] = []
+      g[c.warband].push(c)
+    }
+    return g
+  })
+
+  let stats = $derived.by(() => {
+    const done = allTasks.filter(t => t.hecho).length
+    const total = allTasks.length
+    const pct = total > 0 ? Math.round(done / total * 100) : 0
+    const totalMin = allTasks.reduce((s: number, t: any) => s + (t.tiempo_min || 0), 0)
+    const weekly = allTasks.filter(t => t.cooldown === 'weekly')
+    const weeklyDone = weekly.filter(t => t.hecho).length
+    const weeklyTotal = weekly.length
+    return { chars: charsForExp.length, done, total, pct, totalMin, weeklyDone, weeklyTotal }
+  })
+
+  let sidebarContent = $derived.by(() => {
+    if (sidebarTab === 'chars') {
+      if (charsForExp.length === 0) return { type: 'empty', text: 'No hay personajes para esta expansión' } as const
+      return { type: 'chars', items: charsForExp.map(c => ({
+        id: c.nombre,
+        icon: PERS_CLASS_ICONS[CLASS_MAP[c.clase] || 'warrior'] || '?',
+        name: c.nombre,
+        color: PERS_CLASS_COLORS[CLASS_MAP[c.clase] || 'warrior'] || '#c69b3a',
+        count: c.tareas.length + 't',
+        highlightId: 'char_' + c.nombre,
+      }))} as const
+    }
+    if (sidebarTab === 'tasks') {
+      if (allTasks.length === 0) return { type: 'empty', text: 'No hay tareas para esta expansión' } as const
+      return { type: 'tasks', done: allTasks.filter(t => t.hecho).length, total: allTasks.length, items: allTasks.map(t => ({
+        id: t.id,
+        name: t.nombre,
+        hecho: t.hecho,
+        personaje: t.personaje,
+        highlightId: 'task_' + t.personaje + '_' + t.id,
+        personajeColor: PERS_CLASS_COLORS[CLASS_MAP[t.clase] || 'warrior'] || '#c69b3a',
+      }))} as const
+    }
+    if (sidebarTab === 'groups') {
+      const keys = Object.keys(groups).sort()
+      if (keys.length === 0) return { type: 'empty', text: 'No hay grupos' } as const
+      return { type: 'groups', groups: keys.map(wb => ({
+        name: wb,
+        count: groups[wb].length,
+        chars: groups[wb].map(c => ({
+          name: c.nombre,
+          icon: PERS_CLASS_ICONS[CLASS_MAP[c.clase] || 'warrior'] || '?',
+          color: PERS_CLASS_COLORS[CLASS_MAP[c.clase] || 'warrior'] || '#c69b3a',
+          done: c.tareas.filter(t => t.hecho).length,
+          total: c.tareas.length,
+          highlightId: 'char_' + c.nombre,
+        })),
+      }))} as const
+    }
+    return { type: 'empty', text: '' } as const
+  })
+
+  function selectExp(key: string) {
+    activeExp = key
+    localStorage.setItem(STORAGE_EXP, key)
+    highlight = null
+    dragging = null
+  }
+
+  function handlePointerDown(e: PointerEvent, id: string) {
+    if ((e.target as HTMLElement).tagName === 'INPUT') return
+    e.preventDefault()
+    dragging = null
+    wasDragged = false
+    const el = (e.currentTarget as HTMLElement)
+    dragStartX = e.clientX
+    dragStartY = e.clientY
+    dragOrigX = parseFloat(el.style.left) || 0
+    dragOrigY = parseFloat(el.style.top) || 0
+
+    function onMove(ev: PointerEvent) {
+      const dx = ev.clientX - dragStartX
+      const dy = ev.clientY - dragStartY
+      if (Math.abs(dx) > 3 || Math.abs(dy) > 3) wasDragged = true
+      if (!wasDragged) return
+      if (!dragging) dragging = id
+      el.classList.add('dragging')
+      if (!mapAreaEl) return
+      const areaRect = mapAreaEl.getBoundingClientRect()
+      const scX = areaRect.width / MAP_W
+      const scY = areaRect.height / MAP_H
+      let newX = dragOrigX + dx
+      let newY = dragOrigY + dy
+      newX = Math.max(0, Math.min(areaRect.width - 40, newX))
+      newY = Math.max(0, Math.min(areaRect.height - 30, newY))
+      el.style.left = newX + 'px'
+      el.style.top = newY + 'px'
+      setPos(id, newX / scX, newY / scY)
+    }
+
+    function onUp() {
+      window.removeEventListener('pointermove', onMove)
+      window.removeEventListener('pointerup', onUp)
+      if (wasDragged) {
+        dragging = null
+        el.classList.remove('dragging')
+        savePositions()
+      }
+    }
+
+    window.addEventListener('pointermove', onMove)
+    window.addEventListener('pointerup', onUp)
+  }
+
+  function handleCardClick(e: PointerEvent, charName: string) {
+    if (wasDragged) return
+    highlight = 'char_' + charName
+  }
+
+  function handleSlipClick(e: PointerEvent, charName: string, taskId: string) {
+    if (wasDragged || (e.target as HTMLElement).tagName === 'INPUT') return
+    highlight = 'task_' + charName + '_' + taskId
+  }
+
+  function scrollToElement(selector: string) {
+    if (!mapAreaEl) return
+    const el = mapAreaEl.querySelector(selector) as HTMLElement
+    if (!el) return
+    highlight = selector
+    el.scrollIntoView({ behavior: 'smooth', block: 'center' })
+  }
+
+  function handleResize() {
+    if (mapAreaEl) containerRect = mapAreaEl.getBoundingClientRect()
+  }
+
+  let resizeTimer: ReturnType<typeof setTimeout> | null = null
+
+  onMount(() => {
+    document.addEventListener('resize', handleResize)
+    loadPositions()
+    return () => {
+      document.removeEventListener('resize', handleResize)
+    }
+  })
+
+  onDestroy(() => {
+    if (resizeTimer) clearTimeout(resizeTimer)
+  })
+
+  $effect(() => {
+    if (mapAreaEl) {
+      containerRect = mapAreaEl.getBoundingClientRect()
+      const rect = containerRect
+      if (rect.width > 0) {
+        let changed = false
+        const newPos = { ...positions }
+        charsForExp.forEach((c, i) => {
+          const id = 'char_' + c.nombre
+          if (newPos[id]) return
+          changed = true
+          const padX = 80, padY = 40
+          const cols = Math.min(charsForExp.length, 4)
+          const rows = Math.ceil(charsForExp.length / cols)
+          const cellW = (rect.width - padX * 2) / cols
+          const cellH = (rect.height - padY * 2) / rows
+          const col = i % cols
+          const row = Math.floor(i / cols)
+          newPos[id] = { x: ((padX + cellW * (col + 0.5)) / rect.width) * MAP_W, y: ((padY + cellH * (row + 0.5)) / rect.height) * MAP_H }
+          c.tareas.forEach((t, ti) => {
+            const tid = 'task_' + c.nombre + '_' + t.id
+            if (newPos[tid]) return
+            newPos[tid] = {
+              x: ((padX + cellW * (col + 0.5) + 80 + ti * 60) / rect.width) * MAP_W,
+              y: ((padY + cellH * (row + 0.5) - 30 + ti * 30) / rect.height) * MAP_H,
+            }
+          })
+        })
+        if (changed) { positions = newPos; savePositions() }
+      }
+    }
+  })
 </script>
 
-<div class="wow-panel">
-  <div class="wow-panel-header">
-    <h3>Mapa de Expansiones</h3>
+<div class="mapa-panel">
+  <div class="mapa-exp-selector">
+    {#each EXPANSIONS as exp}
+      {@const count = charsForExp.length}
+      <button class="mapa-exp-btn" class:active={activeExp === exp.id} onclick={() => selectExp(exp.id)}>
+        <span class="mapa-exp-dot" style="background:{exp.color}"></span>
+        {exp.nombre}
+        <span class="mapa-exp-count">{count}</span>
+      </button>
+    {/each}
   </div>
-  <div class="wow-panel-body">
-    <div class="filter-bar" style="margin-bottom:8px">
-      {#each EXPANSIONS as exp}
-        <button
-          class="wow-btn wow-btn-sm"
-          class:wow-btn-primary={selectedExp === exp.id}
-          style={selectedExp === exp.id ? `background:${exp.color};color:#fff;border:none` : ''}
-          onclick={() => selectedExp = exp.id}
-        >
-          {exp.nombre}
-        </button>
+
+  <div class="mapa-layout">
+    <div class="mapa-area" bind:this={mapAreaEl}>
+      <div class="mapa-svg-wrap">{@html mapa_svgs[activeExp] || ''}</div>
+      <svg class="mapa-conexiones" style="position:absolute;inset:0;width:100%;height:100%;pointer-events:none;z-index:5"
+        viewBox={containerRect ? `0 0 ${containerRect.width} ${containerRect.height}` : '0 0 100 100'}>
+        {@html connections}
+      </svg>
+      {#each charsForExp as c (c.nombre)}
+        {@const pid = 'char_' + c.nombre}
+        {@const pos = getPos(pid)}
+        {@const clsKey = CLASS_MAP[c.clase] || 'warrior'}
+        {@const clsColor = PERS_CLASS_COLORS[clsKey] || '#fff'}
+        {@const clsIcon = PERS_CLASS_ICONS[clsKey] || '?'}
+        {@const done = c.tareas.filter(t => t.hecho).length}
+        {@const total = c.tareas.length}
+        {#if pos && containerRect}
+          {@const px = pos.x * (containerRect.width / MAP_W)}
+          {@const py = pos.y * (containerRect.height / MAP_H)}
+          <div
+            class="mapa-card {c.faccion === 'Horda' ? 'horda' : 'alliance'}"
+            class:dragging={dragging === pid}
+            class:highlight={highlight === pid}
+            style="left:{px}px;top:{py}px"
+            data-char-name={c.nombre}
+            onpointerdown={(e) => handlePointerDown(e, pid)}
+            onclick={(e) => handleCardClick(e, c.nombre)}
+          >
+            <div class="mapa-card-header">
+              <div class="mapa-card-name" style="color:{clsColor}">{c.nombre}</div>
+              <div class="mapa-card-class-icon">{clsIcon}</div>
+            </div>
+            <div class="mapa-card-info">Nvl {c.nivel} · {c.raza} · {c.clase}</div>
+            <div class="mapa-card-warband">{c.warband}</div>
+            {#if total > 0}
+              <div class="mapa-card-tasks">
+                {#each c.tareas as t}
+                  <span class="mapa-card-dot" class:done={t.hecho} class:pending={!t.hecho}></span>
+                {/each}
+              </div>
+            {/if}
+          </div>
+        {/if}
+      {/each}
+      {#each charsForExp as c (c.nombre)}
+        {#each c.tareas as t (t.id)}
+          {@const tid = 'task_' + c.nombre + '_' + t.id}
+          {@const pos = getPos(tid)}
+          {#if pos && containerRect}
+            {@const px = pos.x * (containerRect.width / MAP_W)}
+            {@const py = pos.y * (containerRect.height / MAP_H)}
+            {@const typeLabel = t.cooldown || 'none'}
+            <div
+              class="mapa-slip"
+              class:dragging={dragging === tid}
+              class:highlight={highlight === tid}
+              style="left:{px}px;top:{py}px"
+              data-task-id={"task_" + c.nombre + "_" + t.id}
+              data-char-name={c.nombre}
+              onpointerdown={(e) => handlePointerDown(e, tid)}
+              onclick={(e) => handleSlipClick(e, c.nombre, t.id)}
+            >
+              <div class="mapa-slip-header">
+                <div class="mapa-slip-name">{t.nombre}</div>
+                <input type="checkbox" class="mapa-slip-check" checked={t.hecho}
+                  onchange={() => dataStore.toggleTarea(c.nombre, t.id)}
+                  onclick={(e) => e.stopPropagation()} />
+              </div>
+              <div class="mapa-slip-meta">
+                <span class="mapa-slip-type" class:typeLabel>{typeLabel}</span>
+                <span>P{t.prioridad}</span>
+                <span>{t.tiempo_min}min</span>
+              </div>
+              {#if t.recompensa}
+                <div class="mapa-slip-reward">🎁 {t.recompensa}</div>
+              {/if}
+            </div>
+          {/if}
+        {/each}
       {/each}
     </div>
 
-    {#if expansion}
-      <div class="map-container" style="border:1px solid var(--border-subtle);border-radius:var(--r-md);padding:16px;min-height:300px">
-        <div style="text-align:center;margin-bottom:12px">
-          <h4 style="color: {expansion.color}">{expansion.nombre}</h4>
-          <p class="text-muted" style="font-size:0.7rem">{expansion.region}</p>
-        </div>
-
-        <div class="map-stats" style="display:flex;gap:8px;justify-content:center;margin-bottom:12px;flex-wrap:wrap">
-          <span class="stat-item"><span class="stat-value">{charsInExp.length}</span> personajes</span>
-          <span class="stat-item">
-            <span class="stat-value">
-              {charsInExp.reduce((s, c) => s + c.tareas.filter(t => t.expansion === selectedExp && t.hecho).length, 0)}
-              /
-              {charsInExp.reduce((s, c) => s + c.tareas.filter(t => t.expansion === selectedExp).length, 0)}
-            </span> tareas
-          </span>
-        </div>
-
-        <div class="char-grid" style="grid-template-columns:repeat(auto-fill,minmax(200px,1fr))">
-          {#each charsInExp as c}
-            <div class="char-card" class:inactive={!c.activo}>
-              <div class="char-name">{c.nombre}</div>
-              <div class="char-info">
-                <span class={c.faccion === 'Horda' ? 'faction-horda' : 'faction-alliance'}>{c.faccion}</span>
-                <span>Nvl {c.nivel}</span>
-              </div>
-              <div class="char-tasks-bar">
-                {#each c.tareas.filter(t => t.expansion === selectedExp) as t}
-                  <span class="task-dot" class:done={t.hecho} class:pending={!t.hecho} title={t.nombre}></span>
-                {/each}
-              </div>
+    <div class="mapa-sidebar">
+      <div class="mapa-sidebar-tabs">
+        <button class="mapa-sidebar-tab" class:active={sidebarTab === 'chars'} onclick={() => sidebarTab = 'chars'}>🎭 Chars</button>
+        <button class="mapa-sidebar-tab" class:active={sidebarTab === 'tasks'} onclick={() => sidebarTab = 'tasks'}>📋 Tasks</button>
+        <button class="mapa-sidebar-tab" class:active={sidebarTab === 'groups'} onclick={() => sidebarTab = 'groups'}>📁 Groups</button>
+      </div>
+      <div class="mapa-sidebar-filter">
+        <label><input type="checkbox" checked={showInactivos} onchange={() => showInactivos = !showInactivos} /> Mostrar inactivos</label>
+      </div>
+      <div class="mapa-sidebar-content">
+        {#if sidebarContent.type === 'empty'}
+          <div class="mapa-sidebar-empty">{sidebarContent.text}</div>
+        {:else if sidebarContent.type === 'chars'}
+          {#each sidebarContent.items as item}
+            <div class="mapa-sidebar-item" class:active={highlight === item.highlightId}
+              onclick={() => scrollToElement('.mapa-card[data-char-name="' + item.id + '"]')}>
+              <span class="item-icon">{item.icon}</span>
+              <span class="item-name" style="color:{item.color}">{item.name}</span>
+              <span class="item-count">{item.count}</span>
             </div>
           {/each}
-        </div>
+        {:else if sidebarContent.type === 'tasks'}
+          <div style="padding:2px 8px;font-size:0.55rem;color:var(--text-dim);margin-bottom:2px">{sidebarContent.done}/{sidebarContent.total} hechas</div>
+          {#each sidebarContent.items as item}
+            <div class="mapa-sidebar-item" class:active={highlight === item.highlightId}
+              onclick={() => scrollToElement('.mapa-slip[data-task-id="' + item.highlightId + '"]')}>
+              <span class="item-icon" style="color:{item.hecho ? 'var(--health-green)' : 'var(--text-dim)'}">{item.hecho ? '✓' : '○'}</span>
+              <span class="item-name">{item.name}</span>
+              <span class="item-count" style="color:{item.personajeColor}">{item.personaje}</span>
+            </div>
+          {/each}
+        {:else if sidebarContent.type === 'groups'}
+          {#each sidebarContent.groups as group}
+            <div style="padding:3px 8px;font-size:0.6rem;color:var(--gold-light);font-weight:600;border-bottom:1px solid var(--border-subtle);margin-top:4px">
+              {group.name} ({group.count})
+            </div>
+            {#each group.chars as char}
+              <div class="mapa-sidebar-item" class:active={highlight === char.highlightId}
+                onclick={() => scrollToElement('.mapa-card[data-char-name="' + char.name + '"]')}>
+                <span class="item-icon">{char.icon}</span>
+                <span class="item-name" style="color:{char.color}">{char.name}</span>
+                <span class="item-count">{char.done}/{char.total}</span>
+              </div>
+            {/each}
+          {/each}
+        {/if}
       </div>
-    {/if}
+    </div>
+  </div>
+
+  <div class="mapa-stats">
+    <span class="mapa-stat"><span class="mapa-stat-value">{stats.chars}</span> personajes</span>
+    <span class="mapa-stat"><span class="mapa-stat-value">{stats.done}/{stats.total}</span> tareas</span>
+    <span class="mapa-stat"><span class="mapa-stat-value">{stats.weeklyDone}/{stats.weeklyTotal}</span> semanales</span>
+    <span class="mapa-stat"><span class="mapa-stat-value">{stats.totalMin}min</span> total</span>
+    <div class="mapa-stat-bar">
+      <div class="mapa-stat-fill {stats.pct >= 50 ? 'green' : stats.pct >= 25 ? 'yellow' : 'red'}" style="width:{stats.pct}%"></div>
+    </div>
+    <span style="color:var(--gold);font-weight:600">{stats.pct}%</span>
   </div>
 </div>
+
+<style>
+  .mapa-panel { display:flex; flex-direction:column; height:calc(100vh - 100px); margin-top:6px; border:1px solid var(--border-subtle); border-radius:var(--r-md); overflow:hidden; background:var(--bg-base); user-select:none; }
+  .mapa-exp-selector { display:flex; gap:3px; padding:5px 8px; background:linear-gradient(180deg,#1a0c00,#0a0500); border-bottom:1px solid var(--border-main); overflow-x:auto; flex-shrink:0; }
+  .mapa-exp-btn { display:flex; align-items:center; gap:5px; padding:4px 10px; border:1px solid transparent; border-radius:var(--r-sm); background:transparent; color:var(--text-muted); cursor:pointer; font-family:var(--font-body); font-size:0.65rem; white-space:nowrap; transition:all var(--t-fast) var(--ease); }
+  .mapa-exp-btn:hover { color:var(--text-primary); background:var(--bg-raised); border-color:var(--border-subtle); }
+  .mapa-exp-btn.active { color:var(--gold); background:rgba(201,168,76,0.12); border-color:var(--gold-dim); box-shadow:0 0 10px rgba(201,168,76,0.08); }
+  .mapa-exp-dot { width:8px; height:8px; border-radius:50%; flex-shrink:0; }
+  .mapa-exp-count { font-size:0.55rem; color:var(--text-dim); margin-left:2px; }
+  .mapa-layout { display:flex; flex:1; overflow:hidden; }
+  .mapa-area { flex:1; position:relative; overflow:hidden; background:#0a0804; }
+  .mapa-svg-wrap { position:absolute; inset:0; display:flex; align-items:center; justify-content:center; pointer-events:none; }
+  .mapa-svg-wrap :global(svg) { width:100%; height:100%; object-fit:contain; }
+  .mapa-card { position:absolute; z-index:10; width:150px; padding:6px 8px; border-radius:var(--r-md); cursor:grab; font-family:var(--font-body); transition:box-shadow var(--t-fast) var(--ease); border:1px solid var(--border-subtle); }
+  .mapa-card.horda { background:linear-gradient(135deg,#1f0808,#2a0a0a); border-color:rgba(170,17,17,0.4); box-shadow:0 2px 8px rgba(170,17,17,0.15); }
+  .mapa-card.alliance { background:linear-gradient(135deg,#08142f,#0a1a3a); border-color:rgba(26,109,181,0.4); box-shadow:0 2px 8px rgba(26,109,181,0.15); }
+  .mapa-card:hover { z-index:20; box-shadow:0 4px 16px rgba(0,0,0,0.5); }
+  .mapa-card.dragging { z-index:50; cursor:grabbing; box-shadow:0 8px 24px rgba(0,0,0,0.6); transform:scale(1.03); }
+  .mapa-card.highlight { z-index:25; box-shadow:0 0 0 2px var(--gold),0 4px 20px rgba(201,168,76,0.3); }
+  .mapa-card-header { display:flex; align-items:flex-start; justify-content:space-between; gap:4px; }
+  .mapa-card-name { font-size:0.72rem; font-weight:700; line-height:1.2; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .mapa-card-class-icon { font-size:0.9rem; flex-shrink:0; }
+  .mapa-card-info { font-size:0.55rem; color:var(--text-muted); margin-top:1px; line-height:1.3; }
+  .mapa-card-warband { font-size:0.5rem; color:var(--text-dim); margin-top:1px; padding:1px 4px; background:rgba(255,255,255,0.04); border-radius:var(--r-sm); display:inline-block; }
+  .mapa-card-tasks { display:flex; gap:2px; margin-top:3px; flex-wrap:wrap; }
+  .mapa-card-dot { width:6px; height:6px; border-radius:50%; flex-shrink:0; }
+  .mapa-card-dot.done { background:var(--health-green); }
+  .mapa-card-dot.pending { background:var(--text-dim); }
+  .mapa-slip { position:absolute; z-index:10; width:140px; padding:5px 7px; border-radius:var(--r-sm); cursor:grab; font-family:var(--font-body); transition:box-shadow var(--t-fast) var(--ease); background:linear-gradient(135deg,#1a1508,#221c0a); border:1px solid rgba(201,168,76,0.2); box-shadow:0 2px 6px rgba(0,0,0,0.3); }
+  .mapa-slip:hover { z-index:20; box-shadow:0 4px 12px rgba(0,0,0,0.4); }
+  .mapa-slip.dragging { z-index:50; cursor:grabbing; box-shadow:0 8px 20px rgba(0,0,0,0.5); transform:scale(1.03); }
+  .mapa-slip.highlight { z-index:25; box-shadow:0 0 0 2px var(--gold),0 4px 16px rgba(201,168,76,0.25); }
+  .mapa-slip-header { display:flex; align-items:flex-start; justify-content:space-between; gap:3px; }
+  .mapa-slip-name { font-size:0.62rem; font-weight:600; line-height:1.2; color:var(--gold-light); }
+  .mapa-slip-check { width:12px; height:12px; cursor:pointer; flex-shrink:0; margin-top:1px; accent-color:var(--health-green); }
+  .mapa-slip-meta { font-size:0.5rem; color:var(--text-muted); margin-top:2px; display:flex; gap:4px; flex-wrap:wrap; }
+  .mapa-slip-type { padding:0 3px; border-radius:2px; font-size:0.5rem; font-weight:600; text-transform:uppercase; }
+  .mapa-slip-type:global(.weekly) { background:rgba(0,170,0,0.15); color:var(--health-green); }
+  .mapa-slip-type:global(.daily) { background:rgba(0,112,221,0.15); color:var(--rarity-rare); }
+  .mapa-slip-type:global(.farm) { background:rgba(163,53,238,0.15); color:var(--rarity-epic); }
+  .mapa-slip-type:global(.none) { background:rgba(255,255,255,0.05); color:var(--text-dim); }
+  .mapa-slip-reward { font-size:0.5rem; color:var(--text-dim); margin-top:1px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .mapa-sidebar { width:200px; flex-shrink:0; display:flex; flex-direction:column; background:var(--bg-soft); border-left:1px solid var(--border-subtle); overflow:hidden; }
+  .mapa-sidebar-tabs { display:flex; border-bottom:1px solid var(--border-subtle); flex-shrink:0; }
+  .mapa-sidebar-tab { flex:1; padding:5px 4px; border:none; background:transparent; color:var(--text-muted); cursor:pointer; font-family:var(--font-body); font-size:0.6rem; text-align:center; transition:all var(--t-fast) var(--ease); border-bottom:2px solid transparent; }
+  .mapa-sidebar-tab:hover { color:var(--text-primary); }
+  .mapa-sidebar-tab.active { color:var(--gold); border-bottom-color:var(--gold-dim); }
+  .mapa-sidebar-content { flex:1; overflow-y:auto; padding:4px 0; }
+  .mapa-sidebar-filter { padding:3px 6px; border-bottom:1px solid var(--border-subtle); flex-shrink:0; }
+  .mapa-sidebar-filter label { display:flex; align-items:center; gap:4px; font-size:0.55rem; color:var(--text-muted); cursor:pointer; }
+  .mapa-sidebar-filter input { width:12px; height:12px; cursor:pointer; }
+  .mapa-sidebar-item { display:flex; align-items:center; gap:4px; padding:3px 8px; cursor:pointer; font-size:0.6rem; color:var(--text-secondary); transition:background var(--t-fast) var(--ease); border-left:2px solid transparent; }
+  .mapa-sidebar-item:hover { background:var(--bg-raised); color:var(--text-primary); }
+  .mapa-sidebar-item.active { border-left-color:var(--gold); background:rgba(201,168,76,0.08); color:var(--gold-light); }
+  .mapa-sidebar-item .item-icon { font-size:0.7rem; width:16px; text-align:center; flex-shrink:0; }
+  .mapa-sidebar-item .item-name { flex:1; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .mapa-sidebar-item .item-count { color:var(--text-dim); font-size:0.5rem; }
+  .mapa-sidebar-empty { padding:12px 8px; font-size:0.6rem; color:var(--text-dim); text-align:center; }
+  .mapa-stats { display:flex; align-items:center; gap:12px; padding:4px 12px; background:linear-gradient(0deg,#0a0500,#1a0c00); border-top:1px solid var(--border-main); flex-shrink:0; font-size:0.6rem; color:var(--text-muted); }
+  .mapa-stat { display:flex; align-items:center; gap:3px; }
+  .mapa-stat-value { color:var(--gold); font-weight:600; }
+  .mapa-stat-bar { flex:1; max-width:120px; height:6px; background:var(--bg-raised); border-radius:3px; overflow:hidden; }
+  .mapa-stat-fill { height:100%; border-radius:3px; transition:width var(--t-slow) var(--ease); }
+  .mapa-stat-fill.green { background:var(--health-green); }
+  .mapa-stat-fill.yellow { background:#c9a84c; }
+  .mapa-stat-fill.red { background:var(--red); }
+  @media (max-width:900px) { .mapa-sidebar { width:160px; } .mapa-card { width:120px; } .mapa-slip { width:110px; } }
+  @media (max-width:700px) { .mapa-sidebar { display:none; } .mapa-stats { flex-wrap:wrap; gap:6px; } }
+</style>

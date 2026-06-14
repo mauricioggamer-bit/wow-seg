@@ -58,6 +58,7 @@
   let editCharActivo = $state(true)
   let editCharWarband = $state('')
   let editCharMisionPrincipal = $state('')
+  let editCharExpansion = $state('')
 
   let editTaskChar = $state('')
   let editTaskId = $state('')
@@ -103,6 +104,7 @@
     editCharActivo = c.activo
     editCharWarband = c.warband
     editCharMisionPrincipal = c.mision_principal || ''
+    editCharExpansion = c.expansion_por_defecto || ''
     uiStore.openModal('CharEdit')
   }
 
@@ -170,6 +172,7 @@
       activo: editCharActivo,
       warband: editCharWarband,
       mision_principal: editCharMisionPrincipal || undefined,
+      expansion_por_defecto: editCharExpansion || null,
     })
     uiStore.closeModal()
   }
@@ -216,7 +219,7 @@
 
   <!-- Modal: Nueva Misión -->
   <Dialog show={$uiStore.activeModal === 'MissionNew'} title="Nueva Misión" onclose={() => uiStore.closeModal()}>
-    {#snippet content()}
+    {#snippet children()}
       <div class="form-group">
         <label for="misionNombre">Nombre de la misión</label>
         <input id="misionNombre" type="text" bind:value={misionNombre} placeholder="Ej: Farmear Invincible" />
@@ -290,7 +293,7 @@
 
   <!-- Modal: Gist Config -->
   <Dialog show={$uiStore.activeModal === 'GistConfig'} title="Sincronizar Gist" onclose={() => uiStore.closeModal()}>
-    {#snippet content()}
+    {#snippet children()}
       <div class="form-group">
         <label for="gistToken">GitHub Token</label>
         <input id="gistToken" type="password" bind:value={gistToken} placeholder="ghp_..." />
@@ -313,10 +316,10 @@
 
   <!-- Modal: Import/Export -->
   <Dialog show={$uiStore.activeModal === 'ImportExport'} title="Importar / Exportar" onclose={() => uiStore.closeModal()}>
-    {#snippet content()}
+    {#snippet children()}
       <div class="form-group">
         <label>Exportar datos</label>
-        <textarea style="width:100%;min-height:120px;font-size:0.6rem;font-family:monospace" readonly>{dataStore.exportJSON()}</textarea>
+        <textarea style="width:100%;min-height:120px;font-size:0.6rem;font-family:monospace" readonly value={dataStore.exportJSON()}></textarea>
         <button class="wow-btn wow-btn-sm" style="margin-top:4px" onclick={() => {
           navigator.clipboard.writeText(dataStore.exportJSON())
         }}>Copiar al portapapeles</button>
@@ -338,7 +341,7 @@
 
   <!-- Modal: Warband Management -->
   <Dialog show={$uiStore.activeModal === 'WarbandManage'} title="Gestionar Warbands" onclose={() => uiStore.closeModal()}>
-    {#snippet content()}
+    {#snippet children()}
       <div class="form-group">
         <label>Nuevo Warband</label>
         <div style="display:flex;gap:4px">
@@ -375,7 +378,7 @@
 
   <!-- Modal: Mover personaje -->
   <Dialog show={$uiStore.activeModal === 'WarbandMove'} title="Mover personaje" onclose={() => uiStore.closeModal()}>
-    {#snippet content()}
+    {#snippet children()}
       <div class="form-group">
         <label>Personaje</label>
         <select bind:value={moveCharName}>
@@ -406,7 +409,7 @@
 
   <!-- Modal: Editar Personaje -->
   <Dialog show={$uiStore.activeModal === 'CharEdit'} title="Editar Personaje" onclose={() => uiStore.closeModal()}>
-    {#snippet content()}
+    {#snippet children()}
       <div class="form-group">
         <label>Nombre</label>
         <input type="text" bind:value={editCharName} disabled style="opacity:0.6" />
@@ -461,6 +464,15 @@
         <label>Misión Principal</label>
         <input type="text" bind:value={editCharMisionPrincipal} placeholder="Ej: Campaña TWW Cap.4" />
       </div>
+      <div class="form-group">
+        <label>Expansión por defecto (mapa)</label>
+        <select bind:value={editCharExpansion}>
+          <option value="">(ninguna)</option>
+          {#each EXPANSIONS as exp}
+            <option value={exp.id}>{exp.nombre}</option>
+          {/each}
+        </select>
+      </div>
       <label style="display:flex;align-items:center;gap:6px;font-size:0.75rem;margin-top:4px">
         <input type="checkbox" bind:checked={editCharActivo} />
         Activo
@@ -474,7 +486,7 @@
 
   <!-- Modal: Editar Tarea -->
   <Dialog show={$uiStore.activeModal === 'TaskEdit'} title="Editar Tarea" onclose={() => uiStore.closeModal()}>
-    {#snippet content()}
+    {#snippet children()}
       <div class="form-group">
         <label for="editTaskNombre">Nombre</label>
         <input id="editTaskNombre" type="text" bind:value={editTaskNombre} />
@@ -514,7 +526,7 @@
 
   <!-- Modal: Editar Misión -->
   <Dialog show={$uiStore.activeModal === 'MissionEdit'} title="Editar Misión" onclose={() => uiStore.closeModal()}>
-    {#snippet content()}
+    {#snippet children()}
       <div class="form-group">
         <label>Nombre</label>
         <input type="text" bind:value={editMissionNombre} />

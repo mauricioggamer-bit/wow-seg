@@ -3,7 +3,7 @@
   import { uiStore } from '../stores/ui'
   import { clsClass } from '../constants'
 
-  let { openTaskEdit = (c: string, t: string) => uiStore.openModal('TaskEdit') }: {
+  let { openTaskEdit }: {
     openTaskEdit?: (charName: string, taskId: string) => void
   } = $props()
 

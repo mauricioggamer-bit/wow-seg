@@ -4,7 +4,7 @@
   import { clsClass } from '../constants'
   import type { Mision } from '../types'
 
-  let { openCharEdit = (n: string) => uiStore.openModal('CharEdit'), openTaskEdit = (c: string, t: string) => uiStore.openModal('TaskEdit'), openMissionEdit = (m: Mision) => uiStore.openModal('MissionEdit') }: {
+  let { openCharEdit, openTaskEdit, openMissionEdit }: {
     openCharEdit?: (name: string) => void
     openTaskEdit?: (charName: string, taskId: string) => void
     openMissionEdit?: (mission: Mision) => void

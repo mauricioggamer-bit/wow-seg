@@ -76,6 +76,7 @@
   let editMissionPrioridad = $state('2')
   let editMissionTiempo = $state(30)
   let editMissionTags = $state('')
+  let isNewChar = $state(false)
 
   let charClasses = $derived([...new Set($personajesStore.map(c => c.clase))].sort())
   let charRaces = $derived([...new Set($personajesStore.map(c => c.raza))].sort())
@@ -105,6 +106,21 @@
     editCharWarband = c.warband
     editCharMisionPrincipal = c.mision_principal || ''
     editCharExpansion = c.expansion_por_defecto || ''
+    uiStore.openModal('CharEdit')
+  }
+
+  function openNewChar() {
+    isNewChar = true
+    editCharName = ''
+    editCharClase = charClasses[0] || ''
+    editCharRaza = charRaces[0] || ''
+    editCharNivel = 1
+    editCharFaccion = charFactions[0] || ''
+    editCharReino = charRealms[0] || ''
+    editCharActivo = true
+    editCharWarband = ($warbandsStore.filter(w => w.nombre !== 'nada')[0]?.nombre) || ''
+    editCharMisionPrincipal = ''
+    editCharExpansion = ''
     uiStore.openModal('CharEdit')
   }
 
@@ -163,17 +179,33 @@
 
   function saveCharEdit() {
     if (!editCharName.trim()) return
-    dataStore.updatePersonaje(editCharName, {
-      clase: editCharClase,
-      raza: editCharRaza,
-      nivel: editCharNivel,
-      faccion: editCharFaccion,
-      reino: editCharReino,
-      activo: editCharActivo,
-      warband: editCharWarband,
-      mision_principal: editCharMisionPrincipal || undefined,
-      expansion_por_defecto: editCharExpansion || null,
-    })
+    if (isNewChar) {
+      dataStore.addPersonaje({
+        nombre: editCharName.trim(),
+        clase: editCharClase,
+        raza: editCharRaza,
+        nivel: editCharNivel,
+        faccion: editCharFaccion,
+        reino: editCharReino,
+        activo: editCharActivo,
+        warband: editCharWarband,
+        mision_principal: editCharMisionPrincipal || undefined,
+        expansion_por_defecto: editCharExpansion || null,
+      })
+      isNewChar = false
+    } else {
+      dataStore.updatePersonaje(editCharName, {
+        clase: editCharClase,
+        raza: editCharRaza,
+        nivel: editCharNivel,
+        faccion: editCharFaccion,
+        reino: editCharReino,
+        activo: editCharActivo,
+        warband: editCharWarband,
+        mision_principal: editCharMisionPrincipal || undefined,
+        expansion_por_defecto: editCharExpansion || null,
+      })
+    }
     uiStore.closeModal()
   }
 </script>
@@ -199,7 +231,7 @@
         {:else if $uiStore.currentView === 'time'}
           <TimeView {openTaskEdit} {openMissionEdit} />
         {:else if $uiStore.currentView === 'personajes'}
-          <PersonajesView {openCharEdit} />
+          <PersonajesView {openCharEdit} {openNewChar} />
         {:else if $uiStore.currentView === 'mapa'}
           <MapaView {openTaskEdit} {openMissionEdit} openNewItemForChar={(char) => { resetMissionForm(); misionPersonaje = char; uiStore.openModal('MissionNew') }} />
         {/if}
@@ -407,12 +439,12 @@
     {/snippet}
   </Dialog>
 
-  <!-- Modal: Editar Personaje -->
-  <Dialog show={$uiStore.activeModal === 'CharEdit'} title="Editar Personaje" onclose={() => uiStore.closeModal()}>
+  <!-- Modal: Editar / Nuevo Personaje -->
+  <Dialog show={$uiStore.activeModal === 'CharEdit'} title={isNewChar ? 'Nuevo Personaje' : 'Editar Personaje'} onclose={() => { isNewChar = false; uiStore.closeModal() }}>
     {#snippet children()}
       <div class="form-group">
         <label>Nombre</label>
-        <input type="text" bind:value={editCharName} disabled style="opacity:0.6" />
+        <input type="text" bind:value={editCharName} disabled={!isNewChar} style={isNewChar ? '' : 'opacity:0.6'} />
       </div>
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px">
         <div class="form-group">

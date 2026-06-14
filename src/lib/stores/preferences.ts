@@ -1,4 +1,4 @@
-import { writable } from 'svelte/store'
+import { writable, get } from 'svelte/store'
 import type { ThemeType, FontSizeType } from '../types'
 
 function loadPref<T>(key: string, fallback: T): T {
@@ -11,10 +11,12 @@ function loadPref<T>(key: string, fallback: T): T {
 }
 
 function createPreferencesStore() {
-  const { subscribe, set, update } = writable({
+  const store = writable({
     theme: loadPref<ThemeType>('wowseg_theme', 'dark'),
     fontSize: loadPref<FontSizeType>('wowseg_fontsize', 'medium'),
   })
+
+  const { subscribe, update } = store
 
   return {
     subscribe,
@@ -29,13 +31,11 @@ function createPreferencesStore() {
       document.documentElement.setAttribute('data-size', size)
     },
     toggleTheme() {
-      let theme: ThemeType = 'dark'
-      this.subscribe(s => theme = s.theme)()
-      this.setTheme(theme === 'dark' ? 'light' : 'dark')
+      const current = get(store)
+      this.setTheme(current.theme === 'dark' ? 'light' : 'dark')
     },
     init() {
-      let prefs = { theme: 'dark' as ThemeType, fontSize: 'medium' as FontSizeType }
-      this.subscribe(s => prefs = s)()
+      const prefs = get(store)
       document.documentElement.setAttribute('data-theme', prefs.theme)
       document.documentElement.setAttribute('data-size', prefs.fontSize)
     },

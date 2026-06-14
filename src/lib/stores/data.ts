@@ -142,6 +142,51 @@ function createDataStore() {
     getWarbands(): Warband[] {
       return get({ subscribe }).warbands
     },
+    addPersonaje(p: { nombre: string; clase: string; raza: string; nivel: number; faccion: string; reino: string; warband: string; mision_principal?: string; expansion_por_defecto?: string | null; activo?: boolean }) {
+      update(d => {
+        if (d.personajes.find(x => x.nombre === p.nombre)) return d
+        const nuevo: Personaje = {
+          nombre: p.nombre,
+          clase: p.clase,
+          raza: p.raza,
+          nivel: p.nivel,
+          faccion: p.faccion as 'Horda' | 'Alianza',
+          reino: p.reino,
+          warband: p.warband,
+          mision_principal: p.mision_principal || null,
+          expansion_por_defecto: p.expansion_por_defecto || null,
+          activo: p.activo ?? true,
+          tareas: [],
+        }
+        d.personajes.push(nuevo)
+        let wb = d.warbands.find(w => w.nombre === p.warband)
+        if (!wb) {
+          d.warbands.push({ nombre: p.warband, personajes: [p.nombre], tareas_disponibles: [] })
+        } else {
+          if (!wb.personajes.includes(p.nombre)) wb.personajes.push(p.nombre)
+        }
+        d._meta.total_personajes = d.personajes.length
+        d._meta.total_activos = d.personajes.filter(c => c.activo).length
+        saveData(d)
+        return d
+      })
+    },
+    moveCharToExpansion(charName: string, newExp: string) {
+      update(d => {
+        const char = d.personajes.find(p => p.nombre === charName)
+        if (!char || char.expansion_por_defecto === newExp) return d
+        const oldExp = char.expansion_por_defecto
+        char.expansion_por_defecto = newExp
+        for (const t of char.tareas) {
+          if (t.expansion === oldExp) t.expansion = newExp
+        }
+        for (const m of (d.misiones || [])) {
+          if (m.personaje === charName && m.expansion === oldExp) m.expansion = newExp
+        }
+        saveData(d)
+        return d
+      })
+    },
     moveCharToWarband(charName: string, newWarband: string) {
       update(d => {
         const char = d.personajes.find(p => p.nombre === charName)

@@ -3,7 +3,7 @@
   import { uiStore } from '../stores/ui'
   import { CLASS_MAP, PERS_RACE_INFO, PERS_CLASS_ICONS, PERS_CLASS_COLORS, PERS_RACES_BY_COLUMN } from '../constants'
 
-  let { openCharEdit }: { openCharEdit?: (name: string) => void } = $props()
+  let { openCharEdit, openNewChar }: { openCharEdit?: (name: string) => void; openNewChar?: () => void } = $props()
 
   let persSelectedRace = $state<string | null>(null)
   let persSelectedFaction = $state<string | null>(null)
@@ -190,7 +190,7 @@
               </span>
               <div class="pers-card-icon" style="color:{color}">{icon}</div>
               <div class="pers-card-name" style="color:{color}">{c.nombre}</div>
-              <div class="pers-card-meta">Nv.{c.nivel}<br>{c.clase} · {c.raza}</div>
+              <div class="pers-card-meta">Nv.{c.nivel} · {c.clase} · {c.raza}</div>
             </div>
           {/each}
           
@@ -246,77 +246,83 @@
         }
       </span>
     </div>
-    <button
-      class="pers-foot-btn primary"
-      disabled={!persSelectedChar}
-      onclick={() => { if (persSelectedChar && openCharEdit) openCharEdit(persSelectedChar) }}
-    >EDITAR PERSONAJE ►</button>
+    <div style="display:flex;gap:4px">
+      <button
+        class="pers-foot-btn"
+        onclick={() => { if (openNewChar) openNewChar() }}
+      >✚ NUEVO</button>
+      <button
+        class="pers-foot-btn primary"
+        disabled={!persSelectedChar}
+        onclick={() => { if (persSelectedChar && openCharEdit) openCharEdit(persSelectedChar) }}
+      >EDITAR ►</button>
+    </div>
   </div>
 </div>
 
 <style>
   .pers-view { display:flex; flex-direction:column; height:calc(100vh - 100px); margin-top:6px; border:1px solid var(--border-subtle); border-radius:var(--r-md); overflow:hidden; background:var(--bg-base); }
   .pers-header { display:flex; align-items:center; justify-content:space-between; padding:5px 14px; background:linear-gradient(180deg,#1a0c00,#0a0500); border-bottom:1px solid var(--border-main); flex-shrink:0; }
-  .pers-faction-title { font-size:13px; font-weight:bold; letter-spacing:3px; display:flex; align-items:center; gap:8px; }
+  .pers-faction-title { font-size:0.6rem; font-weight:bold; letter-spacing:3px; display:flex; align-items:center; gap:8px; }
   .pers-faction-title.a { color:var(--alliance); }
   .pers-faction-title.h { color:var(--horde); }
-  .pers-center-title { color:var(--gold-light); font-size:14px; letter-spacing:5px; text-shadow:0 0 12px var(--gold); text-align:center; }
-  .pers-center-title small { display:block; font-size:9px; color:var(--text-muted); letter-spacing:2px; margin-top:1px; }
+  .pers-center-title { color:var(--gold-light); font-size:0.65rem; letter-spacing:5px; text-shadow:0 0 12px var(--gold); text-align:center; }
+  .pers-center-title small { display:block; font-size:0.4rem; color:var(--text-muted); letter-spacing:2px; margin-top:1px; }
   .pers-body-row { display:flex; flex:1; overflow:hidden; }
-  .pers-race-panel { width:105px; flex-shrink:0; display:flex; flex-direction:column; padding:6px 4px; gap:2px; overflow-y:auto; }
+  .pers-race-panel { width:125px; flex-shrink:0; display:flex; flex-direction:column; padding:6px 4px; gap:2px; overflow-y:auto; }
   .pers-panel-a:nth-child(1) { border-right:1px solid var(--border-subtle); background:linear-gradient(180deg,rgba(26,74,153,0.13),var(--bg-soft)); }
   .pers-panel-a:nth-child(2) { border-right:1px solid var(--border-subtle); background:linear-gradient(180deg,rgba(26,74,153,0.07),var(--bg-soft)); }
   .pers-panel-h:nth-child(1) { border-left:1px solid var(--border-subtle); background:linear-gradient(180deg,rgba(136,21,0,0.07),var(--bg-soft)); }
   .pers-panel-h:nth-child(2) { border-left:1px solid var(--border-subtle); background:linear-gradient(180deg,rgba(136,21,0,0.13),var(--bg-soft)); }
-  .pers-panel-faction-label { font-size:9px; letter-spacing:2px; text-align:center; padding:2px 0 4px; border-bottom:1px solid var(--border-subtle); margin-bottom:4px; }
+  .pers-panel-faction-label { font-size:0.4rem; letter-spacing:2px; text-align:center; padding:2px 0 4px; border-bottom:1px solid var(--border-subtle); margin-bottom:4px; }
   .pers-panel-faction-label.a, .pers-panel-faction-label.a-inner { color:var(--alliance); }
   .pers-panel-faction-label.a-inner { opacity:0.65; }
   .pers-panel-faction-label.h, .pers-panel-faction-label.h-inner { color:var(--horde); }
   .pers-panel-faction-label.h-inner { opacity:0.65; }
-  .pers-race-btn { display:flex; align-items:center; gap:6px; padding:4px 6px; border:1px solid transparent; border-radius:2px; cursor:pointer; transition:all 0.12s; background:none; width:100%; color:var(--text-primary); text-align:left; font-family:inherit; font-size:12px; }
+  .pers-race-btn { display:flex; align-items:center; gap:6px; padding:4px 6px; border:1px solid transparent; border-radius:2px; cursor:pointer; transition:all 0.12s; background:none; width:100%; color:var(--text-primary); text-align:left; font-family:inherit; font-size:0.55rem; }
   .pers-race-btn:hover { background:rgba(26,12,0,0.53); border-color:var(--border-main); }
   .pers-race-btn.active-a { background:rgba(10,32,80,0.6); border-color:var(--alliance); box-shadow:0 0 8px rgba(26,74,153,0.5); }
   .pers-race-btn.active-h { background:rgba(58,8,0,0.6); border-color:var(--horde); box-shadow:0 0 8px rgba(136,21,0,0.5); }
   .pers-race-icon { font-size:20px; line-height:1; }
-  .pers-race-name { color:var(--gold); font-size:10px; line-height:1.3; }
-  .pers-race-type { color:var(--text-muted); font-size:9px; }
+  .pers-race-name { color:var(--gold); font-size:11px; line-height:1.3; }
+  .pers-race-type { color:var(--text-muted); font-size:10px; }
   #pers-panel-center { flex:1; display:flex; flex-direction:column; overflow:hidden; position:relative; }
   #pers-filter-bar { position:relative; z-index:2; display:flex; align-items:center; justify-content:center; gap:6px; padding:5px 8px; background:rgba(10,5,0,0.53); border-bottom:1px solid var(--border-subtle); flex-shrink:0; flex-wrap:wrap; }
-  .pers-filter-label { color:var(--text-muted); font-size:10px; margin-right:2px; }
-  .pers-filter-chip { border:1px solid var(--border-main); background:none; color:var(--gold-dim); font-family:inherit; font-size:10px; padding:2px 7px; cursor:pointer; border-radius:1px; letter-spacing:0.5px; transition:all 0.12s; }
+  .pers-filter-label { color:var(--text-muted); font-size:0.45rem; margin-right:2px; }
+  .pers-filter-chip { border:1px solid var(--border-main); background:none; color:var(--gold-dim); font-family:inherit; font-size:0.45rem; padding:2px 7px; cursor:pointer; border-radius:1px; letter-spacing:0.5px; transition:all 0.12s; }
   .pers-filter-chip:hover { color:var(--gold); border-color:var(--gold-dim); background:rgba(26,12,0,0.53); }
   .pers-filter-chip.active { border-color:var(--gold); color:var(--gold-light); background:rgba(42,24,0,0.6); text-shadow:0 0 6px var(--gold); }
   .pers-filter-sep { color:var(--border-subtle); }
-  .pers-level-select { background:rgba(10,5,0,0.8); border:1px solid var(--border-main); color:var(--gold); font-size:10px; padding:2px 6px; border-radius:2px; cursor:pointer; font-family:inherit; }
-  #pers-char-grid { position:relative; z-index:2; flex:1; overflow-y:auto; padding:10px; display:grid; grid-template-columns:repeat(auto-fill,minmax(130px,1fr)); gap:8px; align-content:start; }
+  .pers-level-select { background:rgba(10,5,0,0.8); border:1px solid var(--border-main); color:var(--gold); font-size:0.45rem; padding:2px 6px; border-radius:2px; cursor:pointer; font-family:inherit; }
+  #pers-char-grid { position:relative; z-index:2; flex:1; overflow-y:auto; padding:10px; display:grid; grid-template-columns:repeat(5,1fr); gap:8px; align-content:start; }
   .pers-char-card { border:1px solid var(--border-subtle); background:linear-gradient(180deg,rgba(22,10,0,0.53),rgba(10,5,0,0.53)); border-radius:2px; padding:8px; cursor:pointer; transition:all 0.15s; text-align:center; position:relative; }
   .pers-char-card:hover { border-color:var(--border-main); background:rgba(31,14,0,0.53); }
   .pers-char-card.selected-a { border-color:var(--alliance); background:rgba(10,32,80,0.5); box-shadow:0 0 12px rgba(26,74,153,0.5); }
   .pers-char-card.selected-h { border-color:var(--horde); background:rgba(58,8,0,0.5); box-shadow:0 0 12px rgba(136,21,0,0.5); }
   .pers-card-icon { font-size:28px; line-height:1.2; margin-bottom:4px; }
-  .pers-card-name { font-size:11px; font-weight:bold; letter-spacing:1px; color:var(--gold-light); }
-  .pers-card-meta { color:var(--text-muted); font-size:9px; margin-top:1px; }
-  .pers-card-faction-tag { font-size:8px; position:absolute; top:4px; right:5px; letter-spacing:1px; }
+  .pers-card-name { font-size:0.5rem; font-weight:bold; letter-spacing:1px; color:var(--gold-light); }
+  .pers-card-meta { color:var(--text-muted); font-size:0.45rem; margin-top:1px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .pers-card-faction-tag { font-size:0.35rem; position:absolute; top:4px; right:5px; letter-spacing:1px; }
   .pers-card-faction-tag.a { color:var(--alliance); }
   .pers-card-faction-tag.h { color:var(--horde); }
-  .pers-empty-state { grid-column:1/-1; text-align:center; padding:40px; color:var(--text-muted); font-size:11px; line-height:2; }
+  .pers-empty-state { grid-column:1/-1; text-align:center; padding:40px; color:var(--text-muted); font-size:0.5rem; line-height:2; }
   .pers-empty-state .big { font-size:32px; display:block; margin-bottom:8px; }
   .pers-char-card.add-new { border-style:dashed; border-color:var(--border-subtle); color:var(--text-muted); display:flex; flex-direction:column; align-items:center; justify-content:center; min-height:90px; gap:4px; }
   .pers-char-card.add-new:hover { color:var(--gold-dim); border-color:var(--border-main); }
   .pers-add-icon { font-size:24px; }
   #pers-class-bar-wrap { position:relative; z-index:2; border-top:1px solid var(--border-subtle); background:linear-gradient(180deg,rgba(14,7,0,0.53),rgba(6,4,1,0.8)); padding:5px 8px; flex-shrink:0; }
   #pers-class-bar { display:flex; gap:3px; justify-content:center; overflow-x:auto; padding-bottom:2px; }
-  .pers-class-btn { background:none; border:1px solid var(--border-subtle); color:var(--text-muted); font-family:inherit; font-size:10px; padding:3px 8px; cursor:pointer; border-radius:2px; white-space:nowrap; transition:all 0.12s; display:flex; flex-direction:column; align-items:center; gap:1px; min-width:58px; }
+  .pers-class-btn { background:none; border:1px solid var(--border-subtle); color:var(--text-muted); font-family:inherit; font-size:0.5rem; padding:4px 10px; cursor:pointer; border-radius:2px; white-space:nowrap; transition:all 0.12s; display:flex; flex-direction:column; align-items:center; gap:1px; min-width:64px; }
   .pers-class-btn:hover { background:rgba(26,12,0,0.6); border-color:var(--border-main); color:var(--gold-dim); }
   .pers-class-btn.active { background:rgba(42,21,0,0.6); border-color:var(--gold); color:var(--gold-light); }
-  .pers-cbtn-icon { font-size:14px; line-height:1; }
-  .pers-cbtn-label { font-size:9px; letter-spacing:0.3px; }
+  .pers-cbtn-icon { font-size:0.65rem; line-height:1; }
+  .pers-cbtn-label { font-size:0.4rem; letter-spacing:0.3px; }
   #pers-footer { display:flex; justify-content:space-between; align-items:center; padding:5px 14px; background:linear-gradient(0deg,#100800,#0a0500); border-top:1px solid var(--border-main); flex-shrink:0; }
-  .pers-foot-btn { background:linear-gradient(180deg,#2a1500,#170900); border:1px solid #7a4a10; color:var(--gold-light); font-family:inherit; font-size:12px; letter-spacing:1px; padding:5px 18px; cursor:pointer; border-radius:2px; transition:all 0.15s; }
+  .pers-foot-btn { background:linear-gradient(180deg,#2a1500,#170900); border:1px solid #7a4a10; color:var(--gold-light); font-family:inherit; font-size:0.55rem; letter-spacing:1px; padding:5px 18px; cursor:pointer; border-radius:2px; transition:all 0.15s; }
   .pers-foot-btn:hover { background:linear-gradient(180deg,#3a2000,#1f0e00); border-color:var(--gold); }
   .pers-foot-btn:disabled { opacity:0.3; pointer-events:none; }
   .pers-foot-btn.primary { border-color:#c8a84b; background:linear-gradient(180deg,#3a2800,#1f1200); }
   .pers-foot-btn.primary:hover { background:linear-gradient(180deg,#5a3a00,#2a1800); box-shadow:0 0 10px var(--gold-dim); }
-  .pers-realm-info { color:var(--text-muted); font-size:10px; text-align:center; line-height:1.6; }
+  .pers-realm-info { color:var(--text-muted); font-size:0.45rem; text-align:center; line-height:1.6; }
   .pers-realm-ping { color:#44cc44; }
 </style>

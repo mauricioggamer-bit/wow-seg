@@ -76,15 +76,6 @@
     return [...tasks, ...misiones]
   }
 
-  let groups = $derived.by(() => {
-    const g: Record<string, typeof charsForExp> = {}
-    for (const c of charsForExp) {
-      if (!g[c.warband]) g[c.warband] = []
-      g[c.warband].push(c)
-    }
-    return g
-  })
-
   let stats = $derived.by(() => {
     const done = allItems.filter(t => t.hecho).length
     const total = allItems.length
@@ -117,22 +108,6 @@
         personaje: t.personaje,
         highlightId: 'char_' + t.personaje,
         personajeColor: PERS_CLASS_COLORS[CLASS_MAP[t.clase] || 'warrior'] || '#c69b3a',
-      }))} as const
-    }
-    if (sidebarTab === 'groups') {
-      const keys = Object.keys(groups).sort()
-      if (keys.length === 0) return { type: 'empty', text: 'No hay grupos' } as const
-      return { type: 'groups', groups: keys.map(wb => ({
-        name: wb,
-        count: groups[wb].length,
-        chars: groups[wb].map(c => ({
-          name: c.nombre,
-          icon: PERS_CLASS_ICONS[CLASS_MAP[c.clase] || 'warrior'] || '?',
-          color: PERS_CLASS_COLORS[CLASS_MAP[c.clase] || 'warrior'] || '#c69b3a',
-          done: c.tareas.filter(t => t.hecho).length,
-          total: c.tareas.length,
-          highlightId: 'char_' + c.nombre,
-        })),
       }))} as const
     }
     return { type: 'empty', text: '' } as const
@@ -176,13 +151,24 @@
       setPos(id, newX / scX, newY / scY)
     }
 
-    function onUp() {
+    function onUp(ev: PointerEvent) {
       window.removeEventListener('pointermove', onMove)
       window.removeEventListener('pointerup', onUp)
       if (wasDragged) {
         dragging = null
         el.classList.remove('dragging')
-        savePositions()
+        const expandEls = document.elementsFromPoint(ev.clientX, ev.clientY)
+        const dropBtn = expandEls.find((el): el is HTMLElement => el instanceof HTMLElement && el.closest?.('.mapa-exp-btn'))
+        if (dropBtn) {
+          const expBtn = dropBtn.closest('.mapa-exp-btn') as HTMLElement
+          const newExp = expBtn.getAttribute('data-drop-exp')
+          const charName = id.replace('char_', '')
+          if (newExp && charName) {
+            dataStore.moveCharToExpansion(charName, newExp)
+          }
+        } else {
+          savePositions()
+        }
       }
     }
 
@@ -248,18 +234,19 @@
 </script>
 
 <div class="mapa-panel">
-  <div class="mapa-exp-selector">
-    {#each EXPANSIONS as exp}
-      {@const count = charsForExp.length}
-      <button class="mapa-exp-btn" class:active={activeExp === exp.id} onclick={() => selectExp(exp.id)}>
-        <span class="mapa-exp-dot" style="background:{exp.color}"></span>
-        {exp.nombre}
-        <span class="mapa-exp-count">{count}</span>
-      </button>
-    {/each}
-  </div>
-
   <div class="mapa-layout">
+    <div class="mapa-exp-selector">
+      {#each EXPANSIONS as exp}
+        {@const count = charsForExp.length}
+        <button class="mapa-exp-btn" class:active={activeExp === exp.id}
+          onclick={() => selectExp(exp.id)}
+          data-drop-exp={exp.id}>
+          <span class="mapa-exp-dot" style="background:{exp.color}"></span>
+          <span class="mapa-exp-label">{exp.nombre}</span>
+          <span class="mapa-exp-count">{count}</span>
+        </button>
+      {/each}
+    </div>
     <div class="mapa-area" bind:this={mapAreaEl}>
       <div class="mapa-svg-wrap">{@html mapa_svgs[activeExp] || ''}</div>
       {#each charsForExp as c (c.nombre)}
@@ -286,10 +273,9 @@
               <div class="mapa-card-class-icon">{clsIcon}</div>
             </div>
             <div class="mapa-card-info">Nvl {c.nivel} · {c.raza} · {c.clase}</div>
-            <div class="mapa-card-warband">{c.warband}</div>
             {#if items.length > 0}
               <div class="mapa-card-items">
-                {#each items as item (item.id)}
+                {#each items.slice(0, 3) as item (item.id)}
                   <div class="mapa-card-item" class:done={item.hecho}>
                     <input type="checkbox" checked={item.hecho}
                       onchange={() => {
@@ -298,10 +284,11 @@
                       }}
                       onclick={(e) => e.stopPropagation()} />
                     <span class="mapa-item-name">{item.nombre}</span>
-                    <button class="mapa-item-btn" onclick={(e) => { e.stopPropagation(); if (item._type === 'task') openTaskEdit(c.nombre, item.id); else openMissionEdit(item) }} title="Editar">✏️</button>
-                    <button class="mapa-item-btn" onclick={(e) => { e.stopPropagation(); if (confirm('¿Eliminar "' + item.nombre + '"?')) { if (item._type === 'task') dataStore.deleteTarea(c.nombre, item.id); else dataStore.deleteMision(item.id) } }} title="Eliminar">🗑️</button>
                   </div>
                 {/each}
+                {#if items.length > 3}
+                  <div class="mapa-card-more">+{items.length - 3} más</div>
+                {/if}
               </div>
             {:else}
               <div class="mapa-card-items">
@@ -318,7 +305,6 @@
       <div class="mapa-sidebar-tabs">
         <button class="mapa-sidebar-tab" class:active={sidebarTab === 'chars'} onclick={() => sidebarTab = 'chars'}>🎭 Chars</button>
         <button class="mapa-sidebar-tab" class:active={sidebarTab === 'tasks'} onclick={() => sidebarTab = 'tasks'}>📋 Tasks</button>
-        <button class="mapa-sidebar-tab" class:active={sidebarTab === 'groups'} onclick={() => sidebarTab = 'groups'}>📁 Groups</button>
       </div>
       <div class="mapa-sidebar-filter">
         <label><input type="checkbox" checked={showInactivos} onchange={() => showInactivos = !showInactivos} /> Mostrar inactivos</label>
@@ -345,21 +331,7 @@
               <span class="item-count" style="color:{item.personajeColor}">{item.personaje}</span>
             </div>
           {/each}
-        {:else if sidebarContent.type === 'groups'}
-          {#each sidebarContent.groups as group}
-            <div style="padding:3px 8px;font-size:0.6rem;color:var(--gold-light);font-weight:600;border-bottom:1px solid var(--border-subtle);margin-top:4px">
-              {group.name} ({group.count})
-            </div>
-            {#each group.chars as char}
-              <div class="mapa-sidebar-item" class:active={highlight === char.highlightId}
-                onclick={() => scrollToElement('.mapa-card[data-char-name="' + char.name + '"]')}>
-                <span class="item-icon">{char.icon}</span>
-                <span class="item-name" style="color:{char.color}">{char.name}</span>
-                <span class="item-count">{char.done}/{char.total}</span>
-              </div>
-            {/each}
-          {/each}
-        {/if}
+          {/if}
       </div>
     </div>
   </div>
@@ -378,38 +350,24 @@
 
 <style>
   .mapa-panel { display:flex; flex-direction:column; height:calc(100vh - 100px); margin-top:6px; border:1px solid var(--border-subtle); border-radius:var(--r-md); overflow:hidden; background:var(--bg-base); user-select:none; }
-  .mapa-exp-selector { display:flex; gap:3px; padding:5px 8px; background:linear-gradient(180deg,#1a0c00,#0a0500); border-bottom:1px solid var(--border-main); overflow-x:auto; flex-shrink:0; }
-  .mapa-exp-btn { display:flex; align-items:center; gap:5px; padding:4px 10px; border:1px solid transparent; border-radius:var(--r-sm); background:transparent; color:var(--text-muted); cursor:pointer; font-family:var(--font-body); font-size:0.65rem; white-space:nowrap; transition:all var(--t-fast) var(--ease); }
+  .mapa-exp-selector { width:105px; flex-shrink:0; display:flex; flex-direction:column; gap:2px; padding:6px 4px; background:linear-gradient(180deg,#1a0c00,#0a0500); border-right:1px solid var(--border-main); overflow-y:auto; }
+  .mapa-exp-btn { display:flex; flex-direction:column; align-items:center; gap:2px; padding:5px 4px; border:1px solid transparent; border-radius:var(--r-sm); background:transparent; color:var(--text-muted); cursor:pointer; font-family:var(--font-body); font-size:0.55rem; text-align:center; transition:all var(--t-fast) var(--ease); }
   .mapa-exp-btn:hover { color:var(--text-primary); background:var(--bg-raised); border-color:var(--border-subtle); }
   .mapa-exp-btn.active { color:var(--gold); background:rgba(201,168,76,0.12); border-color:var(--gold-dim); box-shadow:0 0 10px rgba(201,168,76,0.08); }
-  .mapa-exp-dot { width:8px; height:8px; border-radius:50%; flex-shrink:0; }
-  .mapa-exp-count { font-size:0.55rem; color:var(--text-dim); margin-left:2px; }
+  .mapa-exp-dot { width:10px; height:10px; border-radius:50%; flex-shrink:0; }
+  .mapa-exp-count { font-size:0.5rem; color:var(--text-dim); }
   .mapa-layout { display:flex; flex:1; overflow:hidden; }
   .mapa-area { flex:1; position:relative; overflow:hidden; background:#0a0804; }
   .mapa-svg-wrap { position:absolute; inset:0; display:flex; align-items:center; justify-content:center; pointer-events:none; }
   .mapa-svg-wrap :global(svg) { width:100%; height:100%; object-fit:contain; }
-  .mapa-card { position:absolute; z-index:10; width:150px; padding:6px 8px; border-radius:var(--r-md); cursor:grab; font-family:var(--font-body); transition:box-shadow var(--t-fast) var(--ease); border:1px solid var(--border-subtle); }
-  .mapa-card.horda { background:linear-gradient(135deg,#1f0808,#2a0a0a); border-color:rgba(170,17,17,0.4); box-shadow:0 2px 8px rgba(170,17,17,0.15); }
-  .mapa-card.alliance { background:linear-gradient(135deg,#08142f,#0a1a3a); border-color:rgba(26,109,181,0.4); box-shadow:0 2px 8px rgba(26,109,181,0.15); }
-  .mapa-card:hover { z-index:20; box-shadow:0 4px 16px rgba(0,0,0,0.5); }
-  .mapa-card.dragging { z-index:50; cursor:grabbing; box-shadow:0 8px 24px rgba(0,0,0,0.6); transform:scale(1.03); }
-  .mapa-card.highlight { z-index:25; box-shadow:0 0 0 2px var(--gold),0 4px 20px rgba(201,168,76,0.3); }
-  .mapa-card-header { display:flex; align-items:flex-start; justify-content:space-between; gap:4px; }
-  .mapa-card-name { font-size:0.72rem; font-weight:700; line-height:1.2; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
-  .mapa-card-class-icon { font-size:0.9rem; flex-shrink:0; }
-  .mapa-card-info { font-size:0.55rem; color:var(--text-muted); margin-top:1px; line-height:1.3; }
-  .mapa-card-warband { font-size:0.5rem; color:var(--text-dim); margin-top:1px; padding:1px 4px; background:rgba(255,255,255,0.04); border-radius:var(--r-sm); display:inline-block; }
-  .mapa-card-items { margin-top:4px; border-top:1px solid rgba(255,255,255,0.06); padding-top:3px; }
-  .mapa-card-item { display:flex; align-items:center; gap:3px; padding:2px 0; font-size:0.55rem; line-height:1.3; }
-  .mapa-card-item input[type="checkbox"] { width:10px; height:10px; cursor:pointer; accent-color:var(--health-green); flex-shrink:0; }
+  .mapa-card-items { margin-top:3px; border-top:1px solid rgba(255,255,255,0.06); padding-top:2px; }
+  .mapa-card-item { display:flex; align-items:center; gap:3px; padding:1px 0; font-size:0.5rem; line-height:1.2; }
+  .mapa-card-item input[type="checkbox"] { width:9px; height:9px; cursor:pointer; accent-color:var(--health-green); flex-shrink:0; }
   .mapa-card-item.done .mapa-item-name { opacity:0.4; text-decoration:line-through; }
   .mapa-item-name { flex:1; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; color:var(--gold-light); }
-  .mapa-item-btn { background:none; border:none; cursor:pointer; padding:0 1px; font-size:0.55rem; line-height:1; opacity:0.4; transition:opacity var(--t-fast) var(--ease); }
-  .mapa-item-btn:hover { opacity:1; }
   .mapa-card-item-empty { font-size:0.5rem; color:var(--text-dim); padding:2px 0; }
-  .mapa-add-btn { display:block; width:100%; margin-top:3px; padding:2px 0; background:rgba(255,255,255,0.04); border:1px dashed var(--border-subtle); border-radius:var(--r-sm); color:var(--text-muted); cursor:pointer; font-family:var(--font-body); font-size:0.6rem; text-align:center; transition:all var(--t-fast) var(--ease); }
+  .mapa-add-btn { display:block; width:100%; margin-top:2px; padding:1px 0; background:rgba(255,255,255,0.04); border:1px dashed var(--border-subtle); border-radius:var(--r-sm); color:var(--text-muted); cursor:pointer; font-family:var(--font-body); font-size:0.55rem; text-align:center; transition:all var(--t-fast) var(--ease); }
   .mapa-add-btn:hover { background:rgba(201,168,76,0.1); border-color:var(--gold-dim); color:var(--gold-light); }
-  .mapa-card { position:absolute; z-index:10; width:160px; padding:6px 8px; border-radius:var(--r-md); cursor:grab; font-family:var(--font-body); transition:box-shadow var(--t-fast) var(--ease); border:1px solid var(--border-subtle); }
   .mapa-sidebar { width:200px; flex-shrink:0; display:flex; flex-direction:column; background:var(--bg-soft); border-left:1px solid var(--border-subtle); overflow:hidden; }
   .mapa-sidebar-tabs { display:flex; border-bottom:1px solid var(--border-subtle); flex-shrink:0; }
   .mapa-sidebar-tab { flex:1; padding:5px 4px; border:none; background:transparent; color:var(--text-muted); cursor:pointer; font-family:var(--font-body); font-size:0.6rem; text-align:center; transition:all var(--t-fast) var(--ease); border-bottom:2px solid transparent; }
@@ -434,6 +392,6 @@
   .mapa-stat-fill.green { background:var(--health-green); }
   .mapa-stat-fill.yellow { background:#c9a84c; }
   .mapa-stat-fill.red { background:var(--red); }
-  @media (max-width:900px) { .mapa-sidebar { width:160px; } .mapa-card { width:140px; } }
+  @media (max-width:900px) { .mapa-sidebar { width:140px; } }
   @media (max-width:700px) { .mapa-sidebar { display:none; } .mapa-stats { flex-wrap:wrap; gap:6px; } }
 </style>

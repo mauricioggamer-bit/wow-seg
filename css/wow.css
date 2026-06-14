@@ -1296,7 +1296,8 @@ a:hover { color: var(--gold-light); }
   letter-spacing: 1px;
   color: var(--gold-light);
 }
-.pers-card-meta { color: var(--text-muted); font-size: 9px; margin-top: 1px; }
+.pers-card-meta { color: var(--text-muted); font-size: 0.45rem; margin-top: 1px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.pers-card-parecido { font-weight: 600; }
 .pers-card-faction-tag {
   font-size: 8px;
   position: absolute;

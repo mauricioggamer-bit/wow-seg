@@ -59,6 +59,7 @@
   let editCharWarband = $state('')
   let editCharMisionPrincipal = $state('')
   let editCharExpansion = $state('')
+  let editCharParecido = $state('')
 
   let editTaskChar = $state('')
   let editTaskId = $state('')
@@ -106,6 +107,7 @@
     editCharWarband = c.warband
     editCharMisionPrincipal = c.mision_principal || ''
     editCharExpansion = c.expansion_por_defecto || ''
+    editCharParecido = c.parecido || ''
     uiStore.openModal('CharEdit')
   }
 
@@ -121,6 +123,7 @@
     editCharWarband = ($warbandsStore.filter(w => w.nombre !== 'nada')[0]?.nombre) || ''
     editCharMisionPrincipal = ''
     editCharExpansion = ''
+    editCharParecido = ''
     uiStore.openModal('CharEdit')
   }
 
@@ -191,6 +194,7 @@
         warband: editCharWarband,
         mision_principal: editCharMisionPrincipal || undefined,
         expansion_por_defecto: editCharExpansion || null,
+        parecido: editCharParecido || null,
       })
       isNewChar = false
     } else {
@@ -204,6 +208,7 @@
         warband: editCharWarband,
         mision_principal: editCharMisionPrincipal || undefined,
         expansion_por_defecto: editCharExpansion || null,
+        parecido: editCharParecido || null,
       })
     }
     uiStore.closeModal()
@@ -504,6 +509,10 @@
             <option value={exp.id}>{exp.nombre}</option>
           {/each}
         </select>
+      </div>
+      <div class="form-group">
+        <label>Se parece a (personaje del lore)</label>
+        <input type="text" bind:value={editCharParecido} placeholder="Ej: Thrall, Jaina, Illidan..." />
       </div>
       <label style="display:flex;align-items:center;gap:6px;font-size:0.75rem;margin-top:4px">
         <input type="checkbox" bind:checked={editCharActivo} />

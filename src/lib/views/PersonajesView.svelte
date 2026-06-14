@@ -181,9 +181,9 @@
               <span class="pers-card-faction-tag {c.faccion === 'Alianza' ? 'a' : 'h'}">
                 {c.faccion === 'Alianza' ? 'A' : 'H'}
               </span>
-              <div class="pers-card-icon" style="color:{color}">{icon}</div>
+              <div class="pers-card-icon">{icon}</div>
               <div class="pers-card-name" style="color:{color}">{c.nombre}</div>
-              <div class="pers-card-meta">Nv.{c.nivel} · {c.clase} · {c.raza}</div>
+              <div class="pers-card-meta">Nv.{c.nivel} · {c.clase} · {c.raza}{#if c.parecido} · <span class="pers-card-parecido" style="color:{color}">{c.parecido}</span>{/if}</div>
             </div>
           {/each}
           
@@ -297,6 +297,7 @@
   .pers-card-icon { font-size:28px; line-height:1.2; margin-bottom:4px; }
   .pers-card-name { font-size:0.5rem; font-weight:bold; letter-spacing:1px; color:var(--gold-light); }
   .pers-card-meta { color:var(--text-muted); font-size:0.45rem; margin-top:1px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .pers-card-parecido { font-weight:600; }
   .pers-card-faction-tag { font-size:0.35rem; position:absolute; top:4px; right:5px; letter-spacing:1px; }
   .pers-card-faction-tag.a { color:var(--alliance); }
   .pers-card-faction-tag.h { color:var(--horde); }

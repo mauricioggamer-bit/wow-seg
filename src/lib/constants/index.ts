@@ -40,9 +40,9 @@ export const PERS_RACE_INFO: Record<string, { icon: string; type: string }> = {
 }
 
 export const PERS_CLASS_ICONS: Record<string, string> = {
-  warrior: '⚔', paladin: '⚜', hunter: '🏹', rogue: '🗡',
-  priest: '✝', dk: '☠', shaman: '⚡', mage: '❄',
-  warlock: '👁', monk: '☯', druid: '🌿', dh: '◈', evoker: '🐉',
+  warrior: '⚔️', paladin: '🛡️', hunter: '🏹', rogue: '🗡️',
+  priest: '✝️', dk: '💀', shaman: '🌩️', mage: '🔮',
+  warlock: '👁️', monk: '🥋', druid: '🌿', dh: '😈', evoker: '🐉',
 }
 
 export const PERS_CLASS_COLORS: Record<string, string> = {

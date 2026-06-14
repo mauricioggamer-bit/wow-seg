@@ -28,12 +28,14 @@
     {:else}
       <div class="char-grid">
         {#each filtered as c (c.nombre)}
-          <button
-            type="button"
+          <div
+            role="button"
+            tabindex="0"
             class="char-card"
             class:active={$uiStore.selectedCharacter === c.nombre}
             class:inactive={!c.activo}
             onclick={() => uiStore.selectCharacter(c.nombre)}
+            onkeydown={(e) => e.key === 'Enter' && uiStore.selectCharacter(c.nombre)}
           >
             <div style="display:flex;align-items:flex-start;justify-content:space-between">
               <div style="flex:1;cursor:pointer">
@@ -55,7 +57,7 @@
             {#if c.tareas.length > 0}
               <div class="char-tasks-bar" onclick={() => uiStore.selectCharacter(c.nombre)} style="cursor:pointer">
                 {#each c.tareas as t}
-                  <span class="task-dot" class:done={t.hecho} class:pending={!t.hecho} title={t.nombre}: {t.hecho ? '✓' : '✗'}></span>
+                  <span class="task-dot" class:done={t.hecho} class:pending={!t.hecho} title={`${t.nombre}: ${t.hecho ? '✓' : '✗'}`}></span>
                 {/each}
                 <span class="text-xs text-muted" style="margin-left:4px">
                   {c.tareas.filter(t => t.hecho).length}/{c.tareas.length}
@@ -64,7 +66,7 @@
             {:else}
               <div class="text-xs text-muted mt-1">Sin tareas</div>
             {/if}
-          </button>
+          </div>
         {/each}
       </div>
     {/if}

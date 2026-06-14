@@ -23,6 +23,8 @@
 
   let charOpts = $derived($personajesStore.map(p => p.nombre))
 
+  let hasSidebar = $derived($uiStore.currentView === 'warband')
+
   $effect(() => {
     if ($authStore.authenticated && !$uiStore.currentWarband) {
       const wbs = $warbandsStore
@@ -182,7 +184,7 @@
   <div class="app-container">
     <ViewSwitcher />
     <WarbandTabs />
-    <div class="warband-layout">
+    <div class="warband-layout" class:has-sidebar={hasSidebar}>
       <div class="warband-main">
         {#if $uiStore.currentView === 'warband'}
           <FilterBar />
@@ -579,7 +581,7 @@
     gap: 8px;
     margin-top: 4px;
   }
-  .warband-layout:has(.detail-sidebar > *) {
+  .warband-layout.has-sidebar {
     grid-template-columns: 1fr 320px;
   }
   .detail-sidebar {

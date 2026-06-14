@@ -1,263 +1,323 @@
 <script lang="ts">
-  import { personajesStore } from '../stores/data'
+  import { personajesStore, dataStore } from '../stores/data'
   import { uiStore } from '../stores/ui'
+  import { CLASS_MAP, PERS_RACE_INFO, PERS_CLASS_ICONS, PERS_CLASS_COLORS, PERS_RACES_BY_COLUMN } from '../constants'
 
-  const CLASS_MAP: Record<string, string> = {
-    'Guerrero': 'warrior', 'Paladín': 'paladin', 'Cazador': 'hunter',
-    'Pícaro': 'rogue', 'Sacerdote': 'priest', 'DK': 'dk',
-    'Chamán': 'shaman', 'Mago': 'mage', 'Brujo': 'warlock',
-    'Monje': 'monk', 'Druida': 'druid', 'DH': 'dh', 'Evocadora': 'evoker',
-    'Maga': 'mage',
-  }
+  let persSelectedRace = $state<string | null>(null)
+  let persSelectedFaction = $state<string | null>(null)
+  let persSelectedClass = $state<string | null>(null)
+  let persFactionFilter = $state('all')
+  let persLevelFilter = $state('all')
+  let persSelectedChar = $state<string | null>(null)
 
-  const PERS_RACE_INFO: Record<string, { icon: string; type: string }> = {
-    'Orco': { icon: '💀', type: 'Salvaje' },
-    'Blood Elf': { icon: '🔮', type: 'Élfico' },
-    'Tauren': { icon: '🐂', type: 'Bestial' },
-    'Troll': { icon: '🗿', type: 'Tribal' },
-    'Goblin': { icon: '💰', type: 'Pequeño' },
-    "Mag'har": { icon: '🏹', type: 'Salvaje' },
-    'Nightborne': { icon: '🌌', type: 'Élfico' },
-    'Highmountain': { icon: '🦌', type: 'Bestial' },
-    'Zandalari': { icon: '🏯', type: 'Tribal' },
-    'Vulpera': { icon: '🦊', type: 'Nómada' },
-    'Undead': { icon: '☠', type: 'No-muerto' },
-    'Earthen': { icon: '🪨', type: 'Elemental' },
-    'Pandaren': { icon: '🐼', type: 'Neutral' },
-    'Human': { icon: '👤', type: 'Humanoide' },
-    'Night Elf': { icon: '🌙', type: 'Élfico' },
-    'Draenei': { icon: '✦', type: 'Místico' },
-    'Gnome': { icon: '⚙', type: 'Pequeño' },
-    'Dwarf': { icon: '⛏', type: 'Humanoide' },
-    'Void Elf': { icon: '🌑', type: 'Élfico' },
-    'Light Draenei': { icon: '✦', type: 'Luz' },
-    'Haranir': { icon: '🌿', type: 'Místico' },
-    'Dracthyr': { icon: '🐉', type: 'Dragón' },
-  }
-
-  const PERS_CLASS_ICONS: Record<string, string> = {
-    warrior: '⚔', paladin: '⚜', hunter: '🏹', rogue: '🗡',
-    priest: '✝', dk: '☠', shaman: '⚡', mage: '❄',
-    warlock: '👁', monk: '☯', druid: '🌿', dh: '◈', evoker: '🐉',
-  }
-
-  const PERS_RACES_BY_COLUMN: Record<string, string[]> = {
-    'alliance-trad': ['Human', 'Night Elf', 'Gnome', 'Dwarf', 'Draenei', 'Worgen', 'Pandaren', 'Dracthyr'],
-    'alliance-allied': ['Void Elf', 'Light Draenei', 'Dark Iron Dwarf', 'Kul Tiran', 'Mechagnome', 'Earthen'],
-    'horde-allied': ['Nightborne', 'Highmountain', "Mag'har", 'Zandalari', 'Vulpera', 'Earthen', 'Haranir'],
-    'horde-trad': ['Orco', 'Undead', 'Tauren', 'Troll', 'Blood Elf', 'Goblin', 'Pandaren', 'Dracthyr'],
-  }
-
-  let factionFilter = $state('all')
-  let levelFilter = $state('all')
-  let selectedRace = $state<string | null>(null)
-  let selectedClass = $state<string | null>(null)
-  let selectedChar = $state<string | null>(null)
-
-  let races = $derived.by(() => {
-    const result: Array<{ key: string; label: string; items: Array<{ icon: string; nombre: string; type: string }> }> = []
-    for (const [key, raceNames] of Object.entries(PERS_RACES_BY_COLUMN)) {
-      if (factionFilter !== 'all') {
-        if (factionFilter === 'Horda' && key.startsWith('alliance')) continue
-        if (factionFilter === 'Alianza' && key.startsWith('horde')) continue
-      }
-      result.push({
-        key,
-        label: key.includes('trad') ? 'Tradicionales' : 'Aliadas',
-        items: raceNames
-          .filter(name => name in PERS_RACE_INFO)
-          .map(name => ({ icon: PERS_RACE_INFO[name]?.icon || '', nombre: name, type: PERS_RACE_INFO[name]?.type || '' })),
-      })
+  let classEntries = $derived.by(() => {
+    const deduped: Array<{ label: string; key: string }> = []
+    const seen = new Set<string>()
+    for (const [label, key] of Object.entries(CLASS_MAP)) {
+      if (!seen.has(key)) { seen.add(key); deduped.push({ label, key }) }
     }
-    return result
+    return deduped
   })
+
+  let levelRanges = ['all', '0-10', '10-20', '20-30', '30-40', '40-50', '50-60', '60-70', '70-80', '80-90']
 
   let filteredChars = $derived.by(() => {
     let chars = $personajesStore
-    if (selectedRace) chars = chars.filter(c => c.raza === selectedRace)
-    if (selectedClass) chars = chars.filter(c => c.clase === selectedClass)
-    if (factionFilter !== 'all') chars = chars.filter(c => c.faccion === factionFilter)
-    if (levelFilter === 'bajo') chars = chars.filter(c => c.nivel < 30)
-    else if (levelFilter === 'medio') chars = chars.filter(c => c.nivel >= 30 && c.nivel < 60)
-    else if (levelFilter === 'alto') chars = chars.filter(c => c.nivel >= 60 && c.nivel < 80)
-    else if (levelFilter === 'max') chars = chars.filter(c => c.nivel >= 80)
+    if (persFactionFilter === 'alliance') chars = chars.filter(c => c.faccion === 'Alianza')
+    else if (persFactionFilter === 'horde') chars = chars.filter(c => c.faccion === 'Horda')
+    if (persSelectedRace) chars = chars.filter(c => c.raza === persSelectedRace)
+    if (persSelectedClass) {
+      const revMap: Record<string, string> = {}
+      for (const [k, v] of Object.entries(CLASS_MAP)) revMap[v] = k
+      const targetClase = revMap[persSelectedClass]
+      chars = chars.filter(c => (CLASS_MAP[c.clase] || '') === persSelectedClass || c.clase === targetClase)
+    }
+    if (persLevelFilter !== 'all') {
+      const parts = persLevelFilter.split('-').map(Number)
+      if (parts.length === 2) {
+        const [min, max] = parts
+        chars = chars.filter(c => c.nivel >= min && c.nivel <= max)
+      }
+    }
     return chars
   })
 
-  let allClasses = $derived([...new Set($personajesStore.map(c => c.clase))].sort())
+  let columnDefs = [
+    { id: 'alliance-trad', label: 'ALIANZA', subtitle: 'TRADICIONALES', faction: 'alliance', cls: 'a' },
+    { id: 'alliance-allied', label: 'ALIANZA', subtitle: 'ALIADAS', faction: 'alliance', cls: 'a-inner' },
+    { id: 'horde-allied', label: 'HORDA', subtitle: 'ALIADAS', faction: 'horde', cls: 'h-inner' },
+    { id: 'horde-trad', label: 'HORDA', subtitle: 'TRADICIONALES', faction: 'horde', cls: 'h' },
+  ]
 
   $effect(() => {
     function onKey(e: KeyboardEvent) {
       if (e.key === 'Escape') {
-        if (selectedChar) { selectedChar = null; uiStore.selectCharacter(null) }
-        else if (selectedRace) selectedRace = null
-        else if (selectedClass) selectedClass = null
+        const modal = document.querySelector('.modal-overlay.open')
+        if (modal) return
+        if (persSelectedRace || persSelectedClass || persSelectedChar) resetPersAll()
         else uiStore.setView('warband')
       }
     }
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
   })
+
+  function isRaceSelected(race: string, faction: string): boolean {
+    return persSelectedRace === race && persSelectedFaction === faction
+  }
+
+  function togglePersRace(race: string, faction: string) {
+    if (persSelectedRace === race && persSelectedFaction === faction) {
+      persSelectedRace = null
+      persSelectedFaction = null
+    } else {
+      persSelectedRace = race
+      persSelectedFaction = faction
+      persFactionFilter = faction === 'alliance' ? 'alliance' : 'horde'
+    }
+    persSelectedChar = null
+  }
+
+  function togglePersClass(key: string) {
+    persSelectedClass = persSelectedClass === key ? null : key
+    persSelectedChar = null
+  }
+
+  function selectPersChar(charName: string) {
+    persSelectedChar = persSelectedChar === charName ? null : charName
+  }
+
+  function resetPersAll() {
+    persSelectedRace = null
+    persSelectedFaction = null
+    persSelectedClass = null
+    persFactionFilter = 'all'
+    persLevelFilter = 'all'
+    persSelectedChar = null
+  }
+
+  function closePersonajes() {
+    resetPersAll()
+    uiStore.setView('warband')
+  }
+
+  function editSelectedPersonaje() {
+    if (!persSelectedChar) return
+    uiStore.openModal('CharEdit')
+    // openCharEdit will be called via the dialog, but we set the char name first
+  }
 </script>
 
-<div class="wow-panel">
-  <div class="wow-panel-header">
-    <h3>Personajes</h3>
-    <button class="wow-btn wow-btn-sm" onclick={() => uiStore.setView('warband')}>◄ Volver</button>
+<div class="pers-view">
+  <div class="pers-header">
+    <div class="pers-faction-title a">⚔ ALIANZA</div>
+    <div class="pers-center-title">
+      ✦ SELECCIÓN DE PERSONAJE ✦
+      <small>ELIGE TU RAZA · FILTRA TU CLASE</small>
+    </div>
+    <div class="pers-faction-title h">HORDA ⚔</div>
   </div>
-  <div class="wow-panel-body">
-    <div class="filter-bar" style="margin-bottom:8px">
-      <select bind:value={factionFilter} style="font-size:0.65rem">
-        <option value="all">Todas las facciones</option>
-        <option value="Horda">Horda</option>
-        <option value="Alianza">Alianza</option>
-      </select>
-      <select bind:value={levelFilter} style="font-size:0.65rem">
-        <option value="all">Todos los niveles</option>
-        <option value="bajo">Bajo (&lt;30)</option>
-        <option value="medio">Medio (30-59)</option>
-        <option value="alto">Alto (60-79)</option>
-        <option value="max">Max (80+)</option>
-      </select>
-    </div>
 
-    <div class="race-grid">
-      {#each races as group}
-        <div class="race-column">
-          <div class="race-column-header">{group.label}</div>
-          {#each group.items as race}
-            <button
-              class="race-btn"
-              class:selected={selectedRace === race.nombre}
-              onclick={() => selectedRace = selectedRace === race.nombre ? null : race.nombre}
-            >
-              <span class="race-icon">{race.icon}</span>
-              <span class="race-name">{race.nombre}</span>
-              <span class="race-type">{race.type}</span>
-            </button>
-          {/each}
-        </div>
-      {/each}
-    </div>
+  <div class="pers-body-row">
+    {#each columnDefs.slice(0, 2) as col}
+      <div class="pers-race-panel" class:pers-panel-a={col.faction === 'alliance'}>
+        <div class="pers-panel-faction-label {col.cls}">[ {col.subtitle} ]</div>
+        {#each (PERS_RACES_BY_COLUMN[col.id] || []) as race}
+          {@const info = PERS_RACE_INFO[race] || { icon: '❓', type: '' }}
+          {@const active = isRaceSelected(race, col.faction)}
+          <button
+            class="pers-race-btn"
+            class:active-a={active && col.faction === 'alliance'}
+            class:active-h={active && col.faction === 'horde'}
+            onclick={() => togglePersRace(race, col.faction)}
+          >
+            <span class="pers-race-icon">{info.icon}</span>
+            <span><div class="pers-race-name">{race}</div><div class="pers-race-type">{info.type}</div></span>
+          </button>
+        {/each}
+      </div>
+    {/each}
 
-    <div class="class-bar" style="margin-top:8px">
-      {#each allClasses as cl}
+    <div id="pers-panel-center">
+      <div id="pers-filter-bar">
+        <span class="pers-filter-label">FACCIÓN:</span>
         <button
-          class="class-btn"
-          class:selected={selectedClass === cl}
-          style="--class-color: var(--class-{CLASS_MAP[cl] || 'warrior'})"
-          onclick={() => selectedClass = selectedClass === cl ? null : cl}
-        >
-          {PERS_CLASS_ICONS[CLASS_MAP[cl] || 'warrior']} {cl}
-        </button>
-      {/each}
-    </div>
+          class="pers-filter-chip"
+          class:active={persFactionFilter === 'all'}
+          onclick={() => { persFactionFilter = 'all'; persSelectedRace = null; persSelectedFaction = null; persSelectedChar = null }}
+        >Todas</button>
+        <button
+          class="pers-filter-chip"
+          class:active={persFactionFilter === 'alliance'}
+          style="color:#4a9eff88"
+          onclick={() => { persFactionFilter = 'alliance'; persSelectedRace = null; persSelectedFaction = null; persSelectedChar = null }}
+        >Alianza</button>
+        <button
+          class="pers-filter-chip"
+          class:active={persFactionFilter === 'horde'}
+          style="color:#cc330088"
+          onclick={() => { persFactionFilter = 'horde'; persSelectedRace = null; persSelectedFaction = null; persSelectedChar = null }}
+        >Horda</button>
+        <span class="pers-filter-sep">|</span>
+        <span class="pers-filter-label">NIVEL:</span>
+        <select class="pers-level-select" bind:value={persLevelFilter}>
+          {#each levelRanges as r}
+            <option value={r}>{r === 'all' ? 'Todos' : r}</option>
+          {/each}
+        </select>
+      </div>
 
-    {#if selectedRace || selectedClass}
-      <div style="margin-top:8px">
-        <h4 style="font-size:0.75rem;margin-bottom:4px">
-          Personajes ({filteredChars.length})
-        </h4>
-        <div class="char-grid" style="grid-template-columns:repeat(auto-fill,minmax(200px,1fr))">
-          {#each filteredChars as c}
-            <button
-              class="char-card"
-              class:active={selectedChar === c.nombre}
-              class:inactive={!c.activo}
-              onclick={() => {
-                selectedChar = c.nombre
-                uiStore.selectCharacter(c.nombre)
-                uiStore.setView('warband')
-              }}
+      <div id="pers-char-grid">
+        {#if filteredChars.length === 0}
+          <div class="pers-empty-state">
+            <span class="big">⚠</span>No hay personajes que coincidan.<br>
+            <span style="color:var(--text-muted)">Intenta cambiar los filtros.</span>
+          </div>
+        {:else}
+          {#each filteredChars as c (c.nombre)}
+            {@const clsKey = CLASS_MAP[c.clase] || 'warrior'}
+            {@const color = PERS_CLASS_COLORS[clsKey] || '#c69b3a'}
+            {@const icon = PERS_CLASS_ICONS[clsKey] || '❓'}
+            {@const sel = persSelectedChar === c.nombre}
+            <div
+              class="pers-char-card {sel ? 'selected-' + (c.faccion === 'Alianza' ? 'a' : 'h') : ''}"
+              onclick={() => selectPersChar(c.nombre)}
             >
-              <div class="char-name" style="color: var(--class-{CLASS_MAP[c.clase] || 'warrior'})">
-                {c.nombre}
-              </div>
-              <div class="char-info">
-                <span class={c.faccion === 'Horda' ? 'faction-horda' : 'faction-alliance'}>{c.faccion}</span>
-                <span>Nvl {c.nivel}</span>
-                <span>{c.clase}</span>
-              </div>
-              <div class="char-tasks-bar" style="margin-top:4px">
-                {#each c.tareas as t}
-                  <span class="task-dot" class:done={t.hecho} class:pending={!t.hecho} title={t.nombre}></span>
-                {/each}
-                {#if c.tareas.length > 0}
-                  <span class="text-xs text-muted" style="margin-left:4px">
-                    {c.tareas.filter(t => t.hecho).length}/{c.tareas.length}
-                  </span>
-                {/if}
-              </div>
+              <span class="pers-card-faction-tag {c.faccion === 'Alianza' ? 'a' : 'h'}">
+                {c.faccion === 'Alianza' ? 'A' : 'H'}
+              </span>
+              <div class="pers-card-icon" style="color:{color}">{icon}</div>
+              <div class="pers-card-name" style="color:{color}">{c.nombre}</div>
+              <div class="pers-card-meta">Nv.{c.nivel}<br>{c.clase} · {c.raza}</div>
+            </div>
+          {/each}
+          <div class="pers-char-card add-new" onclick={() => uiStore.openModal('MissionNew')}>
+            <span class="pers-add-icon">+</span>
+            <span style="font-size:10px;color:var(--text-muted)">Nuevo<br>personaje</span>
+          </div>
+        {/if}
+      </div>
+
+      <div id="pers-class-bar-wrap">
+        <div id="pers-class-bar">
+          {#each classEntries as { label, key }}
+            {@const color = PERS_CLASS_COLORS[key] || '#c9a84c'}
+            <button
+              class="pers-class-btn"
+              class:active={persSelectedClass === key}
+              style={persSelectedClass === key ? `border-color:${color};color:${color}` : ''}
+              onclick={() => togglePersClass(key)}
+            >
+              <span class="pers-cbtn-icon">{PERS_CLASS_ICONS[key] || '❓'}</span>
+              <span class="pers-cbtn-label">{label}</span>
             </button>
           {/each}
         </div>
       </div>
-    {:else}
-      <div class="empty-state" style="margin-top:16px">
-        <p>Seleccioná una raza y/o clase para filtrar personajes</p>
+    </div>
+
+    {#each columnDefs.slice(2) as col}
+      <div class="pers-race-panel" class:pers-panel-h={col.faction === 'horde'}>
+        <div class="pers-panel-faction-label {col.cls}">[ {col.subtitle} ]</div>
+        {#each (PERS_RACES_BY_COLUMN[col.id] || []) as race}
+          {@const info = PERS_RACE_INFO[race] || { icon: '❓', type: '' }}
+          {@const active = isRaceSelected(race, col.faction)}
+          <button
+            class="pers-race-btn"
+            class:active-a={active && col.faction === 'alliance'}
+            class:active-h={active && col.faction === 'horde'}
+            onclick={() => togglePersRace(race, col.faction)}
+          >
+            <span class="pers-race-icon">{info.icon}</span>
+            <span><div class="pers-race-name">{race}</div><div class="pers-race-type">{info.type}</div></span>
+          </button>
+        {/each}
       </div>
-    {/if}
+    {/each}
+  </div>
+
+  <div id="pers-footer">
+    <button class="pers-foot-btn" onclick={closePersonajes}>◄ VOLVER</button>
+    <div class="pers-realm-info">
+      Raganaros Realm · PvP · <span class="pers-realm-ping">⬤ 44ms</span>
+      <br>Personaje: <span id="pers-selected-label" style="color:var(--gold)">
+        {persSelectedChar
+          ? (() => { const c = $personajesStore.find(p => p.nombre === persSelectedChar); return c ? `${c.nombre} (Nv.${c.nivel} ${c.raza})` : persSelectedChar })()
+          : '—'
+        }
+      </span>
+    </div>
+    <button
+      class="pers-foot-btn primary"
+      disabled={!persSelectedChar}
+      onclick={() => { if (persSelectedChar) uiStore.openModal('CharEdit') }}
+    >EDITAR PERSONAJE ►</button>
   </div>
 </div>
 
 <style>
-  .race-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-    gap: 4px;
-  }
-  .race-column-header {
-    font-size: 0.6rem;
-    text-transform: uppercase;
-    letter-spacing: 0.06em;
-    color: var(--text-muted);
-    padding: 2px 4px;
-    border-bottom: 1px solid var(--border);
-    margin-bottom: 2px;
-  }
-  .race-btn {
-    display: flex;
-    align-items: center;
-    gap: 4px;
-    width: 100%;
-    padding: 3px 6px;
-    background: var(--bg-card);
-    border: 1px solid var(--border-subtle);
-    border-radius: var(--r-sm);
-    cursor: pointer;
-    color: var(--text-primary);
-    font-family: var(--font-body);
-    font-size: 0.65rem;
-    transition: all 0.15s;
-    margin-bottom: 2px;
-  }
-  .race-btn:hover { border-color: var(--gold-dim); }
-  .race-btn.selected { border-color: var(--gold); background: var(--card-active-bg); }
-  .race-icon { font-size: 1rem; width: 24px; text-align: center; }
-  .race-name { font-weight: 600; flex: 1; text-align: left; }
-  .race-type { font-size: 0.5rem; color: var(--text-muted); }
-  .class-bar {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 2px;
-  }
-  .class-btn {
-    padding: 3px 8px;
-    background: var(--bg-card);
-    border: 1px solid var(--border-subtle);
-    border-radius: var(--r-sm);
-    cursor: pointer;
-    color: var(--class-color);
-    font-family: var(--font-heading);
-    font-size: 0.6rem;
-    font-weight: 600;
-    transition: all 0.15s;
-  }
-  .class-btn:hover { border-color: var(--class-color); }
-  .class-btn.selected { border-color: var(--class-color); background: color-mix(in srgb, var(--class-color) 15%, transparent); }
-  .char-card {
-    text-align: left;
-    width: 100%;
-    font-family: inherit;
-  }
+  .pers-view { display:flex; flex-direction:column; height:calc(100vh - 100px); margin-top:6px; border:1px solid var(--border-subtle); border-radius:var(--r-md); overflow:hidden; background:var(--bg-base); }
+  .pers-header { display:flex; align-items:center; justify-content:space-between; padding:5px 14px; background:linear-gradient(180deg,#1a0c00,#0a0500); border-bottom:1px solid var(--border-main); flex-shrink:0; }
+  .pers-faction-title { font-size:13px; font-weight:bold; letter-spacing:3px; display:flex; align-items:center; gap:8px; }
+  .pers-faction-title.a { color:var(--alliance); }
+  .pers-faction-title.h { color:var(--horde); }
+  .pers-center-title { color:var(--gold-light); font-size:14px; letter-spacing:5px; text-shadow:0 0 12px var(--gold); text-align:center; }
+  .pers-center-title small { display:block; font-size:9px; color:var(--text-muted); letter-spacing:2px; margin-top:1px; }
+  .pers-body-row { display:flex; flex:1; overflow:hidden; }
+  .pers-race-panel { width:105px; flex-shrink:0; display:flex; flex-direction:column; padding:6px 4px; gap:2px; overflow-y:auto; }
+  .pers-panel-a:nth-child(1) { border-right:1px solid var(--border-subtle); background:linear-gradient(180deg,rgba(26,74,153,0.13),var(--bg-soft)); }
+  .pers-panel-a:nth-child(2) { border-right:1px solid var(--border-subtle); background:linear-gradient(180deg,rgba(26,74,153,0.07),var(--bg-soft)); }
+  .pers-panel-h:nth-child(1) { border-left:1px solid var(--border-subtle); background:linear-gradient(180deg,rgba(136,21,0,0.07),var(--bg-soft)); }
+  .pers-panel-h:nth-child(2) { border-left:1px solid var(--border-subtle); background:linear-gradient(180deg,rgba(136,21,0,0.13),var(--bg-soft)); }
+  .pers-panel-faction-label { font-size:9px; letter-spacing:2px; text-align:center; padding:2px 0 4px; border-bottom:1px solid var(--border-subtle); margin-bottom:4px; }
+  .pers-panel-faction-label.a, .pers-panel-faction-label.a-inner { color:var(--alliance); }
+  .pers-panel-faction-label.a-inner { opacity:0.65; }
+  .pers-panel-faction-label.h, .pers-panel-faction-label.h-inner { color:var(--horde); }
+  .pers-panel-faction-label.h-inner { opacity:0.65; }
+  .pers-race-btn { display:flex; align-items:center; gap:6px; padding:4px 6px; border:1px solid transparent; border-radius:2px; cursor:pointer; transition:all 0.12s; background:none; width:100%; color:var(--text-primary); text-align:left; font-family:inherit; font-size:12px; }
+  .pers-race-btn:hover { background:rgba(26,12,0,0.53); border-color:var(--border-main); }
+  .pers-race-btn.active-a { background:rgba(10,32,80,0.6); border-color:var(--alliance); box-shadow:0 0 8px rgba(26,74,153,0.5); }
+  .pers-race-btn.active-h { background:rgba(58,8,0,0.6); border-color:var(--horde); box-shadow:0 0 8px rgba(136,21,0,0.5); }
+  .pers-race-icon { font-size:20px; line-height:1; }
+  .pers-race-name { color:var(--gold); font-size:10px; line-height:1.3; }
+  .pers-race-type { color:var(--text-muted); font-size:9px; }
+  #pers-panel-center { flex:1; display:flex; flex-direction:column; overflow:hidden; position:relative; }
+  #pers-filter-bar { position:relative; z-index:2; display:flex; align-items:center; justify-content:center; gap:6px; padding:5px 8px; background:rgba(10,5,0,0.53); border-bottom:1px solid var(--border-subtle); flex-shrink:0; flex-wrap:wrap; }
+  .pers-filter-label { color:var(--text-muted); font-size:10px; margin-right:2px; }
+  .pers-filter-chip { border:1px solid var(--border-main); background:none; color:var(--gold-dim); font-family:inherit; font-size:10px; padding:2px 7px; cursor:pointer; border-radius:1px; letter-spacing:0.5px; transition:all 0.12s; }
+  .pers-filter-chip:hover { color:var(--gold); border-color:var(--gold-dim); background:rgba(26,12,0,0.53); }
+  .pers-filter-chip.active { border-color:var(--gold); color:var(--gold-light); background:rgba(42,24,0,0.6); text-shadow:0 0 6px var(--gold); }
+  .pers-filter-sep { color:var(--border-subtle); }
+  .pers-level-select { background:rgba(10,5,0,0.8); border:1px solid var(--border-main); color:var(--gold); font-size:10px; padding:2px 6px; border-radius:2px; cursor:pointer; font-family:inherit; }
+  #pers-char-grid { position:relative; z-index:2; flex:1; overflow-y:auto; padding:10px; display:grid; grid-template-columns:repeat(auto-fill,minmax(130px,1fr)); gap:8px; align-content:start; }
+  .pers-char-card { border:1px solid var(--border-subtle); background:linear-gradient(180deg,rgba(22,10,0,0.53),rgba(10,5,0,0.53)); border-radius:2px; padding:8px; cursor:pointer; transition:all 0.15s; text-align:center; position:relative; }
+  .pers-char-card:hover { border-color:var(--border-main); background:rgba(31,14,0,0.53); }
+  .pers-char-card.selected-a { border-color:var(--alliance); background:rgba(10,32,80,0.5); box-shadow:0 0 12px rgba(26,74,153,0.5); }
+  .pers-char-card.selected-h { border-color:var(--horde); background:rgba(58,8,0,0.5); box-shadow:0 0 12px rgba(136,21,0,0.5); }
+  .pers-card-icon { font-size:28px; line-height:1.2; margin-bottom:4px; }
+  .pers-card-name { font-size:11px; font-weight:bold; letter-spacing:1px; color:var(--gold-light); }
+  .pers-card-meta { color:var(--text-muted); font-size:9px; margin-top:1px; }
+  .pers-card-faction-tag { font-size:8px; position:absolute; top:4px; right:5px; letter-spacing:1px; }
+  .pers-card-faction-tag.a { color:var(--alliance); }
+  .pers-card-faction-tag.h { color:var(--horde); }
+  .pers-empty-state { grid-column:1/-1; text-align:center; padding:40px; color:var(--text-muted); font-size:11px; line-height:2; }
+  .pers-empty-state .big { font-size:32px; display:block; margin-bottom:8px; }
+  .pers-char-card.add-new { border-style:dashed; border-color:var(--border-subtle); color:var(--text-muted); display:flex; flex-direction:column; align-items:center; justify-content:center; min-height:90px; gap:4px; }
+  .pers-char-card.add-new:hover { color:var(--gold-dim); border-color:var(--border-main); }
+  .pers-add-icon { font-size:24px; }
+  #pers-class-bar-wrap { position:relative; z-index:2; border-top:1px solid var(--border-subtle); background:linear-gradient(180deg,rgba(14,7,0,0.53),rgba(6,4,1,0.8)); padding:5px 8px; flex-shrink:0; }
+  #pers-class-bar { display:flex; gap:3px; justify-content:center; overflow-x:auto; padding-bottom:2px; }
+  .pers-class-btn { background:none; border:1px solid var(--border-subtle); color:var(--text-muted); font-family:inherit; font-size:10px; padding:3px 8px; cursor:pointer; border-radius:2px; white-space:nowrap; transition:all 0.12s; display:flex; flex-direction:column; align-items:center; gap:1px; min-width:58px; }
+  .pers-class-btn:hover { background:rgba(26,12,0,0.6); border-color:var(--border-main); color:var(--gold-dim); }
+  .pers-class-btn.active { background:rgba(42,21,0,0.6); border-color:var(--gold); color:var(--gold-light); }
+  .pers-cbtn-icon { font-size:14px; line-height:1; }
+  .pers-cbtn-label { font-size:9px; letter-spacing:0.3px; }
+  #pers-footer { display:flex; justify-content:space-between; align-items:center; padding:5px 14px; background:linear-gradient(0deg,#100800,#0a0500); border-top:1px solid var(--border-main); flex-shrink:0; }
+  .pers-foot-btn { background:linear-gradient(180deg,#2a1500,#170900); border:1px solid #7a4a10; color:var(--gold-light); font-family:inherit; font-size:12px; letter-spacing:1px; padding:5px 18px; cursor:pointer; border-radius:2px; transition:all 0.15s; }
+  .pers-foot-btn:hover { background:linear-gradient(180deg,#3a2000,#1f0e00); border-color:var(--gold); }
+  .pers-foot-btn:disabled { opacity:0.3; pointer-events:none; }
+  .pers-foot-btn.primary { border-color:#c8a84b; background:linear-gradient(180deg,#3a2800,#1f1200); }
+  .pers-foot-btn.primary:hover { background:linear-gradient(180deg,#5a3a00,#2a1800); box-shadow:0 0 10px var(--gold-dim); }
+  .pers-realm-info { color:var(--text-muted); font-size:10px; text-align:center; line-height:1.6; }
+  .pers-realm-ping { color:#44cc44; }
 </style>

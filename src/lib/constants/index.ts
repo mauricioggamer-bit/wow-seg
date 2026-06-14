@@ -45,6 +45,12 @@ export const PERS_CLASS_ICONS: Record<string, string> = {
   warlock: '👁', monk: '☯', druid: '🌿', dh: '◈', evoker: '🐉',
 }
 
+export const PERS_CLASS_COLORS: Record<string, string> = {
+  warrior: '#c69b3a', paladin: '#f48cba', hunter: '#aad372', rogue: '#fff569',
+  priest: '#ffffff', dk: '#c41e3a', shaman: '#0070dd', mage: '#3fc7eb',
+  warlock: '#8788ee', monk: '#00ff96', druid: '#ff7c0a', dh: '#a330c9', evoker: '#33937f',
+}
+
 export const PERS_RACES_BY_COLUMN: Record<string, string[]> = {
   'alliance-trad': ['Human', 'Night Elf', 'Gnome', 'Dwarf', 'Draenei', 'Worgen', 'Pandaren', 'Dracthyr'],
   'alliance-allied': ['Void Elf', 'Light Draenei', 'Dark Iron Dwarf', 'Kul Tiran', 'Mechagnome', 'Earthen'],

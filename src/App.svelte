@@ -14,6 +14,7 @@
   import TimeView from './lib/views/TimeView.svelte'
   import PersonajesView from './lib/views/PersonajesView.svelte'
   import MapaView from './lib/views/MapaView.svelte'
+  import FantasiaView from './lib/views/FantasiaView.svelte'
   import { authStore } from './lib/stores/auth'
   import { uiStore } from './lib/stores/ui'
   import { dataStore, personajesStore, misionesStore, warbandsStore } from './lib/stores/data'
@@ -239,6 +240,8 @@
           <PersonajesView {openCharEdit} {openNewChar} />
         {:else if $uiStore.currentView === 'mapa'}
           <MapaView {openTaskEdit} {openMissionEdit} openNewItemForChar={(char) => { resetMissionForm(); misionPersonaje = char; uiStore.openModal('MissionNew') }} />
+        {:else if $uiStore.currentView === 'fantasia'}
+          <FantasiaView />
         {/if}
       </div>
       {#if $uiStore.currentView === 'warband'}

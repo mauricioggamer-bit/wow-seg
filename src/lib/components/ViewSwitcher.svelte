@@ -9,6 +9,7 @@
     { key: 'time', label: 'Tiempo', icon: '⏱' },
     { key: 'personajes', label: 'Personajes', icon: '🎭' },
     { key: 'mapa', label: 'Mapa', icon: '🗺' },
+    { key: 'fantasia', label: 'Fantasia', icon: '🧝' },
   ]
 </script>
 

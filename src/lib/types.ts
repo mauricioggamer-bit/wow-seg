@@ -84,7 +84,7 @@ export interface Stats {
   dailyDone: number
 }
 
-export type ViewType = 'warband' | 'tabla' | 'priority' | 'time' | 'personajes' | 'mapa'
+export type ViewType = 'warband' | 'tabla' | 'priority' | 'time' | 'personajes' | 'mapa' | 'fantasia'
 export type ThemeType = 'dark' | 'light'
 export type FontSizeType = 'small' | 'medium' | 'large' | 'xlarge'
 export type AuthDuration = '10min' | '1hora' | '8horas' | '1semana' | 'siempre'

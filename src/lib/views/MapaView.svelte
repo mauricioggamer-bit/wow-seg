@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { onMount, onDestroy } from 'svelte'
+  import { onMount, onDestroy, untrack } from 'svelte'
   import { personajesStore, dataStore, misionesStore } from '../stores/data'
   import { CLASS_MAP, PERS_CLASS_ICONS, PERS_CLASS_COLORS, EXPANSIONS } from '../constants'
   import mapa_svgs from '../data/mapa_svgs'
@@ -11,23 +11,20 @@
 
   const FACTION_COLORS: Record<string, string> = { Horda: '#AA1111', Alianza: '#1A6DB5' }
 
-  const BADGE_LETTERS: Record<string, string> = {
-    midnight: 'M', tww: 'TW', dragonflight: 'DF', shadowlands: 'SL',
-    bfa: 'BFA', legion: 'L', draenor: 'WD', mop: 'MOP', cata: 'C', wotlk: 'W',
-    classic: 'C', outland: 'TBC',
-  }
-
   let activeExp = $state(localStorage.getItem(STORAGE_EXP) || EXPANSIONS[0]?.id || 'tww')
   let positions = $state<Record<string, { x: number; y: number }>>({})
   let dragging: string | null = $state(null)
   let sidebarTab = $state('chars')
   let showInactivos = $state(true)
   let highlight: string | null = $state(null)
-  let containerRect = $state<DOMRect | null>(null)
   let mapAreaEl: HTMLDivElement | undefined = $state(undefined)
   let dragStartX = 0, dragStartY = 0
   let dragOrigX = 0, dragOrigY = 0
   let wasDragged = false
+
+  function areaRect() {
+    return mapAreaEl?.getBoundingClientRect() ?? null
+  }
 
   let charsForExp = $derived(
     $personajesStore.filter(c => {
@@ -56,40 +53,13 @@
     positions = { ...positions, [id]: { x, y } }
   }
 
-  function autoLayout(chars: typeof charsForExp, cw: number, ch: number) {
-    if (!cw || !ch) return
-    const padX = 80, padY = 40
-    const availW = cw - padX * 2
-    const availH = ch - padY * 2
-    const cols = Math.min(chars.length, 4)
-    const rows = Math.ceil(chars.length / cols)
-    const cellW = availW / cols
-    const cellH = availH / rows
-    let changed = false
-    chars.forEach((c, i) => {
-      const id = 'char_' + c.nombre
-      if (getPos(id)) return
-      changed = true
-      const col = i % cols
-      const row = Math.floor(i / cols)
-      const cx = padX + cellW * (col + 0.5)
-      const cy = padY + cellH * (row + 0.5)
-      setPos(id, (cx / cw) * MAP_W, (cy / ch) * MAP_H)
-      c.tareas.forEach((t, ti) => {
-        const tid = 'task_' + c.nombre + '_' + t.id
-        if (getPos(tid)) return
-        const tx = padX + cellW * (col + 0.5) + 80 + ti * 60
-        const ty = padY + cellH * (row + 0.5) - 30 + ti * 30
-        setPos(tid, (tx / cw) * MAP_W, (ty / ch) * MAP_H)
-      })
-    })
-    if (changed) savePositions()
-  }
+  
 
   let connections = $derived.by(() => {
-    if (!mapAreaEl || !containerRect) return ''
-    const scX = containerRect.width / MAP_W
-    const scY = containerRect.height / MAP_H
+    const r = areaRect()
+    if (!mapAreaEl || !r) return ''
+    const scX = r.width / MAP_W
+    const scY = r.height / MAP_H
     let lines = ''
     for (const c of charsForExp) {
       for (const t of c.tareas) {
@@ -252,17 +222,12 @@
     el.scrollIntoView({ behavior: 'smooth', block: 'center' })
   }
 
-  function handleResize() {
-    if (mapAreaEl) containerRect = mapAreaEl.getBoundingClientRect()
-  }
-
   let resizeTimer: ReturnType<typeof setTimeout> | null = null
 
   onMount(() => {
-    document.addEventListener('resize', handleResize)
     loadPositions()
     return () => {
-      document.removeEventListener('resize', handleResize)
+      if (resizeTimer) clearTimeout(resizeTimer)
     }
   })
 
@@ -270,36 +235,41 @@
     if (resizeTimer) clearTimeout(resizeTimer)
   })
 
+  function autoLayout() {
+    const el = mapAreaEl
+    if (!el) return
+    const rect = el.getBoundingClientRect()
+    if (rect.width <= 0) return
+    let changed = false
+    const cur = untrack(() => positions)
+    const newPos = { ...cur }
+    charsForExp.forEach((c, i) => {
+      const id = 'char_' + c.nombre
+      if (newPos[id]) return
+      changed = true
+      const padX = 80, padY = 40
+      const cols = Math.min(charsForExp.length, 4)
+      const rows = Math.ceil(charsForExp.length / cols)
+      const cellW = (rect.width - padX * 2) / cols
+      const cellH = (rect.height - padY * 2) / rows
+      const col = i % cols
+      const row = Math.floor(i / cols)
+      newPos[id] = { x: ((padX + cellW * (col + 0.5)) / rect.width) * MAP_W, y: ((padY + cellH * (row + 0.5)) / rect.height) * MAP_H }
+      c.tareas.forEach((t, ti) => {
+        const tid = 'task_' + c.nombre + '_' + t.id
+        if (newPos[tid]) return
+        newPos[tid] = {
+          x: ((padX + cellW * (col + 0.5) + 80 + ti * 60) / rect.width) * MAP_W,
+          y: ((padY + cellH * (row + 0.5) - 30 + ti * 30) / rect.height) * MAP_H,
+        }
+      })
+    })
+    if (changed) { positions = newPos; savePositions() }
+  }
+
   $effect(() => {
     if (mapAreaEl) {
-      containerRect = mapAreaEl.getBoundingClientRect()
-      const rect = containerRect
-      if (rect.width > 0) {
-        let changed = false
-        const newPos = { ...positions }
-        charsForExp.forEach((c, i) => {
-          const id = 'char_' + c.nombre
-          if (newPos[id]) return
-          changed = true
-          const padX = 80, padY = 40
-          const cols = Math.min(charsForExp.length, 4)
-          const rows = Math.ceil(charsForExp.length / cols)
-          const cellW = (rect.width - padX * 2) / cols
-          const cellH = (rect.height - padY * 2) / rows
-          const col = i % cols
-          const row = Math.floor(i / cols)
-          newPos[id] = { x: ((padX + cellW * (col + 0.5)) / rect.width) * MAP_W, y: ((padY + cellH * (row + 0.5)) / rect.height) * MAP_H }
-          c.tareas.forEach((t, ti) => {
-            const tid = 'task_' + c.nombre + '_' + t.id
-            if (newPos[tid]) return
-            newPos[tid] = {
-              x: ((padX + cellW * (col + 0.5) + 80 + ti * 60) / rect.width) * MAP_W,
-              y: ((padY + cellH * (row + 0.5) - 30 + ti * 30) / rect.height) * MAP_H,
-            }
-          })
-        })
-        if (changed) { positions = newPos; savePositions() }
-      }
+      autoLayout()
     }
   })
 </script>
@@ -320,7 +290,7 @@
     <div class="mapa-area" bind:this={mapAreaEl}>
       <div class="mapa-svg-wrap">{@html mapa_svgs[activeExp] || ''}</div>
       <svg class="mapa-conexiones" style="position:absolute;inset:0;width:100%;height:100%;pointer-events:none;z-index:5"
-        viewBox={containerRect ? `0 0 ${containerRect.width} ${containerRect.height}` : '0 0 100 100'}>
+        viewBox={areaRect() ? `0 0 ${areaRect()!.width} ${areaRect()!.height}` : '0 0 100 100'}>
         {@html connections}
       </svg>
       {#each charsForExp as c (c.nombre)}
@@ -331,9 +301,9 @@
         {@const clsIcon = PERS_CLASS_ICONS[clsKey] || '?'}
         {@const done = c.tareas.filter(t => t.hecho).length}
         {@const total = c.tareas.length}
-        {#if pos && containerRect}
-          {@const px = pos.x * (containerRect.width / MAP_W)}
-          {@const py = pos.y * (containerRect.height / MAP_H)}
+        {#if pos && areaRect()}
+          {@const px = pos.x * (areaRect()!.width / MAP_W)}
+          {@const py = pos.y * (areaRect()!.height / MAP_H)}
           <div
             class="mapa-card {c.faccion === 'Horda' ? 'horda' : 'alliance'}"
             class:dragging={dragging === pid}
@@ -363,9 +333,9 @@
         {#each c.tareas as t (t.id)}
           {@const tid = 'task_' + c.nombre + '_' + t.id}
           {@const pos = getPos(tid)}
-          {#if pos && containerRect}
-            {@const px = pos.x * (containerRect.width / MAP_W)}
-            {@const py = pos.y * (containerRect.height / MAP_H)}
+          {#if pos && areaRect()}
+            {@const px = pos.x * (areaRect()!.width / MAP_W)}
+            {@const py = pos.y * (areaRect()!.height / MAP_H)}
             {@const typeLabel = t.cooldown || 'none'}
             <div
               class="mapa-slip"

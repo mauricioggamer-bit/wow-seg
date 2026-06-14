@@ -119,6 +119,10 @@ export function exportJSON(data: WowData): string {
   return JSON.stringify(data, null, 2)
 }
 
+export function exportPersonajesJSON(data: WowData): string {
+  return JSON.stringify(data.personajes, null, 2)
+}
+
 export function exportFullBackup(data: WowData): string {
   let gistConfig = null
   try {

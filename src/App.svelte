@@ -358,11 +358,18 @@
   <Dialog show={$uiStore.activeModal === 'ImportExport'} title="Importar / Exportar" onclose={() => uiStore.closeModal()}>
     {#snippet children()}
       <div class="form-group">
-        <label>Exportar datos</label>
+        <label>Exportar datos completos</label>
         <textarea style="width:100%;min-height:120px;font-size:0.6rem;font-family:monospace" readonly value={dataStore.exportJSON()}></textarea>
         <button class="wow-btn wow-btn-sm" style="margin-top:4px" onclick={() => {
           navigator.clipboard.writeText(dataStore.exportJSON())
-        }}>Copiar al portapapeles</button>
+        }}>Copiar</button>
+      </div>
+      <div class="form-group">
+        <label>Exportar solo personajes (sin misiones)</label>
+        <textarea style="width:100%;min-height:120px;font-size:0.6rem;font-family:monospace" readonly value={dataStore.exportPersonajesJSON()}></textarea>
+        <button class="wow-btn wow-btn-sm" style="margin-top:4px" onclick={() => {
+          navigator.clipboard.writeText(dataStore.exportPersonajesJSON())
+        }}>Copiar</button>
       </div>
       <div class="form-group">
         <label for="importText">Importar JSON</label>

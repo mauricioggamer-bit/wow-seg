@@ -1,6 +1,6 @@
 import { writable, derived, get } from 'svelte/store'
 import type { WowData, Personaje, Warband, Mision, Stats } from '../types'
-import { loadData, saveData, computeStats as computeStatsFn, exportJSON as exportJSONFn, exportFullBackup as exportFullBackupFn, initSeed as initSeedFn } from '../data/persistence'
+import { loadData, saveData, computeStats as computeStatsFn, exportJSON as exportJSONFn, exportPersonajesJSON as exportPersonajesJSONFn, exportFullBackup as exportFullBackupFn, initSeed as initSeedFn } from '../data/persistence'
 import { checkWeeklyReset, resetDailyTasks } from '../data/weekly-reset'
 
 function createDataStore() {
@@ -286,6 +286,9 @@ function createDataStore() {
     },
     exportJSON(): string {
       return exportJSONFn(get({ subscribe }))
+    },
+    exportPersonajesJSON(): string {
+      return exportPersonajesJSONFn(get({ subscribe }))
     },
     exportFullBackup(): string {
       return exportFullBackupFn(get({ subscribe }))

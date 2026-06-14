@@ -70,6 +70,27 @@ function createDataStore() {
         return d
       })
     },
+    addTarea(nombrePersonaje: string, tarea: { nombre: string; tipo?: string; cooldown?: string; prioridad?: number; tiempo_min?: number; expansion?: string }) {
+      update(d => {
+        const p = d.personajes.find(pj => pj.nombre === nombrePersonaje)
+        if (!p) return d
+        const id = 'ts' + Date.now()
+        p.tareas.push({
+          id,
+          nombre: tarea.nombre,
+          hecho: false,
+          tipo: tarea.tipo || 'mision',
+          cooldown: tarea.cooldown || 'none',
+          prioridad: tarea.prioridad ?? 2,
+          tiempo_min: tarea.tiempo_min ?? 15,
+          expansion: tarea.expansion || '',
+          creada: new Date().toISOString(),
+          tags: [],
+        })
+        saveData(d)
+        return d
+      })
+    },
     resetDailyTasks() {
       update(d => {
         resetDailyTasks(d)

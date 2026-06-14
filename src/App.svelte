@@ -190,15 +190,15 @@
           <FilterBar />
           <WarbandView />
         {:else if $uiStore.currentView === 'tabla'}
-          <TablaView />
+          <TablaView {openTaskEdit} {openMissionEdit} />
         {:else if $uiStore.currentView === 'priority'}
-          <PriorityView />
+          <PriorityView {openTaskEdit} {openMissionEdit} />
         {:else if $uiStore.currentView === 'time'}
-          <TimeView />
+          <TimeView {openTaskEdit} {openMissionEdit} />
         {:else if $uiStore.currentView === 'personajes'}
-          <PersonajesView />
+          <PersonajesView {openCharEdit} />
         {:else if $uiStore.currentView === 'mapa'}
-          <MapaView />
+          <MapaView {openTaskEdit} {openMissionEdit} openNewItemForChar={(char) => { resetMissionForm(); misionPersonaje = char; uiStore.openModal('MissionNew') }} />
         {/if}
       </div>
       {#if $uiStore.currentView === 'warband'}
@@ -582,13 +582,9 @@
     margin-top: 4px;
   }
   .warband-layout.has-sidebar {
-    grid-template-columns: 1fr 320px;
+    grid-template-columns: 1fr 1fr;
   }
   .detail-sidebar {
-    position: sticky;
-    top: 70px;
-    align-self: start;
-    max-height: calc(100vh - 80px);
     overflow-y: auto;
   }
   .detail-sidebar:empty { display: none; }

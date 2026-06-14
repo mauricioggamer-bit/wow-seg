@@ -3,6 +3,8 @@
   import { uiStore } from '../stores/ui'
   import { CLASS_MAP, PERS_RACE_INFO, PERS_CLASS_ICONS, PERS_CLASS_COLORS, PERS_RACES_BY_COLUMN } from '../constants'
 
+  let { openCharEdit }: { openCharEdit?: (name: string) => void } = $props()
+
   let persSelectedRace = $state<string | null>(null)
   let persSelectedFaction = $state<string | null>(null)
   let persSelectedClass = $state<string | null>(null)
@@ -191,10 +193,7 @@
               <div class="pers-card-meta">Nv.{c.nivel}<br>{c.clase} · {c.raza}</div>
             </div>
           {/each}
-          <div class="pers-char-card add-new" onclick={() => uiStore.openModal('MissionNew')}>
-            <span class="pers-add-icon">+</span>
-            <span style="font-size:10px;color:var(--text-muted)">Nuevo<br>personaje</span>
-          </div>
+          
         {/if}
       </div>
 
@@ -250,7 +249,7 @@
     <button
       class="pers-foot-btn primary"
       disabled={!persSelectedChar}
-      onclick={() => { if (persSelectedChar) uiStore.openModal('CharEdit') }}
+      onclick={() => { if (persSelectedChar && openCharEdit) openCharEdit(persSelectedChar) }}
     >EDITAR PERSONAJE ►</button>
   </div>
 </div>

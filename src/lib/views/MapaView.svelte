@@ -4,12 +4,12 @@
   import { CLASS_MAP, PERS_CLASS_ICONS, PERS_CLASS_COLORS, EXPANSIONS } from '../constants'
   import mapa_svgs from '../data/mapa_svgs'
 
+  let { openTaskEdit, openMissionEdit, openNewItemForChar }: { openTaskEdit: (char: string, taskId: string) => void, openMissionEdit: (m: any) => void, openNewItemForChar: (char: string) => void } = $props()
+
   const STORAGE_POS = 'wowseg_mapa_positions'
   const STORAGE_EXP = 'wowseg_mapa_expansion'
   const MAP_W = 1000
   const MAP_H = 750
-
-  const FACTION_COLORS: Record<string, string> = { Horda: '#AA1111', Alianza: '#1A6DB5' }
 
   let activeExp = $state(localStorage.getItem(STORAGE_EXP) || EXPANSIONS[0]?.id || 'tww')
   let positions = $state<Record<string, { x: number; y: number }>>({})
@@ -53,42 +53,28 @@
     positions = { ...positions, [id]: { x, y } }
   }
 
-  
-
-  let connections = $derived.by(() => {
-    const r = areaRect()
-    if (!mapAreaEl || !r) return ''
-    const scX = r.width / MAP_W
-    const scY = r.height / MAP_H
-    let lines = ''
+  let allItems = $derived.by(() => {
+    const items: Array<Record<string, any>> = []
     for (const c of charsForExp) {
       for (const t of c.tareas) {
-        const cp = getPos('char_' + c.nombre)
-        const sp = getPos('task_' + c.nombre + '_' + t.id)
-        if (!cp || !sp) continue
-        const x1 = cp.x * scX
-        const y1 = cp.y * scY
-        const x2 = sp.x * scX
-        const y2 = sp.y * scY
-        const color = FACTION_COLORS[c.faccion] || '#888'
-        const opacity = t.hecho ? '0.3' : '0.5'
-        lines += `<line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}" stroke="${color}" stroke-width="1.5" opacity="${opacity}"/>`
-        lines += `<circle cx="${x1}" cy="${y1}" r="3" fill="${color}" opacity="${opacity}"/>`
-        lines += `<circle cx="${x2}" cy="${y2}" r="2" fill="${color}" opacity="${opacity}"/>`
+        items.push({ ...t, personaje: c.nombre, faccion: c.faccion, clase: c.clase, _type: 'task' })
+      }
+      for (const m of $misionesStore) {
+        if (m.personaje === c.nombre && (!m.expansion || m.expansion === activeExp)) {
+          items.push({ ...m, personaje: c.nombre, faccion: c.faccion, clase: c.clase, _type: 'mission' })
+        }
       }
     }
-    return lines
+    return items
   })
 
-  let allTasks = $derived.by(() => {
-    const tasks: Array<Record<string, any>> = []
-    for (const c of charsForExp) {
-      for (const t of c.tareas) {
-        tasks.push({ ...t, personaje: c.nombre, faccion: c.faccion, clase: c.clase })
-      }
-    }
-    return tasks
-  })
+  function charItems(charName: string) {
+    const char = $personajesStore.find(c => c.nombre === charName)
+    if (!char) return []
+    const tasks = char.tareas.map(t => ({ ...t, _type: 'task' as const, _charName: charName }))
+    const misiones = $misionesStore.filter(m => m.personaje === charName).map(m => ({ ...m, _type: 'mission' as const, _charName: charName }))
+    return [...tasks, ...misiones]
+  }
 
   let groups = $derived.by(() => {
     const g: Record<string, typeof charsForExp> = {}
@@ -100,11 +86,11 @@
   })
 
   let stats = $derived.by(() => {
-    const done = allTasks.filter(t => t.hecho).length
-    const total = allTasks.length
+    const done = allItems.filter(t => t.hecho).length
+    const total = allItems.length
     const pct = total > 0 ? Math.round(done / total * 100) : 0
-    const totalMin = allTasks.reduce((s: number, t: any) => s + (t.tiempo_min || 0), 0)
-    const weekly = allTasks.filter(t => t.cooldown === 'weekly')
+    const totalMin = allItems.reduce((s: number, t: any) => s + (t.tiempo_min || 0), 0)
+    const weekly = allItems.filter(t => t.cooldown === 'weekly')
     const weeklyDone = weekly.filter(t => t.hecho).length
     const weeklyTotal = weekly.length
     return { chars: charsForExp.length, done, total, pct, totalMin, weeklyDone, weeklyTotal }
@@ -123,13 +109,13 @@
       }))} as const
     }
     if (sidebarTab === 'tasks') {
-      if (allTasks.length === 0) return { type: 'empty', text: 'No hay tareas para esta expansión' } as const
-      return { type: 'tasks', done: allTasks.filter(t => t.hecho).length, total: allTasks.length, items: allTasks.map(t => ({
+      if (allItems.length === 0) return { type: 'empty', text: 'No hay items para esta expansión' } as const
+      return { type: 'tasks', done: allItems.filter(t => t.hecho).length, total: allItems.length, items: allItems.map(t => ({
         id: t.id,
         name: t.nombre,
         hecho: t.hecho,
         personaje: t.personaje,
-        highlightId: 'task_' + t.personaje + '_' + t.id,
+        highlightId: 'char_' + t.personaje,
         personajeColor: PERS_CLASS_COLORS[CLASS_MAP[t.clase] || 'warrior'] || '#c69b3a',
       }))} as const
     }
@@ -209,11 +195,6 @@
     highlight = 'char_' + charName
   }
 
-  function handleSlipClick(e: PointerEvent, charName: string, taskId: string) {
-    if (wasDragged || (e.target as HTMLElement).tagName === 'INPUT') return
-    highlight = 'task_' + charName + '_' + taskId
-  }
-
   function scrollToElement(selector: string) {
     if (!mapAreaEl) return
     const el = mapAreaEl.querySelector(selector) as HTMLElement
@@ -255,14 +236,6 @@
       const col = i % cols
       const row = Math.floor(i / cols)
       newPos[id] = { x: ((padX + cellW * (col + 0.5)) / rect.width) * MAP_W, y: ((padY + cellH * (row + 0.5)) / rect.height) * MAP_H }
-      c.tareas.forEach((t, ti) => {
-        const tid = 'task_' + c.nombre + '_' + t.id
-        if (newPos[tid]) return
-        newPos[tid] = {
-          x: ((padX + cellW * (col + 0.5) + 80 + ti * 60) / rect.width) * MAP_W,
-          y: ((padY + cellH * (row + 0.5) - 30 + ti * 30) / rect.height) * MAP_H,
-        }
-      })
     })
     if (changed) { positions = newPos; savePositions() }
   }
@@ -289,18 +262,13 @@
   <div class="mapa-layout">
     <div class="mapa-area" bind:this={mapAreaEl}>
       <div class="mapa-svg-wrap">{@html mapa_svgs[activeExp] || ''}</div>
-      <svg class="mapa-conexiones" style="position:absolute;inset:0;width:100%;height:100%;pointer-events:none;z-index:5"
-        viewBox={areaRect() ? `0 0 ${areaRect()!.width} ${areaRect()!.height}` : '0 0 100 100'}>
-        {@html connections}
-      </svg>
       {#each charsForExp as c (c.nombre)}
         {@const pid = 'char_' + c.nombre}
         {@const pos = getPos(pid)}
         {@const clsKey = CLASS_MAP[c.clase] || 'warrior'}
         {@const clsColor = PERS_CLASS_COLORS[clsKey] || '#fff'}
         {@const clsIcon = PERS_CLASS_ICONS[clsKey] || '?'}
-        {@const done = c.tareas.filter(t => t.hecho).length}
-        {@const total = c.tareas.length}
+        {@const items = charItems(c.nombre)}
         {#if pos && areaRect()}
           {@const px = pos.x * (areaRect()!.width / MAP_W)}
           {@const py = pos.y * (areaRect()!.height / MAP_H)}
@@ -319,51 +287,30 @@
             </div>
             <div class="mapa-card-info">Nvl {c.nivel} · {c.raza} · {c.clase}</div>
             <div class="mapa-card-warband">{c.warband}</div>
-            {#if total > 0}
-              <div class="mapa-card-tasks">
-                {#each c.tareas as t}
-                  <span class="mapa-card-dot" class:done={t.hecho} class:pending={!t.hecho}></span>
+            {#if items.length > 0}
+              <div class="mapa-card-items">
+                {#each items as item (item.id)}
+                  <div class="mapa-card-item" class:done={item.hecho}>
+                    <input type="checkbox" checked={item.hecho}
+                      onchange={() => {
+                        if (item._type === 'task') dataStore.toggleTarea(c.nombre, item.id)
+                        else dataStore.toggleMision(item.id)
+                      }}
+                      onclick={(e) => e.stopPropagation()} />
+                    <span class="mapa-item-name">{item.nombre}</span>
+                    <button class="mapa-item-btn" onclick={(e) => { e.stopPropagation(); if (item._type === 'task') openTaskEdit(c.nombre, item.id); else openMissionEdit(item) }} title="Editar">✏️</button>
+                    <button class="mapa-item-btn" onclick={(e) => { e.stopPropagation(); if (confirm('¿Eliminar "' + item.nombre + '"?')) { if (item._type === 'task') dataStore.deleteTarea(c.nombre, item.id); else dataStore.deleteMision(item.id) } }} title="Eliminar">🗑️</button>
+                  </div>
                 {/each}
               </div>
+            {:else}
+              <div class="mapa-card-items">
+                <div class="mapa-card-item-empty">Sin tareas</div>
+              </div>
             {/if}
+            <button class="mapa-add-btn" onclick={(e) => { e.stopPropagation(); openNewItemForChar(c.nombre) }} title="Nueva tarea/misión">+</button>
           </div>
         {/if}
-      {/each}
-      {#each charsForExp as c (c.nombre)}
-        {#each c.tareas as t (t.id)}
-          {@const tid = 'task_' + c.nombre + '_' + t.id}
-          {@const pos = getPos(tid)}
-          {#if pos && areaRect()}
-            {@const px = pos.x * (areaRect()!.width / MAP_W)}
-            {@const py = pos.y * (areaRect()!.height / MAP_H)}
-            {@const typeLabel = t.cooldown || 'none'}
-            <div
-              class="mapa-slip"
-              class:dragging={dragging === tid}
-              class:highlight={highlight === tid}
-              style="left:{px}px;top:{py}px"
-              data-task-id={"task_" + c.nombre + "_" + t.id}
-              data-char-name={c.nombre}
-              onpointerdown={(e) => handlePointerDown(e, tid)}
-              onclick={(e) => handleSlipClick(e, c.nombre, t.id)}
-            >
-              <div class="mapa-slip-header">
-                <div class="mapa-slip-name">{t.nombre}</div>
-                <input type="checkbox" class="mapa-slip-check" checked={t.hecho}
-                  onchange={() => dataStore.toggleTarea(c.nombre, t.id)}
-                  onclick={(e) => e.stopPropagation()} />
-              </div>
-              <div class="mapa-slip-meta">
-                <span class="mapa-slip-type" class:typeLabel>{typeLabel}</span>
-                <span>P{t.prioridad}</span>
-                <span>{t.tiempo_min}min</span>
-              </div>
-              {#if t.recompensa}
-                <div class="mapa-slip-reward">🎁 {t.recompensa}</div>
-              {/if}
-            </div>
-          {/if}
-        {/each}
       {/each}
     </div>
 
@@ -392,7 +339,7 @@
           <div style="padding:2px 8px;font-size:0.55rem;color:var(--text-dim);margin-bottom:2px">{sidebarContent.done}/{sidebarContent.total} hechas</div>
           {#each sidebarContent.items as item}
             <div class="mapa-sidebar-item" class:active={highlight === item.highlightId}
-              onclick={() => scrollToElement('.mapa-slip[data-task-id="' + item.highlightId + '"]')}>
+              onclick={() => scrollToElement('.mapa-card[data-char-name="' + item.personaje + '"]')}>
               <span class="item-icon" style="color:{item.hecho ? 'var(--health-green)' : 'var(--text-dim)'}">{item.hecho ? '✓' : '○'}</span>
               <span class="item-name">{item.name}</span>
               <span class="item-count" style="color:{item.personajeColor}">{item.personaje}</span>
@@ -452,24 +399,17 @@
   .mapa-card-class-icon { font-size:0.9rem; flex-shrink:0; }
   .mapa-card-info { font-size:0.55rem; color:var(--text-muted); margin-top:1px; line-height:1.3; }
   .mapa-card-warband { font-size:0.5rem; color:var(--text-dim); margin-top:1px; padding:1px 4px; background:rgba(255,255,255,0.04); border-radius:var(--r-sm); display:inline-block; }
-  .mapa-card-tasks { display:flex; gap:2px; margin-top:3px; flex-wrap:wrap; }
-  .mapa-card-dot { width:6px; height:6px; border-radius:50%; flex-shrink:0; }
-  .mapa-card-dot.done { background:var(--health-green); }
-  .mapa-card-dot.pending { background:var(--text-dim); }
-  .mapa-slip { position:absolute; z-index:10; width:140px; padding:5px 7px; border-radius:var(--r-sm); cursor:grab; font-family:var(--font-body); transition:box-shadow var(--t-fast) var(--ease); background:linear-gradient(135deg,#1a1508,#221c0a); border:1px solid rgba(201,168,76,0.2); box-shadow:0 2px 6px rgba(0,0,0,0.3); }
-  .mapa-slip:hover { z-index:20; box-shadow:0 4px 12px rgba(0,0,0,0.4); }
-  .mapa-slip.dragging { z-index:50; cursor:grabbing; box-shadow:0 8px 20px rgba(0,0,0,0.5); transform:scale(1.03); }
-  .mapa-slip.highlight { z-index:25; box-shadow:0 0 0 2px var(--gold),0 4px 16px rgba(201,168,76,0.25); }
-  .mapa-slip-header { display:flex; align-items:flex-start; justify-content:space-between; gap:3px; }
-  .mapa-slip-name { font-size:0.62rem; font-weight:600; line-height:1.2; color:var(--gold-light); }
-  .mapa-slip-check { width:12px; height:12px; cursor:pointer; flex-shrink:0; margin-top:1px; accent-color:var(--health-green); }
-  .mapa-slip-meta { font-size:0.5rem; color:var(--text-muted); margin-top:2px; display:flex; gap:4px; flex-wrap:wrap; }
-  .mapa-slip-type { padding:0 3px; border-radius:2px; font-size:0.5rem; font-weight:600; text-transform:uppercase; }
-  .mapa-slip-type:global(.weekly) { background:rgba(0,170,0,0.15); color:var(--health-green); }
-  .mapa-slip-type:global(.daily) { background:rgba(0,112,221,0.15); color:var(--rarity-rare); }
-  .mapa-slip-type:global(.farm) { background:rgba(163,53,238,0.15); color:var(--rarity-epic); }
-  .mapa-slip-type:global(.none) { background:rgba(255,255,255,0.05); color:var(--text-dim); }
-  .mapa-slip-reward { font-size:0.5rem; color:var(--text-dim); margin-top:1px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .mapa-card-items { margin-top:4px; border-top:1px solid rgba(255,255,255,0.06); padding-top:3px; }
+  .mapa-card-item { display:flex; align-items:center; gap:3px; padding:2px 0; font-size:0.55rem; line-height:1.3; }
+  .mapa-card-item input[type="checkbox"] { width:10px; height:10px; cursor:pointer; accent-color:var(--health-green); flex-shrink:0; }
+  .mapa-card-item.done .mapa-item-name { opacity:0.4; text-decoration:line-through; }
+  .mapa-item-name { flex:1; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; color:var(--gold-light); }
+  .mapa-item-btn { background:none; border:none; cursor:pointer; padding:0 1px; font-size:0.55rem; line-height:1; opacity:0.4; transition:opacity var(--t-fast) var(--ease); }
+  .mapa-item-btn:hover { opacity:1; }
+  .mapa-card-item-empty { font-size:0.5rem; color:var(--text-dim); padding:2px 0; }
+  .mapa-add-btn { display:block; width:100%; margin-top:3px; padding:2px 0; background:rgba(255,255,255,0.04); border:1px dashed var(--border-subtle); border-radius:var(--r-sm); color:var(--text-muted); cursor:pointer; font-family:var(--font-body); font-size:0.6rem; text-align:center; transition:all var(--t-fast) var(--ease); }
+  .mapa-add-btn:hover { background:rgba(201,168,76,0.1); border-color:var(--gold-dim); color:var(--gold-light); }
+  .mapa-card { position:absolute; z-index:10; width:160px; padding:6px 8px; border-radius:var(--r-md); cursor:grab; font-family:var(--font-body); transition:box-shadow var(--t-fast) var(--ease); border:1px solid var(--border-subtle); }
   .mapa-sidebar { width:200px; flex-shrink:0; display:flex; flex-direction:column; background:var(--bg-soft); border-left:1px solid var(--border-subtle); overflow:hidden; }
   .mapa-sidebar-tabs { display:flex; border-bottom:1px solid var(--border-subtle); flex-shrink:0; }
   .mapa-sidebar-tab { flex:1; padding:5px 4px; border:none; background:transparent; color:var(--text-muted); cursor:pointer; font-family:var(--font-body); font-size:0.6rem; text-align:center; transition:all var(--t-fast) var(--ease); border-bottom:2px solid transparent; }
@@ -494,6 +434,6 @@
   .mapa-stat-fill.green { background:var(--health-green); }
   .mapa-stat-fill.yellow { background:#c9a84c; }
   .mapa-stat-fill.red { background:var(--red); }
-  @media (max-width:900px) { .mapa-sidebar { width:160px; } .mapa-card { width:120px; } .mapa-slip { width:110px; } }
+  @media (max-width:900px) { .mapa-sidebar { width:160px; } .mapa-card { width:140px; } }
   @media (max-width:700px) { .mapa-sidebar { display:none; } .mapa-stats { flex-wrap:wrap; gap:6px; } }
 </style>

@@ -3,6 +3,8 @@
   import { dataStore, personajesStore, misionesStore } from '../stores/data'
   import type { Personaje } from '../types'
 
+  let { openTaskEdit, openMissionEdit }: { openTaskEdit?: (char: string, taskId: string) => void, openMissionEdit?: (m: any) => void } = $props()
+
   let tf = $state({
     personaje: '', warband: '', tipo: '', expansion: '', prioridad: '',
     tiempo: '', estado: '', search: '', clase: '', faccion: '', reino: '', activo: '', cooldown: '',
@@ -226,8 +228,8 @@
                 <td>
                   <div style="display:flex;gap:2px">
                     <button onclick={() => {
-                      if (item._origen === 'tarea') uiStore.openModal('TaskEdit')
-                      else uiStore.openModal('MissionEdit')
+                      if (item._origen === 'tarea' && openTaskEdit) openTaskEdit(item._char, item.id)
+                      else if (openMissionEdit) openMissionEdit(item)
                     }} title="Editar"
                       style="background:none;border:none;cursor:pointer;font-size:0.6rem;padding:0 2px">✏️</button>
                     <button onclick={() => {

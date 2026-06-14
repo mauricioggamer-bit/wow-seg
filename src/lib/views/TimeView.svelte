@@ -2,6 +2,8 @@
   import { uiStore } from '../stores/ui'
   import { dataStore, personajesStore, misionesStore } from '../stores/data'
 
+  let { openTaskEdit, openMissionEdit }: { openTaskEdit?: (char: string, taskId: string) => void, openMissionEdit?: (m: any) => void } = $props()
+
   let timeKey = $state('')
   let warbandFilter = $state('')
   let showMisiones = $state(true)
@@ -117,8 +119,8 @@
             </div>
             <div style="display:flex;gap:2px;align-items:center;flex-shrink:0">
               <button onclick={() => {
-                if (t._origen === 'mision') uiStore.openModal('MissionEdit')
-                else uiStore.openModal('TaskEdit')
+                if (t._origen === 'mision' && openMissionEdit) openMissionEdit(t)
+                else if (openTaskEdit) openTaskEdit(t.personaje, t.id)
               }} title="Editar"
                 style="background:none;border:none;cursor:pointer;font-size:0.65rem;padding:0 2px">✏️</button>
               <button onclick={() => {

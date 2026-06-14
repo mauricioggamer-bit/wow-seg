@@ -1,19 +1,6 @@
 <script lang="ts">
   import { personajesStore } from '../stores/data'
-
-  const EXPANSIONS = [
-    { id: 'classic', nombre: 'Classic', color: '#c9a84c', region: 'Azeroth' },
-    { id: 'tww', nombre: 'The War Within', color: '#3FC7EB', region: 'Khaz Algar' },
-    { id: 'dragonflight', nombre: 'Dragonflight', color: '#33937F', region: 'Dragon Isles' },
-    { id: 'shadowlands', nombre: 'Shadowlands', color: '#8788EE', region: 'Shadowlands' },
-    { id: 'legion', nombre: 'Legion', color: '#A330C9', region: 'Broken Isles' },
-    { id: 'bfa', nombre: 'Battle for Azeroth', color: '#C69B3A', region: 'Zandalar / Kul Tiras' },
-    { id: 'draenor', nombre: 'Warlords of Draenor', color: '#FF7C0A', region: 'Draenor' },
-    { id: 'mop', nombre: 'Mists of Pandaria', color: '#00FF96', region: 'Pandaria' },
-    { id: 'cata', nombre: 'Cataclysm', color: '#E84545', region: 'Azeroth' },
-    { id: 'wotlk', nombre: 'Wrath of the Lich King', color: '#3A8BFF', region: 'Northrend' },
-    { id: 'midnight', nombre: 'Midnight', color: '#7B2FBE', region: 'TBD' },
-  ]
+  import { EXPANSIONS } from '../constants'
 
   let selectedExp = $state('tww')
   let expansion = $derived(EXPANSIONS.find(e => e.id === selectedExp))

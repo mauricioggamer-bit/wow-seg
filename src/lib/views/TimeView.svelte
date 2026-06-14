@@ -1,9 +1,11 @@
 <script lang="ts">
   import { uiStore } from '../stores/ui'
-  import { dataStore, personajesStore } from '../stores/data'
+  import { dataStore, personajesStore, misionesStore } from '../stores/data'
 
-  let timeKey = $state('rapido')
+  let timeKey = $state('')
   let warbandFilter = $state('')
+  let showMisiones = $state(true)
+  let showDone = $state(false)
 
   let warbands = $derived([...new Set($personajesStore.map(p => p.warband))].sort())
 
@@ -19,10 +21,16 @@
     for (const p of $personajesStore) {
       if (!p.activo) continue
       for (const t of p.tareas) {
-        const fn = timeRanges[timeKey]
-        if (fn && fn(t.tiempo_min)) {
-          all.push({ ...t, personaje: p.nombre, clase: p.clase, warband: p.warband, nivel: p.nivel, faccion: p.faccion })
-        }
+        if (timeKey) { const fn = timeRanges[timeKey]; if (!fn || !fn(t.tiempo_min)) continue }
+        if (!showDone && t.hecho) continue
+        all.push({ ...t, _origen: 'tarea', personaje: p.nombre, clase: p.clase, warband: p.warband, nivel: p.nivel, faccion: p.faccion })
+      }
+    }
+    if (showMisiones) {
+      for (const m of $misionesStore) {
+        if (timeKey) { const fn = timeRanges[timeKey]; if (!fn || !fn(m.tiempo_min || 0)) continue }
+        if (!showDone && m.estado === 'completada') continue
+        all.push({ ...m, _origen: 'mision', nombre: m.nombre, hecho: m.estado === 'completada', personaje: m.personaje || '', warband: '', prioridad: m.prioridad, tiempo_min: m.tiempo_min || 0, cooldown: m.tipo })
       }
     }
     let filtered = all
@@ -35,16 +43,20 @@
   let grouped = $derived.by(() => {
     const g: Record<string, typeof items> = {}
     for (const i of items) {
-      if (!g[i.warband]) g[i.warband] = []
-      g[i.warband].push(i)
+      const wb = i.warband || '(sin warband)'
+      if (!g[wb]) g[wb] = []
+      g[wb].push(i)
     }
     return g
   })
+
+  let totalDone = $derived(items.filter(i => i.hecho).length)
 </script>
 
 <div class="dash-minimal">
   <div class="dash-controls" style="margin-bottom:4px">
     <span class="dash-label">Tiempo:</span>
+    <button class="wow-btn wow-btn-sm" class:wow-btn-primary={!timeKey} onclick={() => timeKey = ''}>Todas</button>
     {#each [['rapido', '🟢 Rápido'], ['medio', '🟡 Medio'], ['largo', '🟠 Largo'], ['marathon', '🔴 Marathon']] as [key, label]}
       <button
         class="wow-btn wow-btn-sm"
@@ -59,7 +71,13 @@
         <option value={wb}>{wb}</option>
       {/each}
     </select>
-    <span class="text-xs text-muted" style="margin-left:8px">{items.length} tareas</span>
+    <label style="font-size:0.55rem;display:flex;align-items:center;gap:2px;margin-left:4px">
+      <input type="checkbox" bind:checked={showMisiones} /> Misiones
+    </label>
+    <label style="font-size:0.55rem;display:flex;align-items:center;gap:2px;margin-left:4px">
+      <input type="checkbox" bind:checked={showDone} /> Hechas
+    </label>
+    <span class="text-xs text-muted" style="margin-left:8px">{totalDone}/{items.length} ítems</span>
   </div>
 
   {#each Object.entries(grouped) as [wb, tareas]}
@@ -71,11 +89,14 @@
       </div>
       <div class="task-list" style="padding-left:4px;gap:1px">
         {#each tareas as t}
-          <div class="task-item" class:dones={t.hecho} style="padding:4px 6px">
+          <div class="task-item" class:dones={t.hecho} class:mision={t._origen === 'mision'} style="padding:4px 6px">
             <input
               type="checkbox" class="task-check"
               checked={t.hecho}
-              onchange={() => dataStore.toggleTarea(t.personaje, t.id)}
+              onchange={() => {
+                if (t._origen === 'mision') dataStore.toggleMision(t.id)
+                else dataStore.toggleTarea(t.personaje, t.id)
+              }}
               style="width:14px;height:14px"
             />
             <div class="task-info">
@@ -89,7 +110,22 @@
                 {#if t.recompensa}
                   <span class="task-reward">{t.recompensa}</span>
                 {/if}
+                {#if t._origen === 'mision'}
+                  <span class="text-xs" style="color:var(--blue-dim)">misión</span>
+                {/if}
               </div>
+            </div>
+            <div style="display:flex;gap:2px;align-items:center;flex-shrink:0">
+              <button onclick={() => {
+                if (t._origen === 'mision') uiStore.openModal('MissionEdit')
+                else uiStore.openModal('TaskEdit')
+              }} title="Editar"
+                style="background:none;border:none;cursor:pointer;font-size:0.65rem;padding:0 2px">✏️</button>
+              <button onclick={() => {
+                if (t._origen === 'mision') { if (confirm('¿Eliminar misión?')) dataStore.deleteMision(t.id) }
+                else { if (confirm('¿Eliminar tarea?')) dataStore.deleteTarea(t.personaje, t.id) }
+              }} title="Eliminar"
+                style="background:none;border:none;cursor:pointer;font-size:0.65rem;padding:0 2px">🗑️</button>
             </div>
           </div>
         {/each}
@@ -98,28 +134,6 @@
   {/each}
 
   {#if items.length === 0}
-    <div class="empty-state"><p>No hay tareas en este rango de tiempo</p></div>
+    <div class="empty-state"><p>Todo completado 🎉</p></div>
   {/if}
 </div>
-
-<style>
-  .dash-group { margin-bottom: 1px; }
-  .dash-group-header {
-    display: flex; align-items: center; gap: 4px;
-    padding: 2px 6px; cursor: pointer;
-    border-radius: 2px; font-size: 0.65rem;
-  }
-  .dash-group-header:hover { background: var(--hover-overlay); }
-  .dash-group-header .arrow { font-size: 0.5rem; color: var(--text-muted); }
-  .dash-controls {
-    display: flex; flex-wrap: wrap; gap: 3px;
-    align-items: center; padding: 2px 0;
-  }
-  .dash-controls select {
-    background: var(--input-bg); border: 1px solid var(--border-subtle);
-    border-radius: var(--r-sm); padding: 2px 4px;
-    color: var(--text-primary); font-size: 0.55rem; font-family: var(--font-body);
-  }
-  .dash-label { font-size: 0.5rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.04em; }
-  .wow-btn-primary { background: linear-gradient(180deg, #c9a84c, #a8882a); color: #1a1a0a; border: none; }
-</style>

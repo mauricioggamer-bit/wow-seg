@@ -38,17 +38,20 @@
   </span>
 </div>
 <div class="header-actions">
-  <button class="wow-btn wow-btn-sm" onclick={() => uiStore.openModal('ImportExportModal')} title="Importar/Exportar">
+  <button class="wow-btn wow-btn-sm" onclick={() => uiStore.openModal('ImportExport')} title="Importar/Exportar">
     💾
   </button>
-  <button class="wow-btn wow-btn-sm" onclick={() => uiStore.openModal('GistModal')} title="Sincronizar Gist">
+  <button class="wow-btn wow-btn-sm" onclick={() => uiStore.openModal('GistConfig')} title="Sincronizar Gist">
     ☁
   </button>
-  <button class="wow-btn wow-btn-sm" onclick={() => uiStore.openModal('WarbandModal')} title="Gestionar Warbands">
+  <button class="wow-btn wow-btn-sm" onclick={() => uiStore.openModal('WarbandManage')} title="Gestionar Warbands">
     📁
   </button>
-  <button class="wow-btn wow-btn-sm" onclick={() => uiStore.openModal('MissionModal')} title="Gestionar Misiones">
+  <button class="wow-btn wow-btn-sm" onclick={() => uiStore.openModal('MissionNew')} title="Nueva Misión">
     📋
+  </button>
+  <button class="wow-btn wow-btn-sm" onclick={() => dataStore.resetDailyTasks()} title="Resetear Diarias">
+    🔄
   </button>
   <button class="theme-toggle" onclick={preferencesStore.toggleTheme}>
     <span class="theme-toggle__icon"></span>

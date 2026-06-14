@@ -85,11 +85,25 @@
   })
 
   let allClasses = $derived([...new Set($personajesStore.map(c => c.clase))].sort())
+
+  $effect(() => {
+    function onKey(e: KeyboardEvent) {
+      if (e.key === 'Escape') {
+        if (selectedChar) { selectedChar = null; uiStore.selectCharacter(null) }
+        else if (selectedRace) selectedRace = null
+        else if (selectedClass) selectedClass = null
+        else uiStore.setView('warband')
+      }
+    }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  })
 </script>
 
 <div class="wow-panel">
   <div class="wow-panel-header">
     <h3>Personajes</h3>
+    <button class="wow-btn wow-btn-sm" onclick={() => uiStore.setView('warband')}>◄ Volver</button>
   </div>
   <div class="wow-panel-body">
     <div class="filter-bar" style="margin-bottom:8px">

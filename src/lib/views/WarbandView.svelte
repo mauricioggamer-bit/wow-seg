@@ -1,9 +1,10 @@
 <script lang="ts">
-  import { dataStore, personajesStore } from '../stores/data'
-  import { uiStore } from '../stores/ui'
+  import { personajesStore, dataStore } from '../stores/data'
+  import { uiStore, currentWarband } from '../stores/ui'
+  import { clsClass } from '../constants'
 
   let filtered = $derived.by(() => {
-    let chars = $personajesStore
+    let chars = $personajesStore.filter(c => c.warband === ($currentWarband || $personajesStore[0]?.warband))
     const f = $uiStore.filters
     if (f.searchText) {
       const q = f.searchText.toLowerCase()
@@ -17,6 +18,10 @@
 </script>
 
 <div class="wow-panel">
+  <div class="wow-panel-header">
+    <h2>{$currentWarband || $personajesStore[0]?.warband}</h2>
+    <span class="text-sm text-muted">{filtered.length} personajes</span>
+  </div>
   <div class="wow-panel-body">
     {#if filtered.length === 0}
       <div class="empty-state"><p>No se encontraron personajes</p></div>
@@ -32,20 +37,25 @@
           >
             <div style="display:flex;align-items:flex-start;justify-content:space-between">
               <div style="flex:1;cursor:pointer">
-                <div class="char-name class-{c.clase}">{c.nombre}</div>
+                <div class="char-name {clsClass(c.clase)}">{c.nombre}</div>
                 <div class="char-info">
                   <span class={c.faccion === 'Horda' ? 'faction-horda' : 'faction-alliance'}>
                     {c.faccion}
                   </span>
                   <span>Nvl {c.nivel}</span>
-                  <span>{c.clase}</span>
                 </div>
               </div>
+              <button
+                class="wow-btn wow-btn-icon"
+                onclick={(e) => { e.stopPropagation(); uiStore.openModal('WarbandMove') }}
+                title="Mover de warband"
+                style="flex-shrink:0;width:28px;height:28px;font-size:0.8rem"
+              >↗</button>
             </div>
             {#if c.tareas.length > 0}
-              <div class="char-tasks-bar">
+              <div class="char-tasks-bar" onclick={() => uiStore.selectCharacter(c.nombre)} style="cursor:pointer">
                 {#each c.tareas as t}
-                  <span class="task-dot" class:done={t.hecho} class:pending={!t.hecho} title={t.nombre}></span>
+                  <span class="task-dot" class:done={t.hecho} class:pending={!t.hecho} title={t.nombre}: {t.hecho ? '✓' : '✗'}></span>
                 {/each}
                 <span class="text-xs text-muted" style="margin-left:4px">
                   {c.tareas.filter(t => t.hecho).length}/{c.tareas.length}

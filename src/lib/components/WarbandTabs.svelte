@@ -1,16 +1,19 @@
 <script lang="ts">
   import { warbandsStore, dataStore } from '../stores/data'
-  import { uiStore } from '../stores/ui'
+  import { uiStore, currentView, currentWarband } from '../stores/ui'
+  import { clsClass } from '../constants'
+
+  function selectWarband(nombre: string) {
+    uiStore.selectWarband(nombre)
+  }
 </script>
 
-<div class="warband-tabs" id="warbandTabs" style="display: {$uiStore.currentView === 'warband' ? '' : 'none'}">
+<div class="warband-tabs" id="warbandTabs" style="display: {$currentView === 'warband' ? '' : 'none'}">
   {#each $warbandsStore as wb}
     <button
       class="warband-tab"
-      class:active={$uiStore.currentView === 'warband'}
-      onclick={() => {
-        dataStore.moveCharToWarband('', ''); // placeholder
-      }}
+      class:active={$currentWarband === wb.nombre}
+      onclick={() => selectWarband(wb.nombre)}
     >
       {wb.nombre} ({wb.personajes.length})
     </button>

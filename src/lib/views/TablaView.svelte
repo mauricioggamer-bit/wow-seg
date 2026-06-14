@@ -166,24 +166,25 @@
     </div>
     <div class="task-table-wrap" style="margin-top:4px">
       <table class="task-table">
-        <thead>
-          <tr>
-            <th style="width:24px"></th>
-            <th style="width:85px">Personaje</th>
-            <th>Nombre</th>
-            <th style="width:48px">Tipo</th>
-            <th style="width:38px">Exp</th>
-            <th style="width:32px">Prio</th>
-            <th style="width:40px">Tiempo</th>
-            <th style="width:42px">Cool.</th>
-            <th>Recompensa</th>
-            <th style="width:52px">Estado</th>
-          </tr>
-        </thead>
+          <thead>
+            <tr>
+              <th style="width:24px"></th>
+              <th style="width:85px">Personaje</th>
+              <th>Nombre</th>
+              <th style="width:48px">Tipo</th>
+              <th style="width:38px">Exp</th>
+              <th style="width:32px">Prio</th>
+              <th style="width:40px">Tiempo</th>
+              <th style="width:42px">Cool.</th>
+              <th>Recompensa</th>
+              <th style="width:52px">Estado</th>
+              <th style="width:40px">Acciones</th>
+            </tr>
+          </thead>
         <tbody>
           {#if items.length === 0}
             <tr>
-              <td colspan="10" style="text-align:center;padding:16px;color:var(--text-muted);font-size:0.75rem">
+              <td colspan="11" style="text-align:center;padding:16px;color:var(--text-muted);font-size:0.75rem">
                 No hay ítems. ¡Creá una tarea o misión!
               </td>
             </tr>
@@ -221,6 +222,20 @@
                   <span class="text-xs" style={item.hecho ? '' : 'color:var(--gold)'}>
                     {item.hecho ? '✓ Hecho' : '○ Pendiente'}
                   </span>
+                </td>
+                <td>
+                  <div style="display:flex;gap:2px">
+                    <button onclick={() => {
+                      if (item._origen === 'tarea') uiStore.openModal('TaskEdit')
+                      else uiStore.openModal('MissionEdit')
+                    }} title="Editar"
+                      style="background:none;border:none;cursor:pointer;font-size:0.6rem;padding:0 2px">✏️</button>
+                    <button onclick={() => {
+                      if (item._origen === 'tarea') { if (confirm('¿Eliminar tarea?')) dataStore.deleteTarea(item._char, item.id) }
+                      else { if (confirm('¿Eliminar misión?')) dataStore.deleteMision(item.id) }
+                    }} title="Eliminar"
+                      style="background:none;border:none;cursor:pointer;font-size:0.6rem;padding:0 2px">🗑️</button>
+                  </div>
                 </td>
               </tr>
             {/each}

@@ -31,16 +31,18 @@ const MAPA = (() => {
   };
 
   const EXPANSIONS = [
-    { key: 'tww', label: 'The War Within', color: '#8b6914', bg: '#0e0c06', icon: '🪨', order: 0 },
-    { key: 'midnight', label: 'Midnight', color: '#6b2fa0', bg: '#0e081a', icon: '🌙', order: 1 },
-    { key: 'dragonflight', label: 'Dragonflight', color: '#2a8b3a', bg: '#06140a', icon: '🐉', order: 2 },
-    { key: 'shadowlands', label: 'Shadowlands', color: '#3a6bb5', bg: '#0a0818', icon: '👻', order: 3 },
-    { key: 'bfa', label: 'Battle for Azeroth', color: '#c9a84c', bg: '#140e06', icon: '⚓', order: 4 },
-    { key: 'legion', label: 'Legion', color: '#2a6b3a', bg: '#08140a', icon: '🔥', order: 5 },
-    { key: 'draenor', label: 'Warlords of Draenor', color: '#8b2a14', bg: '#140804', icon: '🏴', order: 6 },
-    { key: 'mop', label: 'Mists of Pandaria', color: '#3aaa6b', bg: '#081408', icon: '🐼', order: 7 },
-    { key: 'cata', label: 'Cataclysm', color: '#b56b14', bg: '#140c04', icon: '🌋', order: 8 },
-    { key: 'wotlk', label: 'Wrath of the Lich King', color: '#3a8bbb', bg: '#06101c', icon: '❄️', order: 9 }
+    { key: 'tww', label: 'The War Within', color: '#8b6914', icon: '🪨' },
+    { key: 'midnight', label: 'Midnight', color: '#6b2fa0', icon: '🌙' },
+    { key: 'dragonflight', label: 'Dragonflight', color: '#2a8b3a', icon: '🐉' },
+    { key: 'shadowlands', label: 'Shadowlands', color: '#3a6bb5', icon: '👻' },
+    { key: 'bfa', label: 'Battle for Azeroth', color: '#c9a84c', icon: '⚓' },
+    { key: 'legion', label: 'Legion', color: '#2a6b3a', icon: '🔥' },
+    { key: 'draenor', label: 'Warlords of Draenor', color: '#8b2a14', icon: '🏴' },
+    { key: 'mop', label: 'Mists of Pandaria', color: '#3aaa6b', icon: '🐼' },
+    { key: 'cata', label: 'Cataclysm', color: '#b56b14', icon: '🌋' },
+    { key: 'wotlk', label: 'Wrath of the Lich King', color: '#3a8bbb', icon: '❄️' },
+    { key: 'classic', label: 'Classic', color: '#4a7a3a', icon: '🗺️' },
+    { key: 'outland', label: 'The Burning Crusade', color: '#8a2a18', icon: '💀' }
   ];
   const EXP_MAP = {};
   EXPANSIONS.forEach(e => EXP_MAP[e.key] = e);
@@ -59,152 +61,42 @@ const MAPA = (() => {
   let isDestroyed = false;
 
   /* ================================================================
-     MAP SVG GENERATORS
+     MAP SVG DATA — loaded from external file
      ================================================================ */
 
-  function makeGridLines(w, h) {
-    let s = '';
-    for (let x = 0; x <= w; x += 100) s += `<line x1="${x}" y1="0" x2="${x}" y2="${h}" stroke="currentColor" stroke-width="0.5" opacity="0.08"/>`;
-    for (let y = 0; y <= h; y += 100) s += `<line x1="0" y1="${y}" x2="${w}" y2="${y}" stroke="currentColor" stroke-width="0.5" opacity="0.08"/>`;
-    return s;
-  }
+  const MAP_PARAMS = typeof MAPA_SVGS !== 'undefined' ? MAPA_SVGS : {};
 
-  function makeContinentPath(points) {
-    return 'M ' + points.map((p, i) => (i === 0 ? '' : 'L ') + p[0] + ' ' + p[1]).join(' ') + ' Z';
-  }
-
-  function makeZoneDots(zones) {
-    return zones.map(z =>
-      `<g><circle cx="${z[0]}" cy="${z[1]}" r="4" fill="currentColor" opacity="0.6"/>` +
-      `<text x="${z[0]}" y="${z[1] + 16}" text-anchor="middle" font-size="10" font-family="Cinzel,serif" fill="currentColor" opacity="0.7">${z[2]}</text></g>`
-    ).join('');
-  }
-
-  function makeBadge(cx, cy, letter, color) {
-    return `<g transform="translate(${cx},${cy})">` +
-      `<circle r="28" fill="none" stroke="${color}" stroke-width="2" opacity="0.5"/>` +
-      `<circle r="24" fill="${color}" opacity="0.15"/>` +
-      `<text x="0" y="7" text-anchor="middle" font-size="16" font-family="Cinzel,serif" font-weight="700" fill="${color}">${letter}</text></g>`;
-  }
-
-  function makeCompRose(cx, cy, s) {
-    return `<g transform="translate(${cx},${cy})" opacity="0.3">` +
-      `<line x1="0" y1="${-s}" x2="0" y2="${s}" stroke="currentColor" stroke-width="1"/>` +
-      `<line x1="${-s}" y1="0" x2="${s}" y2="0" stroke="currentColor" stroke-width="1"/>` +
-      `<polygon points="0,${-s} 4,${-s+12} -4,${-s+12}" fill="currentColor"/>` +
-      `<polygon points="0,${s} 4,${s-12} -4,${s-12}" fill="currentColor" opacity="0.4"/>` +
-      `<polygon points="${s},0 ${s-12},4 ${s-12},-4" fill="currentColor" opacity="0.4"/>` +
-      `<polygon points="${-s},0 ${-s+12},4 ${-s+12},-4" fill="currentColor"/>` +
-      `<text x="0" y="${-s-6}" text-anchor="middle" font-size="8" fill="currentColor">N</text>` +
-      `<text x="${s+8}" y="3" text-anchor="middle" font-size="8" fill="currentColor">E</text></g>`;
-  }
-
-  function makeTerrainBlobs(color) {
-    return `<g opacity="0.06">
-      <circle cx="200" cy="150" r="80" fill="${color}"/>
-      <circle cx="600" cy="200" r="100" fill="${color}"/>
-      <circle cx="400" cy="450" r="120" fill="${color}"/>
-      <circle cx="750" cy="400" r="70" fill="${color}"/>
-      <circle cx="100" cy="500" r="60" fill="${color}"/>
-    </g>`;
-  }
-
-  function genSVG(params) {
-    const { key, color, bg, zones, continent, label } = params;
-    const badgeLetter = BADGE_LETTERS[key] || key.slice(0, 2).toUpperCase();
-    const w = 800, h = 600;
-    const c = color;
-    return `<svg viewBox="0 0 ${w} ${h}" xmlns="http://www.w3.org/2000/svg" style="color:${c}">
+  function genMidnightSVG() {
+    const c = '#6b2fa0', bg = '#0e081a';
+    return `<svg viewBox="0 0 800 600" xmlns="http://www.w3.org/2000/svg" style="color:${c}">
       <defs>
-        <radialGradient id="bg_${key}" cx="50%" cy="50%" r="70%">
+        <radialGradient id="bg_mid" cx="50%" cy="50%" r="70%">
           <stop offset="0%" stop-color="${bg}"/>
           <stop offset="60%" stop-color="rgba(0,0,0,0.8)"/>
           <stop offset="100%" stop-color="#020202"/>
         </radialGradient>
-        <filter id="glow_${key}">
-          <feGaussianBlur stdDeviation="3" result="blur"/>
-          <feComposite in="SourceGraphic" in2="blur" operator="over"/>
-        </filter>
+        <filter id="glow_mid"><feGaussianBlur stdDeviation="4"/></filter>
       </defs>
-      <rect width="${w}" height="${h}" fill="url(#bg_${key})"/>
-      ${makeGridLines(w, h)}
-      ${makeTerrainBlobs(c)}
-      ${makeCompRose(60, h - 60, 30)}
-      <path d="${makeContinentPath(continent)}" fill="${c}" opacity="0.12" stroke="${c}" stroke-width="2" filter="url(#glow_${key})"/>
-      <path d="${makeContinentPath(continent)}" fill="none" stroke="${c}" stroke-width="0.5" opacity="0.3"/>
-      ${makeZoneDots(zones)}
-      ${makeBadge(w - 60, 55, badgeLetter, c)}
-      <text x="${w - 60}" y="100" text-anchor="middle" font-size="13" font-family="Cinzel,serif" font-weight="700" fill="${c}" opacity="0.8">${label}</text>
+      <rect width="800" height="600" fill="url(#bg_mid)"/>
+      <path d="M400,80 Q550,100 650,180 Q720,280 680,400 Q600,500 480,520 Q350,530 250,480 Q150,400 160,280 Q180,160 300,100 Z" fill="${c}" opacity="0.12" stroke="${c}" stroke-width="2" filter="url(#glow_mid)"/>
+      <path d="M400,80 Q550,100 650,180 Q720,280 680,400 Q600,500 480,520 Q350,530 250,480 Q150,400 160,280 Q180,160 300,100 Z" fill="none" stroke="${c}" stroke-width="0.5" opacity="0.3"/>
+      <g fill="${c}" opacity="0.8" font-family="Cinzel,serif" font-size="12" text-anchor="middle">
+        <circle cx="420" cy="200" r="4"/><text x="420" y="222">Eversong Woods</text>
+        <circle cx="500" cy="280" r="4"/><text x="500" y="302">Ghostlands</text>
+        <circle cx="420" cy="360" r="4"/><text x="420" y="382">Que'Thalas</text>
+        <circle cx="320" cy="400" r="4"/><text x="320" y="422">Tranquillien</text>
+        <circle cx="550" cy="420" r="4"/><text x="550" y="442">Deatholme</text>
+        <circle cx="700" cy="200" r="3" opacity="0.6"/><text x="700" y="222" font-size="10">Lordaeron</text>
+      </g>
+      <g transform="translate(720, 55)">
+        <circle r="32" fill="none" stroke="${c}" stroke-width="2" opacity="0.4"/>
+        <circle r="26" fill="${c}" opacity="0.15"/>
+        <text x="0" y="8" text-anchor="middle" font-size="20" font-family="Cinzel,serif" font-weight="700" fill="${c}">M</text>
+      </g>
+      <text x="720" y="110" text-anchor="middle" font-size="14" font-family="Cinzel,serif" font-weight="700" fill="${c}" opacity="0.8">Midnight</text>
     </svg>`;
   }
-
-  /* ================================================================
-     CONTINENT SHAPES & ZONES PER EXPANSION
-     ================================================================ */
-
-  const MAP_PARAMS = {
-    tww: {
-      key: 'tww', color: '#8b6914', bg: '#0e0c06',
-      label: 'Khaz Algar',
-      continent: [[400,50],[650,120],[750,280],[700,450],[550,560],[350,580],[200,500],[100,350],[120,180],[250,80]],
-      zones: [[400,200,'Azj-Kahet'],[550,300,'Hallowfall'],[300,350,'Deepforge'],[500,450,'Ringing Deeps'],[600,180,'Isle of Dorn']]
-    },
-    midnight: {
-      key: 'midnight', color: '#6b2fa0', bg: '#0e081a',
-      label: 'Midnight',
-      continent: [[350,80],[500,60],[650,100],[700,250],[680,400],[550,500],[400,480],[250,420],[200,300],[220,150]],
-      zones: [[400,160,'Eversong'],[550,200,'Ghostlands'],[600,320,'Que\'Thalas'],[350,350,'Tranquillien'],[450,400,'Deatholme']]
-    },
-    dragonflight: {
-      key: 'dragonflight', color: '#2a8b3a', bg: '#06140a',
-      label: 'Dragon Isles',
-      continent: [[400,80],[580,100],[700,200],[720,350],[650,480],[500,550],[350,560],[200,510],[100,380],[120,220],[250,100]],
-      zones: [[400,180,'Waking Shores'],[580,270,'Ohn\'ahra'],[500,380,'Azure Span'],[320,390,'Thaldraszus'],[200,330,'Forbidden Reach']]
-    },
-    shadowlands: {
-      key: 'shadowlands', color: '#3a6bb5', bg: '#0a0818',
-      label: 'Shadowlands',
-      continent: [[400,50],[550,100],[600,250],[550,400],[400,450],[250,400],[200,250],[250,100]],
-      zones: [[400,150,'Bastion'],[550,250,'Maldraxxus'],[400,350,'Ardenweald'],[250,250,'Revendreth'],[400,250,'Zereth Mortis']]
-    },
-    bfa: {
-      key: 'bfa', color: '#c9a84c', bg: '#140e06',
-      label: 'Zandalar',
-      continent: [[300,100],[450,80],[600,120],[700,230],[750,380],[700,500],[550,560],[400,540],[250,480],[150,360],[120,220],[180,120]],
-      zones: [[400,180,'Nazmir'],[580,240,'Vol\'dun'],[260,280,'Zuldazar'],[500,380,'Nazjatar'],[620,420,'Mechagon']]
-    },
-    legion: {
-      key: 'legion', color: '#2a6b3a', bg: '#08140a',
-      label: 'Broken Isles',
-      continent: [[350,100],[520,120],[640,220],[680,350],[620,460],[500,510],[380,500],[260,440],[200,330],[220,200]],
-      zones: [[400,200,'Azsuna'],[520,280,'Val\'sharah'],[600,350,'Stormheim'],[350,350,'Suramar'],[450,420,'Broken Shore']]
-    },
-    draenor: {
-      key: 'draenor', color: '#8b2a14', bg: '#140804',
-      label: 'Draenor',
-      continent: [[350,80],[530,90],[680,180],[720,320],[650,450],[510,520],[360,510],[210,440],[140,300],[180,160]],
-      zones: [[400,180,'Frostfire'],[560,250,'Shadowmoon'],[630,350,'Nagrand'],[430,370,'Talador'],[250,330,'Spires of Arak']]
-    },
-    mop: {
-      key: 'mop', color: '#3aaa6b', bg: '#081408',
-      label: 'Pandaria',
-      continent: [[400,60],[560,100],[680,200],[700,340],[650,450],[550,510],[400,520],[280,480],[180,380],[170,240],[260,120]],
-      zones: [[400,160,'Jade Forest'],[580,250,'Valley'],[500,370,'Kun-Lai'],[320,360,'Townlong'],[250,270,'Dread Wastes']]
-    },
-    cata: {
-      key: 'cata', color: '#b56b14', bg: '#140c04',
-      label: 'Azeroth',
-      continent: [[300,50],[480,40],[650,80],[720,190],[680,320],[600,400],[500,430],[400,420],[300,380],[200,310],[150,200],[180,90]],
-      zones: [[400,130,'Eastern Kingdoms'],[580,220,'Kalimdor'],[450,310,'Deepholm'],[300,260,'Uldum'],[500,350,'Twilight Highlands']]
-    },
-    wotlk: {
-      key: 'wotlk', color: '#3a8bbb', bg: '#06101c',
-      label: 'Northrend',
-      continent: [[400,50],[570,90],[690,200],[710,340],[650,450],[510,510],[380,510],[250,470],[150,380],[130,230],[230,110]],
-      zones: [[400,160,'Howling Fjord'],[580,250,'Dragonblight'],[500,370,'Storm Peaks'],[280,350,'Icecrown'],[180,270,'Zul\'Drak']]
-    }
-  };
-  Object.keys(MAP_PARAMS).forEach(k => MAP_PARAMS[k] = { ...MAP_PARAMS[k], svg: genSVG(MAP_PARAMS[k]) });
+  MAP_PARAMS.midnight = { svg: genMidnightSVG() };
 
   /* ================================================================
      STATE HELPERS

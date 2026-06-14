@@ -29,28 +29,32 @@ const UI = (() => {
   };
 
   const PERS_RACE_INFO = {
-    'Orco':          { icon: '💀', type: 'Salvaje' },
-    'Blood Elf':     { icon: '🔮', type: 'Élfico' },
-    'Tauren':        { icon: '🐂', type: 'Bestial' },
-    'Troll':         { icon: '🗿', type: 'Tribal' },
-    'Goblin':        { icon: '💰', type: 'Pequeño' },
-    "Mag'har":       { icon: '🏹', type: 'Salvaje' },
-    'Nightborne':    { icon: '🌌', type: 'Élfico' },
-    'Highmountain':  { icon: '🦌', type: 'Bestial' },
-    'Zandalari':     { icon: '🗿', type: 'Tribal' },
-    'Vulpera':       { icon: '🦊', type: 'Nómada' },
-    'Undead':        { icon: '☠', type: 'No-muerto' },
-    'Earthen':       { icon: '🪨', type: 'Elemental' },
-    'Pandaren':      { icon: '🐼', type: 'Neutral' },
-    'Human':         { icon: '👤', type: 'Humanoide' },
-    'Night Elf':     { icon: '🌙', type: 'Élfico' },
-    'Draenei':       { icon: '✦', type: 'Místico' },
-    'Gnome':         { icon: '⚙', type: 'Pequeño' },
-    'Dwarf':         { icon: '⛏', type: 'Humanoide' },
-    'Void Elf':      { icon: '🌑', type: 'Élfico' },
-    'Light Draenei': { icon: '✦', type: 'Luz' },
-    'Haranir':       { icon: '🌿', type: 'Místico' },
-    'Dracthyr':      { icon: '🐉', type: 'Dragón' }
+    'Orco':            { icon: '💀', type: 'Salvaje' },
+    'Blood Elf':       { icon: '🔮', type: 'Élfico' },
+    'Tauren':          { icon: '🐂', type: 'Bestial' },
+    'Troll':           { icon: '🗿', type: 'Tribal' },
+    'Goblin':          { icon: '💰', type: 'Pequeño' },
+    "Mag'har":         { icon: '🏹', type: 'Salvaje' },
+    'Nightborne':      { icon: '🌌', type: 'Élfico' },
+    'Highmountain':    { icon: '🦌', type: 'Bestial' },
+    'Zandalari':       { icon: '🏯', type: 'Tribal' },
+    'Vulpera':         { icon: '🦊', type: 'Nómada' },
+    'Undead':          { icon: '☠', type: 'No-muerto' },
+    'Earthen':         { icon: '🪨', type: 'Elemental' },
+    'Pandaren':        { icon: '🐼', type: 'Neutral' },
+    'Human':           { icon: '👤', type: 'Humanoide' },
+    'Night Elf':       { icon: '🌙', type: 'Élfico' },
+    'Draenei':         { icon: '✦', type: 'Místico' },
+    'Gnome':           { icon: '⚙', type: 'Pequeño' },
+    'Dwarf':           { icon: '⛏', type: 'Humanoide' },
+    'Worgen':          { icon: '🐺', type: 'Bestial' },
+    'Void Elf':        { icon: '🌑', type: 'Élfico' },
+    'Light Draenei':   { icon: '✦', type: 'Luz' },
+    'Dark Iron Dwarf': { icon: '🖤', type: 'Humanoide' },
+    'Kul Tiran':       { icon: '⚓', type: 'Humanoide' },
+    'Mechagnome':      { icon: '🔧', type: 'Pequeño' },
+    'Haranir':         { icon: '🌿', type: 'Místico' },
+    'Dracthyr':        { icon: '🐉', type: 'Dragón' }
   };
   const PERS_CLASS_ICONS = {
     warrior: '⚔', paladin: '⚜', hunter: '🏹', rogue: '🗡',
@@ -62,47 +66,11 @@ const UI = (() => {
     priest: '#ffffff', dk: '#c41e3a', shaman: '#0070dd', mage: '#3fc7eb',
     warlock: '#8788ee', monk: '#00ff96', druid: '#ff7c0a', dh: '#a330c9', evoker: '#33937f'
   };
-  const PERS_CHAR_ARTS = {
-    warrior:  " \u2694\uFE0F\n \\o/\n /|\\\n/ | \\",
-    paladin:  " \u269C\n \\o/\n )|(  \n/===\\",
-    hunter:   " \uD83C\uDFF9\n \\o/\n /|\\\n/___\\",
-    rogue:    " \uD83D\uDDE1\n \\o/\n )|(  \n/ | \\",
-    priest:   " \u271D\n \\o/\n /|\\\n  |  ",
-    dk:       " \u2620\n \\o/\n /|\\\n[===]",
-    shaman:   " \u26A1\n \\o/\n /|\\\n/___\\",
-    mage:     " \u2744\n \\o/\n /|\\\n  |  ",
-    warlock:  " \uD83D\uDC41\n \\o/\n//|\\\\\n  |  ",
-    monk:     " \u262F\n \\o/\n (|) \n/ | \\",
-    druid:    " \uD83C\uDF3F\n \\o/\n /|\\\n(   )",
-    dh:       " \u25C8\n \\o/\n /X\\\n/ | \\",
-    evoker:   " \uD83D\uDC09\n \\o/\n /|\\\n~~~~~"
-  };
-  const PERS_BG_SCENES = {
-    alliance: [
-      "     _____         _____",
-      "    |=====|       |=====|     ___",
-      "    | [A] |       | [A] |    /|||\\",
-      "    |_____|       |_____|   / ||| \\",
-      "  __|_____|_______|_____|__/__|||||\\__",
-      " /   \\   /     \\   /   \\   /  |||||  \\",
-      "/     \\_/       \\_/     \\_/   |||||   \\",
-      "~~~~~~~~~~~ IRONFORGE ~~~~~~~~~~~~~~~~~~~"
-    ].join('\n'),
-    horde: [
-      "    /\\   /\\   /\\   /\\   /\\",
-      "   /  \\ /  \\ /  \\ /  \\ /  \\",
-      "  / [H]\\    /    \\    / [H] \\",
-      " /______\\  /______\\  /______\\",
-      " |  ||  |  |  ||  |  |  ||  |",
-      " |  ||  |  |  ||  |  |  ||  |",
-      "~~~~~~~~~~ ORGRIMMAR ~~~~~~~~~~~~~~~~"
-    ].join('\n'),
-    all: [
-      "  ___________/\\___________/\\________",
-      " /  ALIANZA  \\\\  /  HORDA  \\\\  /\\  /",
-      "/____________//\\/____________//\\/  \\/",
-      "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ ~~"
-    ].join('\n')
+  const PERS_RACES_BY_COLUMN = {
+    'alliance-trad': ['Human', 'Night Elf', 'Gnome', 'Dwarf', 'Draenei', 'Worgen', 'Pandaren', 'Dracthyr'],
+    'alliance-allied': ['Void Elf', 'Light Draenei', 'Dark Iron Dwarf', 'Kul Tiran', 'Mechagnome', 'Earthen'],
+    'horde-allied': ['Nightborne', 'Highmountain', "Mag'har", 'Zandalari', 'Vulpera', 'Earthen', 'Haranir'],
+    'horde-trad': ['Orco', 'Undead', 'Tauren', 'Troll', 'Blood Elf', 'Goblin', 'Pandaren', 'Dracthyr']
   };
 
   const LABELS = { all: 'Todas', weekly: 'Semanal', daily: 'Diaria', farm_libre: 'Farm' };
@@ -1182,14 +1150,15 @@ const UI = (() => {
         <div class="pers-faction-title h">HORDA ⚔</div>
       </div>
       <div class="pers-body-row">
-        <div class="pers-race-panel" id="pers-panel-alliance"><div class="pers-panel-faction-label a">[ ALIANZA ]</div></div>
+        <div class="pers-race-panel" id="pers-panel-alliance-trad"></div>
+        <div class="pers-race-panel" id="pers-panel-alliance-allied"></div>
         <div id="pers-panel-center">
-          <pre id="pers-bg-art"></pre>
           <div id="pers-filter-bar"></div>
           <div id="pers-char-grid"></div>
           <div id="pers-class-bar-wrap"><div id="pers-class-bar"></div></div>
         </div>
-        <div class="pers-race-panel" id="pers-panel-horde"><div class="pers-panel-faction-label h">[ HORDA ]</div></div>
+        <div class="pers-race-panel" id="pers-panel-horde-allied"></div>
+        <div class="pers-race-panel" id="pers-panel-horde-trad"></div>
       </div>
       <div id="pers-footer">
         <button class="pers-foot-btn" onclick="UI.closePersonajes()">◄ VOLVER</button>
@@ -1203,7 +1172,6 @@ const UI = (() => {
     buildPersFilterBar();
     buildPersClassBar();
     renderPersCharGrid();
-    updatePersBgArt();
     // Restore selected char state after re-render
     if (persSelectedChar) {
       const c = DATA.getPersonaje(persSelectedChar);
@@ -1215,37 +1183,27 @@ const UI = (() => {
     }
   }
 
-  function updatePersBgArt() {
-    const el = document.getElementById('pers-bg-art');
-    if (!el) return;
-    el.textContent = PERS_BG_SCENES[persFactionFilter] || PERS_BG_SCENES.all;
-  }
-
   function buildPersRacePanels() {
-    const chars = DATA.getPersonajes();
-    const factions = { alliance: [], horde: [] };
-    const seen = { alliance: new Set(), horde: new Set() };
-    chars.forEach(c => {
-      const faction = c.faccion === 'Alianza' ? 'alliance' : 'horde';
-      if (!seen[faction].has(c.raza)) {
-        seen[faction].add(c.raza);
-        const info = PERS_RACE_INFO[c.raza] || { icon: '❓', type: '' };
-        factions[faction].push({ nombre: c.raza, icon: info.icon, type: info.type });
-      }
-    });
-    Object.keys(factions).forEach(f => factions[f].sort((a, b) => a.nombre.localeCompare(b.nombre)));
-    ['alliance','horde'].forEach(faction => {
-      const panel = document.getElementById(`pers-panel-${faction}`);
+    const columnDefs = [
+      { id: 'alliance-trad', label: 'ALIANZA', subtitle: 'TRADICIONALES', faction: 'alliance', cls: 'a' },
+      { id: 'alliance-allied', label: 'ALIANZA', subtitle: 'ALIADAS', faction: 'alliance', cls: 'a-inner' },
+      { id: 'horde-allied', label: 'HORDA', subtitle: 'ALIADAS', faction: 'horde', cls: 'h-inner' },
+      { id: 'horde-trad', label: 'HORDA', subtitle: 'TRADICIONALES', faction: 'horde', cls: 'h' }
+    ];
+    columnDefs.forEach(col => {
+      const panel = document.getElementById(`pers-panel-${col.id}`);
       if (!panel) return;
-      const isSelected = (r) => persSelectedRace === r.nombre && persSelectedFaction === faction;
-      const cls = (r) => isSelected(r) ? (faction === 'alliance' ? 'active-a' : 'active-h') : '';
-      panel.innerHTML = `<div class="pers-panel-faction-label ${faction === 'alliance' ? 'a' : 'h'}">[ ${faction === 'alliance' ? 'ALIANZA' : 'HORDA'} ]</div>` +
-        factions[faction].map(r =>
-          `<button class="pers-race-btn ${cls(r)}" data-race="${r.nombre}" data-faction="${faction}">
-            <span class="pers-race-icon">${r.icon}</span>
-            <span><div class="pers-race-name">${r.nombre}</div><div class="pers-race-type">${r.type}</div></span>
-          </button>`
-        ).join('');
+      const races = PERS_RACES_BY_COLUMN[col.id] || [];
+      const isSelected = (r) => persSelectedRace === r && persSelectedFaction === col.faction;
+      const activeCls = (r) => isSelected(r) ? (col.faction === 'alliance' ? 'active-a' : 'active-h') : '';
+      panel.innerHTML = `<div class="pers-panel-faction-label ${col.cls}">[ ${col.subtitle} ]</div>` +
+        races.map(r => {
+          const info = PERS_RACE_INFO[r] || { icon: '❓', type: '' };
+          return `<button class="pers-race-btn ${activeCls(r)}" data-race="${r}" data-faction="${col.faction}">
+            <span class="pers-race-icon">${info.icon}</span>
+            <span><div class="pers-race-name">${r}</div><div class="pers-race-type">${info.type}</div></span>
+          </button>`;
+        }).join('');
       panel.querySelectorAll('.pers-race-btn').forEach(btn => {
         btn.addEventListener('click', () => togglePersRace(btn));
       });
@@ -1255,6 +1213,7 @@ const UI = (() => {
   function buildPersFilterBar() {
     const el = document.getElementById('pers-filter-bar');
     if (!el) return;
+    const levelRanges = ['all', '0-10', '10-20', '20-30', '30-40', '40-50', '50-60', '60-70', '70-80', '80-90'];
     el.innerHTML = `
       <span class="pers-filter-label">FACCIÓN:</span>
       <button class="pers-filter-chip ${persFactionFilter === 'all' ? 'active' : ''}" data-pfaction="all">Todas</button>
@@ -1262,9 +1221,9 @@ const UI = (() => {
       <button class="pers-filter-chip ${persFactionFilter === 'horde' ? 'active' : ''}" data-pfaction="horde" style="color:#cc330088">Horda</button>
       <span class="pers-filter-sep">|</span>
       <span class="pers-filter-label">NIVEL:</span>
-      <button class="pers-filter-chip ${persLevelFilter === 'all' ? 'active' : ''}" data-plevel="all">Todos</button>
-      <button class="pers-filter-chip ${persLevelFilter === 'low' ? 'active' : ''}" data-plevel="low">1-60</button>
-      <button class="pers-filter-chip ${persLevelFilter === 'high' ? 'active' : ''}" data-plevel="high">61-80</button>`;
+      <select class="pers-level-select" id="pers-level-select">
+        ${levelRanges.map(r => `<option value="${r}" ${persLevelFilter === r ? 'selected' : ''}>${r === 'all' ? 'Todos' : r}</option>`).join('')}
+      </select>`;
     el.querySelectorAll('[data-pfaction]').forEach(chip => {
       chip.addEventListener('click', () => {
         persFactionFilter = chip.dataset.pfaction;
@@ -1272,15 +1231,11 @@ const UI = (() => {
         buildPersFilterBar();
         buildPersClassBar();
         renderPersCharGrid();
-        updatePersBgArt();
       });
     });
-    el.querySelectorAll('[data-plevel]').forEach(chip => {
-      chip.addEventListener('click', () => {
-        persLevelFilter = chip.dataset.plevel;
-        buildPersFilterBar();
-        renderPersCharGrid();
-      });
+    document.getElementById('pers-level-select').addEventListener('change', function() {
+      persLevelFilter = this.value;
+      renderPersCharGrid();
     });
   }
 
@@ -1326,8 +1281,13 @@ const UI = (() => {
         return clsKey === persSelectedClass || c.clase === targetClase;
       });
     }
-    if (persLevelFilter === 'low') chars = chars.filter(c => c.nivel <= 60);
-    else if (persLevelFilter === 'high') chars = chars.filter(c => c.nivel > 60);
+    if (persLevelFilter !== 'all') {
+      const parts = persLevelFilter.split('-').map(Number);
+      if (parts.length === 2) {
+        const [min, max] = parts;
+        chars = chars.filter(c => c.nivel >= min && c.nivel <= max);
+      }
+    }
     if (chars.length === 0) {
       grid.innerHTML = `<div class="pers-empty-state"><span class="big">⚠</span>No hay personajes que coincidan.<br><span style="color:var(--text-muted)">Intenta cambiar los filtros.</span></div>`;
       return;
@@ -1335,14 +1295,14 @@ const UI = (() => {
     grid.innerHTML = chars.map(c => {
       const clsKey = CLASS_MAP[c.clase] || 'warrior';
       const color = PERS_CLASS_COLORS[clsKey] || '#c69b3a';
-      const art = PERS_CHAR_ARTS[clsKey] || PERS_CHAR_ARTS.warrior;
+      const icon = PERS_CLASS_ICONS[clsKey] || '❓';
       const faction = c.faccion === 'Alianza' ? 'a' : 'h';
       const sel = persSelectedChar === c.nombre;
       return `<div class="pers-char-card ${sel ? 'selected-' + faction : ''}" data-pchar="${c.nombre}">
-        <span class="pers-card-faction-tag ${faction}">${c.faccion === 'Alianza' ? '⚔A' : '⚔H'}</span>
-        <pre class="pers-card-art" style="color:${color};text-shadow:0 0 8px ${color}66">${art}</pre>
-        <div class="pers-card-name">${c.nombre}</div>
-        <div class="pers-card-meta">Nv.${c.nivel} ${c.raza}<br>${c.clase}</div>
+        <span class="pers-card-faction-tag ${faction}">${c.faccion === 'Alianza' ? 'A' : 'H'}</span>
+        <div class="pers-card-icon" style="color:${color}">${icon}</div>
+        <div class="pers-card-name" style="color:${color}">${c.nombre}</div>
+        <div class="pers-card-meta">Nv.${c.nivel}<br>${c.clase} · ${c.raza}</div>
       </div>`;
     }).join('') +
     `<div class="pers-char-card add-new">
@@ -1370,7 +1330,6 @@ const UI = (() => {
     buildPersFilterBar();
     buildPersClassBar();
     renderPersCharGrid();
-    updatePersBgArt();
     document.getElementById('pers-selected-label').textContent = '—';
     document.getElementById('pers-btn-enter').disabled = true;
   }
@@ -1387,7 +1346,6 @@ const UI = (() => {
     buildPersFilterBar();
     buildPersClassBar();
     renderPersCharGrid();
-    updatePersBgArt();
     document.getElementById('pers-selected-label').textContent = '—';
     document.getElementById('pers-btn-enter').disabled = true;
   }

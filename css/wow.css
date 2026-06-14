@@ -1071,7 +1071,6 @@ a:hover { color: var(--gold-light); }
 #personajesPanel {
   background: var(--bg-base);
   color: var(--gold);
-  font-family: 'Courier New', Courier, monospace;
   font-size: 12px;
   height: calc(100vh - 100px);
   overflow: hidden;
@@ -1130,7 +1129,7 @@ a:hover { color: var(--gold-light); }
 /* ── RACE PANELS ─────────────────────────────────────────── */
 
 .pers-race-panel {
-  width: 130px;
+  width: 105px;
   flex-shrink: 0;
   display: flex;
   flex-direction: column;
@@ -1138,11 +1137,19 @@ a:hover { color: var(--gold-light); }
   gap: 2px;
   overflow-y: auto;
 }
-#pers-panel-alliance {
+#pers-panel-alliance-trad {
   border-right: 1px solid var(--border-subtle);
   background: linear-gradient(180deg, rgba(26,74,153,0.13), var(--bg-soft));
 }
-#pers-panel-horde {
+#pers-panel-alliance-allied {
+  border-right: 1px solid var(--border-subtle);
+  background: linear-gradient(180deg, rgba(26,74,153,0.07), var(--bg-soft));
+}
+#pers-panel-horde-allied {
+  border-left: 1px solid var(--border-subtle);
+  background: linear-gradient(180deg, rgba(136,21,0,0.07), var(--bg-soft));
+}
+#pers-panel-horde-trad {
   border-left: 1px solid var(--border-subtle);
   background: linear-gradient(180deg, rgba(136,21,0,0.13), var(--bg-soft));
 }
@@ -1155,8 +1162,12 @@ a:hover { color: var(--gold-light); }
   border-bottom: 1px solid var(--border-subtle);
   margin-bottom: 4px;
 }
-.pers-panel-faction-label.a { color: var(--alliance); }
-.pers-panel-faction-label.h { color: var(--horde); }
+.pers-panel-faction-label.a,
+.pers-panel-faction-label.a-inner { color: var(--alliance); }
+.pers-panel-faction-label.a-inner { opacity: 0.65; }
+.pers-panel-faction-label.h,
+.pers-panel-faction-label.h-inner { color: var(--horde); }
+.pers-panel-faction-label.h-inner { opacity: 0.65; }
 
 .pers-race-btn {
   display: flex;
@@ -1199,20 +1210,6 @@ a:hover { color: var(--gold-light); }
   position: relative;
 }
 
-#pers-bg-art {
-  position: absolute;
-  inset: 0;
-  color: rgba(26,8,0,0.6);
-  white-space: pre;
-  font-size: 9px;
-  line-height: 1.35;
-  padding: 8px;
-  overflow: hidden;
-  pointer-events: none;
-  opacity: 0.6;
-  font-family: 'Courier New', Courier, monospace;
-}
-
 #pers-filter-bar {
   position: relative;
   z-index: 2;
@@ -1247,6 +1244,17 @@ a:hover { color: var(--gold-light); }
   text-shadow: 0 0 6px var(--gold);
 }
 .pers-filter-sep { color: var(--border-subtle); }
+.pers-level-select {
+  background: rgba(10,5,0,0.8);
+  border: 1px solid var(--border-main);
+  color: var(--gold);
+  font-size: 10px;
+  padding: 2px 6px;
+  border-radius: 2px;
+  cursor: pointer;
+  font-family: inherit;
+}
+.pers-level-select:focus { outline: none; border-color: var(--gold); }
 
 #pers-char-grid {
   position: relative;
@@ -1274,13 +1282,11 @@ a:hover { color: var(--gold-light); }
 .pers-char-card.selected-a { border-color: var(--alliance); background: rgba(10,32,80,0.5); box-shadow: 0 0 12px rgba(26,74,153,0.5); }
 .pers-char-card.selected-h { border-color: var(--horde);    background: rgba(58,8,0,0.5);    box-shadow: 0 0 12px rgba(136,21,0,0.5); }
 
-.pers-card-art {
-  white-space: pre;
-  font-family: 'Courier New', Courier, monospace;
-  font-size: 10px;
-  line-height: 1.3;
-  margin-bottom: 5px;
-  transition: color 0.2s, text-shadow 0.2s;
+.pers-card-icon {
+  font-size: 28px;
+  line-height: 1.2;
+  margin-bottom: 4px;
+  transition: color 0.2s;
 }
 .pers-card-name {
   font-size: 11px;
@@ -1317,7 +1323,7 @@ a:hover { color: var(--gold-light); }
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  min-height: 110px;
+  min-height: 90px;
   gap: 4px;
 }
 .pers-char-card.add-new:hover { color: var(--gold-dim); border-color: var(--border-main); }
@@ -1402,15 +1408,16 @@ a:hover { color: var(--gold-light); }
 #personajesPanel ::-webkit-scrollbar-thumb { background: var(--border-main); border-radius: 3px; }
 
 @media (max-width: 768px) {
-  .pers-race-panel { width: 80px; }
-  .pers-race-name { font-size: 8px; }
+  .pers-race-panel { width: 65px; }
+  .pers-race-name { font-size: 7px; }
   .pers-race-type { display: none; }
-  .pers-race-icon { font-size: 16px; }
+  .pers-race-icon { font-size: 14px; }
   .pers-center-title { font-size: 11px; letter-spacing: 2px; }
   .pers-center-title small { font-size: 7px; }
   .pers-header { padding: 3px 8px; }
   .pers-faction-title { font-size: 10px; }
-  #pers-char-grid { grid-template-columns: repeat(auto-fill, minmax(100px, 1fr)); padding: 6px; gap: 4px; }
+  #pers-char-grid { grid-template-columns: repeat(auto-fill, minmax(80px, 1fr)); padding: 6px; gap: 4px; }
   #pers-footer { flex-direction: column; gap: 4px; padding: 4px 8px; }
   .pers-foot-btn { font-size: 10px; padding: 3px 10px; }
+  .pers-card-icon { font-size: 20px; }
 }

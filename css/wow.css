@@ -1244,17 +1244,19 @@ a:hover { color: var(--gold-light); }
   text-shadow: 0 0 6px var(--gold);
 }
 .pers-filter-sep { color: var(--border-subtle); }
-.pers-level-select {
+.pers-level-input {
+  width: 48px;
   background: rgba(10,5,0,0.8);
   border: 1px solid var(--border-main);
   color: var(--gold);
-  font-size: 10px;
-  padding: 2px 6px;
+  font-size: 0.45rem;
+  padding: 2px 4px;
   border-radius: 2px;
-  cursor: pointer;
   font-family: inherit;
+  text-align: center;
 }
-.pers-level-select:focus { outline: none; border-color: var(--gold); }
+.pers-level-input:focus { outline: none; border-color: var(--gold); }
+.pers-level-input::placeholder { color: var(--text-dim); }
 
 #pers-char-grid {
   position: relative;
@@ -1434,7 +1436,7 @@ a:hover { color: var(--gold-light); }
 [data-theme="light"] .pers-char-card { background: linear-gradient(180deg,rgba(230,224,216,0.53),rgba(220,214,204,0.53)); }
 [data-theme="light"] .pers-char-card:hover { background: rgba(220,214,204,0.53); }
 [data-theme="light"] .pers-class-btn:hover { background: rgba(200,192,176,0.6); }
-[data-theme="light"] .pers-level-select { background: rgba(200,192,176,0.8); }
+[data-theme="light"] .pers-level-input { background: rgba(200,192,176,0.8); }
 [data-theme="light"] .pers-foot-btn { background: linear-gradient(180deg,#c8b898,#b8a888); border-color: #8a7a60; color: #1a1a0a; }
 [data-theme="light"] .pers-foot-btn:hover { background: linear-gradient(180deg,#d8c8a8,#c8b898); }
 [data-theme="light"] .pers-foot-btn.primary { border-color: #8a7530; background: linear-gradient(180deg,#c8b040,#b0a030); color: #1a1a0a; }

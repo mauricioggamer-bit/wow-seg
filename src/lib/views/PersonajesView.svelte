@@ -9,7 +9,8 @@
   let persSelectedFaction = $state<string | null>(null)
   let persSelectedClass = $state<string | null>(null)
   let persFactionFilter = $state('all')
-  let persLevelFilter = $state('all')
+  let persLevelMin = $state<number | null>(null)
+  let persLevelMax = $state<number | null>(null)
   let persSelectedChar = $state<string | null>(null)
 
   let classEntries = $derived.by(() => {
@@ -20,8 +21,6 @@
     }
     return deduped
   })
-
-  let levelRanges = ['all', '0-10', '10-20', '20-30', '30-40', '40-50', '50-60', '60-70', '70-80', '80-90']
 
   let filteredChars = $derived.by(() => {
     let chars = $personajesStore
@@ -34,13 +33,8 @@
       const targetClase = revMap[persSelectedClass]
       chars = chars.filter(c => (CLASS_MAP[c.clase] || '') === persSelectedClass || c.clase === targetClase)
     }
-    if (persLevelFilter !== 'all') {
-      const parts = persLevelFilter.split('-').map(Number)
-      if (parts.length === 2) {
-        const [min, max] = parts
-        chars = chars.filter(c => c.nivel >= min && c.nivel <= max)
-      }
-    }
+    if (persLevelMin !== null) chars = chars.filter(c => c.nivel >= persLevelMin!)
+    if (persLevelMax !== null) chars = chars.filter(c => c.nivel <= persLevelMax!)
     return chars
   })
 
@@ -94,7 +88,8 @@
     persSelectedFaction = null
     persSelectedClass = null
     persFactionFilter = 'all'
-    persLevelFilter = 'all'
+    persLevelMin = null
+    persLevelMax = null
     persSelectedChar = null
   }
 
@@ -162,11 +157,9 @@
         >Horda</button>
         <span class="pers-filter-sep">|</span>
         <span class="pers-filter-label">NIVEL:</span>
-        <select class="pers-level-select" bind:value={persLevelFilter}>
-          {#each levelRanges as r}
-            <option value={r}>{r === 'all' ? 'Todos' : r}</option>
-          {/each}
-        </select>
+        <input class="pers-level-input" type="number" placeholder="Min" bind:value={persLevelMin} min="1" max="90" />
+        <span class="pers-filter-sep">–</span>
+        <input class="pers-level-input" type="number" placeholder="Max" bind:value={persLevelMax} min="1" max="90" />
       </div>
 
       <div id="pers-char-grid">
@@ -293,7 +286,9 @@
   .pers-filter-chip:hover { color:var(--gold); border-color:var(--gold-dim); background:rgba(26,12,0,0.53); }
   .pers-filter-chip.active { border-color:var(--gold); color:var(--gold-light); background:rgba(42,24,0,0.6); text-shadow:0 0 6px var(--gold); }
   .pers-filter-sep { color:var(--border-subtle); }
-  .pers-level-select { background:rgba(10,5,0,0.8); border:1px solid var(--border-main); color:var(--gold); font-size:0.45rem; padding:2px 6px; border-radius:2px; cursor:pointer; font-family:inherit; }
+  .pers-level-input { width:48px; background:rgba(10,5,0,0.8); border:1px solid var(--border-main); color:var(--gold); font-size:0.45rem; padding:2px 4px; border-radius:2px; font-family:inherit; text-align:center; }
+  .pers-level-input:focus { outline:none; border-color:var(--gold); }
+  .pers-level-input::placeholder { color:var(--text-dim); }
   #pers-char-grid { position:relative; z-index:2; flex:1; overflow-y:auto; padding:10px; display:grid; grid-template-columns:repeat(5,1fr); gap:8px; align-content:start; }
   .pers-char-card { border:1px solid var(--border-subtle); background:linear-gradient(180deg,rgba(22,10,0,0.53),rgba(10,5,0,0.53)); border-radius:2px; padding:8px; cursor:pointer; transition:all 0.15s; text-align:center; position:relative; }
   .pers-char-card:hover { border-color:var(--border-main); background:rgba(31,14,0,0.53); }

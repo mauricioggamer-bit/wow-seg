@@ -433,13 +433,10 @@ a:hover { color: var(--gold-light); }
 
 .warband-tabs {
   display: flex;
+  flex-wrap: wrap;
   gap: 1px;
-  overflow-x: auto;
   padding-bottom: 3px;
-  scrollbar-width: none;
 }
-
-.warband-tabs::-webkit-scrollbar { display: none; }
 
 .warband-tab {
   font-family: var(--font-heading);

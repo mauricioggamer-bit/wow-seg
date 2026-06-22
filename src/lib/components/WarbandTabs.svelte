@@ -6,9 +6,11 @@
   function selectWarband(nombre: string) {
     uiStore.selectWarband(nombre)
   }
+
+  let show = $derived($currentView === 'warband' || $currentView === 'fantasia')
 </script>
 
-<div class="warband-tabs" id="warbandTabs" style="display: {$currentView === 'warband' ? '' : 'none'}">
+<div class="warband-tabs" id="warbandTabs" style="display: {show ? '' : 'none'}">
   {#each $warbandsStore as wb}
     <button
       class="warband-tab"

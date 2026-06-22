@@ -1,19 +1,27 @@
 <script lang="ts">
   import { personajesStore, dataStore } from '../stores/data'
+  import { uiStore, currentWarband } from '../stores/ui'
   import { CLASS_MAP, PERS_CLASS_ICONS, PERS_CLASS_COLORS } from '../constants'
 
   let editing = $state<Record<string, string>>({})
   let filterText = $state('')
+  let showAll = $state(false)
+
+  let activeWarband = $derived(showAll ? null : ($currentWarband || $personajesStore[0]?.warband || null))
+
+  let scoped = $derived(
+    activeWarband ? $personajesStore.filter(c => c.warband === activeWarband) : $personajesStore
+  )
 
   let sorted = $derived(
-    [...$personajesStore]
+    [...scoped]
       .filter(c => !filterText || c.nombre.toLowerCase().includes(filterText.toLowerCase()) || (c.clase || '').toLowerCase().includes(filterText.toLowerCase()) || (c.raza || '').toLowerCase().includes(filterText.toLowerCase()))
       .sort((a, b) => a.nombre.localeCompare(b.nombre))
   )
 
   let raceCounts = $derived.by(() => {
     const m: Record<string, number> = {}
-    for (const c of $personajesStore) {
+    for (const c of scoped) {
       m[c.raza] = (m[c.raza] || 0) + 1
     }
     return Object.entries(m).sort((a, b) => b[1] - a[1])
@@ -21,7 +29,7 @@
 
   let classCounts = $derived.by(() => {
     const m: Record<string, number> = {}
-    for (const c of $personajesStore) {
+    for (const c of scoped) {
       const key = c.clase
       m[key] = (m[key] || 0) + 1
     }
@@ -69,7 +77,8 @@
 
   <div class="fantasia-editor">
     <div class="fantasia-editor-header">
-      <span class="fantasia-editor-title">✏️ Edición rápida de parecidos</span>
+      <span class="fantasia-editor-title">✏️ {activeWarband ? activeWarband : 'Todas'} ({sorted.length})</span>
+      <label class="fantasia-toggle"><input type="checkbox" bind:checked={showAll} /> Todas</label>
       <input class="fantasia-search" type="text" placeholder="Filtrar personajes..." bind:value={filterText} />
     </div>
     <div class="fantasia-list">
@@ -110,6 +119,8 @@
   .fantasia-search { margin-left:auto; background:var(--input-bg); border:1px solid var(--border-subtle); border-radius:var(--r-sm); padding:3px 8px; color:var(--text-primary); font-size:0.5rem; font-family:var(--font-body); width:180px; }
   .fantasia-search:focus { outline:none; border-color:var(--gold-dim); }
   .fantasia-search::placeholder { color:var(--text-dim); }
+  .fantasia-toggle { display:flex; align-items:center; gap:3px; font-size:0.5rem; color:var(--text-secondary); cursor:pointer; margin-left:auto; }
+  .fantasia-toggle input { width:auto; }
   .fantasia-list { flex:1; overflow-y:auto; padding:4px 8px; }
   .fantasia-row { display:flex; align-items:center; gap:6px; padding:4px 6px; border-bottom:1px solid var(--border-subtle); transition:background var(--t-fast); }
   .fantasia-row:hover { background:var(--bg-raised); border-radius:2px; }

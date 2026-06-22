@@ -54,6 +54,7 @@
               <div class="task-chip" class:done={t.hecho}
                 style="--cd-color:{CD_COLORS[t.cooldown] || '#888'}"
                 title={`${t.nombre} · P${t.prioridad} · ${t.tiempo_min}min · ${t.cooldown}`}>
+                <span class="task-chip-ord">{t.orden ?? 0}</span>
                 <input type="checkbox" class="task-check"
                   checked={t.hecho}
                   onchange={() => dataStore.toggleTarea(c.nombre, t.id)} />
@@ -98,6 +99,7 @@
   .task-chip.done { opacity:0.5; }
   .task-chip.done .task-chip-name { text-decoration:line-through; }
   .task-chip .task-check { width:11px; height:11px; flex-shrink:0; }
+  .task-chip-ord { font-size:0.4rem; font-weight:700; color:var(--text-dim); min-width:10px; text-align:center; flex-shrink:0; }
   .task-chip-cd { font-size:0.4rem; font-weight:700; color:var(--cd-color); background:rgba(0,0,0,0.3); border-radius:2px; padding:0 2px; min-width:10px; text-align:center; flex-shrink:0; }
   .task-chip-name { font-size:0.48rem; color:var(--text-secondary); }
   .task-chip-btn { background:none; border:none; cursor:pointer; font-size:0.45rem; padding:0 1px; opacity:0.6; transition:opacity var(--t-fast); }

@@ -20,7 +20,7 @@
   import { uiStore } from './lib/stores/ui'
   import { dataStore, personajesStore, misionesStore, warbandsStore } from './lib/stores/data'
   import { gistStore } from './lib/stores/gist'
-  import { EXPANSIONS } from './lib/constants'
+  import { EXPANSIONS, PERS_RACE_INFO } from './lib/constants'
   import type { Tarea, Mision } from './lib/types'
 
   let charOpts = $derived($personajesStore.map(p => p.nombre))
@@ -90,7 +90,7 @@
   let isNewChar = $state(false)
 
   let charClasses = $derived([...new Set($personajesStore.map(c => c.clase))].sort())
-  let charRaces = $derived([...new Set($personajesStore.map(c => c.raza))].sort())
+  let charRaces = $derived(Object.keys(PERS_RACE_INFO).sort())
   let charFactions = $derived([...new Set($personajesStore.map(c => c.faccion))].sort())
   let charRealms = $derived([...new Set($personajesStore.map(c => c.reino))].sort())
 

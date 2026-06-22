@@ -17,6 +17,9 @@
       if (!grouped[t.personaje]) grouped[t.personaje] = []
       grouped[t.personaje].push(t)
     }
+    for (const k of Object.keys(grouped)) {
+      grouped[k].sort((a, b) => (a.orden ?? 0) - (b.orden ?? 0))
+    }
     const done = tasks.filter(t => t.hecho).length
     const totalMin = tasks.reduce((s, t) => s + (t.tiempo_min || 0), 0)
     return { tasks, grouped, done, totalMin }
@@ -47,6 +50,7 @@
                 <div class="task-info">
                   <div class="task-name" style="font-size:0.75rem">{t.nombre}</div>
                   <div class="task-meta" style="font-size:0.6rem">
+                    <span class="text-xs text-muted">⏱{t.orden ?? 0}</span>
                     <span class="text-xs text-muted">P{t.prioridad}</span>
                     <span>{t.tiempo_min}min</span>
                     <span>{t.cooldown}</span>

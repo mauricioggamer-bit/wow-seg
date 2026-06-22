@@ -10,6 +10,7 @@ export interface Tarea {
   ultimo_completado: string | null
   expansion?: string
   tags?: string[]
+  orden?: number
 }
 
 export interface Personaje {

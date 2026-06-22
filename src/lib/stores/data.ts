@@ -70,11 +70,30 @@ function createDataStore() {
         return d
       })
     },
+    moveTarea(nombrePersonaje: string, tareaId: string, direction: -1 | 1) {
+      update(d => {
+        const p = d.personajes.find(pj => pj.nombre === nombrePersonaje)
+        if (!p) return d
+        const sorted = [...p.tareas].sort((a, b) => (a.orden ?? 0) - (b.orden ?? 0))
+        const idx = sorted.findIndex(t => t.id === tareaId)
+        if (idx === -1) return d
+        const swapIdx = idx + direction
+        if (swapIdx < 0 || swapIdx >= sorted.length) return d
+        const a = sorted[idx]
+        const b = sorted[swapIdx]
+        const tmp = a.orden ?? idx
+        a.orden = b.orden ?? swapIdx
+        b.orden = tmp
+        saveData(d)
+        return d
+      })
+    },
     addTarea(nombrePersonaje: string, tarea: { nombre: string; tipo?: string; cooldown?: string; prioridad?: number; tiempo_min?: number; expansion?: string }) {
       update(d => {
         const p = d.personajes.find(pj => pj.nombre === nombrePersonaje)
         if (!p) return d
         const id = 'ts' + Date.now()
+        const maxOrden = p.tareas.reduce((m, t) => Math.max(m, t.orden ?? 0), -1)
         p.tareas.push({
           id,
           nombre: tarea.nombre,
@@ -86,6 +105,7 @@ function createDataStore() {
           expansion: tarea.expansion || '',
           creada: new Date().toISOString(),
           tags: [],
+          orden: maxOrden + 1,
         })
         saveData(d)
         return d

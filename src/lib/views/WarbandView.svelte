@@ -56,7 +56,7 @@
             </div>
             {#if c.tareas.length > 0}
               <div class="char-tasks-bar" onclick={() => uiStore.selectCharacter(c.nombre)} style="cursor:pointer">
-                {#each c.tareas as t}
+                {#each c.tareas.slice().sort((a, b) => (a.orden ?? 0) - (b.orden ?? 0)) as t}
                   <span class="task-dot" class:done={t.hecho} class:pending={!t.hecho} title={`${t.nombre}: ${t.hecho ? '✓' : '✗'}`}></span>
                 {/each}
                 <span class="text-xs text-muted" style="margin-left:4px">

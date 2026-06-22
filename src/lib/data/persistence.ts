@@ -57,6 +57,13 @@ export function loadData(): WowData {
       propagateExpansion(data)
       saveData(data)
     }
+    const needsOrden = data.personajes.some(p => p.tareas.some(t => t.orden === undefined))
+    if (needsOrden) {
+      for (const p of data.personajes) {
+        p.tareas.forEach((t, i) => { if (t.orden === undefined) t.orden = i })
+      }
+      saveData(data)
+    }
     if (data._meta?.ultimo_reset_semanal) {
       localStorage.setItem(RESET_KEY, data._meta.ultimo_reset_semanal)
     }

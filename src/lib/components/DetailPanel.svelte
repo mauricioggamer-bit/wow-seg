@@ -55,19 +55,20 @@
       </div>
 
       {#each ['weekly', 'daily', 'farm_libre', 'none'] as cd}
-        {@const tasks = selected.tareas.filter(t => t.cooldown === cd)}
+        {@const tasks = selected.tareas.filter(t => t.cooldown === cd).slice().sort((a, b) => (a.orden ?? 0) - (b.orden ?? 0))}
         {#if tasks.length > 0}
           <h4 class="text-sm mb-1" style="color:{cd === 'weekly' ? 'var(--gold-light)' : 'var(--text-secondary)'};margin-top:6px">
             {cd === 'weekly' ? `Semanales (${tasks.filter(t => t.hecho).length}/${tasks.length})` : cd === 'daily' ? 'Diarias' : cd === 'farm_libre' ? 'Farm Libre' : 'Otras Tareas'}
           </h4>
           <div class="task-list mb-1">
-            {#each tasks as t}
+            {#each tasks as t, i}
               <div class="task-item" class:done={t.hecho} style="position:relative">
                 <input type="checkbox" class="task-check" checked={t.hecho}
                   onchange={() => dataStore.toggleTarea(selected.nombre, t.id)} />
                 <div class="task-info">
                   <div class="task-name" style="cursor:pointer">{t.nombre}</div>
                   <div class="task-meta">
+                    <span class="text-xs text-muted">⏱ {t.orden ?? i}</span>
                     <span class="text-xs text-muted">P{t.prioridad}</span>
                     <span>{t.tiempo_min} min</span>
                     <span>{t.cooldown}</span>
@@ -80,6 +81,10 @@
                   </div>
                 </div>
                 <div style="display:flex;gap:2px;align-items:center;flex-shrink:0">
+                  <button onclick={() => dataStore.moveTarea(selected.nombre, t.id, -1)} title="Subir"
+                    style="background:none;border:none;cursor:pointer;font-size:0.65rem;padding:0 2px">↑</button>
+                  <button onclick={() => dataStore.moveTarea(selected.nombre, t.id, 1)} title="Bajar"
+                    style="background:none;border:none;cursor:pointer;font-size:0.65rem;padding:0 2px">↓</button>
                   <button onclick={() => openTaskEdit(selected.nombre, t.id)} title="Editar"
                     style="background:none;border:none;cursor:pointer;font-size:0.65rem;padding:0 2px">✏️</button>
                   <button onclick={() => { if (confirm('¿Eliminar tarea?')) dataStore.deleteTarea(selected.nombre, t.id) }} title="Eliminar"

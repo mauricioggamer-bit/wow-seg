@@ -69,6 +69,7 @@
   let editTaskTiempo = $state(15)
   let editTaskCooldown = $state('none')
   let editTaskRecompensa = $state('')
+  let editTaskOrden = $state(0)
 
   let editMissionId = $state('')
   let editMissionNombre = $state('')
@@ -140,6 +141,7 @@
     editTaskTiempo = t.tiempo_min
     editTaskCooldown = t.cooldown
     editTaskRecompensa = t.recompensa || ''
+    editTaskOrden = t.orden ?? 0
     uiStore.openModal('TaskEdit')
   }
 
@@ -151,6 +153,7 @@
       tiempo_min: editTaskTiempo,
       cooldown: editTaskCooldown,
       recompensa: editTaskRecompensa || undefined,
+      orden: editTaskOrden,
     })
     uiStore.closeModal()
   }
@@ -566,6 +569,10 @@
         <div class="form-group">
           <label>Recompensa</label>
           <input type="text" bind:value={editTaskRecompensa} placeholder="Ej: 500g" />
+        </div>
+        <div class="form-group">
+          <label>Orden</label>
+          <input type="number" bind:value={editTaskOrden} min="0" />
         </div>
       </div>
       <div class="modal-footer">

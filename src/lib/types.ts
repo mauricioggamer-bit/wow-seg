@@ -23,7 +23,7 @@ export interface Personaje {
   warband: string
   mision_principal: string | null
   expansion_por_defecto?: string | null
-  parecido?: string | null
+  parecidos?: string[]
   activo: boolean
   tareas: Tarea[]
 }

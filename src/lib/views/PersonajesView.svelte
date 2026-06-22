@@ -183,7 +183,7 @@
               </span>
               <div class="pers-card-icon">{icon}</div>
               <div class="pers-card-name" style="color:{color}">{c.nombre}</div>
-              <div class="pers-card-meta">Nv.{c.nivel} · {c.clase} · {c.raza}{#if c.parecido} · <span class="pers-card-parecido" style="color:{color}">{c.parecido}</span>{/if}</div>
+              <div class="pers-card-meta">Nv.{c.nivel} · {c.clase} · {c.raza}{#if c.parecidos && c.parecidos.length} · {#each c.parecidos as p, i}{#if i > 0}, {/if}<span class="pers-card-parecido" style="color:{color}">{p}</span>{/each}{/if}</div>
             </div>
           {/each}
           

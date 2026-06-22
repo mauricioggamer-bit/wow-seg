@@ -3,7 +3,7 @@
   import { uiStore, currentWarband } from '../stores/ui'
   import { CLASS_MAP, PERS_CLASS_ICONS, PERS_CLASS_COLORS } from '../constants'
 
-  let editing = $state<Record<string, string>>({})
+  let editing = $state<Record<string, string[]>>({})
   let filterText = $state('')
   let showAll = $state(false)
 
@@ -37,12 +37,15 @@
   })
 
   function saveParecido(charName: string) {
-    const val = editing[charName] !== undefined ? editing[charName] : ''
-    dataStore.updatePersonaje(charName, { parecido: val || null })
+    const vals = editing[charName] !== undefined ? editing[charName] : []
+    const cleaned = vals.filter(x => (x || '').trim()).slice(0, 2)
+    dataStore.updatePersonaje(charName, { parecidos: cleaned })
   }
 
-  function initEdit(c: { nombre: string; parecido?: string | null }) {
-    editing[c.nombre] = c.parecido || ''
+  function initEdit(c: { nombre: string; parecidos?: string[] }) {
+    const arr = c.parecidos ? [...c.parecidos] : []
+    while (arr.length < 2) arr.push('')
+    editing[c.nombre] = arr
   }
 </script>
 
@@ -89,13 +92,18 @@
           <span class="fantasia-row-icon">{PERS_CLASS_ICONS[clsKey] || '?'}</span>
           <span class="fantasia-row-name" style="color:{color}">{c.nombre}</span>
           <span class="fantasia-row-info">Nv.{c.nivel} · {c.raza}</span>
-          <input class="fantasia-row-input" type="text"
-            placeholder="Personaje del lore..."
-            value={editing[c.nombre] !== undefined ? editing[c.nombre] : c.parecido || ''}
-            onfocus={() => initEdit(c)}
-            oninput={(e) => { editing[c.nombre] = (e.target as HTMLInputElement).value }}
-            onblur={() => saveParecido(c.nombre)}
-            onkeydown={(e) => { if (e.key === 'Enter') { (e.target as HTMLInputElement).blur() } }} />
+          {#each [0, 1] as idx}
+            <input class="fantasia-row-input" type="text"
+              placeholder={`Representante ${idx + 1}...`}
+              value={(editing[c.nombre] ?? c.parecidos ?? ['', ''])[idx] ?? ''}
+              onfocus={() => initEdit(c)}
+              oninput={(e) => {
+                if (!editing[c.nombre]) initEdit(c)
+                editing[c.nombre][idx] = (e.target as HTMLInputElement).value
+              }}
+              onblur={() => saveParecido(c.nombre)}
+              onkeydown={(e) => { if (e.key === 'Enter') { (e.target as HTMLInputElement).blur() } }} />
+          {/each}
         </div>
       {/each}
     </div>

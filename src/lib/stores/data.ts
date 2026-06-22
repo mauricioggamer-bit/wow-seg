@@ -162,7 +162,7 @@ function createDataStore() {
     getWarbands(): Warband[] {
       return get({ subscribe }).warbands
     },
-    addPersonaje(p: { nombre: string; clase: string; raza: string; nivel: number; faccion: string; reino: string; warband: string; mision_principal?: string; expansion_por_defecto?: string | null; parecido?: string | null; activo?: boolean }) {
+    addPersonaje(p: { nombre: string; clase: string; raza: string; nivel: number; faccion: string; reino: string; warband: string; mision_principal?: string; expansion_por_defecto?: string | null; parecidos?: string[]; activo?: boolean }) {
       update(d => {
         if (d.personajes.find(x => x.nombre === p.nombre)) return d
         const nuevo: Personaje = {
@@ -175,7 +175,7 @@ function createDataStore() {
           warband: p.warband,
           mision_principal: p.mision_principal || null,
           expansion_por_defecto: p.expansion_por_defecto || null,
-          parecido: p.parecido || null,
+          parecidos: p.parecidos || [],
           activo: p.activo ?? true,
           tareas: [],
         }

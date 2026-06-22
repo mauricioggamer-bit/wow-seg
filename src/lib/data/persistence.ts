@@ -64,6 +64,15 @@ export function loadData(): WowData {
       }
       saveData(data)
     }
+    const needsParecidos = data.personajes.some(p => p.parecidos === undefined)
+    if (needsParecidos) {
+      for (const p of data.personajes) {
+        const single = (p as any).parecido
+        p.parecidos = single ? [single] : []
+        delete (p as any).parecido
+      }
+      saveData(data)
+    }
     if (data._meta?.ultimo_reset_semanal) {
       localStorage.setItem(RESET_KEY, data._meta.ultimo_reset_semanal)
     }

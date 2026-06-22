@@ -58,6 +58,7 @@
   let editCharFaccion = $state('')
   let editCharReino = $state('')
   let editCharActivo = $state(true)
+  let editCharPlaneado = $state(true)
   let editCharWarband = $state('')
   let editCharMisionPrincipal = $state('')
   let editCharExpansion = $state('')
@@ -114,6 +115,7 @@
     editCharFaccion = c.faccion
     editCharReino = c.reino
     editCharActivo = c.activo
+    editCharPlaneado = c.planeado_usar !== false
     editCharWarband = c.warband
     editCharMisionPrincipal = c.mision_principal || ''
     editCharExpansion = c.expansion_por_defecto || ''
@@ -131,6 +133,7 @@
     editCharFaccion = charFactions[0] || ''
     editCharReino = charRealms[0] || ''
     editCharActivo = true
+    editCharPlaneado = true
     editCharWarband = ($warbandsStore.filter(w => w.nombre !== 'nada')[0]?.nombre) || ''
     editCharMisionPrincipal = ''
     editCharExpansion = ''
@@ -226,6 +229,7 @@
         faccion: editCharFaccion,
         reino: editCharReino,
         activo: editCharActivo,
+        planeado_usar: editCharPlaneado,
         warband: editCharWarband,
         mision_principal: editCharMisionPrincipal || undefined,
         expansion_por_defecto: editCharExpansion || null,
@@ -240,6 +244,7 @@
         faccion: editCharFaccion,
         reino: editCharReino,
         activo: editCharActivo,
+        planeado_usar: editCharPlaneado,
         warband: editCharWarband,
         mision_principal: editCharMisionPrincipal || undefined,
         expansion_por_defecto: editCharExpansion || null,
@@ -566,6 +571,10 @@
       <label style="display:flex;align-items:center;gap:6px;font-size:0.75rem;margin-top:4px">
         <input type="checkbox" bind:checked={editCharActivo} />
         Activo
+      </label>
+      <label style="display:flex;align-items:center;gap:6px;font-size:0.75rem;margin-top:4px">
+        <input type="checkbox" bind:checked={editCharPlaneado} />
+        Planeado usar
       </label>
       <div class="modal-footer">
         <button class="wow-btn" onclick={() => uiStore.closeModal()}>Cancelar</button>

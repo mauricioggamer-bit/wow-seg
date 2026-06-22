@@ -25,6 +25,7 @@ export interface Personaje {
   expansion_por_defecto?: string | null
   parecidos?: string[]
   activo: boolean
+  planeado_usar?: boolean
   tareas: Tarea[]
 }
 

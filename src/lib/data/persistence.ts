@@ -73,6 +73,13 @@ export function loadData(): WowData {
       }
       saveData(data)
     }
+    const needsPlaneado = data.personajes.some(p => p.planeado_usar === undefined)
+    if (needsPlaneado) {
+      for (const p of data.personajes) {
+        if (p.planeado_usar === undefined) p.planeado_usar = true
+      }
+      saveData(data)
+    }
     if (data._meta?.ultimo_reset_semanal) {
       localStorage.setItem(RESET_KEY, data._meta.ultimo_reset_semanal)
     }

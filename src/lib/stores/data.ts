@@ -88,7 +88,7 @@ function createDataStore() {
         return d
       })
     },
-    addTarea(nombrePersonaje: string, tarea: { nombre: string; tipo?: string; cooldown?: string; prioridad?: number; tiempo_min?: number; expansion?: string }) {
+    addTarea(nombrePersonaje: string, tarea: { nombre: string; tipo?: string; cooldown?: string; prioridad?: number; tiempo_min?: number; expansion?: string; recompensa?: string }) {
       update(d => {
         const p = d.personajes.find(pj => pj.nombre === nombrePersonaje)
         if (!p) return d
@@ -106,6 +106,7 @@ function createDataStore() {
           creada: new Date().toISOString(),
           tags: [],
           orden: maxOrden + 1,
+          recompensa: tarea.recompensa || '',
         })
         saveData(d)
         return d

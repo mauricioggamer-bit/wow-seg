@@ -9,6 +9,7 @@
   import AuthView from './lib/views/AuthView.svelte'
   import WarbandView from './lib/views/WarbandView.svelte'
   import AllTasksView from './lib/views/AllTasksView.svelte'
+  import TareasView from './lib/views/TareasView.svelte'
   import TablaView from './lib/views/TablaView.svelte'
   import PriorityView from './lib/views/PriorityView.svelte'
   import TimeView from './lib/views/TimeView.svelte'
@@ -70,6 +71,13 @@
   let editTaskCooldown = $state('none')
   let editTaskRecompensa = $state('')
   let editTaskOrden = $state(0)
+
+  let newTaskChar = $state('')
+  let newTaskNombre = $state('')
+  let newTaskPrioridad = $state('2')
+  let newTaskTiempo = $state(15)
+  let newTaskCooldown = $state('none')
+  let newTaskRecompensa = $state('')
 
   let editMissionId = $state('')
   let editMissionNombre = $state('')
@@ -159,6 +167,28 @@
     uiStore.closeModal()
   }
 
+  function openTaskNew(charName: string) {
+    newTaskChar = charName
+    newTaskNombre = ''
+    newTaskPrioridad = '2'
+    newTaskTiempo = 15
+    newTaskCooldown = 'none'
+    newTaskRecompensa = ''
+    uiStore.openModal('TaskNew')
+  }
+
+  function saveTaskNew() {
+    if (!newTaskNombre.trim()) return
+    dataStore.addTarea(newTaskChar, {
+      nombre: newTaskNombre.trim(),
+      prioridad: parseInt(newTaskPrioridad),
+      tiempo_min: newTaskTiempo,
+      cooldown: newTaskCooldown,
+      recompensa: newTaskRecompensa || '',
+    })
+    uiStore.closeModal()
+  }
+
   function openMissionEdit(m: Mision) {
     editMissionId = m.id
     editMissionNombre = m.nombre
@@ -234,6 +264,8 @@
         {#if $uiStore.currentView === 'warband'}
           <FilterBar />
           <WarbandView />
+        {:else if $uiStore.currentView === 'tareas'}
+          <TareasView {openTaskEdit} {openTaskNew} />
         {:else if $uiStore.currentView === 'tabla'}
           <TablaView {openTaskEdit} {openMissionEdit} />
         {:else if $uiStore.currentView === 'priority'}
@@ -582,6 +614,50 @@
       <div class="modal-footer">
         <button class="wow-btn" onclick={() => uiStore.closeModal()}>Cancelar</button>
         <button class="wow-btn wow-btn-primary" onclick={saveTaskEdit}>Guardar</button>
+      </div>
+    {/snippet}
+  </Dialog>
+
+  <!-- Modal: Asignar Tarea -->
+  <Dialog show={$uiStore.activeModal === 'TaskNew'} title="Asignar Tarea" onclose={() => uiStore.closeModal()}>
+    {#snippet children()}
+      <div class="form-group">
+        <label>Personaje</label>
+        <input type="text" value={newTaskChar} disabled />
+      </div>
+      <div class="form-group">
+        <label for="newTaskNombre">Nombre de la tarea</label>
+        <input id="newTaskNombre" type="text" bind:value={newTaskNombre} placeholder="Ej: Weekly Zereth Mortis" />
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px">
+        <div class="form-group">
+          <label>Prioridad</label>
+          <select bind:value={newTaskPrioridad}>
+            <option value="1">P1 - Alta</option>
+            <option value="2">P2 - Media</option>
+            <option value="3">P3 - Baja</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Tiempo (min)</label>
+          <input type="number" bind:value={newTaskTiempo} min="0" />
+        </div>
+        <div class="form-group">
+          <label>Cooldown</label>
+          <select bind:value={newTaskCooldown}>
+            <option value="none">Farm Libre</option>
+            <option value="daily">Diaria</option>
+            <option value="weekly">Semanal</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Recompensa</label>
+          <input type="text" bind:value={newTaskRecompensa} placeholder="Ej: 500g" />
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="wow-btn" onclick={() => uiStore.closeModal()}>Cancelar</button>
+        <button class="wow-btn wow-btn-primary" onclick={saveTaskNew}>Asignar</button>
       </div>
     {/snippet}
   </Dialog>

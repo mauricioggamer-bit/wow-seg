@@ -4,6 +4,7 @@
 
   const views: { key: ViewType; label: string; icon: string }[] = [
     { key: 'warband', label: 'Warband', icon: '📁' },
+    { key: 'tareas', label: 'Tareas', icon: '✅' },
     { key: 'tabla', label: 'Tabla', icon: '📋' },
     { key: 'priority', label: 'Prioridad', icon: '⚡' },
     { key: 'time', label: 'Tiempo', icon: '⏱' },

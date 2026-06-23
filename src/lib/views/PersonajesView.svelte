@@ -112,6 +112,30 @@
     uiStore.openModal('CharEdit')
     // openCharEdit will be called via the dialog, but we set the char name first
   }
+
+  type CountEntry = { label: string; count: number }
+
+  function countByField(chars: typeof $personajesStore, field: 'raza' | 'clase'): CountEntry[] {
+    const map = new Map<string, number>()
+    for (const c of chars) {
+      const v = c[field]
+      map.set(v, (map.get(v) || 0) + 1)
+    }
+    return [...map.entries()]
+      .map(([label, count]) => ({ label, count }))
+      .sort((a, b) => b.count - a.count || a.label.localeCompare(b.label))
+  }
+
+  let hordeChars = $derived($personajesStore.filter(c => c.faccion === 'Horda'))
+  let allianceChars = $derived($personajesStore.filter(c => c.faccion === 'Alianza'))
+  let allChars = $derived($personajesStore)
+
+  let hordeRazas = $derived(countByField(hordeChars, 'raza'))
+  let hordeClases = $derived(countByField(hordeChars, 'clase'))
+  let allianceRazas = $derived(countByField(allianceChars, 'raza'))
+  let allianceClases = $derived(countByField(allianceChars, 'clase'))
+  let allRazas = $derived(countByField(allChars, 'raza'))
+  let allClases = $derived(countByField(allChars, 'clase'))
 </script>
 
 <div class="pers-view">
@@ -255,6 +279,40 @@
     {/each}
   </div>
 
+  <div id="pers-stats">
+    {#each [{ title: 'HORDA', cls: 'h', razas: hordeRazas, clases: hordeClases }, { title: 'ALIANZA', cls: 'a', razas: allianceRazas, clases: allianceClases }, { title: 'CUENTA', cls: 'all', razas: allRazas, clases: allClases }] as group}
+      <div class="pers-stats-group">
+        <div class="pers-stats-title {group.cls}">{group.title}</div>
+        <div class="pers-stats-tables">
+          <div class="pers-stats-table">
+            <div class="pers-stats-subtitle">RAZAS</div>
+            {#each group.razas as row, i}
+              <div class="pers-stats-row">
+                <span class="pers-stats-rank">{i + 1}.</span>
+                <span class="pers-stats-label">{row.label}</span>
+                <span class="pers-stats-count">{row.count}</span>
+              </div>
+            {:else}
+              <div class="pers-stats-empty">—</div>
+            {/each}
+          </div>
+          <div class="pers-stats-table">
+            <div class="pers-stats-subtitle">CLASES</div>
+            {#each group.clases as row, i}
+              <div class="pers-stats-row">
+                <span class="pers-stats-rank">{i + 1}.</span>
+                <span class="pers-stats-label">{row.label}</span>
+                <span class="pers-stats-count">{row.count}</span>
+              </div>
+            {:else}
+              <div class="pers-stats-empty">—</div>
+            {/each}
+          </div>
+        </div>
+      </div>
+    {/each}
+  </div>
+
   <div id="pers-footer">
     <button class="pers-foot-btn" onclick={closePersonajes}>◄ VOLVER</button>
     <div class="pers-realm-info">
@@ -359,4 +417,19 @@
   .pers-foot-btn.primary:hover { background:linear-gradient(180deg,#5a3a00,#2a1800); box-shadow:0 0 10px var(--gold-dim); }
   .pers-realm-info { color:var(--text-muted); font-size:0.45rem; text-align:center; line-height:1.6; }
   .pers-realm-ping { color:#44cc44; }
+  #pers-stats { display:flex; gap:8px; padding:6px 10px; background:linear-gradient(180deg,rgba(10,5,0,0.6),rgba(6,3,0,0.85)); border-top:1px solid var(--border-subtle); flex-shrink:0; overflow-x:auto; }
+  .pers-stats-group { flex:1; min-width:0; display:flex; flex-direction:column; gap:3px; }
+  .pers-stats-title { font-size:0.5rem; font-weight:bold; letter-spacing:2px; text-align:center; padding-bottom:2px; border-bottom:1px solid var(--border-subtle); }
+  .pers-stats-title.h { color:var(--horde); }
+  .pers-stats-title.a { color:var(--alliance); }
+  .pers-stats-title.all { color:var(--gold-light); }
+  .pers-stats-tables { display:grid; grid-template-columns:1fr 1fr; gap:6px; }
+  .pers-stats-table { display:flex; flex-direction:column; gap:1px; }
+  .pers-stats-subtitle { font-size:0.35rem; letter-spacing:1px; color:var(--text-muted); text-align:center; padding-bottom:1px; border-bottom:1px dotted var(--border-subtle); }
+  .pers-stats-row { display:flex; align-items:center; gap:4px; font-size:0.4rem; padding:1px 3px; border-radius:1px; }
+  .pers-stats-row:nth-child(odd) { background:rgba(26,12,0,0.4); }
+  .pers-stats-rank { color:var(--text-muted); width:14px; flex-shrink:0; text-align:right; }
+  .pers-stats-label { flex:1; color:var(--text-primary); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .pers-stats-count { color:var(--gold); font-weight:bold; flex-shrink:0; min-width:18px; text-align:right; }
+  .pers-stats-empty { color:var(--text-dim); font-size:0.4rem; text-align:center; padding:4px; }
 </style>

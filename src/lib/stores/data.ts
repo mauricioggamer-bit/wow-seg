@@ -89,7 +89,7 @@ function createDataStore() {
         return d
       })
     },
-addTarea(nombrePersonaje: string, tarea: { nombre: string; tipoContenido?: TipoContenido; tipo?: string; cooldown?: string; prioridad?: number; tiempo_min?: number; expansion?: string; recompensa?: string }) {
+addTarea(nombrePersonaje: string, tarea: { nombre: string; tipoContenido?: TipoContenido; contenidoExpansion?: string; contenidoDificultad?: string; tipo?: string; cooldown?: string; prioridad?: number; tiempo_min?: number; expansion?: string; recompensa?: string }) {
       update(d => {
         const p = d.personajes.find(pj => pj.nombre === nombrePersonaje)
         if (!p) return d
@@ -99,6 +99,8 @@ addTarea(nombrePersonaje: string, tarea: { nombre: string; tipoContenido?: TipoC
           id,
           nombre: tarea.nombre,
           tipoContenido: tarea.tipoContenido ?? 'descripcion',
+          contenidoExpansion: tarea.contenidoExpansion || '',
+          contenidoDificultad: tarea.contenidoDificultad || '',
           hecho: false,
           tipo: tarea.tipo || 'mision',
           cooldown: tarea.cooldown || 'none',

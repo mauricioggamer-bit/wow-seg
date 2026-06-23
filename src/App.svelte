@@ -21,8 +21,8 @@
   import { dataStore, personajesStore, misionesStore, warbandsStore } from './lib/stores/data'
   import { gistStore } from './lib/stores/gist'
   import { EXPANSIONS, PERS_RACE_INFO } from './lib/constants'
-  import { DUNGEON_LABELS, RAID_LABELS, WORLDBOSS_LABELS } from './lib/constants/wowContent'
-  import type { TipoContenido } from './lib/constants/wowContent'
+  import { DUNGEON_EXPANSION_IDS, RAID_EXPANSION_IDS, WORLDBOSS_EXPANSION_IDS, dungeonsForExpansion, raidsForExpansion, worldBossesForExpansion, expNombre } from './lib/constants/wowContent'
+  import type { TipoContenido, DungeonDifficulty, RaidDifficulty } from './lib/constants/wowContent'
   import type { Tarea, Mision } from './lib/types'
 
   let charOpts = $derived($personajesStore.map(p => p.nombre))
@@ -72,6 +72,9 @@
   let editTaskId = $state('')
   let editTaskNombre = $state('')
   let editTaskTipoContenido = $state<TipoContenido>('descripcion')
+  let editTaskExpansion = $state('')
+  let editTaskDificultad = $state('')
+  let editTaskContenidoNombre = $state('')
   let editTaskPrioridad = $state('2')
   let editTaskTiempo = $state(15)
   let editTaskCooldown = $state('none')
@@ -81,6 +84,9 @@
   let newTaskChar = $state('')
   let newTaskNombre = $state('')
   let newTaskTipoContenido = $state<TipoContenido>('descripcion')
+  let newTaskExpansion = $state('')
+  let newTaskDificultad = $state('')
+  let newTaskContenidoNombre = $state('')
   let newTaskPrioridad = $state('2')
   let newTaskTiempo = $state(15)
   let newTaskCooldown = $state('none')
@@ -160,6 +166,14 @@
     editTaskId = taskId
     editTaskNombre = t.nombre
     editTaskTipoContenido = t.tipoContenido ?? 'descripcion'
+    editTaskExpansion = t.contenidoExpansion || ''
+    editTaskDificultad = t.contenidoDificultad || ''
+    editTaskContenidoNombre = t.nombre
+    if (editTaskTipoContenido === 'descripcion') editTaskContenidoNombre = ''
+    // Validar que la expansion guardada aún existe; si no, resetear
+    if (editTaskTipoContenido === 'mazmorra' && !DUNGEON_EXPANSION_IDS.includes(editTaskExpansion)) editTaskExpansion = ''
+    if (editTaskTipoContenido === 'raid' && !RAID_EXPANSION_IDS.includes(editTaskExpansion)) editTaskExpansion = ''
+    if (editTaskTipoContenido === 'worldboss' && !WORLDBOSS_EXPANSION_IDS.includes(editTaskExpansion)) editTaskExpansion = ''
     editTaskPrioridad = String(t.prioridad)
     editTaskTiempo = t.tiempo_min
     editTaskCooldown = t.cooldown
@@ -169,10 +183,15 @@
   }
 
   function saveTaskEdit() {
-    if (!editTaskNombre.trim()) return
+    const finalNombre = editTaskTipoContenido === 'descripcion'
+      ? editTaskNombre.trim()
+      : editTaskContenidoNombre
+    if (!finalNombre) return
     dataStore.updateTarea(editTaskChar, editTaskId, {
-      nombre: editTaskNombre.trim(),
+      nombre: finalNombre,
       tipoContenido: editTaskTipoContenido,
+      contenidoExpansion: editTaskTipoContenido === 'descripcion' ? '' : editTaskExpansion,
+      contenidoDificultad: (editTaskTipoContenido === 'mazmorra' || editTaskTipoContenido === 'raid') ? editTaskDificultad : '',
       prioridad: parseInt(editTaskPrioridad),
       tiempo_min: editTaskTiempo,
       cooldown: editTaskCooldown,
@@ -186,6 +205,9 @@
     newTaskChar = charName
     newTaskNombre = ''
     newTaskTipoContenido = 'descripcion'
+    newTaskExpansion = ''
+    newTaskDificultad = ''
+    newTaskContenidoNombre = ''
     newTaskPrioridad = '2'
     newTaskTiempo = 15
     newTaskCooldown = 'none'
@@ -194,10 +216,15 @@
   }
 
   function saveTaskNew() {
-    if (!newTaskNombre.trim()) return
+    const finalNombre = newTaskTipoContenido === 'descripcion'
+      ? newTaskNombre.trim()
+      : newTaskContenidoNombre
+    if (!finalNombre) return
     dataStore.addTarea(newTaskChar, {
-      nombre: newTaskNombre.trim(),
+      nombre: finalNombre,
       tipoContenido: newTaskTipoContenido,
+      contenidoExpansion: newTaskTipoContenido === 'descripcion' ? '' : newTaskExpansion,
+      contenidoDificultad: (newTaskTipoContenido === 'mazmorra' || newTaskTipoContenido === 'raid') ? newTaskDificultad : '',
       prioridad: parseInt(newTaskPrioridad),
       tiempo_min: newTaskTiempo,
       cooldown: newTaskCooldown,
@@ -208,20 +235,80 @@
 
   function setNewTipoContenido(t: TipoContenido) {
     newTaskTipoContenido = t
-    if (t === 'descripcion') newTaskNombre = ''
-    else if (t === 'mazmorra') newTaskNombre = DUNGEON_LABELS[0] ?? ''
-    else if (t === 'raid') newTaskNombre = RAID_LABELS[0] ?? ''
-    else if (t === 'worldboss') newTaskNombre = WORLDBOSS_LABELS[0] ?? ''
+    newTaskExpansion = ''
+    newTaskDificultad = ''
+    newTaskContenidoNombre = ''
+    if (t === 'descripcion') { newTaskNombre = ''; return }
+    if (t === 'mazmorra') newTaskExpansion = DUNGEON_EXPANSION_IDS[0] ?? ''
+    else if (t === 'raid') newTaskExpansion = RAID_EXPANSION_IDS[0] ?? ''
+    else if (t === 'worldboss') newTaskExpansion = WORLDBOSS_EXPANSION_IDS[0] ?? ''
+    onNewExpansionChange()
   }
 
   function setEditTipoContenido(t: TipoContenido) {
     editTaskTipoContenido = t
+    editTaskExpansion = ''
+    editTaskDificultad = ''
+    editTaskContenidoNombre = ''
     if (t === 'descripcion') return
-    const current = editTaskNombre
-    const labels = t === 'mazmorra' ? DUNGEON_LABELS
-      : t === 'raid' ? RAID_LABELS
-      : WORLDBOSS_LABELS
-    if (!labels.includes(current)) editTaskNombre = labels[0] ?? ''
+    if (t === 'mazmorra') editTaskExpansion = DUNGEON_EXPANSION_IDS[0] ?? ''
+    else if (t === 'raid') editTaskExpansion = RAID_EXPANSION_IDS[0] ?? ''
+    else if (t === 'worldboss') editTaskExpansion = WORLDBOSS_EXPANSION_IDS[0] ?? ''
+    onEditExpansionChange()
+  }
+
+  function onNewExpansionChange() {
+    newTaskDificultad = ''
+    newTaskContenidoNombre = ''
+    if (newTaskTipoContenido === 'mazmorra') {
+      const list = dungeonsForExpansion(newTaskExpansion)
+      if (list.length) newTaskDificultad = list[0].dificultades[0]
+    } else if (newTaskTipoContenido === 'raid') {
+      const list = raidsForExpansion(newTaskExpansion)
+      if (list.length) newTaskDificultad = list[0].dificultades[0]
+    }
+    onNewDificultadChange()
+  }
+
+  function onNewDificultadChange() {
+    newTaskContenidoNombre = ''
+    if (newTaskTipoContenido === 'mazmorra') {
+      const list = dungeonsForExpansion(newTaskExpansion).filter(d => d.dificultades.includes(newTaskDificultad as DungeonDifficulty))
+      newTaskContenidoNombre = list[0]?.nombre ?? ''
+    } else if (newTaskTipoContenido === 'raid') {
+      const list = raidsForExpansion(newTaskExpansion).filter(r => r.dificultades.includes(newTaskDificultad as RaidDifficulty))
+      newTaskContenidoNombre = list[0]?.nombre ?? ''
+    } else if (newTaskTipoContenido === 'worldboss') {
+      const list = worldBossesForExpansion(newTaskExpansion)
+      newTaskContenidoNombre = list[0]?.nombre ?? ''
+    }
+  }
+
+  function onEditExpansionChange() {
+    editTaskDificultad = ''
+    editTaskContenidoNombre = ''
+    if (editTaskTipoContenido === 'mazmorra') {
+      const list = dungeonsForExpansion(editTaskExpansion)
+      if (list.length) editTaskDificultad = list[0].dificultades[0]
+    } else if (editTaskTipoContenido === 'raid') {
+      const list = raidsForExpansion(editTaskExpansion)
+      if (list.length) editTaskDificultad = list[0].dificultades[0]
+    }
+    onEditDificultadChange()
+  }
+
+  function onEditDificultadChange() {
+    editTaskContenidoNombre = ''
+    if (editTaskTipoContenido === 'mazmorra') {
+      const list = dungeonsForExpansion(editTaskExpansion).filter(d => d.dificultades.includes(editTaskDificultad as DungeonDifficulty))
+      editTaskContenidoNombre = list[0]?.nombre ?? ''
+    } else if (editTaskTipoContenido === 'raid') {
+      const list = raidsForExpansion(editTaskExpansion).filter(r => r.dificultades.includes(editTaskDificultad as RaidDifficulty))
+      editTaskContenidoNombre = list[0]?.nombre ?? ''
+    } else if (editTaskTipoContenido === 'worldboss') {
+      const list = worldBossesForExpansion(editTaskExpansion)
+      editTaskContenidoNombre = list[0]?.nombre ?? ''
+    }
   }
 
   function openMissionEdit(m: Mision) {
@@ -644,18 +731,40 @@
           </div>
           {#if editTaskTipoContenido === 'descripcion'}
             <input id="editTaskNombre" type="text" bind:value={editTaskNombre} style="margin-top:6px;width:100%" />
-          {:else if editTaskTipoContenido === 'mazmorra'}
-            <select bind:value={editTaskNombre} style="margin-top:6px;width:100%">
-              {#each DUNGEON_LABELS as lbl}<option value={lbl}>{lbl}</option>{/each}
-            </select>
-          {:else if editTaskTipoContenido === 'raid'}
-            <select bind:value={editTaskNombre} style="margin-top:6px;width:100%">
-              {#each RAID_LABELS as lbl}<option value={lbl}>{lbl}</option>{/each}
-            </select>
           {:else}
-            <select bind:value={editTaskNombre} style="margin-top:6px;width:100%">
-              {#each WORLDBOSS_LABELS as lbl}<option value={lbl}>{lbl}</option>{/each}
-            </select>
+            <div style="margin-top:6px;display:grid;grid-template-columns:1fr 1fr;gap:6px">
+              <div class="form-group" style="margin:0">
+                <label style="font-size:0.7rem">Expansión</label>
+                <select bind:value={editTaskExpansion} onchange={onEditExpansionChange}>
+                  {#each (editTaskTipoContenido === 'mazmorra' ? DUNGEON_EXPANSION_IDS : editTaskTipoContenido === 'raid' ? RAID_EXPANSION_IDS : WORLDBOSS_EXPANSION_IDS) as e}<option value={e}>{expNombre(e)}</option>{/each}
+                </select>
+              </div>
+              {#if editTaskTipoContenido !== 'worldboss'}
+                <div class="form-group" style="margin:0">
+                  <label style="font-size:0.7rem">Dificultad</label>
+                  <select bind:value={editTaskDificultad} onchange={onEditDificultadChange}>
+                    {#each (editTaskTipoContenido === 'mazmorra'
+                      ? [...new Set(dungeonsForExpansion(editTaskExpansion).flatMap(d => d.dificultades))]
+                      : [...new Set(raidsForExpansion(editTaskExpansion).flatMap(r => r.dificultades))]) as d}<option value={d}>{d}</option>{/each}
+                  </select>
+                </div>
+                <div class="form-group" style="margin:0;grid-column:1/-1">
+                  <label style="font-size:0.7rem">{editTaskTipoContenido === 'mazmorra' ? 'Mazmorra' : 'Raid'}</label>
+                  <select bind:value={editTaskContenidoNombre}>
+                    {#each (editTaskTipoContenido === 'mazmorra'
+                      ? dungeonsForExpansion(editTaskExpansion).filter(d => d.dificultades.includes(editTaskDificultad as DungeonDifficulty)).map(d => d.nombre)
+                      : raidsForExpansion(editTaskExpansion).filter(r => r.dificultades.includes(editTaskDificultad as RaidDifficulty)).map(r => r.nombre)) as n}<option value={n}>{n}</option>{/each}
+                  </select>
+                </div>
+              {:else}
+                <div class="form-group" style="margin:0;grid-column:1/-1">
+                  <label style="font-size:0.7rem">Jefe del mundo</label>
+                  <select bind:value={editTaskContenidoNombre}>
+                    {#each worldBossesForExpansion(editTaskExpansion) as w}<option value={w.nombre}>{w.nombre}</option>{/each}
+                  </select>
+                </div>
+              {/if}
+            </div>
           {/if}
         </fieldset>
       </div>
@@ -714,18 +823,40 @@
           </div>
           {#if newTaskTipoContenido === 'descripcion'}
             <input id="newTaskNombre" type="text" bind:value={newTaskNombre} placeholder="Ej: Weekly Zereth Mortis" style="margin-top:6px;width:100%" />
-          {:else if newTaskTipoContenido === 'mazmorra'}
-            <select bind:value={newTaskNombre} style="margin-top:6px;width:100%">
-              {#each DUNGEON_LABELS as lbl}<option value={lbl}>{lbl}</option>{/each}
-            </select>
-          {:else if newTaskTipoContenido === 'raid'}
-            <select bind:value={newTaskNombre} style="margin-top:6px;width:100%">
-              {#each RAID_LABELS as lbl}<option value={lbl}>{lbl}</option>{/each}
-            </select>
           {:else}
-            <select bind:value={newTaskNombre} style="margin-top:6px;width:100%">
-              {#each WORLDBOSS_LABELS as lbl}<option value={lbl}>{lbl}</option>{/each}
-            </select>
+            <div style="margin-top:6px;display:grid;grid-template-columns:1fr 1fr;gap:6px">
+              <div class="form-group" style="margin:0">
+                <label style="font-size:0.7rem">Expansión</label>
+                <select bind:value={newTaskExpansion} onchange={onNewExpansionChange}>
+                  {#each (newTaskTipoContenido === 'mazmorra' ? DUNGEON_EXPANSION_IDS : newTaskTipoContenido === 'raid' ? RAID_EXPANSION_IDS : WORLDBOSS_EXPANSION_IDS) as e}<option value={e}>{expNombre(e)}</option>{/each}
+                </select>
+              </div>
+              {#if newTaskTipoContenido !== 'worldboss'}
+                <div class="form-group" style="margin:0">
+                  <label style="font-size:0.7rem">Dificultad</label>
+                  <select bind:value={newTaskDificultad} onchange={onNewDificultadChange}>
+                    {#each (newTaskTipoContenido === 'mazmorra'
+                      ? [...new Set(dungeonsForExpansion(newTaskExpansion).flatMap(d => d.dificultades))]
+                      : [...new Set(raidsForExpansion(newTaskExpansion).flatMap(r => r.dificultades))]) as d}<option value={d}>{d}</option>{/each}
+                  </select>
+                </div>
+                <div class="form-group" style="margin:0;grid-column:1/-1">
+                  <label style="font-size:0.7rem">{newTaskTipoContenido === 'mazmorra' ? 'Mazmorra' : 'Raid'}</label>
+                  <select bind:value={newTaskContenidoNombre}>
+                    {#each (newTaskTipoContenido === 'mazmorra'
+                      ? dungeonsForExpansion(newTaskExpansion).filter(d => d.dificultades.includes(newTaskDificultad as DungeonDifficulty)).map(d => d.nombre)
+                      : raidsForExpansion(newTaskExpansion).filter(r => r.dificultades.includes(newTaskDificultad as RaidDifficulty)).map(r => r.nombre)) as n}<option value={n}>{n}</option>{/each}
+                  </select>
+                </div>
+              {:else}
+                <div class="form-group" style="margin:0;grid-column:1/-1">
+                  <label style="font-size:0.7rem">Jefe del mundo</label>
+                  <select bind:value={newTaskContenidoNombre}>
+                    {#each worldBossesForExpansion(newTaskExpansion) as w}<option value={w.nombre}>{w.nombre}</option>{/each}
+                  </select>
+                </div>
+              {/if}
+            </div>
           {/if}
         </fieldset>
       </div>

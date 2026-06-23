@@ -4,6 +4,8 @@ export interface Tarea {
   id: string
   nombre: string
   tipoContenido?: TipoContenido
+  contenidoExpansion?: string
+  contenidoDificultad?: string
   tipo: 'weekly' | 'daily' | 'farm_libre'
   cooldown: 'weekly' | 'daily' | 'none'
   tiempo_min: number

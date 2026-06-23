@@ -97,6 +97,16 @@ export function loadData(): WowData {
       }
       saveData(data)
     }
+    const needsContenidoExtra = data.personajes.some(p => p.tareas.some(t => t.contenidoExpansion === undefined))
+    if (needsContenidoExtra) {
+      for (const p of data.personajes) {
+        for (const t of p.tareas) {
+          if (t.contenidoExpansion === undefined) t.contenidoExpansion = ''
+          if (t.contenidoDificultad === undefined) t.contenidoDificultad = ''
+        }
+      }
+      saveData(data)
+    }
     if (data._meta?.ultimo_reset_semanal) {
       localStorage.setItem(RESET_KEY, data._meta.ultimo_reset_semanal)
     }

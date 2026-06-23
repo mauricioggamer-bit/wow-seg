@@ -1,5 +1,6 @@
 import { writable, derived, get } from 'svelte/store'
 import type { WowData, Personaje, Warband, Mision, Stats } from '../types'
+import type { TipoContenido } from '../constants/wowContent'
 import { loadData, saveData, computeStats as computeStatsFn, exportJSON as exportJSONFn, exportPersonajesJSON as exportPersonajesJSONFn, exportFullBackup as exportFullBackupFn, initSeed as initSeedFn } from '../data/persistence'
 import { checkWeeklyReset, resetDailyTasks } from '../data/weekly-reset'
 
@@ -88,7 +89,7 @@ function createDataStore() {
         return d
       })
     },
-    addTarea(nombrePersonaje: string, tarea: { nombre: string; tipo?: string; cooldown?: string; prioridad?: number; tiempo_min?: number; expansion?: string; recompensa?: string }) {
+addTarea(nombrePersonaje: string, tarea: { nombre: string; tipoContenido?: TipoContenido; tipo?: string; cooldown?: string; prioridad?: number; tiempo_min?: number; expansion?: string; recompensa?: string }) {
       update(d => {
         const p = d.personajes.find(pj => pj.nombre === nombrePersonaje)
         if (!p) return d
@@ -97,13 +98,13 @@ function createDataStore() {
         p.tareas.push({
           id,
           nombre: tarea.nombre,
+          tipoContenido: tarea.tipoContenido ?? 'descripcion',
           hecho: false,
           tipo: tarea.tipo || 'mision',
           cooldown: tarea.cooldown || 'none',
           prioridad: tarea.prioridad ?? 2,
           tiempo_min: tarea.tiempo_min ?? 15,
           expansion: tarea.expansion || '',
-          creada: new Date().toISOString(),
           tags: [],
           orden: maxOrden + 1,
           recompensa: tarea.recompensa || '',

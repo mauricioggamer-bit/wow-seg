@@ -1,6 +1,9 @@
+import type { TipoContenido } from './constants/wowContent'
+
 export interface Tarea {
   id: string
   nombre: string
+  tipoContenido?: TipoContenido
   tipo: 'weekly' | 'daily' | 'farm_libre'
   cooldown: 'weekly' | 'daily' | 'none'
   tiempo_min: number

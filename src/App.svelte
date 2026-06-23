@@ -21,6 +21,8 @@
   import { dataStore, personajesStore, misionesStore, warbandsStore } from './lib/stores/data'
   import { gistStore } from './lib/stores/gist'
   import { EXPANSIONS, PERS_RACE_INFO } from './lib/constants'
+  import { DUNGEON_LABELS, RAID_LABELS, WORLDBOSS_LABELS } from './lib/constants/wowContent'
+  import type { TipoContenido } from './lib/constants/wowContent'
   import type { Tarea, Mision } from './lib/types'
 
   let charOpts = $derived($personajesStore.map(p => p.nombre))
@@ -69,6 +71,7 @@
   let editTaskChar = $state('')
   let editTaskId = $state('')
   let editTaskNombre = $state('')
+  let editTaskTipoContenido = $state<TipoContenido>('descripcion')
   let editTaskPrioridad = $state('2')
   let editTaskTiempo = $state(15)
   let editTaskCooldown = $state('none')
@@ -77,6 +80,7 @@
 
   let newTaskChar = $state('')
   let newTaskNombre = $state('')
+  let newTaskTipoContenido = $state<TipoContenido>('descripcion')
   let newTaskPrioridad = $state('2')
   let newTaskTiempo = $state(15)
   let newTaskCooldown = $state('none')
@@ -155,6 +159,7 @@
     editTaskChar = charName
     editTaskId = taskId
     editTaskNombre = t.nombre
+    editTaskTipoContenido = t.tipoContenido ?? 'descripcion'
     editTaskPrioridad = String(t.prioridad)
     editTaskTiempo = t.tiempo_min
     editTaskCooldown = t.cooldown
@@ -167,6 +172,7 @@
     if (!editTaskNombre.trim()) return
     dataStore.updateTarea(editTaskChar, editTaskId, {
       nombre: editTaskNombre.trim(),
+      tipoContenido: editTaskTipoContenido,
       prioridad: parseInt(editTaskPrioridad),
       tiempo_min: editTaskTiempo,
       cooldown: editTaskCooldown,
@@ -179,6 +185,7 @@
   function openTaskNew(charName: string) {
     newTaskChar = charName
     newTaskNombre = ''
+    newTaskTipoContenido = 'descripcion'
     newTaskPrioridad = '2'
     newTaskTiempo = 15
     newTaskCooldown = 'none'
@@ -190,12 +197,31 @@
     if (!newTaskNombre.trim()) return
     dataStore.addTarea(newTaskChar, {
       nombre: newTaskNombre.trim(),
+      tipoContenido: newTaskTipoContenido,
       prioridad: parseInt(newTaskPrioridad),
       tiempo_min: newTaskTiempo,
       cooldown: newTaskCooldown,
       recompensa: newTaskRecompensa || '',
     })
     uiStore.closeModal()
+  }
+
+  function setNewTipoContenido(t: TipoContenido) {
+    newTaskTipoContenido = t
+    if (t === 'descripcion') newTaskNombre = ''
+    else if (t === 'mazmorra') newTaskNombre = DUNGEON_LABELS[0] ?? ''
+    else if (t === 'raid') newTaskNombre = RAID_LABELS[0] ?? ''
+    else if (t === 'worldboss') newTaskNombre = WORLDBOSS_LABELS[0] ?? ''
+  }
+
+  function setEditTipoContenido(t: TipoContenido) {
+    editTaskTipoContenido = t
+    if (t === 'descripcion') return
+    const current = editTaskNombre
+    const labels = t === 'mazmorra' ? DUNGEON_LABELS
+      : t === 'raid' ? RAID_LABELS
+      : WORLDBOSS_LABELS
+    if (!labels.includes(current)) editTaskNombre = labels[0] ?? ''
   }
 
   function openMissionEdit(m: Mision) {
@@ -608,8 +634,30 @@
   <Dialog show={$uiStore.activeModal === 'TaskEdit'} title="Editar Tarea" onclose={() => uiStore.closeModal()}>
     {#snippet children()}
       <div class="form-group">
-        <label for="editTaskNombre">Nombre</label>
-        <input id="editTaskNombre" type="text" bind:value={editTaskNombre} />
+        <label>Contenido de la tarea</label>
+        <fieldset style="border:1px solid #555;padding:8px;margin:2px 0">
+          <div style="display:flex;gap:12px;flex-wrap:wrap;font-size:0.85em">
+            <label><input type="radio" name="editTipoContenido" checked={editTaskTipoContenido==='descripcion'} onclick={() => setEditTipoContenido('descripcion')} /> Descripción</label>
+            <label><input type="radio" name="editTipoContenido" checked={editTaskTipoContenido==='mazmorra'} onclick={() => setEditTipoContenido('mazmorra')} /> Mazmorra</label>
+            <label><input type="radio" name="editTipoContenido" checked={editTaskTipoContenido==='raid'} onclick={() => setEditTipoContenido('raid')} /> Raid</label>
+            <label><input type="radio" name="editTipoContenido" checked={editTaskTipoContenido==='worldboss'} onclick={() => setEditTipoContenido('worldboss')} /> Jefe del mundo</label>
+          </div>
+          {#if editTaskTipoContenido === 'descripcion'}
+            <input id="editTaskNombre" type="text" bind:value={editTaskNombre} style="margin-top:6px;width:100%" />
+          {:else if editTaskTipoContenido === 'mazmorra'}
+            <select bind:value={editTaskNombre} style="margin-top:6px;width:100%">
+              {#each DUNGEON_LABELS as lbl}<option value={lbl}>{lbl}</option>{/each}
+            </select>
+          {:else if editTaskTipoContenido === 'raid'}
+            <select bind:value={editTaskNombre} style="margin-top:6px;width:100%">
+              {#each RAID_LABELS as lbl}<option value={lbl}>{lbl}</option>{/each}
+            </select>
+          {:else}
+            <select bind:value={editTaskNombre} style="margin-top:6px;width:100%">
+              {#each WORLDBOSS_LABELS as lbl}<option value={lbl}>{lbl}</option>{/each}
+            </select>
+          {/if}
+        </fieldset>
       </div>
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px">
         <div class="form-group">
@@ -656,8 +704,30 @@
         <input type="text" value={newTaskChar} disabled />
       </div>
       <div class="form-group">
-        <label for="newTaskNombre">Nombre de la tarea</label>
-        <input id="newTaskNombre" type="text" bind:value={newTaskNombre} placeholder="Ej: Weekly Zereth Mortis" />
+        <label>Contenido de la tarea</label>
+        <fieldset style="border:1px solid #555;padding:8px;margin:2px 0">
+          <div style="display:flex;gap:12px;flex-wrap:wrap;font-size:0.85em">
+            <label><input type="radio" name="newTipoContenido" checked={newTaskTipoContenido==='descripcion'} onclick={() => setNewTipoContenido('descripcion')} /> Descripción</label>
+            <label><input type="radio" name="newTipoContenido" checked={newTaskTipoContenido==='mazmorra'} onclick={() => setNewTipoContenido('mazmorra')} /> Mazmorra</label>
+            <label><input type="radio" name="newTipoContenido" checked={newTaskTipoContenido==='raid'} onclick={() => setNewTipoContenido('raid')} /> Raid</label>
+            <label><input type="radio" name="newTipoContenido" checked={newTaskTipoContenido==='worldboss'} onclick={() => setNewTipoContenido('worldboss')} /> Jefe del mundo</label>
+          </div>
+          {#if newTaskTipoContenido === 'descripcion'}
+            <input id="newTaskNombre" type="text" bind:value={newTaskNombre} placeholder="Ej: Weekly Zereth Mortis" style="margin-top:6px;width:100%" />
+          {:else if newTaskTipoContenido === 'mazmorra'}
+            <select bind:value={newTaskNombre} style="margin-top:6px;width:100%">
+              {#each DUNGEON_LABELS as lbl}<option value={lbl}>{lbl}</option>{/each}
+            </select>
+          {:else if newTaskTipoContenido === 'raid'}
+            <select bind:value={newTaskNombre} style="margin-top:6px;width:100%">
+              {#each RAID_LABELS as lbl}<option value={lbl}>{lbl}</option>{/each}
+            </select>
+          {:else}
+            <select bind:value={newTaskNombre} style="margin-top:6px;width:100%">
+              {#each WORLDBOSS_LABELS as lbl}<option value={lbl}>{lbl}</option>{/each}
+            </select>
+          {/if}
+        </fieldset>
       </div>
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px">
         <div class="form-group">

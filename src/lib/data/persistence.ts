@@ -88,6 +88,15 @@ export function loadData(): WowData {
       }
       saveData(data)
     }
+    const needsTipoContenido = data.personajes.some(p => p.tareas.some(t => t.tipoContenido === undefined))
+    if (needsTipoContenido) {
+      for (const p of data.personajes) {
+        for (const t of p.tareas) {
+          if (t.tipoContenido === undefined) t.tipoContenido = 'descripcion'
+        }
+      }
+      saveData(data)
+    }
     if (data._meta?.ultimo_reset_semanal) {
       localStorage.setItem(RESET_KEY, data._meta.ultimo_reset_semanal)
     }

@@ -12,7 +12,7 @@
   let persLevelMin = $state<number | null>(null)
   let persLevelMax = $state<number | null>(null)
   let persSelectedChar = $state<string | null>(null)
-  let persHideNotPlanned = $state(false)
+  let persHideNotPlanned = $state(true)
 
   let classEntries = $derived.by(() => {
     const deduped: Array<{ label: string; key: string }> = []
@@ -126,9 +126,9 @@
       .sort((a, b) => b.count - a.count || a.label.localeCompare(b.label))
   }
 
-  let hordeChars = $derived($personajesStore.filter(c => c.faccion === 'Horda'))
-  let allianceChars = $derived($personajesStore.filter(c => c.faccion === 'Alianza'))
-  let allChars = $derived($personajesStore)
+  let hordeChars = $derived(filteredChars.filter(c => c.faccion === 'Horda'))
+  let allianceChars = $derived(filteredChars.filter(c => c.faccion === 'Alianza'))
+  let allChars = $derived(filteredChars)
 
   let hordeRazas = $derived(countByField(hordeChars, 'raza'))
   let hordeClases = $derived(countByField(hordeChars, 'clase'))
@@ -339,15 +339,15 @@
 </div>
 
 <style>
-  .pers-view { display:flex; flex-direction:column; height:calc(100vh - 100px); margin-top:6px; border:1px solid var(--border-subtle); border-radius:var(--r-md); overflow:hidden; background:var(--bg-base); }
+  .pers-view { display:flex; flex-direction:column; min-height:calc(100vh - 100px); margin-top:6px; border:1px solid var(--border-subtle); border-radius:var(--r-md); background:var(--bg-base); }
   .pers-header { display:flex; align-items:center; justify-content:space-between; padding:5px 14px; background:linear-gradient(180deg,#1a0c00,#0a0500); border-bottom:1px solid var(--border-main); flex-shrink:0; }
   .pers-faction-title { font-size:0.6rem; font-weight:bold; letter-spacing:3px; display:flex; align-items:center; gap:8px; }
   .pers-faction-title.a { color:var(--alliance); }
   .pers-faction-title.h { color:var(--horde); }
   .pers-center-title { color:var(--gold-light); font-size:0.65rem; letter-spacing:5px; text-shadow:0 0 12px var(--gold); text-align:center; }
   .pers-center-title small { display:block; font-size:0.4rem; color:var(--text-muted); letter-spacing:2px; margin-top:1px; }
-  .pers-body-row { display:flex; flex:1; overflow:hidden; }
-  .pers-race-panel { width:125px; flex-shrink:0; display:flex; flex-direction:column; padding:6px 4px; gap:2px; overflow-y:auto; }
+  .pers-body-row { display:flex; flex:1; }
+  .pers-race-panel { width:125px; flex-shrink:0; display:flex; flex-direction:column; padding:6px 4px; gap:2px; }
   .pers-panel-a:nth-child(1) { border-right:1px solid var(--border-subtle); background:linear-gradient(180deg,rgba(26,74,153,0.13),var(--bg-soft)); }
   .pers-panel-a:nth-child(2) { border-right:1px solid var(--border-subtle); background:linear-gradient(180deg,rgba(26,74,153,0.07),var(--bg-soft)); }
   .pers-panel-h:nth-child(1) { border-left:1px solid var(--border-subtle); background:linear-gradient(180deg,rgba(136,21,0,0.07),var(--bg-soft)); }
@@ -364,7 +364,7 @@
   .pers-race-icon { font-size:20px; line-height:1; }
   .pers-race-name { color:var(--gold); font-size:11px; line-height:1.3; }
   .pers-race-type { color:var(--text-muted); font-size:10px; }
-  #pers-panel-center { flex:1; display:flex; flex-direction:column; overflow:hidden; position:relative; }
+  #pers-panel-center { flex:1; display:flex; flex-direction:column; position:relative; }
   #pers-filter-bar { position:relative; z-index:2; display:flex; align-items:center; justify-content:center; gap:6px; padding:5px 8px; background:rgba(10,5,0,0.53); border-bottom:1px solid var(--border-subtle); flex-shrink:0; flex-wrap:wrap; }
   .pers-filter-label { color:var(--text-muted); font-size:0.45rem; margin-right:2px; }
   .pers-filter-chip { border:1px solid var(--border-main); background:none; color:var(--gold-dim); font-family:inherit; font-size:0.45rem; padding:2px 7px; cursor:pointer; border-radius:1px; letter-spacing:0.5px; transition:all 0.12s; }
@@ -374,7 +374,7 @@
   .pers-level-input { width:48px; background:rgba(10,5,0,0.8); border:1px solid var(--border-main); color:var(--gold); font-size:0.45rem; padding:2px 4px; border-radius:2px; font-family:inherit; text-align:center; }
   .pers-level-input:focus { outline:none; border-color:var(--gold); }
   .pers-level-input::placeholder { color:var(--text-dim); }
-  #pers-char-grid { position:relative; z-index:2; flex:1; overflow-y:auto; padding:10px; display:grid; grid-template-columns:repeat(5,1fr); gap:8px; align-content:start; }
+  #pers-char-grid { position:relative; z-index:2; flex:1; padding:10px; display:grid; grid-template-columns:repeat(5,1fr); gap:8px; align-content:start; }
   .pers-char-card { border:1px solid var(--border-subtle); background:linear-gradient(180deg,rgba(22,10,0,0.53),rgba(10,5,0,0.53)); border-radius:2px; padding:8px; cursor:pointer; transition:all 0.15s; text-align:center; position:relative; }
   .pers-char-card:hover { border-color:var(--border-main); background:rgba(31,14,0,0.53); }
   .pers-char-card.selected-a { border-color:var(--alliance); background:rgba(10,32,80,0.5); box-shadow:0 0 12px rgba(26,74,153,0.5); }
@@ -417,19 +417,19 @@
   .pers-foot-btn.primary:hover { background:linear-gradient(180deg,#5a3a00,#2a1800); box-shadow:0 0 10px var(--gold-dim); }
   .pers-realm-info { color:var(--text-muted); font-size:0.45rem; text-align:center; line-height:1.6; }
   .pers-realm-ping { color:#44cc44; }
-  #pers-stats { display:flex; gap:8px; padding:6px 10px; background:linear-gradient(180deg,rgba(10,5,0,0.6),rgba(6,3,0,0.85)); border-top:1px solid var(--border-subtle); flex-shrink:0; overflow-x:auto; }
-  .pers-stats-group { flex:1; min-width:0; display:flex; flex-direction:column; gap:3px; }
+  #pers-stats { display:flex; gap:8px; padding:6px 10px; background:linear-gradient(180deg,rgba(10,5,0,0.6),rgba(6,3,0,0.85)); border-top:1px solid var(--border-subtle); flex-shrink:0; }
+  .pers-stats-group { flex:1; min-width:180px; display:flex; flex-direction:column; gap:3px; }
   .pers-stats-title { font-size:0.5rem; font-weight:bold; letter-spacing:2px; text-align:center; padding-bottom:2px; border-bottom:1px solid var(--border-subtle); }
   .pers-stats-title.h { color:var(--horde); }
   .pers-stats-title.a { color:var(--alliance); }
   .pers-stats-title.all { color:var(--gold-light); }
   .pers-stats-tables { display:grid; grid-template-columns:1fr 1fr; gap:6px; }
-  .pers-stats-table { display:flex; flex-direction:column; gap:1px; }
+  .pers-stats-table { display:flex; flex-direction:column; gap:1px; min-width:0; }
   .pers-stats-subtitle { font-size:0.35rem; letter-spacing:1px; color:var(--text-muted); text-align:center; padding-bottom:1px; border-bottom:1px dotted var(--border-subtle); }
   .pers-stats-row { display:flex; align-items:center; gap:4px; font-size:0.4rem; padding:1px 3px; border-radius:1px; }
   .pers-stats-row:nth-child(odd) { background:rgba(26,12,0,0.4); }
-  .pers-stats-rank { color:var(--text-muted); width:14px; flex-shrink:0; text-align:right; }
-  .pers-stats-label { flex:1; color:var(--text-primary); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
-  .pers-stats-count { color:var(--gold); font-weight:bold; flex-shrink:0; min-width:18px; text-align:right; }
+  .pers-stats-rank { color:var(--text-muted); width:12px; flex-shrink:0; text-align:right; }
+  .pers-stats-label { flex:1; min-width:0; color:var(--text-primary); white-space:normal; word-break:break-word; line-height:1.2; }
+  .pers-stats-count { color:var(--gold); font-weight:bold; flex-shrink:0; min-width:14px; text-align:right; }
   .pers-stats-empty { color:var(--text-dim); font-size:0.4rem; text-align:center; padding:4px; }
 </style>

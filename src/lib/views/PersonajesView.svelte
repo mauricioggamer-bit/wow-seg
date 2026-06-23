@@ -205,6 +205,12 @@
               <div class="pers-card-icon">{icon}</div>
               <div class="pers-card-name" style="color:{color}">{c.nombre}</div>
               <div class="pers-card-meta">Nv.{c.nivel} · {c.clase} · {c.raza}{#if c.parecidos && c.parecidos.length} · {#each c.parecidos as p, i}{#if i > 0}, {/if}<span class="pers-card-parecido" style="color:{color}">{p}</span>{/each}{/if}</div>
+              {#if c.descripcion}
+                <div class="pers-card-desc" title={c.descripcion}>{c.descripcion}</div>
+              {/if}
+              {#if c.tipo === 'iconico'}
+                <span class="pers-card-tipo iconico" title="Icónico">★</span>
+              {/if}
             </div>
           {/each}
           
@@ -322,6 +328,9 @@
   .pers-card-faction-tag { font-size:0.35rem; position:absolute; top:4px; right:5px; letter-spacing:1px; }
   .pers-card-faction-tag.a { color:var(--alliance); }
   .pers-card-faction-tag.h { color:var(--horde); }
+  .pers-card-desc { color:var(--text-dim); font-size:0.4rem; margin-top:2px; line-height:1.3; overflow:hidden; text-overflow:ellipsis; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; }
+  .pers-card-tipo { font-size:0.5rem; position:absolute; top:4px; left:22px; }
+  .pers-card-tipo.iconico { color:#ffd700; text-shadow:0 0 4px rgba(255,215,0,0.5); }
   .pers-card-planned { position:absolute; top:4px; left:5px; cursor:pointer; display:flex; align-items:center; justify-content:center; width:12px; height:12px; border:1px solid var(--border-main); border-radius:1px; background:rgba(0,0,0,0.5); transition:all 0.12s; padding:0; }
   .pers-card-planned:hover { border-color:var(--gold); }
   .pers-card-planned.active { border-color:var(--gold); background:rgba(42,24,0,0.85); box-shadow:0 0 5px rgba(200,168,75,0.6); }

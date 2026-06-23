@@ -63,6 +63,8 @@
   let editCharMisionPrincipal = $state('')
   let editCharExpansion = $state('')
   let editCharParecidos = $state<string[]>([])
+  let editCharDescripcion = $state('')
+  let editCharTipo = $state<'iconico' | 'funcional'>('funcional')
 
   let editTaskChar = $state('')
   let editTaskId = $state('')
@@ -121,6 +123,8 @@
     editCharExpansion = c.expansion_por_defecto || ''
     editCharParecidos = c.parecidos ? [...c.parecidos] : []
       while (editCharParecidos.length < 2) editCharParecidos.push('')
+    editCharDescripcion = c.descripcion || ''
+    editCharTipo = c.tipo || 'funcional'
     uiStore.openModal('CharEdit')
   }
 
@@ -138,6 +142,8 @@
     editCharMisionPrincipal = ''
     editCharExpansion = ''
     editCharParecidos = ['', '']
+    editCharDescripcion = ''
+    editCharTipo = 'funcional'
     uiStore.openModal('CharEdit')
   }
 
@@ -234,6 +240,8 @@
         mision_principal: editCharMisionPrincipal || undefined,
         expansion_por_defecto: editCharExpansion || null,
         parecidos: editCharParecidos.filter(x => x.trim()).slice(0, 2),
+        descripcion: editCharDescripcion,
+        tipo: editCharTipo,
       })
       isNewChar = false
     } else {
@@ -249,6 +257,8 @@
         mision_principal: editCharMisionPrincipal || undefined,
         expansion_por_defecto: editCharExpansion || null,
         parecidos: editCharParecidos.filter(x => x.trim()).slice(0, 2),
+        descripcion: editCharDescripcion,
+        tipo: editCharTipo,
       })
     }
     uiStore.closeModal()
@@ -567,6 +577,17 @@
           <input type="text" bind:value={editCharParecidos[0]} placeholder="Ej: Thrall..." />
           <input type="text" bind:value={editCharParecidos[1]} placeholder="Ej: Jaina..." />
         </div>
+      </div>
+      <div class="form-group">
+        <label>Descripción</label>
+        <textarea bind:value={editCharDescripcion} placeholder="Historia, objetivos, rol del personaje..." rows="2" style="width:100%;background:var(--input-bg);border:1px solid var(--border-subtle);border-radius:var(--r-sm);padding:4px 6px;color:var(--text-primary);font-size:0.75rem;font-family:inherit;resize:vertical"></textarea>
+      </div>
+      <div class="form-group">
+        <label>Tipo de personaje</label>
+        <select bind:value={editCharTipo}>
+          <option value="funcional">Funcional</option>
+          <option value="iconico">Icónico</option>
+        </select>
       </div>
       <label style="display:flex;align-items:center;gap:6px;font-size:0.75rem;margin-top:4px">
         <input type="checkbox" bind:checked={editCharActivo} />

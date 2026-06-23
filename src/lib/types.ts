@@ -26,6 +26,8 @@ export interface Personaje {
   parecidos?: string[]
   activo: boolean
   planeado_usar?: boolean
+  descripcion?: string
+  tipo?: 'iconico' | 'funcional'
   tareas: Tarea[]
 }
 

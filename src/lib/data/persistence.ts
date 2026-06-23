@@ -80,6 +80,14 @@ export function loadData(): WowData {
       }
       saveData(data)
     }
+    const needsDescTipo = data.personajes.some(p => p.descripcion === undefined || p.tipo === undefined)
+    if (needsDescTipo) {
+      for (const p of data.personajes) {
+        if (p.descripcion === undefined) p.descripcion = ''
+        if (p.tipo === undefined) p.tipo = 'funcional'
+      }
+      saveData(data)
+    }
     if (data._meta?.ultimo_reset_semanal) {
       localStorage.setItem(RESET_KEY, data._meta.ultimo_reset_semanal)
     }

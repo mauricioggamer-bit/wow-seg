@@ -1,7 +1,7 @@
 import { writable, derived, get } from 'svelte/store'
 import type { WowData, Personaje, Warband, Mision, Stats } from '../types'
 import type { TipoContenido } from '../constants/wowContent'
-import { loadData, saveData, computeStats as computeStatsFn, exportJSON as exportJSONFn, exportPersonajesJSON as exportPersonajesJSONFn, exportFullBackup as exportFullBackupFn, initSeed as initSeedFn } from '../data/persistence'
+import { loadData, saveData, normalizeData, computeStats as computeStatsFn, exportJSON as exportJSONFn, exportPersonajesJSON as exportPersonajesJSONFn, exportFullBackup as exportFullBackupFn, initSeed as initSeedFn } from '../data/persistence'
 import { checkWeeklyReset, resetDailyTasks } from '../data/weekly-reset'
 
 function createDataStore() {
@@ -278,6 +278,7 @@ addTarea(nombrePersonaje: string, tarea: { nombre: string; tipoContenido?: TipoC
       if (!parsed.personajes || !parsed.warbands || !parsed._meta) {
         throw new Error('Estructura inválida')
       }
+      normalizeData(parsed)
       checkWeeklyReset(parsed)
       set(parsed)
       saveData(parsed)
@@ -299,6 +300,7 @@ addTarea(nombrePersonaje: string, tarea: { nombre: string; tipoContenido?: TipoC
         localStorage.setItem('wowseg_gist_config', JSON.stringify(pkg._export.gist.config))
         if (pkg._export.gist.hash) localStorage.setItem('wowseg_gist_lasthash', pkg._export.gist.hash)
       }
+      normalizeData(data)
       set(data)
       saveData(data)
     },

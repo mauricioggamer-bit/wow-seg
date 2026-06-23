@@ -37,6 +37,93 @@ export function initSeed(): WowData {
   return data
 }
 
+const VALID_PERSONAJE_KEYS = new Set([
+  'nombre', 'clase', 'nivel', 'faccion', 'raza', 'reino', 'warband',
+  'mision_principal', 'expansion_por_defecto', 'parecidos', 'activo',
+  'planeado_usar', 'descripcion', 'tipo', 'tareas',
+])
+
+const VALID_TAREA_KEYS = new Set([
+  'id', 'nombre', 'tipoContenido', 'contenidoExpansion', 'contenidoDificultad',
+  'tipo', 'cooldown', 'tiempo_min', 'prioridad', 'recompensa', 'hecho',
+  'ultimo_completado', 'expansion', 'tags', 'orden',
+])
+
+export function normalizeData(data: WowData): WowData {
+  if (!data.misiones) data.misiones = []
+  if (!data.warbands) data.warbands = []
+  if (!data._meta) data._meta = {
+    version: '2',
+    descripcion: '',
+    reset_weekly_dia: 'tuesday',
+    ultimo_reset_semanal: null,
+    total_personajes: 0,
+    total_activos: 0,
+    schema_version: 2,
+  }
+  data._meta.schema_version = data._meta.schema_version ?? 2
+
+  const needsMigration = data.personajes.length > 0 && !Array.isArray(data.personajes[0]?.tareas)
+  if (needsMigration) {
+    return mergeSeed(data)
+  }
+
+  for (const p of data.personajes) {
+    if (p.raza === null || p.raza === undefined) p.raza = ''
+    if (p.faccion !== 'Horda' && p.faccion !== 'Alianza') p.faccion = 'Horda'
+    if (typeof p.nivel !== 'number') p.nivel = 80
+    if (typeof p.activo !== 'boolean') p.activo = true
+    if (p.planeado_usar === undefined) p.planeado_usar = true
+    if (p.descripcion === undefined) p.descripcion = ''
+    if (p.tipo === undefined) p.tipo = 'funcional'
+    if (p.parecidos === undefined) {
+      const single = (p as any).parecido
+      p.parecidos = single ? [single] : []
+      delete (p as any).parecido
+    }
+    if (!Array.isArray(p.parecidos)) p.parecidos = []
+    if (!Array.isArray(p.tareas)) p.tareas = []
+
+    for (const t of p.tareas) {
+      if (t.tipoContenido === undefined) t.tipoContenido = 'descripcion'
+      if (t.contenidoExpansion === undefined) t.contenidoExpansion = ''
+      if (t.contenidoDificultad === undefined) t.contenidoDificultad = ''
+      if (t.expansion === null || t.expansion === undefined) t.expansion = ''
+      if (!t.tags) t.tags = []
+    }
+  }
+
+  for (let i = 0; i < data.personajes.length; i++) {
+    const p = data.personajes[i]
+    const clean: any = {}
+    for (const key of VALID_PERSONAJE_KEYS) {
+      if (key in p) clean[key] = (p as any)[key]
+    }
+    clean.tareas = (p.tareas || []).map((t: any) => {
+      const tc: any = {}
+      for (const key of VALID_TAREA_KEYS) {
+        if (key in t) tc[key] = t[key]
+      }
+      return tc
+    })
+    data.personajes[i] = clean
+  }
+
+  propagateExpansion(data)
+
+  const needsOrden = data.personajes.some(p => p.tareas.some(t => t.orden === undefined))
+  if (needsOrden) {
+    for (const p of data.personajes) {
+      p.tareas.forEach((t, i) => { if (t.orden === undefined) t.orden = i })
+    }
+  }
+
+  data._meta.total_personajes = data.personajes.length
+  data._meta.total_activos = data.personajes.filter(p => p.activo).length
+
+  return data
+}
+
 export function loadData(): WowData {
   const raw = localStorage.getItem(STORAGE_KEY)
   if (!raw) {
@@ -45,68 +132,8 @@ export function loadData(): WowData {
     return data
   }
   try {
-    const data = JSON.parse(raw) as WowData
-    const needsMigration = data.personajes.length > 0 && !Array.isArray(data.personajes[0]?.tareas)
-    if (needsMigration) {
-      const merged = mergeSeed(data)
-      saveData(merged)
-      return merged
-    }
-    const needsExp = !data.personajes[0]?.tareas?.[0]?.expansion
-    if (needsExp) {
-      propagateExpansion(data)
-      saveData(data)
-    }
-    const needsOrden = data.personajes.some(p => p.tareas.some(t => t.orden === undefined))
-    if (needsOrden) {
-      for (const p of data.personajes) {
-        p.tareas.forEach((t, i) => { if (t.orden === undefined) t.orden = i })
-      }
-      saveData(data)
-    }
-    const needsParecidos = data.personajes.some(p => p.parecidos === undefined)
-    if (needsParecidos) {
-      for (const p of data.personajes) {
-        const single = (p as any).parecido
-        p.parecidos = single ? [single] : []
-        delete (p as any).parecido
-      }
-      saveData(data)
-    }
-    const needsPlaneado = data.personajes.some(p => p.planeado_usar === undefined)
-    if (needsPlaneado) {
-      for (const p of data.personajes) {
-        if (p.planeado_usar === undefined) p.planeado_usar = true
-      }
-      saveData(data)
-    }
-    const needsDescTipo = data.personajes.some(p => p.descripcion === undefined || p.tipo === undefined)
-    if (needsDescTipo) {
-      for (const p of data.personajes) {
-        if (p.descripcion === undefined) p.descripcion = ''
-        if (p.tipo === undefined) p.tipo = 'funcional'
-      }
-      saveData(data)
-    }
-    const needsTipoContenido = data.personajes.some(p => p.tareas.some(t => t.tipoContenido === undefined))
-    if (needsTipoContenido) {
-      for (const p of data.personajes) {
-        for (const t of p.tareas) {
-          if (t.tipoContenido === undefined) t.tipoContenido = 'descripcion'
-        }
-      }
-      saveData(data)
-    }
-    const needsContenidoExtra = data.personajes.some(p => p.tareas.some(t => t.contenidoExpansion === undefined))
-    if (needsContenidoExtra) {
-      for (const p of data.personajes) {
-        for (const t of p.tareas) {
-          if (t.contenidoExpansion === undefined) t.contenidoExpansion = ''
-          if (t.contenidoDificultad === undefined) t.contenidoDificultad = ''
-        }
-      }
-      saveData(data)
-    }
+    const data = normalizeData(JSON.parse(raw) as WowData)
+    saveData(data)
     if (data._meta?.ultimo_reset_semanal) {
       localStorage.setItem(RESET_KEY, data._meta.ultimo_reset_semanal)
     }
@@ -161,6 +188,7 @@ export function importJSON(jsonStr: string): WowData {
   if (!data.personajes || !data.warbands || !data._meta) {
     throw new Error('Estructura inválida')
   }
+  normalizeData(data)
   checkWeeklyReset(data)
   return data
 }
@@ -217,7 +245,7 @@ export function importFullBackup(jsonStr: string): WowData {
     localStorage.setItem('wowseg_gist_config', JSON.stringify(pkg._export.gist.config))
     if (pkg._export.gist.hash) localStorage.setItem('wowseg_gist_lasthash', pkg._export.gist.hash)
   }
-  return data
+  return normalizeData(data)
 }
 
 export function getCharExpansion(nombre: string): string {

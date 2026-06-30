@@ -16,14 +16,16 @@
   import PersonajesView from './lib/views/PersonajesView.svelte'
   import MapaView from './lib/views/MapaView.svelte'
   import FantasiaView from './lib/views/FantasiaView.svelte'
+  import ProfesionView from './lib/views/ProfesionView.svelte'
   import { authStore } from './lib/stores/auth'
   import { uiStore } from './lib/stores/ui'
   import { dataStore, personajesStore, misionesStore, warbandsStore } from './lib/stores/data'
   import { gistStore } from './lib/stores/gist'
   import { EXPANSIONS, PERS_RACE_INFO } from './lib/constants'
   import { DUNGEON_EXPANSION_IDS, RAID_EXPANSION_IDS, WORLDBOSS_EXPANSION_IDS, dungeonsForExpansion, raidsForExpansion, worldBossesForExpansion, expNombre } from './lib/constants/wowContent'
+  import { PROFESIONES } from './lib/constants/profesiones'
   import type { TipoContenido, DungeonDifficulty, RaidDifficulty } from './lib/constants/wowContent'
-  import type { Tarea, Mision } from './lib/types'
+  import type { Tarea, Mision, ProfesionSlot } from './lib/types'
 
   let charOpts = $derived($personajesStore.map(p => p.nombre))
 
@@ -67,6 +69,7 @@
   let editCharParecidos = $state<string[]>([])
   let editCharDescripcion = $state('')
   let editCharTipo = $state<'iconico' | 'funcional'>('funcional')
+  let editCharProfesiones = $state<ProfesionSlot[]>([{ id: '', nivel: 0 }, { id: '', nivel: 0 }])
 
   let editTaskChar = $state('')
   let editTaskId = $state('')
@@ -135,6 +138,11 @@
       while (editCharParecidos.length < 2) editCharParecidos.push('')
     editCharDescripcion = c.descripcion || ''
     editCharTipo = c.tipo || 'funcional'
+    const rawProf = c.profesiones ?? []
+    editCharProfesiones = [
+      { id: rawProf[0]?.id ?? '', nivel: rawProf[0]?.nivel ?? 0 },
+      { id: rawProf[1]?.id ?? '', nivel: rawProf[1]?.nivel ?? 0 },
+    ]
     uiStore.openModal('CharEdit')
   }
 
@@ -154,6 +162,7 @@
     editCharParecidos = ['', '']
     editCharDescripcion = ''
     editCharTipo = 'funcional'
+    editCharProfesiones = [{ id: '', nivel: 0 }, { id: '', nivel: 0 }]
     uiStore.openModal('CharEdit')
   }
 
@@ -337,6 +346,17 @@
     uiStore.closeModal()
   }
 
+  function setEditProfesion(idx: number, id: string) {
+    const arr = [
+      { ...editCharProfesiones[0] },
+      { ...editCharProfesiones[1] },
+    ]
+    const other = idx === 0 ? 1 : 0
+    if (id && arr[other].id === id) arr[other] = { id: '', nivel: 0 }
+    arr[idx] = { ...arr[idx], id }
+    editCharProfesiones = arr
+  }
+
   function saveCharEdit() {
     if (!editCharName.trim()) return
     if (isNewChar) {
@@ -353,6 +373,7 @@
         mision_principal: editCharMisionPrincipal || undefined,
         expansion_por_defecto: editCharExpansion || null,
         parecidos: editCharParecidos.filter(x => x.trim()).slice(0, 2),
+        profesiones: editCharProfesiones,
         descripcion: editCharDescripcion,
         tipo: editCharTipo,
       })
@@ -370,6 +391,7 @@
         mision_principal: editCharMisionPrincipal || undefined,
         expansion_por_defecto: editCharExpansion || null,
         parecidos: editCharParecidos.filter(x => x.trim()).slice(0, 2),
+        profesiones: editCharProfesiones,
         descripcion: editCharDescripcion,
         tipo: editCharTipo,
       })
@@ -406,6 +428,8 @@
           <MapaView {openTaskEdit} {openMissionEdit} openNewItemForChar={(char) => { resetMissionForm(); misionPersonaje = char; uiStore.openModal('MissionNew') }} />
         {:else if $uiStore.currentView === 'fantasia'}
           <FantasiaView />
+        {:else if $uiStore.currentView === 'profesion'}
+          <ProfesionView />
         {/if}
       </div>
       {#if $uiStore.currentView === 'warband'}
@@ -694,6 +718,38 @@
       <div class="form-group">
         <label>Descripción</label>
         <textarea bind:value={editCharDescripcion} placeholder="Historia, objetivos, rol del personaje..." rows="2" style="width:100%;background:var(--input-bg);border:1px solid var(--border-subtle);border-radius:var(--r-sm);padding:4px 6px;color:var(--text-primary);font-size:0.75rem;font-family:inherit;resize:vertical"></textarea>
+      </div>
+      <div class="form-group">
+        <label>Profesiones (2 máx.)</label>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px">
+          {#each [0, 1] as idx}
+            <div style="display:flex;flex-direction:column;gap:4px">
+              <select
+                value={editCharProfesiones[idx]?.id ?? ''}
+                onchange={(e) => setEditProfesion(idx, (e.target as HTMLSelectElement).value)}
+              >
+                <option value="">— Ninguna —</option>
+                {#each PROFESIONES as p}
+                  <option
+                    value={p.id}
+                    disabled={p.id === (editCharProfesiones[idx === 0 ? 1 : 0]?.id ?? '')}
+                  >{p.icon} {p.nombre}</option>
+                {/each}
+              </select>
+              <input
+                type="number"
+                min="0"
+                placeholder="Nivel"
+                value={editCharProfesiones[idx]?.nivel ?? 0}
+                disabled={!editCharProfesiones[idx]?.id}
+                oninput={(e) => {
+                  const v = parseInt((e.target as HTMLInputElement).value) || 0
+                  editCharProfesiones = editCharProfesiones.map((s, i) => i === idx ? { ...s, nivel: v } : s)
+                }}
+              />
+            </div>
+          {/each}
+        </div>
       </div>
       <div class="form-group">
         <label>Tipo de personaje</label>

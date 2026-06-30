@@ -11,6 +11,7 @@
     { key: 'personajes', label: 'Personajes', icon: '🎭' },
     { key: 'mapa', label: 'Mapa', icon: '🗺' },
     { key: 'fantasia', label: 'Fantasia', icon: '🧝' },
+    { key: 'profesion', label: 'Profesiones', icon: '⚒' },
   ]
 </script>
 

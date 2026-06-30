@@ -18,6 +18,11 @@ export interface Tarea {
   orden?: number
 }
 
+export interface ProfesionSlot {
+  id: string
+  nivel: number
+}
+
 export interface Personaje {
   nombre: string
   clase: string
@@ -29,6 +34,7 @@ export interface Personaje {
   mision_principal: string | null
   expansion_por_defecto?: string | null
   parecidos?: string[]
+  profesiones?: ProfesionSlot[]
   activo: boolean
   planeado_usar?: boolean
   descripcion?: string
@@ -93,7 +99,7 @@ export interface Stats {
   dailyDone: number
 }
 
-export type ViewType = 'warband' | 'tareas' | 'tabla' | 'priority' | 'time' | 'personajes' | 'mapa' | 'fantasia'
+export type ViewType = 'warband' | 'tareas' | 'tabla' | 'priority' | 'time' | 'personajes' | 'mapa' | 'fantasia' | 'profesion'
 export type ThemeType = 'dark' | 'light'
 export type FontSizeType = 'small' | 'medium' | 'large' | 'xlarge'
 export type AuthDuration = '10min' | '1hora' | '8horas' | '1semana' | 'siempre'

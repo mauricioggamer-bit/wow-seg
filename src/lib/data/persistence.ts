@@ -1,9 +1,36 @@
-import type { WowData, Stats, BackupData } from '../types'
+import type { WowData, Stats, BackupData, ProfesionSlot } from '../types'
 import { SEED_DATA } from './seed'
 import { checkWeeklyReset } from './weekly-reset'
+import { PROFESIONES } from '../constants/profesiones'
 
 const STORAGE_KEY = 'wowseg_data'
 const RESET_KEY = 'wowseg_last_reset'
+
+const PROFESION_IDS = new Set(PROFESIONES.map(p => p.id))
+
+function emptyProfesiones(): ProfesionSlot[] {
+  return [{ id: '', nivel: 0 }, { id: '', nivel: 0 }]
+}
+
+function normalizeProfesiones(raw: any): ProfesionSlot[] {
+  const arr: ProfesionSlot[] = []
+  if (Array.isArray(raw)) {
+    for (let i = 0; i < 2; i++) {
+      const slot = raw[i]
+      if (slot && typeof slot === 'object') {
+        const id = typeof slot.id === 'string' ? (PROFESION_IDS.has(slot.id) ? slot.id : '') : ''
+        const nivel = typeof slot.nivel === 'number' && !isNaN(slot.nivel) && slot.nivel >= 0 ? slot.nivel : 0
+        arr.push({ id, nivel })
+      } else if (typeof slot === 'string' && slot) {
+        arr.push({ id: PROFESION_IDS.has(slot) ? slot : '', nivel: 0 })
+      } else {
+        arr.push({ id: '', nivel: 0 })
+      }
+    }
+  }
+  while (arr.length < 2) arr.push({ id: '', nivel: 0 })
+  return arr.slice(0, 2)
+}
 
 const CHAR_EXPANSION: Record<string, string> = {
   'Fariat': 'midnight', 'Mawgul': 'legion', 'Orna': 'tww', 'Alezethar': 'dragonflight',
@@ -39,7 +66,7 @@ export function initSeed(): WowData {
 
 const VALID_PERSONAJE_KEYS = new Set([
   'nombre', 'clase', 'nivel', 'faccion', 'raza', 'reino', 'warband',
-  'mision_principal', 'expansion_por_defecto', 'parecidos', 'activo',
+  'mision_principal', 'expansion_por_defecto', 'parecidos', 'profesiones', 'activo',
   'planeado_usar', 'descripcion', 'tipo', 'tareas',
 ])
 
@@ -82,6 +109,7 @@ export function normalizeData(data: WowData): WowData {
       delete (p as any).parecido
     }
     if (!Array.isArray(p.parecidos)) p.parecidos = []
+    p.profesiones = normalizeProfesiones((p as any).profesiones)
     if (!Array.isArray(p.tareas)) p.tareas = []
 
     for (const t of p.tareas) {
@@ -152,6 +180,9 @@ function mergeSeed(data: WowData): WowData {
     if (sp) return { ...sp, ...p, tareas: p.tareas || sp.tareas || [] }
     return { ...p, tareas: p.tareas || [] }
   })
+  for (const p of data.personajes) {
+    p.profesiones = normalizeProfesiones((p as any).profesiones)
+  }
   if (!data.misiones) data.misiones = seed.misiones || []
   if (!data.warbands) data.warbands = seed.warbands || []
   data._meta = { ...seed._meta, ...data._meta }

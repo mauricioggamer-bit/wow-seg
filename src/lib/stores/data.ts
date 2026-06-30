@@ -1,5 +1,5 @@
 import { writable, derived, get } from 'svelte/store'
-import type { WowData, Personaje, Warband, Mision, Stats } from '../types'
+import type { WowData, Personaje, Warband, Mision, Stats, ProfesionSlot } from '../types'
 import type { TipoContenido } from '../constants/wowContent'
 import { loadData, saveData, normalizeData, computeStats as computeStatsFn, exportJSON as exportJSONFn, exportPersonajesJSON as exportPersonajesJSONFn, exportFullBackup as exportFullBackupFn, initSeed as initSeedFn } from '../data/persistence'
 import { checkWeeklyReset, resetDailyTasks } from '../data/weekly-reset'
@@ -166,7 +166,7 @@ addTarea(nombrePersonaje: string, tarea: { nombre: string; tipoContenido?: TipoC
     getWarbands(): Warband[] {
       return get({ subscribe }).warbands
     },
-    addPersonaje(p: { nombre: string; clase: string; raza: string; nivel: number; faccion: string; reino: string; warband: string; mision_principal?: string; expansion_por_defecto?: string | null; parecidos?: string[]; activo?: boolean; planeado_usar?: boolean; descripcion?: string; tipo?: 'iconico' | 'funcional' }) {
+    addPersonaje(p: { nombre: string; clase: string; raza: string; nivel: number; faccion: string; reino: string; warband: string; mision_principal?: string; expansion_por_defecto?: string | null; parecidos?: string[]; profesiones?: ProfesionSlot[]; activo?: boolean; planeado_usar?: boolean; descripcion?: string; tipo?: 'iconico' | 'funcional' }) {
       update(d => {
         if (d.personajes.find(x => x.nombre === p.nombre)) return d
         const nuevo: Personaje = {
@@ -180,6 +180,7 @@ addTarea(nombrePersonaje: string, tarea: { nombre: string; tipoContenido?: TipoC
           mision_principal: p.mision_principal || null,
           expansion_por_defecto: p.expansion_por_defecto || null,
           parecidos: p.parecidos || [],
+          profesiones: p.profesiones ?? [{ id: '', nivel: 0 }, { id: '', nivel: 0 }],
           activo: p.activo ?? true,
           planeado_usar: p.planeado_usar ?? true,
           descripcion: p.descripcion ?? '',

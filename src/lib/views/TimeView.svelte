@@ -21,7 +21,7 @@
   let items = $derived.by(() => {
     const all: Array<Record<string, any>> = []
     for (const p of $personajesStore) {
-      if (!p.activo) continue
+      if (!p.planeado_usar) continue
       for (const t of p.tareas) {
         if (timeKey) { const fn = timeRanges[timeKey]; if (!fn || !fn(t.tiempo_min)) continue }
         if (!showDone && t.hecho) continue

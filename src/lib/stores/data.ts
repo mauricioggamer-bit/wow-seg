@@ -33,7 +33,7 @@ function createDataStore() {
         if (idx !== -1) {
           d.personajes[idx] = { ...d.personajes[idx], ...updates }
           d._meta.total_personajes = d.personajes.length
-          d._meta.total_activos = d.personajes.filter(p => p.activo).length
+          d._meta.total_activos = d.personajes.filter(p => p.planeado_usar).length
           saveData(d)
         }
         return d
@@ -166,7 +166,7 @@ addTarea(nombrePersonaje: string, tarea: { nombre: string; tipoContenido?: TipoC
     getWarbands(): Warband[] {
       return get({ subscribe }).warbands
     },
-    addPersonaje(p: { nombre: string; clase: string; raza: string; nivel: number; faccion: string; reino: string; warband: string; mision_principal?: string; expansion_por_defecto?: string | null; parecidos?: string[]; profesiones?: ProfesionSlot[]; activo?: boolean; planeado_usar?: boolean; descripcion?: string; tipo?: 'iconico' | 'funcional' }) {
+    addPersonaje(p: { nombre: string; clase: string; raza: string; nivel: number; faccion: string; reino: string; warband: string; mision_principal?: string; expansion_por_defecto?: string | null; parecidos?: string[]; profesiones?: ProfesionSlot[]; planeado_usar?: boolean; descripcion?: string; tipo?: 'iconico' | 'funcional' }) {
       update(d => {
         if (d.personajes.find(x => x.nombre === p.nombre)) return d
         const nuevo: Personaje = {
@@ -181,7 +181,6 @@ addTarea(nombrePersonaje: string, tarea: { nombre: string; tipoContenido?: TipoC
           expansion_por_defecto: p.expansion_por_defecto || null,
           parecidos: p.parecidos || [],
           profesiones: p.profesiones ?? [{ id: '', nivel: 0 }, { id: '', nivel: 0 }],
-          activo: p.activo ?? true,
           planeado_usar: p.planeado_usar ?? true,
           descripcion: p.descripcion ?? '',
           tipo: p.tipo ?? 'funcional',
@@ -195,7 +194,7 @@ addTarea(nombrePersonaje: string, tarea: { nombre: string; tipoContenido?: TipoC
           if (!wb.personajes.includes(p.nombre)) wb.personajes.push(p.nombre)
         }
         d._meta.total_personajes = d.personajes.length
-        d._meta.total_activos = d.personajes.filter(c => c.activo).length
+        d._meta.total_activos = d.personajes.filter(c => c.planeado_usar).length
         saveData(d)
         return d
       })
@@ -231,7 +230,7 @@ addTarea(nombrePersonaje: string, tarea: { nombre: string; tipoContenido?: TipoC
           if (!newWb.personajes.includes(charName)) newWb.personajes.push(charName)
         }
         d._meta.total_personajes = d.personajes.length
-        d._meta.total_activos = d.personajes.filter(p => p.activo).length
+        d._meta.total_activos = d.personajes.filter(p => p.planeado_usar).length
         saveData(d)
         return d
       })
@@ -269,7 +268,7 @@ addTarea(nombrePersonaje: string, tarea: { nombre: string; tipoContenido?: TipoC
           nadaWb.personajes = d.personajes.filter(p => p.warband === 'nada').map(p => p.nombre)
         }
         d._meta.total_personajes = d.personajes.length
-        d._meta.total_activos = d.personajes.filter(p => p.activo).length
+        d._meta.total_activos = d.personajes.filter(p => p.planeado_usar).length
         saveData(d)
         return d
       })

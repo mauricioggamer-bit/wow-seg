@@ -35,8 +35,7 @@ export interface Personaje {
   expansion_por_defecto?: string | null
   parecidos?: string[]
   profesiones?: ProfesionSlot[]
-  activo: boolean
-  planeado_usar?: boolean
+  planeado_usar: boolean
   descripcion?: string
   tipo?: 'iconico' | 'funcional'
   tareas: Tarea[]

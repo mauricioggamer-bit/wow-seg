@@ -10,7 +10,7 @@
   let allTasksData = $derived.by(() => {
     const wb = $uiStore.currentWarband
     if (!wb) return null
-    const chars = $personajesStore.filter(c => c.warband === wb && c.activo)
+    const chars = $personajesStore.filter(c => c.warband === wb && c.planeado_usar)
     const tasks = chars.flatMap(c => c.tareas.map(t => ({ ...t, personaje: c.nombre, clase: c.clase, raza: c.raza, nivel: c.nivel })))
     const grouped: Record<string, typeof tasks> = {}
     for (const t of tasks) {

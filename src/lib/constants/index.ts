@@ -3,7 +3,6 @@ export const CLASS_MAP: Record<string, string> = {
   'Pícaro': 'rogue', 'Sacerdote': 'priest', 'DK': 'dk',
   'Chamán': 'shaman', 'Mago': 'mage', 'Brujo': 'warlock',
   'Monje': 'monk', 'Druida': 'druid', 'DH': 'dh', 'Evocadora': 'evoker',
-  'Maga': 'mage',
 }
 
 export function clsClass(className: string): string {

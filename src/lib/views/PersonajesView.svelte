@@ -36,7 +36,7 @@
     }
     if (persLevelMin !== null) chars = chars.filter(c => c.nivel >= persLevelMin!)
     if (persLevelMax !== null) chars = chars.filter(c => c.nivel <= persLevelMax!)
-    if (persHideNotPlanned) chars = chars.filter(c => c.planeado_usar !== false)
+    if (persHideNotPlanned) chars = chars.filter(c => c.planeado_usar)
     return chars
   })
 
@@ -89,7 +89,7 @@
     e.stopPropagation()
     const c = $personajesStore.find(p => p.nombre === charName)
     if (!c) return
-    dataStore.updatePersonaje(charName, { planeado_usar: !(c.planeado_usar !== false) })
+    dataStore.updatePersonaje(charName, { planeado_usar: !c.planeado_usar })
   }
 
   function resetPersAll() {
@@ -118,7 +118,8 @@
   function countByField(chars: typeof $personajesStore, field: 'raza' | 'clase'): CountEntry[] {
     const map = new Map<string, number>()
     for (const c of chars) {
-      const v = c[field]
+      const raw = c[field]
+      const v = (field === 'raza' && !raw) ? c.nombre : raw
       map.set(v, (map.get(v) || 0) + 1)
     }
     return [...map.entries()]
@@ -221,10 +222,10 @@
               </span>
               <button
                 class="pers-card-planned"
-                class:active={c.planeado_usar !== false}
-                title={c.planeado_usar !== false ? 'Planeado usar' : 'No planeado'}
+                class:active={c.planeado_usar}
+                title={c.planeado_usar ? 'Planeado usar' : 'No planeado'}
                 onclick={(e) => togglePersPlanned(e, c.nombre)}
-                aria-pressed={c.planeado_usar !== false}
+                aria-pressed={c.planeado_usar}
               ></button>
               <div class="pers-card-icon">{icon}</div>
               <div class="pers-card-name" style="color:{color}">{c.nombre}</div>

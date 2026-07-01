@@ -19,12 +19,12 @@
     const tareas: Array<Record<string, any>> = []
     for (const p of personajes) {
       for (const t of p.tareas) {
-        tareas.push({ ...t, _origen: 'tarea', _char: p.nombre, personaje: p.nombre, clase: p.clase, faccion: p.faccion, reino: p.reino, warband: p.warband, nivel: p.nivel, activo: p.activo, estado: t.hecho ? 'completada' : 'pendiente' })
+        tareas.push({ ...t, _origen: 'tarea', _char: p.nombre, personaje: p.nombre, clase: p.clase, faccion: p.faccion, reino: p.reino, warband: p.warband, nivel: p.nivel, planeado_usar: p.planeado_usar, estado: t.hecho ? 'completada' : 'pendiente' })
       }
     }
     const misiones = $misionesStore.map(m => ({
       ...m, _origen: 'mision' as const, _char: m.personaje || '',
-      clase: '', faccion: '', reino: '', warband: '', nivel: 0, activo: true,
+      clase: '', faccion: '', reino: '', warband: '', nivel: 0, planeado_usar: true,
       cooldown: m.tipo, recompensa: '', hecho: m.estado === 'completada',
     }))
     let all = [...tareas, ...misiones]
@@ -52,8 +52,8 @@
     if (tf.clase) all = all.filter(i => i.clase === tf.clase)
     if (tf.faccion) all = all.filter(i => i.faccion === tf.faccion)
     if (tf.reino) all = all.filter(i => i.reino === tf.reino)
-    if (tf.activo === 'si') all = all.filter(i => i.activo !== false)
-    else if (tf.activo === 'no') all = all.filter(i => i.activo === false)
+    if (tf.activo === 'si') all = all.filter(i => i.planeado_usar !== false)
+    else if (tf.activo === 'no') all = all.filter(i => i.planeado_usar === false)
     if (tf.cooldown) all = all.filter(i => i.cooldown === tf.cooldown)
     if (tf.search) {
       const q = tf.search.toLowerCase()

@@ -28,7 +28,7 @@
 
   let charsForExp = $derived(
     $personajesStore.filter(c => {
-      if (!c.activo && !showInactivos) return false
+      if (!c.planeado_usar && !showInactivos) return false
       return c.expansion_por_defecto === activeExp || c.tareas.some(t => t.expansion === activeExp) || $misionesStore.some(m => m.personaje === c.nombre && m.expansion === activeExp)
     })
   )

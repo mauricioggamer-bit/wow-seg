@@ -37,8 +37,8 @@
         <span class="text-xs text-muted">{selected.clase} · {selected.raza} · Nvl {selected.nivel}</span>
       </div>
       <div class="flex gap-2 items-center">
-        <span class="text-sm" class:text-muted={!selected.activo}>
-          {selected.activo ? '● Activo' : '○ Inactivo'}
+        <span class="text-sm" class:text-muted={!selected.planeado_usar}>
+          {selected.planeado_usar ? '● Activo' : '○ Inactivo'}
         </span>
         <button class="wow-btn wow-btn-sm wow-btn-primary" onclick={() => uiStore.openModal('MissionNew')}
           style="font-size:0.6rem;padding:2px 6px">+ Misión</button>

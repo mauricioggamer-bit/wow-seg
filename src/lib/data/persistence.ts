@@ -66,7 +66,7 @@ export function initSeed(): WowData {
 
 const VALID_PERSONAJE_KEYS = new Set([
   'nombre', 'clase', 'nivel', 'faccion', 'raza', 'reino', 'warband',
-  'mision_principal', 'expansion_por_defecto', 'parecidos', 'profesiones', 'activo',
+  'mision_principal', 'expansion_por_defecto', 'parecidos', 'profesiones',
   'planeado_usar', 'descripcion', 'tipo', 'tareas',
 ])
 
@@ -96,11 +96,15 @@ export function normalizeData(data: WowData): WowData {
   }
 
   for (const p of data.personajes) {
+    if (p.clase === 'Maga') p.clase = 'Mago'
+    if ('activo' in p && typeof (p as any).activo === 'boolean') {
+      if (p.planeado_usar === undefined) p.planeado_usar = (p as any).activo
+      delete (p as any).activo
+    }
     if (p.raza === null || p.raza === undefined) p.raza = ''
     if (p.faccion !== 'Horda' && p.faccion !== 'Alianza') p.faccion = 'Horda'
     if (typeof p.nivel !== 'number') p.nivel = 80
-    if (typeof p.activo !== 'boolean') p.activo = true
-    if (p.planeado_usar === undefined) p.planeado_usar = true
+    if (typeof p.planeado_usar !== 'boolean') p.planeado_usar = true
     if (p.descripcion === undefined) p.descripcion = ''
     if (p.tipo === undefined) p.tipo = 'funcional'
     if (p.parecidos === undefined) {
@@ -147,7 +151,7 @@ export function normalizeData(data: WowData): WowData {
   }
 
   data._meta.total_personajes = data.personajes.length
-  data._meta.total_activos = data.personajes.filter(p => p.activo).length
+  data._meta.total_activos = data.personajes.filter(p => p.planeado_usar).length
 
   return data
 }
@@ -197,7 +201,7 @@ export function saveData(data: WowData): void {
 }
 
 export function computeStats(data: WowData): Stats {
-  const activos = data.personajes.filter(c => c.activo)
+  const activos = data.personajes.filter(c => c.planeado_usar)
   const totalWeekly = data.personajes.reduce((s, c) => s + c.tareas.filter(t => t.cooldown === 'weekly').length, 0)
   const doneWeekly = data.personajes.reduce((s, c) => s + c.tareas.filter(t => t.cooldown === 'weekly' && t.hecho).length, 0)
   const totalDaily = data.personajes.reduce((s, c) => s + c.tareas.filter(t => t.cooldown === 'daily').length, 0)

@@ -12,7 +12,7 @@
     }
     if (f.clase.length > 0) chars = chars.filter(c => f.clase.includes(c.clase))
     if (f.reino) chars = chars.filter(c => c.reino === f.reino)
-    if (f.soloActivos) chars = chars.filter(c => c.activo)
+    if (f.soloActivos) chars = chars.filter(c => c.planeado_usar)
     return chars
   })
 </script>
@@ -33,7 +33,7 @@
             tabindex="0"
             class="char-card"
             class:active={$uiStore.selectedCharacter === c.nombre}
-            class:inactive={!c.activo}
+            class:inactive={!c.planeado_usar}
             onclick={() => uiStore.selectCharacter(c.nombre)}
             onkeydown={(e) => e.key === 'Enter' && uiStore.selectCharacter(c.nombre)}
           >

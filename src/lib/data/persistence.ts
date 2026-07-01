@@ -79,6 +79,7 @@ const VALID_TAREA_KEYS = new Set([
 export function normalizeData(data: WowData): WowData {
   if (!data.misiones) data.misiones = []
   if (!data.warbands) data.warbands = []
+  if (!data.keybinds) data.keybinds = {}
   if (!data._meta) data._meta = {
     version: '2',
     descripcion: '',

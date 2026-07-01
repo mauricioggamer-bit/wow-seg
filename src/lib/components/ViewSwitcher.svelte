@@ -12,6 +12,7 @@
     { key: 'mapa', label: 'Mapa', icon: '🗺' },
     { key: 'fantasia', label: 'Fantasia', icon: '🧝' },
     { key: 'profesion', label: 'Profesiones', icon: '⚒' },
+    { key: 'keybinds', label: 'Keybinds', icon: '⌨' },
   ]
 </script>
 

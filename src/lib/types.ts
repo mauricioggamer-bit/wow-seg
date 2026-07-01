@@ -85,6 +85,7 @@ export interface WowData {
   personajes: Personaje[]
   warbands: Warband[]
   misiones: Mision[]
+  keybinds?: Record<string, string>
 }
 
 export interface Stats {
@@ -98,7 +99,7 @@ export interface Stats {
   dailyDone: number
 }
 
-export type ViewType = 'warband' | 'tareas' | 'tabla' | 'priority' | 'time' | 'personajes' | 'mapa' | 'fantasia' | 'profesion'
+export type ViewType = 'warband' | 'tareas' | 'tabla' | 'priority' | 'time' | 'personajes' | 'mapa' | 'fantasia' | 'profesion' | 'keybinds'
 export type ThemeType = 'dark' | 'light'
 export type FontSizeType = 'small' | 'medium' | 'large' | 'xlarge'
 export type AuthDuration = '10min' | '1hora' | '8horas' | '1semana' | 'siempre'

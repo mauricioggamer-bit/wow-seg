@@ -3,6 +3,7 @@ import type { WowData, Personaje, Warband, Mision, Stats, ProfesionSlot } from '
 import type { TipoContenido } from '../constants/wowContent'
 import { loadData, saveData, normalizeData, computeStats as computeStatsFn, exportJSON as exportJSONFn, exportPersonajesJSON as exportPersonajesJSONFn, exportFullBackup as exportFullBackupFn, initSeed as initSeedFn } from '../data/persistence'
 import { checkWeeklyReset, resetDailyTasks } from '../data/weekly-reset'
+import { getKeybindString as getKeybindStringFn, keybindKey } from '../data/keybindDefaults'
 
 function createDataStore() {
   const initial = loadData()
@@ -162,6 +163,29 @@ addTarea(nombrePersonaje: string, tarea: { nombre: string; tipoContenido?: TipoC
         saveData(d)
         return d
       })
+    },
+    getKeybind(className: string, specId: number): string {
+      return getKeybindStringFn(className, specId, get({ subscribe }).keybinds)
+    },
+    updateKeybind(className: string, specId: number, base64: string) {
+      update(d => {
+        if (!d.keybinds) d.keybinds = {}
+        d.keybinds[keybindKey(className, specId)] = base64
+        saveData(d)
+        return d
+      })
+    },
+    resetKeybind(className: string, specId: number) {
+      update(d => {
+        if (!d.keybinds) return d
+        delete d.keybinds[keybindKey(className, specId)]
+        saveData(d)
+        return d
+      })
+    },
+    isKeybindEdited(className: string, specId: number): boolean {
+      const d = get({ subscribe })
+      return !!d.keybinds?.[keybindKey(className, specId)]
     },
     getWarbands(): Warband[] {
       return get({ subscribe }).warbands

@@ -17,6 +17,7 @@
   import MapaView from './lib/views/MapaView.svelte'
   import FantasiaView from './lib/views/FantasiaView.svelte'
   import ProfesionView from './lib/views/ProfesionView.svelte'
+  import KeybindView from './lib/views/KeybindView.svelte'
   import { authStore } from './lib/stores/auth'
   import { uiStore } from './lib/stores/ui'
   import { dataStore, personajesStore, misionesStore, warbandsStore } from './lib/stores/data'
@@ -425,6 +426,8 @@
           <FantasiaView />
         {:else if $uiStore.currentView === 'profesion'}
           <ProfesionView />
+        {:else if $uiStore.currentView === 'keybinds'}
+          <KeybindView />
         {/if}
       </div>
       {#if $uiStore.currentView === 'warband'}

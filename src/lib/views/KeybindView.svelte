@@ -4,13 +4,17 @@
   import { getKeybindString, getDefaultKeybindString, findSpecInfo } from '../data/keybindDefaults'
   import { parseKeybindString } from '../keybinds/parser'
   import { encodeKeybindString } from '../keybinds/encoder'
-  import type { KeybindState } from '../keybinds/types'
+  import { prefetchSpellData } from '../keybinds/spellService'
+  import { KEYBIND_TO_SLOT } from '../constants/keybinds'
+  import type { KeybindState, SpellInfo, Slot } from '../keybinds/types'
   import ClassSpecSelector from '../components/keybinds/ClassSpecSelector.svelte'
   import KeyboardVisualizer from '../components/keybinds/KeyboardVisualizer.svelte'
+  import SlotEditor from '../components/keybinds/SlotEditor.svelte'
 
   let selectedClass = $state('shaman')
   let selectedSpec = $state(262)
-  let spellData = $state<Record<number, { name: string; iconUrl: string }>>({})
+  let spellData = $state<Record<number, SpellInfo>>({})
+  let editingKeybind = $state<string | null>(null)
 
   let currentString = $derived(dataStore.getKeybind(selectedClass, selectedSpec))
   let defaultString = $derived(getDefaultKeybindString(selectedClass, selectedSpec))
@@ -19,6 +23,19 @@
   let specInfo = $derived(findSpecInfo(selectedClass, selectedSpec))
 
   let outputString = $derived(encodeKeybindString(parsed))
+
+  let editingSlot = $derived(editingKeybind ? parsed.keybindMap[editingKeybind] : undefined)
+
+  $effect(() => {
+    const ids: number[] = []
+    for (const slot of Object.values(parsed.slots)) {
+      if (slot.type === 'spell') ids.push(slot.spellId)
+      else if (slot.type === 'mount') ids.push(parseInt(slot.mountId))
+    }
+    if (ids.length) {
+      spellData = prefetchSpellData(ids)
+    }
+  })
 
   function resetToDefault() {
     dataStore.resetKeybind(selectedClass, selectedSpec)
@@ -30,8 +47,38 @@
   }
 
   function onSelectKeybind(kb: string) {
-    // Fase 3: abrir editor
-    console.log('Selected keybind:', kb)
+    editingKeybind = kb
+  }
+
+  function closeEditor() {
+    editingKeybind = null
+  }
+
+  function saveSlot(newSlot: Slot) {
+    if (!editingKeybind) return
+
+    const stateClone: KeybindState = {
+      header: parsed.header ? { ...parsed.header } : null,
+      slots: { ...parsed.slots },
+      keybindMap: { ...parsed.keybindMap },
+    }
+
+    stateClone.slots[newSlot.slotNum] = newSlot
+
+    if (newSlot.keybind) {
+      stateClone.keybindMap[newSlot.keybind] = newSlot
+    }
+
+    if (editingKeybind && (!newSlot.keybind || newSlot.type === 'emptyBind')) {
+      const oldSlot = parsed.keybindMap[editingKeybind]
+      if (oldSlot && oldSlot.slotNum !== newSlot.slotNum) {
+        delete stateClone.keybindMap[editingKeybind]
+      }
+    }
+
+    const encoded = encodeKeybindString(stateClone)
+    dataStore.updateKeybind(selectedClass, selectedSpec, encoded)
+    editingKeybind = null
   }
 </script>
 
@@ -53,6 +100,16 @@
   </div>
 
   <KeyboardVisualizer {parsed} {spellData} onSelect={onSelectKeybind} />
+
+  {#if editingKeybind}
+    <SlotEditor
+      keybind={editingKeybind}
+      slot={editingSlot}
+      {spellData}
+      onSave={saveSlot}
+      onClose={closeEditor}
+    />
+  {/if}
 
   <div class="kb-output">
     <label>Base64 output</label>

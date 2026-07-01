@@ -1,6 +1,6 @@
 <script lang="ts">
   import { KEYBIND_LAYOUT } from '../../constants/keybinds'
-  import type { KeybindState } from '../../keybinds/types'
+  import type { KeybindState, SpellInfo } from '../../keybinds/types'
   import KeybindSlot from './KeybindSlot.svelte'
 
   let {
@@ -9,7 +9,7 @@
     onSelect,
   }: {
     parsed: KeybindState
-    spellData: Record<number, { name: string; iconUrl: string }>
+    spellData: Record<number, SpellInfo>
     onSelect?: (keybind: string) => void
   } = $props()
 </script>

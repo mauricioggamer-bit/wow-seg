@@ -1,7 +1,7 @@
 <script lang="ts">
   import { personajesStore, dataStore } from '../stores/data'
   import { levelingStore } from '../stores/leveling'
-  import type { LevelingResult } from '../types'
+  import type { LevelingResult, OptimizationPlan } from '../types'
   import {
     calculateForCharacter,
     getWarbandMentor8090FromRoster,
@@ -10,10 +10,15 @@
     formatHours,
     formatNumber,
   } from '../leveling/calculator'
+  import { calculateStrategicValue } from '../leveling/strategicValue'
+  import { optimize } from '../leveling/optimizer'
   import ConfigPanel from '../components/leveling/ConfigPanel.svelte'
   import CalculationTable from '../components/leveling/CalculationTable.svelte'
+  import OptimizationResult from '../components/leveling/OptimizationResult.svelte'
+  import DetailView from '../components/leveling/DetailView.svelte'
 
   let showConfig = $state(false)
+  let showOptimization = $state(false)
   let selectedChar = $state<string | null>(null)
 
   let personajes = $derived($personajesStore.filter(p => p.planeado_usar))
@@ -25,20 +30,7 @@
     personajes
       .map(p => {
         const calc = calculateForCharacter(p, config, count90)
-        const stars = calc.done ? 0 : Math.max(1, Math.min(5, Math.round(calc.dungeons / 50) + (p.profesiones?.some(pr => pr.id) ? 1 : 0)))
-        let strategicText = ''
-        if (calc.done) {
-          strategicText = 'Objetivo completado'
-        } else if (p.nivel < 80 && p.objetivoNivel && p.objetivoNivel >= 90) {
-          strategicText = 'Subir este personaje acerca el Warband Mentor 80-90.'
-        } else if (p.nivel >= 80 && p.nivel < 90) {
-          strategicText = 'Cada nivel 90 aumenta el Warband Mentor +5% para toda la cuenta.'
-        } else if (p.profesiones?.some(pr => pr.id)) {
-          strategicText = 'Tiene profesiones que benefician a la warband.'
-        } else {
-          strategicText = `${calc.dungeons} dungeons restantes para alcanzar el objetivo.`
-        }
-
+        const sv = calculateStrategicValue(p, config, personajes, count90)
         return {
           nombre: p.nombre,
           clase: p.clase,
@@ -48,10 +40,10 @@
           dungeons: calc.dungeons,
           timeHours: calc.timeHours,
           xpPerHour: calc.xpPerHour,
-          roi: 0,
-          strategicStars: stars,
-          strategicText,
-          warbandImpact: 0,
+          roi: sv.warbandImpact,
+          strategicStars: sv.stars,
+          strategicText: sv.reasons.join(' '),
+          warbandImpact: sv.warbandImpact,
         }
       })
       .sort((a, b) => {
@@ -66,9 +58,15 @@
   let pendingCount = $derived(personajes.filter(p => p.nivel < (p.objetivoNivel ?? 80)).length)
 
   let selectedResult = $derived(results.find(r => r.nombre === selectedChar))
+  let selectedPersonaje = $derived($personajesStore.find(p => p.nombre === selectedChar))
+  let optimizationPlan = $derived(optimize(personajes, config, count90))
 
   function toggleConfig() {
     showConfig = !showConfig
+  }
+
+  function toggleOptimization() {
+    showOptimization = !showOptimization
   }
 
   function updateObjetivo(nombre: string, nivel: number) {
@@ -87,7 +85,7 @@
         <span class="lvl-buff-label">Warband 80-90</span>
         <span class="lvl-buff-val">+{warbandMentor8090}%</span>
         {#if count90 < 5}
-          <span class="lvl-buff-next">Próximo: +{Math.min((count90 + 1) * 5, 25)}% (faltan {count90 + 1 - count90} pj)</span>
+          <span class="lvl-buff-next">Próximo: +{Math.min((count90 + 1) * 5, 25)}% (faltan {1} pj)</span>
         {/if}
       </div>
       <div class="lvl-buff-item-sm">
@@ -96,7 +94,7 @@
       </div>
       <div class="lvl-buff-item-sm">
         <span class="lvl-buff-label">War Mode</span>
-        <span class="lvl-buff-val {config.warMode ? 'on' : 'off'}">{config.warMode ? 'ON' : 'OFF'}</span>
+        <span class="lvl-buff-val" class:on={config.warMode} class:off={!config.warMode}>{config.warMode ? 'ON' : 'OFF'}</span>
       </div>
       <div class="lvl-buff-item-sm">
         <span class="lvl-buff-label">XP/dungeon</span>
@@ -108,6 +106,7 @@
       </div>
     </div>
     <div class="lvl-toolbar">
+      <button class="wow-btn wow-btn-sm" onclick={toggleOptimization}>{showOptimization ? '✕ Optimizar' : '⚡ Optimizar'}</button>
       <button class="wow-btn wow-btn-sm" onclick={toggleConfig}>{showConfig ? '✕ Cerrar' : '⚙ Config'}</button>
     </div>
   </div>
@@ -131,31 +130,34 @@
     </div>
   </div>
 
+  {#if showOptimization}
+    <OptimizationResult plan={optimizationPlan} />
+  {/if}
+
   {#if showConfig}
     <ConfigPanel />
   {/if}
 
   <CalculationTable {results} onSelect={(nombre) => selectedChar = selectedChar === nombre ? null : nombre} />
 
-  {#if selectedResult}
+  {#if selectedResult && selectedPersonaje}
     <div class="lvl-detail">
       <div class="lvl-detail-header">
         <h3>{selectedResult.nombre} — {selectedResult.clase}</h3>
-        <button class="lvl-detail-close" onclick={() => selectedChar = null}>✕</button>
-      </div>
-      <div class="lvl-detail-body">
-        <div class="lvl-detail-stat">
-          <span>Nivel actual</span>
-          <strong>{selectedResult.nivel}</strong>
-        </div>
-        <div class="lvl-detail-stat">
-          <span>Objetivo</span>
+        <div class="lvl-detail-actions">
           <select value={selectedResult.objetivoNivel}
             onchange={(e) => updateObjetivo(selectedResult.nombre, parseInt(e.currentTarget.value))}>
             {#each [60, 70, 80, 90] as opt}
               <option value={opt} selected={selectedResult.objetivoNivel === opt}>Nivel {opt}</option>
             {/each}
           </select>
+          <button class="lvl-detail-close" onclick={() => selectedChar = null}>✕</button>
+        </div>
+      </div>
+      <div class="lvl-detail-summary">
+        <div class="lvl-detail-stat">
+          <span>Nivel</span>
+          <strong>{selectedResult.nivel}</strong>
         </div>
         <div class="lvl-detail-stat">
           <span>XP restante</span>
@@ -163,22 +165,18 @@
         </div>
         <div class="lvl-detail-stat">
           <span>Dungeons</span>
-          <strong>{selectedResult.dungeons}</strong>
+          <strong>{selectedResult.dungeons || '✓'}</strong>
         </div>
         <div class="lvl-detail-stat">
-          <span>Tiempo estimado</span>
+          <span>Tiempo</span>
           <strong>{formatHours(selectedResult.timeHours)}</strong>
         </div>
         <div class="lvl-detail-stat">
-          <span>XP/hora</span>
+          <span>XP/h</span>
           <strong>{formatNumber(selectedResult.xpPerHour)}</strong>
         </div>
-        <div class="lvl-detail-stat full">
-          <span>Valor estratégico</span>
-          <strong>{'★'.repeat(selectedResult.strategicStars)}{'☆'.repeat(5 - selectedResult.strategicStars)}</strong>
-          <p class="lvl-strategic-text">{selectedResult.strategicText}</p>
-        </div>
       </div>
+      <DetailView personaje={selectedPersonaje} {config} roster={personajes} {count90} />
     </div>
   {/if}
 </div>
@@ -229,6 +227,10 @@
     font-size: 0.4rem;
     color: var(--text-dim);
   }
+  .lvl-toolbar {
+    display: flex;
+    gap: 4px;
+  }
   .lvl-dashboard-strip {
     display: flex;
     gap: 6px;
@@ -269,6 +271,19 @@
     font-size: 0.7rem;
     color: var(--gold);
   }
+  .lvl-detail-actions {
+    display: flex;
+    gap: 6px;
+    align-items: center;
+  }
+  .lvl-detail-actions select {
+    background: var(--input-bg);
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--r-sm);
+    padding: 2px 4px;
+    font-size: 0.6rem;
+    color: var(--text-primary);
+  }
   .lvl-detail-close {
     background: none;
     border: none;
@@ -276,19 +291,19 @@
     cursor: pointer;
     font-size: 0.7rem;
   }
-  .lvl-detail-body {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
-    gap: 6px;
+  .lvl-detail-summary {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+    padding-bottom: 6px;
+    margin-bottom: 6px;
+    border-bottom: 1px solid var(--border-subtle);
     font-size: 0.6rem;
   }
   .lvl-detail-stat {
     display: flex;
     flex-direction: column;
     gap: 1px;
-  }
-  .lvl-detail-stat.full {
-    grid-column: 1 / -1;
   }
   .lvl-detail-stat span {
     font-size: 0.45rem;
@@ -298,18 +313,5 @@
   .lvl-detail-stat strong {
     font-size: 0.65rem;
     color: var(--gold-light, #d4af37);
-  }
-  .lvl-detail-stat select {
-    background: var(--input-bg);
-    border: 1px solid var(--border-subtle);
-    border-radius: var(--r-sm);
-    padding: 2px 4px;
-    font-size: 0.6rem;
-    color: var(--text-primary);
-  }
-  .lvl-strategic-text {
-    font-size: 0.55rem;
-    color: var(--text-secondary);
-    margin-top: 2px;
   }
 </style>

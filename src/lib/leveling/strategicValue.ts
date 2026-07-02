@@ -1,0 +1,97 @@
+import type { Personaje, LevelingConfig, StrategicValueResult } from '../types'
+import { calculateForCharacter, getWarbandMentor8090FromRoster } from './calculator'
+
+export function calculateStrategicValue(
+  personaje: Personaje,
+  config: LevelingConfig,
+  roster: Personaje[],
+  count90: number,
+): StrategicValueResult {
+  const calc = calculateForCharacter(personaje, config, count90)
+  const objetivo = personaje.objetivoNivel ?? 80
+  const reasons: string[] = []
+
+  if (calc.done) {
+    return {
+      stars: 0,
+      warbandImpact: 0,
+      professionValue: 0,
+      closenessTo90: 0,
+      closenessToObjective: 0,
+      totalScore: 0,
+      reasons: ['Objetivo completado'],
+    }
+  }
+
+  const pendingCount = roster.filter(p => p.planeado_usar && p.nivel < (p.objetivoNivel ?? 80)).length
+  const beneficiaries8089 = roster.filter(
+    p => p.planeado_usar && p.nivel >= 80 && p.nivel < 90 && p.nombre !== personaje.nombre,
+  ).length
+
+  let warbandImpact = 0
+  if (objetivo >= 90 && personaje.nivel < 90) {
+    const buffIncrease = 5
+    warbandImpact = beneficiaries8089 * buffIncrease
+    if (warbandImpact > 0) {
+      reasons.push(`Llegar a 90 añade +5% XP para ${beneficiaries8089} personaje(s) 80-89 (${warbandImpact}% total)`)
+    }
+  }
+
+  const hasProfessions = (personaje.profesiones?.some(pr => pr.id) ?? false)
+  let professionValue = 0
+  if (hasProfessions) {
+    professionValue = 1
+    const profNames = personaje.profesiones?.map(pr => pr.id).join(', ') ?? ''
+    reasons.push(`Tiene profesiones: ${profNames}`)
+  }
+
+  const closenessTo90 = personaje.nivel >= 90 ? 1 : Math.max(0, (personaje.nivel - 10) / 80)
+  const closenessToObjective = calc.dungeons > 0 ? Math.max(0, 1 - calc.dungeons / 200) : 1
+
+  if (personaje.nivel >= 80 && personaje.nivel < 90) {
+    reasons.push(`Nivel ${personaje.nivel}: cercano a 90, barato para desbloquear Warband Mentor 80-90`)
+  } else if (personaje.nivel < 80 && objetivo >= 90) {
+    reasons.push(`Objetivo 90: al completarlo, desbloquea +5% Warband Mentor para toda la cuenta`)
+  } else if (calc.dungeons <= 20) {
+    reasons.push(`Solo ${calc.dungeons} dungeons para completar el objetivo (victoria rápida)`)
+  }
+
+  let totalScore = 0
+  totalScore += warbandImpact * 10
+  totalScore += professionValue * 15
+  totalScore += closenessTo90 * 25
+  totalScore += closenessToObjective * 25
+  if (objetivo >= 90 && personaje.nivel < 90) totalScore += 15
+  if (personaje.nivel >= 80 && personaje.nivel < 90) totalScore += 20
+  totalScore = Math.min(100, totalScore)
+
+  let stars = 1
+  if (totalScore >= 85) stars = 5
+  else if (totalScore >= 65) stars = 4
+  else if (totalScore >= 45) stars = 3
+  else if (totalScore >= 25) stars = 2
+
+  if (reasons.length === 0) {
+    reasons.push(`${calc.dungeons} dungeons restantes para alcanzar nivel ${objetivo}`)
+  }
+
+  return {
+    stars,
+    warbandImpact,
+    professionValue,
+    closenessTo90,
+    closenessToObjective,
+    totalScore,
+    reasons,
+  }
+}
+
+export function getWarbandMentorContribution(personaje: Personaje, roster: Personaje[]): number {
+  if (personaje.nivel >= 90) return 0
+  const objetivo = personaje.objetivoNivel ?? 80
+  if (objetivo < 90) return 0
+  const beneficiaries = roster.filter(
+    p => p.planeado_usar && p.nivel >= 80 && p.nivel < 90 && p.nombre !== personaje.nombre,
+  ).length
+  return beneficiaries * 5
+}

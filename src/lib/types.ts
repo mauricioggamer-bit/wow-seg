@@ -146,6 +146,50 @@ export interface LevelingResult {
   warbandImpact: number
 }
 
+export interface LevelBreakdownEntry {
+  level: number
+  xpNeeded: number
+  xpPerDungeon: number
+  dungeons: number
+  cumulativeDungeons: number
+  cumulativeTime: number
+}
+
+export interface StrategicValueResult {
+  stars: number
+  warbandImpact: number
+  professionValue: number
+  closenessTo90: number
+  closenessToObjective: number
+  totalScore: number
+  reasons: string[]
+}
+
+export interface OptimizationEntry {
+  nombre: string
+  clase: string
+  nivel: number
+  objetivoNivel: number
+  orden: number
+  dungeonsTo90: number
+  timeTo90: number
+  dungeonsToObjective: number
+  timeToObjective: number
+  buffBefore: number
+  buffAfter: number
+  timeSavedForOthers: number
+  roi: number
+  reason: string
+}
+
+export interface OptimizationPlan {
+  entries: OptimizationEntry[]
+  optimizedTime: number
+  baselineTime: number
+  timeSaved: number
+  order: string[]
+}
+
 export interface BackupData {
   _export: {
     version: number

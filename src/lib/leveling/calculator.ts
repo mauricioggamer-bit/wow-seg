@@ -1,5 +1,5 @@
 import { XP_CURVE } from '../constants/experience'
-import type { LevelingConfig, Personaje } from '../types'
+import type { LevelingConfig, Personaje, LevelBreakdownEntry } from '../types'
 
 export function getXpRemaining(nivel: number, objetivo: number): number {
   if (nivel >= objetivo) return 0
@@ -118,6 +118,35 @@ export function getTotalTimeHours(personajes: Personaje[], config: LevelingConfi
   return personajes
     .filter(p => p.planeado_usar)
     .reduce((sum, p) => sum + calculateForCharacter(p, config, count90).timeHours, 0)
+}
+
+export function getLevelBreakdown(
+  personaje: Personaje,
+  config: LevelingConfig,
+  count90: number,
+): LevelBreakdownEntry[] {
+  const objetivo = personaje.objetivoNivel ?? 80
+  const nivel = personaje.nivel
+  if (nivel >= objetivo) return []
+  const entries: LevelBreakdownEntry[] = []
+  let cumDungeons = 0
+  let cumTime = 0
+  for (let l = nivel + 1; l <= objetivo; l++) {
+    const xpNeeded = XP_CURVE[l] ?? 0
+    const xpPerDungeon = getEffectiveXpPerDungeon(config, l - 1, count90)
+    const dungeons = getDungeonsNeeded(xpNeeded, xpPerDungeon)
+    cumDungeons += dungeons
+    cumTime += getTimeHours(dungeons, config.duracionDungeon)
+    entries.push({
+      level: l,
+      xpNeeded,
+      xpPerDungeon,
+      dungeons,
+      cumulativeDungeons: cumDungeons,
+      cumulativeTime: cumTime,
+    })
+  }
+  return entries
 }
 
 export function formatNumber(n: number): string {

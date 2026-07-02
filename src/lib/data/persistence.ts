@@ -59,7 +59,7 @@ function propagateExpansion(data: WowData): WowData {
 
 export function initSeed(): WowData {
   const data = JSON.parse(JSON.stringify(SEED_DATA)) as WowData
-  data._meta.schema_version = 2
+  data._meta.schema_version = 3
   propagateExpansion(data)
   return data
 }
@@ -67,7 +67,7 @@ export function initSeed(): WowData {
 const VALID_PERSONAJE_KEYS = new Set([
   'nombre', 'clase', 'nivel', 'faccion', 'raza', 'reino', 'warband',
   'mision_principal', 'expansion_por_defecto', 'parecidos', 'profesiones',
-  'planeado_usar', 'descripcion', 'tipo', 'tareas',
+  'planeado_usar', 'descripcion', 'tipo', 'objetivoNivel', 'tareas',
 ])
 
 const VALID_TAREA_KEYS = new Set([
@@ -87,9 +87,9 @@ export function normalizeData(data: WowData): WowData {
     ultimo_reset_semanal: null,
     total_personajes: 0,
     total_activos: 0,
-    schema_version: 2,
+    schema_version: 3,
   }
-  data._meta.schema_version = data._meta.schema_version ?? 2
+  data._meta.schema_version = data._meta.schema_version ?? 3
 
   const needsMigration = data.personajes.length > 0 && !Array.isArray(data.personajes[0]?.tareas)
   if (needsMigration) {
@@ -108,6 +108,7 @@ export function normalizeData(data: WowData): WowData {
     if (typeof p.planeado_usar !== 'boolean') p.planeado_usar = true
     if (p.descripcion === undefined) p.descripcion = ''
     if (p.tipo === undefined) p.tipo = 'funcional'
+    if (p.objetivoNivel === undefined || typeof p.objetivoNivel !== 'number') p.objetivoNivel = 80
     if (p.parecidos === undefined) {
       const single = (p as any).parecido
       p.parecidos = single ? [single] : []

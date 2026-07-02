@@ -40,6 +40,15 @@ function createDataStore() {
         return d
       })
     },
+    updateObjetivoNivel(nombre: string, nivel: number) {
+      update(d => {
+        const p = d.personajes.find(pj => pj.nombre === nombre)
+        if (!p) return d
+        p.objetivoNivel = nivel
+        saveData(d)
+        return d
+      })
+    },
     toggleTarea(nombrePersonaje: string, tareaId: string) {
       update(d => {
         const p = d.personajes.find(pj => pj.nombre === nombrePersonaje)

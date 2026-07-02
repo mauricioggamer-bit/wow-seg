@@ -38,6 +38,7 @@ export interface Personaje {
   planeado_usar: boolean
   descripcion?: string
   tipo?: 'iconico' | 'funcional'
+  objetivoNivel?: number
   tareas: Tarea[]
 }
 
@@ -99,7 +100,7 @@ export interface Stats {
   dailyDone: number
 }
 
-export type ViewType = 'warband' | 'tareas' | 'tabla' | 'priority' | 'time' | 'personajes' | 'mapa' | 'fantasia' | 'profesion' | 'keybinds'
+export type ViewType = 'warband' | 'tareas' | 'tabla' | 'priority' | 'time' | 'personajes' | 'mapa' | 'fantasia' | 'profesion' | 'keybinds' | 'leveling'
 export type ThemeType = 'dark' | 'light'
 export type FontSizeType = 'small' | 'medium' | 'large' | 'xlarge'
 export type AuthDuration = '10min' | '1hora' | '8horas' | '1semana' | 'siempre'
@@ -110,6 +111,39 @@ export interface GistConfig {
   fileName: string
   intervalMinutes: number
   rememberToken: boolean
+}
+
+export interface CustomBuff {
+  id: string
+  name: string
+  percentage: number
+  target: 'monsters' | 'reward' | 'both'
+}
+
+export interface LevelingConfig {
+  xpRecompensa: number
+  xpMonstruos: number
+  duracionDungeon: number
+  warbandMentor080: number
+  knowledgeOfTimeways: number
+  warMode: boolean
+  warModeTarget: 'monsters' | 'reward' | 'both'
+  customBuffs: CustomBuff[]
+}
+
+export interface LevelingResult {
+  nombre: string
+  clase: string
+  nivel: number
+  objetivoNivel: number
+  xpRemaining: number
+  dungeons: number
+  timeHours: number
+  xpPerHour: number
+  roi: number
+  strategicStars: number
+  strategicText: string
+  warbandImpact: number
 }
 
 export interface BackupData {

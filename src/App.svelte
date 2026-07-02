@@ -18,6 +18,7 @@
   import FantasiaView from './lib/views/FantasiaView.svelte'
   import ProfesionView from './lib/views/ProfesionView.svelte'
   import KeybindView from './lib/views/KeybindView.svelte'
+  import LevelingView from './lib/views/LevelingView.svelte'
   import { authStore } from './lib/stores/auth'
   import { uiStore } from './lib/stores/ui'
   import { dataStore, personajesStore, misionesStore, warbandsStore } from './lib/stores/data'
@@ -428,6 +429,8 @@
           <ProfesionView />
         {:else if $uiStore.currentView === 'keybinds'}
           <KeybindView />
+        {:else if $uiStore.currentView === 'leveling'}
+          <LevelingView />
         {/if}
       </div>
       {#if $uiStore.currentView === 'warband'}

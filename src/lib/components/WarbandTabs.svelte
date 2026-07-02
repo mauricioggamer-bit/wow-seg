@@ -7,7 +7,7 @@
     uiStore.selectWarband(nombre)
   }
 
-  let show = $derived($currentView === 'warband' || $currentView === 'fantasia' || $currentView === 'tareas' || $currentView === 'profesion')
+  let show = $derived($currentView === 'warband' || $currentView === 'fantasia' || $currentView === 'tareas' || $currentView === 'profesion' || $currentView === 'leveling')
 </script>
 
 <div class="warband-tabs" id="warbandTabs" style="display: {show ? '' : 'none'}">

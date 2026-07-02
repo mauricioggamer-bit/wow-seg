@@ -13,6 +13,7 @@
     { key: 'fantasia', label: 'Fantasia', icon: '🧝' },
     { key: 'profesion', label: 'Profesiones', icon: '⚒' },
     { key: 'keybinds', label: 'Keybinds', icon: '⌨' },
+    { key: 'leveling', label: 'Leveling', icon: '📈' },
   ]
 </script>
 

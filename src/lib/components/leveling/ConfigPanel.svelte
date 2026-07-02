@@ -1,12 +1,17 @@
 <script lang="ts">
   import { levelingStore } from '../../stores/leveling'
   import type { CustomBuff } from '../../types'
+  import { saveXpOverrides, clearXpOverrides, getXpOverrides, rebuildXpCurve, getDungeonXpForLevel } from '../../constants/experience'
 
   let config = $derived($levelingStore)
 
   let newBuffName = $state('')
   let newBuffPct = $state(10)
   let newBuffTarget = $state<'monsters' | 'reward' | 'both'>('both')
+
+  let overrideLevel = $state<number>(0)
+  let overrideXp = $state<number>(0)
+  let overrides = $state<Record<number, number>>(getXpOverrides())
 
   const buffOptions = [0, 5, 10, 15, 20, 25, 30]
 
@@ -33,6 +38,30 @@
 
   function updateBuff(id: string, pct: number) {
     levelingStore.updateCustomBuff(id, { percentage: pct })
+  }
+
+  function addOverride() {
+    if (overrideLevel < 10 || overrideLevel > 89 || overrideXp <= 0) return
+    const next = { ...overrides, [overrideLevel]: overrideXp }
+    overrides = next
+    saveXpOverrides(next)
+    rebuildXpCurve()
+    overrideLevel = 0
+    overrideXp = 0
+  }
+
+  function removeOverride(lvl: number) {
+    const next = { ...overrides }
+    delete next[lvl]
+    overrides = next
+    saveXpOverrides(next)
+    rebuildXpCurve()
+  }
+
+  function clearAllOverrides() {
+    overrides = {}
+    clearXpOverrides()
+    rebuildXpCurve()
   }
 </script>
 
@@ -118,6 +147,30 @@
         <button class="lvl-buff-remove" onclick={() => removeBuff(buff.id)}>✕</button>
       </div>
     {/each}
+  </div>
+
+  <div class="lvl-config-section">
+    <div class="lvl-config-title">Curva XP — Overrides por nivel</div>
+    <div class="lvl-config-note">Edita el XP por nivel manualmente. Vacío = usa interpolación automática.</div>
+    <div class="lvl-xp-add">
+      <input type="number" class="lvl-xp-level" placeholder="Nivel (10–89)" min="10" max="89" bind:value={overrideLevel} />
+      <input type="number" class="lvl-xp-val" placeholder="XP requerido" min="1" bind:value={overrideXp} />
+      <button class="wow-btn wow-btn-sm" onclick={addOverride}>+ Override</button>
+      <button class="wow-btn wow-btn-sm" onclick={clearAllOverrides} disabled={Object.keys(overrides).length === 0}>Limpiar</button>
+    </div>
+    {#if Object.keys(overrides).length > 0}
+      <div class="lvl-xp-list">
+        {#each Object.keys(overrides).map(Number).sort((a, b) => a - b) as lvl}
+          <div class="lvl-xp-item">
+            <span class="lvl-xp-lvl">Nivel {lvl}</span>
+            <span class="lvl-xp-val">{overrides[lvl].toLocaleString('es-ES')} XP</span>
+            <button class="lvl-buff-remove" onclick={() => removeOverride(lvl)}>✕</button>
+          </div>
+        {/each}
+      </div>
+    {:else}
+      <div class="lvl-xp-empty">Sin overrides — usando interpolación</div>
+    {/if}
   </div>
 </div>
 
@@ -250,4 +303,37 @@
     font-size: 0.6rem;
     padding: 0 2px;
   }
+  .lvl-xp-add {
+    display: flex;
+    align-items: center;
+    gap: 3px;
+    flex-wrap: wrap;
+    margin-top: 3px;
+  }
+  .lvl-xp-level { width: 90px !important; }
+  .lvl-xp-val { width: 100px !important; }
+  .lvl-xp-list {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    margin-top: 4px;
+  }
+  .lvl-xp-item {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 2px 4px;
+    background: rgba(0, 0, 0, 0.3);
+    border-radius: var(--r-sm);
+    font-size: 0.5rem;
+  }
+  .lvl-xp-lvl { color: var(--gold); font-family: var(--font-heading); }
+  .lvl-xp-val { color: var(--text-secondary); flex: 1; }
+  .lvl-xp-empty {
+    font-size: 0.45rem;
+    color: var(--text-dim);
+    font-style: italic;
+    margin-top: 3px;
+  }
+  .lvl-config-section .lvl-config-note + * + .lvl-xp-list { max-height: 140px; overflow-y: auto; padding-right: 3px; }
 </style>

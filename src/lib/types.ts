@@ -164,8 +164,23 @@ export interface StrategicValueResult {
   professionValue: number
   closenessTo90: number
   closenessToObjective: number
+  futureXpIncrease: number
+  remainingWeight: number
   totalScore: number
   reasons: string[]
+}
+
+export interface TimeRecommendation {
+  option: string
+  description: string
+  timeUsed: number
+  benefit: number
+  charactersInvolved: { nombre: string; nivelFinal: number; dungeons: number }[]
+}
+
+export interface XpOverride {
+  level: number
+  xp: number
 }
 
 export interface OptimizationEntry {

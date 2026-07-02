@@ -1,5 +1,6 @@
 <script lang="ts">
   import type { LevelingResult } from '../../types'
+  import { formatNumber } from '../../leveling/calculator'
   import { clsClass } from '../../constants'
 
   let { results }: { results: LevelingResult[] } = $props()
@@ -8,25 +9,25 @@
   const innerW = W - PAD_L - PAD_R, innerH = H - PAD_T - PAD_B
 
   let pending = $derived(results.filter(r => !r.done90))
-  let maxRoi = $derived(Math.max(1, ...pending.map(r => Math.max(0, r.roi))))
+  let maxXp = $derived(Math.max(1, ...pending.map(r => r.xpTo90)))
   let barW = $derived(pending.length > 0 ? Math.min(40, innerW / pending.length - 2) : 0)
 
   function barX(i: number): number {
     const spacing = innerW / pending.length
     return PAD_L + i * spacing + (spacing - barW) / 2
   }
-  function barH(roi: number): number { return (Math.max(0, roi) / maxRoi) * innerH }
-  function barY(roi: number): number { return PAD_T + innerH - barH(roi) }
+  function barH(xp: number): number { return (xp / maxXp) * innerH }
+  function barY(xp: number): number { return PAD_T + innerH - barH(xp) }
 </script>
 
 {#if pending.length > 0}
   <svg viewBox="0 0 {W} {H}" class="lvl-chart" preserveAspectRatio="xMidYMid meet">
     {#each pending as r, i (r.nombre)}
-      <rect x={barX(i)} y={barY(r.roi)} width={barW} height={barH(r.roi)} rx="2"
+      <rect x={barX(i)} y={barY(r.xpTo90)} width={barW} height={barH(r.xpTo90)} rx="2"
         fill={clsClass(r.clase)} opacity="0.8" />
-      {#if barW >= 18 && r.roi > 0}
-        <text x={barX(i) + barW / 2} y={barY(r.roi) - 2} text-anchor="middle" class="lvl-chart-val">
-          +{r.roi.toFixed(1)}h
+      {#if barW >= 18}
+        <text x={barX(i) + barW / 2} y={barY(r.xpTo90) - 2} text-anchor="middle" class="lvl-chart-val">
+          {formatNumber(r.xpTo90)}
         </text>
       {/if}
       <text x={barX(i) + barW / 2} y={H - 4} text-anchor="middle" class="lvl-chart-label"
@@ -35,7 +36,7 @@
     <line x1={PAD_L} y1={PAD_T + innerH} x2={W - PAD_R} y2={PAD_T + innerH} stroke="rgba(255,255,255,0.1)" stroke-width="0.5" />
   </svg>
 {:else}
-  <p class="lvl-chart-empty">Sin datos de ROI</p>
+  <p class="lvl-chart-empty">Sin datos de XP restante</p>
 {/if}
 
 <style>

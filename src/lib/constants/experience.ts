@@ -57,13 +57,54 @@ function interpolate(anchors: Record<number, number>, level: number, extrapolate
 
 function buildXpCurve(): Record<number, number> {
   const curve: Record<number, number> = {}
+  const overrides = loadXpOverrides()
   for (let level = 10; level <= 89; level++) {
-    curve[level] = interpolate(XP_ANCHORS, level, level > 80)
+    if (overrides[level] !== undefined) {
+      curve[level] = overrides[level]
+    } else {
+      curve[level] = interpolate(XP_ANCHORS, level, level > 80)
+    }
   }
   return curve
 }
 
-export const XP_CURVE: Record<number, number> = buildXpCurve()
+const STORAGE_KEY_OVERRIDES = 'wowseg_xp_overrides'
+
+function loadXpOverrides(): Record<number, number> {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY_OVERRIDES)
+    if (raw) return JSON.parse(raw)
+  } catch { /* empty */ }
+  return {}
+}
+
+export function saveXpOverrides(overrides: Record<number, number>): void {
+  try {
+    localStorage.setItem(STORAGE_KEY_OVERRIDES, JSON.stringify(overrides))
+  } catch { /* empty */ }
+}
+
+export function clearXpOverrides(): void {
+  try {
+    localStorage.removeItem(STORAGE_KEY_OVERRIDES)
+  } catch { /* empty */ }
+}
+
+export function getXpOverrides(): Record<number, number> {
+  return loadXpOverrides()
+}
+
+let xpCurve = buildXpCurve()
+
+export function rebuildXpCurve(): void {
+  xpCurve = buildXpCurve()
+}
+
+export const XP_CURVE = new Proxy({} as Record<number, number>, {
+  get(_target, prop: string) {
+    return xpCurve[Number(prop)]
+  },
+})
 
 export const MAX_LEVEL = 90
 export const DEFAULT_OBJETIVO_NIVEL = 90

@@ -1,5 +1,5 @@
-import type { Personaje, LevelingConfig, OptimizationPlan, SimulationStep, SimulationResult } from '../types'
-import { calculateForCharacter, getEffectiveXpPerDungeon, getXpRemaining } from './calculator'
+import type { Personaje, LevelingConfig, OptimizationPlan, SimulationStep, SimulationResult, TimeRecommendation } from '../types'
+import { calculateForCharacter, getEffectiveXpPerDungeon, getXpRemaining, getDungeonsNeeded, getTimeHours } from './calculator'
 import { optimize } from './optimizer'
 import { XP_CURVE } from '../constants/experience'
 
@@ -196,4 +196,82 @@ export function simulateByDungeons(
     remainingTime: 0,
     remainingDungeons: dungeonsLeft,
   }
+}
+
+export function getTimeRecommendations(
+  personajes: Personaje[],
+  config: LevelingConfig,
+  initialCount90: number,
+  hoursAvailable: number,
+): TimeRecommendation[] {
+  const plan = optimize(personajes, config, initialCount90)
+  const pending = personajes.filter(p => p.planeado_usar && p.nivel < 90)
+  if (pending.length === 0 || hoursAvailable <= 0) return []
+
+  let count90 = initialCount90
+  const recs: TimeRecommendation[] = []
+  let timeLeftMin = hoursAvailable * 60
+
+  for (const entry of plan.entries) {
+    const p = pending.find(pp => pp.nombre === entry.nombre)
+    if (!p) continue
+    const calc = calculateForCharacter(p, config, count90)
+    const timeNeededMin = calc.dungeons * config.duracionDungeon
+
+    if (timeLeftMin <= 0) break
+
+    if (timeLeftMin >= timeNeededMin) {
+      timeLeftMin -= timeNeededMin
+      const reached90 = p.nivel < 90
+      if (reached90) count90++
+
+      recs.push({
+        option: `Completar ${p.nombre} hasta nivel 90`,
+        description: reached90
+          ? `Llega a 90 — desbloquea Warband Mentor 80-90 +${Math.min(count90 * 5, 25)}% para toda la cuenta`
+          : `Objetivo completado`,
+        timeUsed: calc.timeHours,
+        benefit: entry.timeSavedForOthers,
+        charactersInvolved: [{ nombre: p.nombre, nivelFinal: 90, dungeons: calc.dungeons }],
+      })
+    } else {
+      const dungeonsDoable = Math.floor(timeLeftMin / config.duracionDungeon)
+      if (dungeonsDoable <= 0) break
+      const xpPerDungeon = getEffectiveXpPerDungeon(config, p.nivel, count90)
+      const xpGained = dungeonsDoable * xpPerDungeon
+
+      let nivelFinal = p.nivel
+      let xpAccount = xpGained
+      for (let l = p.nivel + 1; l <= 90 && xpAccount > 0; l++) {
+        const xpForLevel = XP_CURVE[l] ?? 0
+        if (xpAccount >= xpForLevel) {
+          nivelFinal = l
+          xpAccount -= xpForLevel
+        } else {
+          break
+        }
+      }
+
+      recs.push({
+        option: `Subir ${p.nombre} hasta nivel ${nivelFinal}`,
+        description: `Progreso parcial: ${dungeonsDoable} dungeons, ${p.nivel} → ${nivelFinal}. No llega a 90 pero avanza.`,
+        timeUsed: (dungeonsDoable * config.duracionDungeon) / 60,
+        benefit: 0,
+        charactersInvolved: [{ nombre: p.nombre, nivelFinal, dungeons: dungeonsDoable }],
+      })
+      timeLeftMin -= dungeonsDoable * config.duracionDungeon
+    }
+  }
+
+  if (recs.length === 0) {
+    recs.push({
+      option: 'Tiempo insuficiente',
+      description: `Con ${hoursAvailable}h no alcanza para completar ningún personaje en el orden óptimo.`,
+      timeUsed: 0,
+      benefit: 0,
+      charactersInvolved: [],
+    })
+  }
+
+  return recs
 }

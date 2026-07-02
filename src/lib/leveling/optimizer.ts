@@ -51,7 +51,7 @@ export function optimize(
         }
       }
 
-      const roi = timeForThis > 0 ? timeSaved / timeForThis : 0
+      const roi = timeSaved - timeForThis
 
       if (!best || roi > best.roi || (roi === best.roi && timeForThis < best.timeForThis)) {
         best = { idx: i, roi, timeSaved, timeForThis }
@@ -69,7 +69,7 @@ export function optimize(
 
     let reason: string
     if (willReach90 && best.timeSaved > 0) {
-      reason = `Llevar a 90 primero ahorra ${best.timeSaved.toFixed(1)}h al resto (ROI ${(best.roi * 100).toFixed(0)}%)`
+      reason = `Llevar a 90 ahorra ${best.timeSaved.toFixed(1)}h al resto (ROI neto: ${best.roi > 0 ? '+' : ''}${best.roi.toFixed(1)}h)`
     } else if (willReach90) {
       reason = `Desbloquea Warband Mentor 80-90 (+5% para toda la cuenta)`
     } else {

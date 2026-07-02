@@ -1,5 +1,5 @@
 import type { Personaje, LevelingConfig, StrategicValueResult } from '../types'
-import { calculateForCharacter, getWarbandMentor8090FromRoster, getXpRemaining } from './calculator'
+import { calculateForCharacter, getEffectiveXpPerDungeon, getXpRemaining } from './calculator'
 
 export function calculateStrategicValue(
   personaje: Personaje,
@@ -17,10 +17,15 @@ export function calculateStrategicValue(
       professionValue: 0,
       closenessTo90: 0,
       closenessToObjective: 0,
+      futureXpIncrease: 0,
+      remainingWeight: 0,
       totalScore: 0,
       reasons: ['Nivel 90 alcanzado'],
     }
   }
+
+  const pendingRoster = roster.filter(p => p.planeado_usar && p.nivel < 90)
+  const remainingCount = pendingRoster.length
 
   const beneficiaries8089 = roster.filter(
     p => p.planeado_usar && p.nivel >= 80 && p.nivel < 90 && p.nombre !== personaje.nombre,
@@ -47,6 +52,39 @@ export function calculateStrategicValue(
   const dungeonsTo90 = calc.dungeons
   const closenessToObjective = dungeonsTo90 > 0 ? Math.max(0, 1 - dungeonsTo90 / 200) : 1
 
+  let futureXpIncrease = 0
+  if (personaje.nivel < 90 && beneficiaries8089 > 0) {
+    const currentBuff = Math.min(count90 * 5, 25)
+    const futureBuff = Math.min((count90 + 1) * 5, 25)
+    const buffDelta = futureBuff - currentBuff
+    if (buffDelta > 0) {
+      let totalFutureTimeSaved = 0
+      for (const other of pendingRoster) {
+        if (other.nombre === personaje.nombre) continue
+        if (other.nivel >= 80 && other.nivel < 90) {
+          const oldXpPerDungeon = getEffectiveXpPerDungeon(config, other.nivel, count90)
+          const newXpPerDungeon = oldXpPerDungeon * (1 + buffDelta / 100)
+          const xpRem = getXpRemaining(other.nivel, 90)
+          const oldDungeons = Math.ceil(xpRem / oldXpPerDungeon)
+          const newDungeons = Math.ceil(xpRem / newXpPerDungeon)
+          const savedDungeons = oldDungeons - newDungeons
+          totalFutureTimeSaved += (savedDungeons * config.duracionDungeon) / 60
+        }
+      }
+      futureXpIncrease = buffDelta
+      if (totalFutureTimeSaved > 0) {
+        reasons.push(`Aumentar XP futura +${buffDelta}% para ${beneficiaries8089} personaje(s) — ahorra ~${totalFutureTimeSaved.toFixed(1)}h`)
+      }
+    }
+  }
+
+  const remainingWeight = remainingCount > 0 ? Math.min(1, remainingCount / 10) : 0
+  if (remainingCount > 5) {
+    reasons.push(`${remainingCount} personajes pendientes — alta prioridad para maximizar beneficio de warband`)
+  } else if (remainingCount > 2) {
+    reasons.push(`${remainingCount} personajes pendientes — beneficio moderado de warband`)
+  }
+
   if (personaje.nivel >= 80 && personaje.nivel < 90) {
     reasons.push(`Nivel ${personaje.nivel}: cercano a 90, barato para desbloquear Warband Mentor 80-90`)
   } else if (personaje.nivel < 80) {
@@ -60,8 +98,10 @@ export function calculateStrategicValue(
   totalScore += professionValue * 15
   totalScore += closenessTo90 * 25
   totalScore += closenessToObjective * 25
-  if (personaje.nivel < 90) totalScore += 15
-  if (personaje.nivel >= 80 && personaje.nivel < 90) totalScore += 20
+  totalScore += futureXpIncrease * 8
+  totalScore += remainingWeight * 10
+  if (personaje.nivel < 90) totalScore += 10
+  if (personaje.nivel >= 80 && personaje.nivel < 90) totalScore += 15
   totalScore = Math.min(100, totalScore)
 
   let stars = 1
@@ -80,6 +120,8 @@ export function calculateStrategicValue(
     professionValue,
     closenessTo90,
     closenessToObjective,
+    futureXpIncrease,
+    remainingWeight,
     totalScore,
     reasons,
   }

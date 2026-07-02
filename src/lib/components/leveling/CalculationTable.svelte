@@ -25,9 +25,11 @@
         <th>Nivel</th>
         <th class="lvl-col-80">→80 Dungs</th>
         <th class="lvl-col-80">→80 Horas</th>
+        <th class="lvl-col-90">XP rest.</th>
         <th class="lvl-col-90">→90 Dungs</th>
         <th class="lvl-col-90">→90 Horas</th>
         <th>XP/h</th>
+        <th>ROI</th>
         <th>Estratégico</th>
       </tr>
     </thead>
@@ -42,9 +44,11 @@
           <td class="lvl-num">{r.nivel}</td>
           <td class="lvl-num lvl-col-80">{r.done80 ? '✓' : r.dungeonsTo80 || '✓'}</td>
           <td class="lvl-num lvl-col-80">{r.done80 ? '✓' : formatHours(r.timeTo80)}</td>
+          <td class="lvl-num lvl-col-90">{r.done90 ? '✓' : r.xpTo90 > 0 ? formatNumber(r.xpTo90) : '✓'}</td>
           <td class="lvl-num lvl-col-90">{r.done90 ? '✓' : r.dungeonsTo90 || '✓'}</td>
           <td class="lvl-num lvl-col-90">{r.done90 ? '✓' : formatHours(r.timeTo90)}</td>
           <td class="lvl-num">{r.xpPerHour > 0 ? formatNumber(r.xpPerHour) : '—'}</td>
+          <td class="lvl-num">{r.roi > 0 ? `+${formatHours(r.roi)}` : '—'}</td>
           <td class="lvl-stars" title={r.strategicText}>{starString(r.strategicStars)}</td>
         </tr>
       {/each}

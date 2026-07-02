@@ -31,6 +31,17 @@
   let count90 = $derived(personajes.filter(p => p.nivel >= 90).length)
   let warbandMentor8090 = $derived(getWarbandMentor8090FromRoster($personajesStore))
 
+  let totalTime = $derived(getTotalTimeHours(personajes, config, count90))
+  let totalDungeons = $derived(getTotalDungeons(personajes, config, count90))
+  let totalTime80 = $derived(getTotalTimeTo80(personajes, config, count90))
+  let totalDungeons80 = $derived(getTotalDungeonsTo80(personajes, config, count90))
+  let pendingCount = $derived(personajes.filter(p => p.nivel < 90).length)
+  let pending80Count = $derived(personajes.filter(p => p.nivel < 80).length)
+
+  let optimizationPlan = $derived(optimize(personajes, config, count90))
+
+  let roiMap = $derived(new Map(optimizationPlan.entries.map(e => [e.nombre, e.roi])))
+
   let results = $derived<LevelingResult[]>(
     personajes
       .map(p => {
@@ -49,7 +60,7 @@
           xpPerHour: dual.xpPerHour,
           done80: dual.done80,
           done90: dual.done90,
-          roi: sv.warbandImpact,
+          roi: roiMap.get(p.nombre) ?? 0,
           strategicStars: sv.stars,
           strategicText: sv.reasons.join(' '),
           warbandImpact: sv.warbandImpact,
@@ -62,20 +73,39 @@
       })
   )
 
-  let totalTime = $derived(getTotalTimeHours(personajes, config, count90))
-  let totalDungeons = $derived(getTotalDungeons(personajes, config, count90))
-  let totalTime80 = $derived(getTotalTimeTo80(personajes, config, count90))
-  let totalDungeons80 = $derived(getTotalDungeonsTo80(personajes, config, count90))
-  let pendingCount = $derived(personajes.filter(p => p.nivel < 90).length)
-  let pending80Count = $derived(personajes.filter(p => p.nivel < 80).length)
-
   let selectedResult = $derived(results.find(r => r.nombre === selectedChar))
   let selectedPersonaje = $derived($personajesStore.find(p => p.nombre === selectedChar))
-  let optimizationPlan = $derived(optimize(personajes, config, count90))
 
   function toggleConfig() { showConfig = !showConfig }
   function toggleOptimization() { showOptimization = !showOptimization }
   function toggleDashboard() { showDashboard = !showDashboard }
+
+  function exportCSVData() {
+    const csv = dataStore.exportCSV()
+    const blob = new Blob([csv], { type: 'text/csv' })
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = 'wow_personajes.csv'
+    a.click()
+    URL.revokeObjectURL(url)
+  }
+
+  function exportPlanJSON() {
+    const planData = JSON.stringify({
+      plan: optimizationPlan,
+      config,
+      results,
+      exportedAt: new Date().toISOString(),
+    }, null, 2)
+    const blob = new Blob([planData], { type: 'application/json' })
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = 'wow_leveling_plan.json'
+    a.click()
+    URL.revokeObjectURL(url)
+  }
 </script>
 
 <div class="lvl-view">
@@ -88,8 +118,9 @@
       <div class="lvl-buff-item-sm">
         <span class="lvl-buff-label">Warband 80-90</span>
         <span class="lvl-buff-val">+{warbandMentor8090}%</span>
+        <span class="lvl-buff-bar">{'█'.repeat(count90)}{'░'.repeat(5 - count90)}</span>
         {#if count90 < 5}
-          <span class="lvl-buff-next">Próximo: +{Math.min((count90 + 1) * 5, 25)}% (faltan {1} pj)</span>
+          <span class="lvl-buff-next">Próx: +{Math.min((count90 + 1) * 5, 25)}% (falta 1 pj)</span>
         {/if}
       </div>
       <div class="lvl-buff-item-sm">
@@ -113,6 +144,8 @@
       <button class="wow-btn wow-btn-sm" onclick={toggleDashboard}>{showDashboard ? '✕ Dashboard' : '📊 Dashboard'}</button>
       <button class="wow-btn wow-btn-sm" onclick={toggleOptimization}>{showOptimization ? '✕ Optimizar' : '⚡ Optimizar'}</button>
       <button class="wow-btn wow-btn-sm" onclick={toggleConfig}>{showConfig ? '✕ Cerrar' : '⚙ Config'}</button>
+      <button class="wow-btn wow-btn-sm" onclick={exportCSVData}>📥 CSV</button>
+      <button class="wow-btn wow-btn-sm" onclick={exportPlanJSON}>📋 Plan</button>
     </div>
   </div>
 
@@ -245,6 +278,14 @@
   .lvl-buff-next {
     font-size: 0.4rem;
     color: var(--text-dim);
+  }
+  .lvl-buff-bar {
+    font-family: var(--font-heading);
+    font-size: 0.55rem;
+    color: var(--gold);
+    letter-spacing: 1px;
+    display: block;
+    line-height: 1;
   }
   .lvl-toolbar {
     display: flex;

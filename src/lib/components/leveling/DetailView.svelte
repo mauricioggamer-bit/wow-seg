@@ -1,6 +1,6 @@
 <script lang="ts">
   import type { Personaje, LevelingConfig, LevelBreakdownEntry } from '../../types'
-  import { getLevelBreakdown, formatNumber, formatHours, calculateBoth } from '../../leveling/calculator'
+  import { getLevelBreakdown, formatNumber, formatHours, calculateBoth, getXpRemaining, getDungeonsNeeded, getEffectiveXpPerDungeon, getTimeHours } from '../../leveling/calculator'
   import { calculateStrategicValue } from '../../leveling/strategicValue'
 
   let {
@@ -19,12 +19,38 @@
   let breakdown80 = $derived(getLevelBreakdown(personaje, config, count90, 80))
   let breakdown90 = $derived(getLevelBreakdown(personaje, config, count90, 90))
   let strategic = $derived(calculateStrategicValue(personaje, config, roster, count90))
+
+  let ranges = $derived((() => {
+    const nivel = personaje.nivel
+    const xpPerDungeon = getEffectiveXpPerDungeon(config, nivel, count90)
+    const targets = [60, 70, 80, 90].filter(t => t > nivel)
+    return targets.map(t => {
+      const xp = getXpRemaining(nivel, t)
+      const dungs = getDungeonsNeeded(xp, xpPerDungeon)
+      const time = getTimeHours(dungs, config.duracionDungeon)
+      return { target: t, xp, dungs, time, done: nivel >= t }
+    })
+  })())
 </script>
 
 <div class="lvl-detail-view">
   {#if dual.done90}
     <p class="lvl-done-msg">Nivel 90 alcanzado ✓</p>
   {:else}
+    <div class="lvl-range-summary">
+      <h4 class="lvl-bd-title">Resumen de objetivos</h4>
+      <div class="lvl-range-grid">
+        {#each ranges as r (r.target)}
+          <div class="lvl-range-item" class:done={r.done}>
+            <span class="lvl-range-target">→{r.target}</span>
+            <span class="lvl-range-xp">{r.done ? '✓' : formatNumber(r.xp)}</span>
+            <span class="lvl-range-dungs">{r.done ? '✓' : r.dungs + ' dungs'}</span>
+            <span class="lvl-range-time">{r.done ? '✓' : formatHours(r.time)}</span>
+          </div>
+        {/each}
+      </div>
+    </div>
+
     <div class="lvl-breakdown-sections">
       {#if !dual.done80}
         <div class="lvl-bd-section">
@@ -138,6 +164,52 @@
     display: flex;
     flex-direction: column;
     gap: 8px;
+  }
+  .lvl-range-summary {
+    background: rgba(0,0,0,0.2);
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--r-sm);
+    padding: 6px;
+  }
+  .lvl-range-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 4px;
+  }
+  @media (max-width: 400px) {
+    .lvl-range-grid {
+      grid-template-columns: repeat(2, 1fr);
+    }
+  }
+  .lvl-range-item {
+    display: flex;
+    flex-direction: column;
+    padding: 4px;
+    background: rgba(255,255,255,0.03);
+    border-radius: var(--r-sm);
+    text-align: center;
+  }
+  .lvl-range-item.done {
+    opacity: 0.4;
+  }
+  .lvl-range-target {
+    font-family: var(--font-heading);
+    font-size: 0.55rem;
+    color: var(--gold);
+    font-weight: 700;
+  }
+  .lvl-range-xp {
+    font-size: 0.45rem;
+    color: var(--gold-light, #d4af37);
+    font-variant-numeric: tabular-nums;
+  }
+  .lvl-range-dungs {
+    font-size: 0.45rem;
+    color: var(--text-secondary);
+  }
+  .lvl-range-time {
+    font-size: 0.45rem;
+    color: var(--text-muted);
   }
   .lvl-breakdown-sections {
     display: flex;

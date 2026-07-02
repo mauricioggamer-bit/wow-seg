@@ -297,3 +297,84 @@ export function getExpansionsList(data: WowData): string[] {
   }
   return [...exps]
 }
+
+export function exportCSV(data: WowData): string {
+  const headers = ['nombre', 'clase', 'nivel', 'faccion', 'raza', 'reino', 'warband', 'planeado_usar', 'objetivoNivel', 'profesion1', 'profesion2']
+  const rows = data.personajes.map(p => {
+    const prof1 = p.profesiones?.[0]?.id ?? ''
+    const prof2 = p.profesiones?.[1]?.id ?? ''
+    return [
+      p.nombre,
+      p.clase,
+      p.nivel,
+      p.faccion,
+      p.raza,
+      p.reino,
+      p.warband,
+      p.planeado_usar,
+      p.objetivoNivel ?? 90,
+      prof1,
+      prof2,
+    ].map(v => `"${String(v).replace(/"/g, '""')}"`).join(',')
+  })
+  return [headers.join(','), ...rows].join('\n')
+}
+
+export function importCSV(csv: string): Personaje[] {
+  const lines = csv.trim().split('\n')
+  if (lines.length < 2) return []
+  const headers = lines[0].split(',').map(h => h.replace(/^"|"$/g, ''))
+  const personajes: Personaje[] = []
+  for (let i = 1; i < lines.length; i++) {
+    const cells = parseCSVLine(lines[i])
+    if (cells.length < 7) continue
+    const get = (key: string): string => {
+      const idx = headers.indexOf(key)
+      return idx >= 0 ? cells[idx] ?? '' : ''
+    }
+    personajes.push({
+      nombre: get('nombre') || `Importado ${i}`,
+      clase: get('clase') || 'Desconocido',
+      nivel: parseInt(get('nivel')) || 80,
+      faccion: (get('faccion') as 'Horda' | 'Alianza') || 'Horda',
+      raza: get('raza') || '',
+      reino: get('reino') || '',
+      warband: get('warband') || '',
+      mision_principal: null,
+      planeado_usar: get('planeado_usar') === 'true' || get('planeado_usar') === '1',
+      objetivoNivel: parseInt(get('objetivoNivel')) || 90,
+      profesiones: [
+        { id: get('profesion1') || '', nivel: 0 },
+        { id: get('profesion2') || '', nivel: 0 },
+      ],
+      tareas: [],
+      descripcion: '',
+      tipo: 'funcional',
+    })
+  }
+  return personajes
+}
+
+function parseCSVLine(line: string): string[] {
+  const cells: string[] = []
+  let current = ''
+  let inQuotes = false
+  for (let i = 0; i < line.length; i++) {
+    const char = line[i]
+    if (char === '"') {
+      if (inQuotes && line[i + 1] === '"') {
+        current += '"'
+        i++
+      } else {
+        inQuotes = !inQuotes
+      }
+    } else if (char === ',' && !inQuotes) {
+      cells.push(current)
+      current = ''
+    } else {
+      current += char
+    }
+  }
+  cells.push(current)
+  return cells.map(c => c.replace(/^"|"$/g, ''))
+}

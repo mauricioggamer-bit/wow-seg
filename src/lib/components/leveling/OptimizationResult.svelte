@@ -20,6 +20,9 @@
         <div class="lvl-opt-info">
           <span class="lvl-opt-name" style="color: {clsClass(e.clase)}">{e.nombre}</span>
           <span class="lvl-opt-desc">{e.reason}</span>
+          {#if e.buffBefore !== e.buffAfter}
+            <span class="lvl-opt-buff">Warband 80-90: +{e.buffBefore}% → <strong>+{e.buffAfter}%</strong></span>
+          {/if}
         </div>
         <div class="lvl-opt-meta">
           {#if e.timeToObjective > 0}
@@ -113,5 +116,13 @@
     font-size: 0.45rem;
     color: var(--green, #38a169);
     white-space: nowrap;
+  }
+  .lvl-opt-buff {
+    font-size: 0.48rem;
+    color: var(--gold-light, #d4af37);
+    font-family: var(--font-heading);
+  }
+  .lvl-opt-buff strong {
+    color: var(--green, #38a169);
   }
 </style>

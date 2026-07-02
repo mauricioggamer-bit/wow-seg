@@ -1,7 +1,7 @@
 import { writable, derived, get } from 'svelte/store'
 import type { WowData, Personaje, Warband, Mision, Stats, ProfesionSlot } from '../types'
 import type { TipoContenido } from '../constants/wowContent'
-import { loadData, saveData, normalizeData, computeStats as computeStatsFn, exportJSON as exportJSONFn, exportPersonajesJSON as exportPersonajesJSONFn, exportFullBackup as exportFullBackupFn, initSeed as initSeedFn } from '../data/persistence'
+import { loadData, saveData, normalizeData, computeStats as computeStatsFn, exportJSON as exportJSONFn, exportPersonajesJSON as exportPersonajesJSONFn, exportFullBackup as exportFullBackupFn, initSeed as initSeedFn, exportCSV as exportCSVFn, importCSV as importCSVFn } from '../data/persistence'
 import { checkWeeklyReset, resetDailyTasks } from '../data/weekly-reset'
 import { getKeybindString as getKeybindStringFn, keybindKey } from '../data/keybindDefaults'
 
@@ -354,6 +354,20 @@ addTarea(nombrePersonaje: string, tarea: { nombre: string; tipoContenido?: TipoC
     },
     exportFullBackup(): string {
       return exportFullBackupFn(get({ subscribe }))
+    },
+    exportCSV(): string {
+      return exportCSVFn(get({ subscribe }))
+    },
+    importCSVToRoster(csv: string) {
+      const newPersonajes = importCSVFn(csv)
+      if (newPersonajes.length === 0) throw new Error('CSV sin personajes válidos')
+      update(d => {
+        d.personajes = [...d.personajes, ...newPersonajes]
+        d._meta.total_personajes = d.personajes.length
+        d._meta.total_activos = d.personajes.filter(p => p.planeado_usar).length
+        saveData(d)
+        return d
+      })
     },
   }
 

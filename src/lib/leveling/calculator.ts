@@ -177,6 +177,20 @@ export function getTotalTimeTo80(personajes: Personaje[], config: LevelingConfig
     .reduce((sum, p) => sum + calculateBoth(p, config, count90).timeTo80, 0)
 }
 
+export function getAvgTimePerLevel(personajes: Personaje[], config: LevelingConfig, count90: number): number {
+  const pending = personajes.filter(p => p.planeado_usar && p.nivel < 90)
+  if (pending.length === 0) return 0
+  let totalLevels = 0
+  let totalTime = 0
+  for (const p of pending) {
+    const dual = calculateBoth(p, config, count90)
+    const levels = 90 - p.nivel
+    totalLevels += levels
+    totalTime += dual.timeTo90
+  }
+  return totalLevels > 0 ? totalTime / totalLevels : 0
+}
+
 export function getLevelBreakdown(
   personaje: Personaje,
   config: LevelingConfig,

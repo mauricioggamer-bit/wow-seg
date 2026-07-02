@@ -66,7 +66,7 @@ function buildXpCurve(): Record<number, number> {
 export const XP_CURVE: Record<number, number> = buildXpCurve()
 
 export const MAX_LEVEL = 90
-export const DEFAULT_OBJETIVO_NIVEL = 80
+export const DEFAULT_OBJETIVO_NIVEL = 90
 
 export function getXpForLevel(level: number): number {
   return XP_CURVE[level] ?? 0

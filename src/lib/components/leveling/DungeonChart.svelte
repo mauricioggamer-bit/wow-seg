@@ -13,8 +13,8 @@
   const innerW = W - PAD_L - PAD_R
   const innerH = H - PAD_T - PAD_B
 
-  let pending = $derived(results.filter(r => r.xpRemaining > 0))
-  let maxDungeons = $derived(Math.max(1, ...pending.map(r => r.dungeons)))
+  let pending = $derived(results.filter(r => !r.done90))
+  let maxDungeons = $derived(Math.max(1, ...pending.map(r => r.dungeonsTo90)))
   let barW = $derived(pending.length > 0 ? Math.min(40, innerW / pending.length - 2) : 0)
 
   function barX(i: number): number {
@@ -35,9 +35,9 @@
   {#each pending as r, i (r.nombre)}
     <rect
       x={barX(i)}
-      y={barY(r.dungeons)}
+      y={barY(r.dungeonsTo90)}
       width={barW}
-      height={barH(r.dungeons)}
+      height={barH(r.dungeonsTo90)}
       rx="2"
       fill={clsClass(r.clase)}
       opacity="0.8"
@@ -45,10 +45,10 @@
     {#if barW >= 18}
       <text
         x={barX(i) + barW / 2}
-        y={barY(r.dungeons) - 2}
+        y={barY(r.dungeonsTo90) - 2}
         text-anchor="middle"
         class="lvl-chart-val"
-      >{r.dungeons}</text>
+      >{r.dungeonsTo90}</text>
     {/if}
     <text
       x={barX(i) + barW / 2}

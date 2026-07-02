@@ -6,7 +6,7 @@ export function optimize(
   config: LevelingConfig,
   initialCount90: number,
 ): OptimizationPlan {
-  const pending = personajes.filter(p => p.planeado_usar && p.nivel < (p.objetivoNivel ?? 80))
+  const pending = personajes.filter(p => p.planeado_usar && p.nivel < 90)
   if (pending.length === 0) {
     return { entries: [], optimizedTime: 0, baselineTime: 0, timeSaved: 0, order: [] }
   }
@@ -26,12 +26,11 @@ export function optimize(
 
     for (let i = 0; i < remaining.length; i++) {
       const p = remaining[i]
-      const objetivo = p.objetivoNivel ?? 80
       const calc = calculateForCharacter(p, config, currentCount90)
       const timeForThis = calc.timeHours
 
       let timeSaved = 0
-      if (objetivo >= 90 && p.nivel < 90) {
+      if (p.nivel < 90) {
         const newCount90 = currentCount90 + 1
         const newBuff = Math.min(newCount90 * 5, 25)
         const oldBuff = Math.min(currentCount90 * 5, 25)
@@ -39,8 +38,7 @@ export function optimize(
 
         for (const other of remaining) {
           if (other.nombre === p.nombre) continue
-          const otherObj = other.objetivoNivel ?? 80
-          if (other.nivel >= 80 && other.nivel < 90 && otherObj >= 80) {
+          if (other.nivel >= 80 && other.nivel < 90) {
             const oldCalc = calculateForCharacter(other, config, currentCount90)
             const oldXpPerDungeon = oldCalc.xpPerDungeon
             const newXpPerDungeon = oldXpPerDungeon * (1 + buffDelta)
@@ -63,10 +61,9 @@ export function optimize(
     if (!best) break
 
     const chosen = remaining[best.idx]
-    const objetivo = chosen.objetivoNivel ?? 80
     const calc = calculateForCharacter(chosen, config, currentCount90)
 
-    const willReach90 = objetivo >= 90 && chosen.nivel < 90
+    const willReach90 = chosen.nivel < 90
     const buffBefore = Math.min(currentCount90 * 5, 25)
     const buffAfter = willReach90 ? Math.min((currentCount90 + 1) * 5, 25) : buffBefore
 
@@ -75,8 +72,6 @@ export function optimize(
       reason = `Llevar a 90 primero ahorra ${best.timeSaved.toFixed(1)}h al resto (ROI ${(best.roi * 100).toFixed(0)}%)`
     } else if (willReach90) {
       reason = `Desbloquea Warband Mentor 80-90 (+5% para toda la cuenta)`
-    } else if (goalLessThan90(chosen)) {
-      reason = `Objetivo nivel ${objetivo}: no contribuye a Warband Mentor, pero victoria rápida`
     } else {
       reason = `Sin impacto en warband, completar cuando sea conveniente`
     }
@@ -85,10 +80,10 @@ export function optimize(
       nombre: chosen.nombre,
       clase: chosen.clase,
       nivel: chosen.nivel,
-      objetivoNivel: objetivo,
+      objetivoNivel: 90,
       orden: order.length + 1,
-      dungeonsTo90: objetivo >= 90 ? calc.dungeons : 0,
-      timeTo90: objetivo >= 90 ? calc.timeHours : 0,
+      dungeonsTo90: calc.dungeons,
+      timeTo90: calc.timeHours,
       dungeonsToObjective: calc.dungeons,
       timeToObjective: calc.timeHours,
       buffBefore,
@@ -118,10 +113,6 @@ export function optimize(
   }
 }
 
-function goalLessThan90(p: Personaje): boolean {
-  return (p.objetivoNivel ?? 80) < 90
-}
-
 function recomputeOptimizedTime(
   pending: Personaje[],
   config: LevelingConfig,
@@ -135,7 +126,7 @@ function recomputeOptimizedTime(
     if (!p) continue
     const calc = calculateForCharacter(p, config, count90)
     total += calc.timeHours
-    if ((p.objetivoNivel ?? 80) >= 90 && p.nivel < 90) {
+    if (p.nivel < 90) {
       count90 += 1
     }
   }

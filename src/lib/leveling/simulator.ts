@@ -1,7 +1,11 @@
 import type { Personaje, LevelingConfig, OptimizationPlan, SimulationStep, SimulationResult } from '../types'
-import { calculateForCharacter, getTimeHours, getEffectiveXpPerDungeon, getXpRemaining, getDungeonsNeeded } from './calculator'
+import { calculateForCharacter, getEffectiveXpPerDungeon, getXpRemaining } from './calculator'
 import { optimize } from './optimizer'
 import { XP_CURVE } from '../constants/experience'
+
+function XP_CURVE_LOOKUP(level: number): number {
+  return XP_CURVE[level] ?? 0
+}
 
 export function simulateByTime(
   personajes: Personaje[],
@@ -20,9 +24,9 @@ export function simulateByTime(
     const p = personajes.find(pp => pp.planeado_usar && pp.nombre === entry.nombre)
     if (!p) continue
 
-    const objetivo = p.objetivoNivel ?? 80
     const calc = calculateForCharacter(p, config, count90)
     const timeNeededMin = calc.dungeons * config.duracionDungeon
+    const objetivo = 90
 
     if (timeLeft <= 0) {
       steps.push({
@@ -42,7 +46,7 @@ export function simulateByTime(
       timeLeft -= timeNeededMin
       totalDungeons += calc.dungeons
       completed++
-      const reached90 = objetivo >= 90 && p.nivel < 90
+      const reached90 = p.nivel < 90
       if (reached90) count90++
 
       steps.push({
@@ -59,8 +63,6 @@ export function simulateByTime(
       const dungeonsDoable = Math.floor(timeLeft / config.duracionDungeon)
       const xpPerDungeon = getEffectiveXpPerDungeon(config, p.nivel, count90)
       const xpGained = dungeonsDoable * xpPerDungeon
-      const xpRem = getXpRemaining(p.nivel, objetivo)
-      const progressPct = xpRem > 0 ? Math.min(1, xpGained / xpRem) : 0
 
       let nivelFinal = p.nivel
       let xpAccount = xpGained
@@ -118,8 +120,8 @@ export function simulateByDungeons(
     const p = personajes.find(pp => pp.planeado_usar && pp.nombre === entry.nombre)
     if (!p) continue
 
-    const objetivo = p.objetivoNivel ?? 80
     const calc = calculateForCharacter(p, config, count90)
+    const objetivo = 90
 
     if (dungeonsLeft <= 0) {
       steps.push({
@@ -139,7 +141,7 @@ export function simulateByDungeons(
       dungeonsLeft -= calc.dungeons
       totalTime += calc.timeHours
       completed++
-      const reached90 = objetivo >= 90 && p.nivel < 90
+      const reached90 = p.nivel < 90
       if (reached90) count90++
 
       steps.push({
@@ -194,8 +196,4 @@ export function simulateByDungeons(
     remainingTime: 0,
     remainingDungeons: dungeonsLeft,
   }
-}
-
-function XP_CURVE_LOOKUP(level: number): number {
-  return XP_CURVE[level] ?? 0
 }

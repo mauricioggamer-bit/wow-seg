@@ -14,8 +14,8 @@
   const innerW = W - PAD_L - PAD_R
   const innerH = H - PAD_T - PAD_B
 
-  let pending = $derived(results.filter(r => r.xpRemaining > 0))
-  let maxTime = $derived(Math.max(1, ...pending.map(r => r.timeHours)))
+  let pending = $derived(results.filter(r => !r.done90))
+  let maxTime = $derived(Math.max(1, ...pending.map(r => r.timeTo90)))
   let barW = $derived(pending.length > 0 ? Math.min(40, innerW / pending.length - 2) : 0)
 
   function barX(i: number): number {
@@ -36,9 +36,9 @@
   {#each pending as r, i (r.nombre)}
     <rect
       x={barX(i)}
-      y={barY(r.timeHours)}
+      y={barY(r.timeTo90)}
       width={barW}
-      height={barH(r.timeHours)}
+      height={barH(r.timeTo90)}
       rx="2"
       fill={clsClass(r.clase)}
       opacity="0.8"
@@ -46,10 +46,10 @@
     {#if barW >= 18}
       <text
         x={barX(i) + barW / 2}
-        y={barY(r.timeHours) - 2}
+        y={barY(r.timeTo90) - 2}
         text-anchor="middle"
         class="lvl-chart-val"
-      >{formatHours(r.timeHours)}</text>
+      >{formatHours(r.timeTo90)}</text>
     {/if}
     <text
       x={barX(i) + barW / 2}

@@ -23,30 +23,28 @@
         <th>#</th>
         <th>Personaje</th>
         <th>Nivel</th>
-        <th>Objetivo</th>
-        <th>XP restante</th>
-        <th>Dungeons</th>
-        <th>Horas</th>
+        <th class="lvl-col-80">→80 Dungs</th>
+        <th class="lvl-col-80">→80 Horas</th>
+        <th class="lvl-col-90">→90 Dungs</th>
+        <th class="lvl-col-90">→90 Horas</th>
         <th>XP/h</th>
-        <th>ROI</th>
         <th>Estratégico</th>
       </tr>
     </thead>
     <tbody>
       {#each results as r, i (r.nombre)}
-        <tr class:done={r.xpRemaining === 0} onclick={() => onSelect?.(r.nombre)}>
+        <tr class:done={r.done90} class:done80={r.done80 && !r.done90} onclick={() => onSelect?.(r.nombre)}>
           <td class="lvl-priority">{i + 1}</td>
           <td class="lvl-char">
             <span class="lvl-char-name">{r.nombre}</span>
             <span class="lvl-char-class" style="color: {clsClass(r.clase)}">{r.clase}</span>
           </td>
           <td class="lvl-num">{r.nivel}</td>
-          <td class="lvl-num">{r.objetivoNivel}</td>
-          <td class="lvl-num">{r.xpRemaining === 0 ? '✓' : formatNumber(r.xpRemaining)}</td>
-          <td class="lvl-num">{r.dungeons || '✓'}</td>
-          <td class="lvl-num">{r.timeHours === 0 ? '✓' : formatHours(r.timeHours)}</td>
+          <td class="lvl-num lvl-col-80">{r.done80 ? '✓' : r.dungeonsTo80 || '✓'}</td>
+          <td class="lvl-num lvl-col-80">{r.done80 ? '✓' : formatHours(r.timeTo80)}</td>
+          <td class="lvl-num lvl-col-90">{r.done90 ? '✓' : r.dungeonsTo90 || '✓'}</td>
+          <td class="lvl-num lvl-col-90">{r.done90 ? '✓' : formatHours(r.timeTo90)}</td>
           <td class="lvl-num">{r.xpPerHour > 0 ? formatNumber(r.xpPerHour) : '—'}</td>
-          <td class="lvl-num">{r.roi > 0 ? formatHours(r.roi) : '—'}</td>
           <td class="lvl-stars" title={r.strategicText}>{starString(r.strategicStars)}</td>
         </tr>
       {/each}
@@ -74,6 +72,8 @@
     border-bottom: 1px solid var(--border-subtle);
     white-space: nowrap;
   }
+  .lvl-col-80 { border-right: 1px solid rgba(255,255,255,0.06); }
+  .lvl-col-90 { border-left: 1px solid rgba(255,255,255,0.06); }
   .lvl-table td {
     padding: 3px 6px;
     border-bottom: 1px solid var(--border-subtle);
@@ -89,6 +89,9 @@
   }
   .lvl-table tr.done {
     opacity: 0.4;
+  }
+  .lvl-table tr.done80 {
+    opacity: 0.6;
   }
   .lvl-priority {
     color: var(--gold);

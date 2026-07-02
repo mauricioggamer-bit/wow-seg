@@ -1,8 +1,7 @@
 <script lang="ts">
   import type { Personaje, LevelingConfig, LevelBreakdownEntry } from '../../types'
-  import { getLevelBreakdown, formatNumber, formatHours, calculateForCharacter } from '../../leveling/calculator'
+  import { getLevelBreakdown, formatNumber, formatHours, calculateBoth } from '../../leveling/calculator'
   import { calculateStrategicValue } from '../../leveling/strategicValue'
-  import { clsClass } from '../../constants'
 
   let {
     personaje,
@@ -16,46 +15,89 @@
     count90: number
   } = $props()
 
-  let breakdown = $derived(getLevelBreakdown(personaje, config, count90))
-  let calc = $derived(calculateForCharacter(personaje, config, count90))
+  let dual = $derived(calculateBoth(personaje, config, count90))
+  let breakdown80 = $derived(getLevelBreakdown(personaje, config, count90, 80))
+  let breakdown90 = $derived(getLevelBreakdown(personaje, config, count90, 90))
   let strategic = $derived(calculateStrategicValue(personaje, config, roster, count90))
 </script>
 
 <div class="lvl-detail-view">
-  {#if breakdown.length === 0}
-    <p class="lvl-done-msg">Objetivo completado ✓</p>
+  {#if dual.done90}
+    <p class="lvl-done-msg">Nivel 90 alcanzado ✓</p>
   {:else}
-    <table class="lvl-breakdown-table">
-      <thead>
-        <tr>
-          <th>Nivel</th>
-          <th>XP nivel</th>
-          <th>XP/dungeon</th>
-          <th>Dungeons</th>
-          <th>∑ Dungeons</th>
-          <th>∑ Tiempo</th>
-        </tr>
-      </thead>
-      <tbody>
-        {#each breakdown as entry (entry.level)}
-          <tr>
-            <td class="lvl-bd-level">{entry.level}</td>
-            <td class="lvl-bd-num">{formatNumber(entry.xpNeeded)}</td>
-            <td class="lvl-bd-num">{formatNumber(entry.xpPerDungeon)}</td>
-            <td class="lvl-bd-num">{entry.dungeons}</td>
-            <td class="lvl-bd-num">{entry.cumulativeDungeons}</td>
-            <td class="lvl-bd-num">{formatHours(entry.cumulativeTime)}</td>
-          </tr>
-        {/each}
-      </tbody>
-      <tfoot>
-        <tr>
-          <td colspan="3" class="lvl-bd-total">Total</td>
-          <td class="lvl-bd-num">{calc.dungeons}</td>
-          <td class="lvl-bd-num">{formatHours(calc.timeHours)}</td>
-        </tr>
-      </tfoot>
-    </table>
+    <div class="lvl-breakdown-sections">
+      {#if !dual.done80}
+        <div class="lvl-bd-section">
+          <h4 class="lvl-bd-title">Hasta nivel 80</h4>
+          <table class="lvl-breakdown-table">
+            <thead>
+              <tr>
+                <th>Nivel</th>
+                <th>XP</th>
+                <th>XP/dung</th>
+                <th>Dungs</th>
+                <th>∑Dungs</th>
+                <th>∑Tiempo</th>
+              </tr>
+            </thead>
+            <tbody>
+              {#each breakdown80 as entry (entry.level)}
+                <tr>
+                  <td class="lvl-bd-level">{entry.level}</td>
+                  <td class="lvl-bd-num">{formatNumber(entry.xpNeeded)}</td>
+                  <td class="lvl-bd-num">{formatNumber(entry.xpPerDungeon)}</td>
+                  <td class="lvl-bd-num">{entry.dungeons}</td>
+                  <td class="lvl-bd-num">{entry.cumulativeDungeons}</td>
+                  <td class="lvl-bd-num">{formatHours(entry.cumulativeTime)}</td>
+                </tr>
+              {/each}
+            </tbody>
+            <tfoot>
+              <tr>
+                <td colspan="3" class="lvl-bd-total">Total →80</td>
+                <td class="lvl-bd-num">{dual.dungeonsTo80}</td>
+                <td class="lvl-bd-num">{formatHours(dual.timeTo80)}</td>
+              </tr>
+            </tfoot>
+          </table>
+        </div>
+      {/if}
+
+      <div class="lvl-bd-section">
+        <h4 class="lvl-bd-title">Hasta nivel 90 {#if dual.done80}(desde 80){/if}</h4>
+        <table class="lvl-breakdown-table">
+          <thead>
+            <tr>
+              <th>Nivel</th>
+              <th>XP</th>
+              <th>XP/dung</th>
+              <th>Dungs</th>
+              <th>∑Dungs</th>
+              <th>∑Tiempo</th>
+            </tr>
+          </thead>
+          <tbody>
+            {#each breakdown90 as entry (entry.level)}
+              <tr class:at80={entry.level === 80}>
+                <td class="lvl-bd-level">{entry.level}</td>
+                <td class="lvl-bd-num">{formatNumber(entry.xpNeeded)}</td>
+                <td class="lvl-bd-num">{formatNumber(entry.xpPerDungeon)}</td>
+                <td class="lvl-bd-num">{entry.dungeons}</td>
+                <td class="lvl-bd-num">{entry.cumulativeDungeons}</td>
+                <td class="lvl-bd-num">{formatHours(entry.cumulativeTime)}</td>
+              </tr>
+            {/each}
+          </tbody>
+          <tfoot>
+            <tr>
+              <td colspan="3" class="lvl-bd-total">Total →90</td>
+              <td class="lvl-bd-num">{dual.dungeonsTo90}</td>
+              <td class="lvl-bd-num">{formatHours(dual.timeTo90)}</td>
+            </tr>
+          </tfoot>
+        </table>
+      </div>
+    </div>
 
     <div class="lvl-strategic-detail">
       <h4>Valor estratégico</h4>
@@ -97,6 +139,23 @@
     flex-direction: column;
     gap: 8px;
   }
+  .lvl-breakdown-sections {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+  .lvl-bd-section {
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--r-sm);
+    padding: 4px;
+    background: rgba(0,0,0,0.15);
+  }
+  .lvl-bd-title {
+    font-size: 0.55rem;
+    color: var(--gold);
+    margin-bottom: 4px;
+    font-family: var(--font-heading);
+  }
   .lvl-breakdown-table {
     width: 100%;
     border-collapse: collapse;
@@ -106,7 +165,7 @@
     text-align: left;
     padding: 3px 6px;
     font-family: var(--font-heading);
-    font-size: 0.5rem;
+    font-size: 0.45rem;
     color: var(--gold);
     text-transform: uppercase;
     border-bottom: 1px solid var(--border-subtle);
@@ -120,6 +179,12 @@
     border-top: 1px solid var(--border-subtle);
     font-weight: 600;
     color: var(--gold-light, #d4af37);
+  }
+  .lvl-breakdown-table tr.at80 {
+    border-top: 2px solid var(--gold);
+  }
+  .lvl-breakdown-table tr.at80 td {
+    padding-top: 4px;
   }
   .lvl-bd-level {
     color: var(--gold);

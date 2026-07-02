@@ -108,7 +108,7 @@ export function normalizeData(data: WowData): WowData {
     if (typeof p.planeado_usar !== 'boolean') p.planeado_usar = true
     if (p.descripcion === undefined) p.descripcion = ''
     if (p.tipo === undefined) p.tipo = 'funcional'
-    if (p.objetivoNivel === undefined || typeof p.objetivoNivel !== 'number') p.objetivoNivel = 80
+    if (p.objetivoNivel === undefined || typeof p.objetivoNivel !== 'number') p.objetivoNivel = 90
     if (p.parecidos === undefined) {
       const single = (p as any).parecido
       p.parecidos = single ? [single] : []

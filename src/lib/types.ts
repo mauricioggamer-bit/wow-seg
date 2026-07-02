@@ -134,11 +134,15 @@ export interface LevelingResult {
   nombre: string
   clase: string
   nivel: number
-  objetivoNivel: number
-  xpRemaining: number
-  dungeons: number
-  timeHours: number
+  xpTo80: number
+  dungeonsTo80: number
+  timeTo80: number
+  xpTo90: number
+  dungeonsTo90: number
+  timeTo90: number
   xpPerHour: number
+  done80: boolean
+  done90: boolean
   roi: number
   strategicStars: number
   strategicText: string

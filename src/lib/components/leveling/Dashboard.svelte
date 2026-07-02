@@ -29,7 +29,7 @@
   let sim = $derived(simulateByTime(personajes, config, count90, hoursPerWeek))
   let weeksNeeded = $derived(totalTime > 0 ? Math.ceil(totalTime / hoursPerWeek) : 0)
 
-  let pendingCount = $derived(personajes.filter(p => p.nivel < (p.objetivoNivel ?? 80)).length)
+  let pendingCount = $derived(personajes.filter(p => p.nivel < 90).length)
   let avgDungeonsPerChar = $derived(pendingCount > 0 ? Math.round(totalDungeons / pendingCount) : 0)
 </script>
 

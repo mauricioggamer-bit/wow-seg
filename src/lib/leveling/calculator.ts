@@ -86,7 +86,7 @@ export function calculateForCharacter(
   config: LevelingConfig,
   count90: number,
 ): CalcResult {
-  const objetivo = personaje.objetivoNivel ?? 80
+  const objetivo = personaje.objetivoNivel ?? 90
   const nivel = personaje.nivel
   const xpRemaining = getXpRemaining(nivel, objetivo)
   const xpPerDungeon = getEffectiveXpPerDungeon(config, nivel, count90)
@@ -103,30 +103,86 @@ export function calculateForCharacter(
   }
 }
 
+export interface DualCalcResult {
+  xpTo80: number
+  dungeonsTo80: number
+  timeTo80: number
+  xpTo90: number
+  dungeonsTo90: number
+  timeTo90: number
+  xpPerDungeon: number
+  xpPerHour: number
+  done80: boolean
+  done90: boolean
+}
+
+export function calculateBoth(
+  personaje: Personaje,
+  config: LevelingConfig,
+  count90: number,
+): DualCalcResult {
+  const nivel = personaje.nivel
+  const xpPerDungeon = getEffectiveXpPerDungeon(config, nivel, count90)
+  const xpPerHour = getXpPerHour(xpPerDungeon, config.duracionDungeon)
+
+  const xpTo80 = getXpRemaining(nivel, 80)
+  const dungeonsTo80 = getDungeonsNeeded(xpTo80, xpPerDungeon)
+  const timeTo80 = getTimeHours(dungeonsTo80, config.duracionDungeon)
+
+  const xpTo90 = getXpRemaining(nivel, 90)
+  const dungeonsTo90 = getDungeonsNeeded(xpTo90, xpPerDungeon)
+  const timeTo90 = getTimeHours(dungeonsTo90, config.duracionDungeon)
+
+  return {
+    xpTo80,
+    dungeonsTo80,
+    timeTo80,
+    xpTo90,
+    dungeonsTo90,
+    timeTo90,
+    xpPerDungeon,
+    xpPerHour,
+    done80: nivel >= 80,
+    done90: nivel >= 90,
+  }
+}
+
 export function getTotalXpRemaining(personajes: Personaje[], config: LevelingConfig, count90: number): number {
   return personajes
     .filter(p => p.planeado_usar)
-    .reduce((sum, p) => sum + calculateForCharacter(p, config, count90).xpRemaining, 0)
+    .reduce((sum, p) => sum + getXpRemaining(p.nivel, 90), 0)
 }
 
 export function getTotalDungeons(personajes: Personaje[], config: LevelingConfig, count90: number): number {
   return personajes
     .filter(p => p.planeado_usar)
-    .reduce((sum, p) => sum + calculateForCharacter(p, config, count90).dungeons, 0)
+    .reduce((sum, p) => sum + calculateBoth(p, config, count90).dungeonsTo90, 0)
 }
 
 export function getTotalTimeHours(personajes: Personaje[], config: LevelingConfig, count90: number): number {
   return personajes
     .filter(p => p.planeado_usar)
-    .reduce((sum, p) => sum + calculateForCharacter(p, config, count90).timeHours, 0)
+    .reduce((sum, p) => sum + calculateBoth(p, config, count90).timeTo90, 0)
+}
+
+export function getTotalDungeonsTo80(personajes: Personaje[], config: LevelingConfig, count90: number): number {
+  return personajes
+    .filter(p => p.planeado_usar)
+    .reduce((sum, p) => sum + calculateBoth(p, config, count90).dungeonsTo80, 0)
+}
+
+export function getTotalTimeTo80(personajes: Personaje[], config: LevelingConfig, count90: number): number {
+  return personajes
+    .filter(p => p.planeado_usar)
+    .reduce((sum, p) => sum + calculateBoth(p, config, count90).timeTo80, 0)
 }
 
 export function getLevelBreakdown(
   personaje: Personaje,
   config: LevelingConfig,
   count90: number,
+  objetivo: number,
 ): LevelBreakdownEntry[] {
-  const objetivo = personaje.objetivoNivel ?? 80
   const nivel = personaje.nivel
   if (nivel >= objetivo) return []
   const entries: LevelBreakdownEntry[] = []

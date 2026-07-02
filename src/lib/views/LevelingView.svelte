@@ -1,12 +1,14 @@
 <script lang="ts">
   import { personajesStore, dataStore } from '../stores/data'
   import { levelingStore } from '../stores/leveling'
-  import type { LevelingResult, OptimizationPlan } from '../types'
+  import type { LevelingResult } from '../types'
   import {
-    calculateForCharacter,
+    calculateBoth,
     getWarbandMentor8090FromRoster,
     getTotalTimeHours,
     getTotalDungeons,
+    getTotalTimeTo80,
+    getTotalDungeonsTo80,
     formatHours,
     formatNumber,
   } from '../leveling/calculator'
@@ -32,17 +34,21 @@
   let results = $derived<LevelingResult[]>(
     personajes
       .map(p => {
-        const calc = calculateForCharacter(p, config, count90)
+        const dual = calculateBoth(p, config, count90)
         const sv = calculateStrategicValue(p, config, personajes, count90)
         return {
           nombre: p.nombre,
           clase: p.clase,
           nivel: p.nivel,
-          objetivoNivel: p.objetivoNivel ?? 80,
-          xpRemaining: calc.xpRemaining,
-          dungeons: calc.dungeons,
-          timeHours: calc.timeHours,
-          xpPerHour: calc.xpPerHour,
+          xpTo80: dual.xpTo80,
+          dungeonsTo80: dual.dungeonsTo80,
+          timeTo80: dual.timeTo80,
+          xpTo90: dual.xpTo90,
+          dungeonsTo90: dual.dungeonsTo90,
+          timeTo90: dual.timeTo90,
+          xpPerHour: dual.xpPerHour,
+          done80: dual.done80,
+          done90: dual.done90,
           roi: sv.warbandImpact,
           strategicStars: sv.stars,
           strategicText: sv.reasons.join(' '),
@@ -50,35 +56,26 @@
         }
       })
       .sort((a, b) => {
-        if (a.xpRemaining === 0 && b.xpRemaining > 0) return 1
-        if (b.xpRemaining === 0 && a.xpRemaining > 0) return -1
-        return a.dungeons - b.dungeons
+        if (a.done90 && !b.done90) return 1
+        if (!a.done90 && b.done90) return -1
+        return a.dungeonsTo90 - b.dungeonsTo90
       })
   )
 
   let totalTime = $derived(getTotalTimeHours(personajes, config, count90))
   let totalDungeons = $derived(getTotalDungeons(personajes, config, count90))
-  let pendingCount = $derived(personajes.filter(p => p.nivel < (p.objetivoNivel ?? 80)).length)
+  let totalTime80 = $derived(getTotalTimeTo80(personajes, config, count90))
+  let totalDungeons80 = $derived(getTotalDungeonsTo80(personajes, config, count90))
+  let pendingCount = $derived(personajes.filter(p => p.nivel < 90).length)
+  let pending80Count = $derived(personajes.filter(p => p.nivel < 80).length)
 
   let selectedResult = $derived(results.find(r => r.nombre === selectedChar))
   let selectedPersonaje = $derived($personajesStore.find(p => p.nombre === selectedChar))
   let optimizationPlan = $derived(optimize(personajes, config, count90))
 
-  function toggleConfig() {
-    showConfig = !showConfig
-  }
-
-  function toggleOptimization() {
-    showOptimization = !showOptimization
-  }
-
-  function toggleDashboard() {
-    showDashboard = !showDashboard
-  }
-
-  function updateObjetivo(nombre: string, nivel: number) {
-    dataStore.updateObjetivoNivel(nombre, nivel)
-  }
+  function toggleConfig() { showConfig = !showConfig }
+  function toggleOptimization() { showOptimization = !showOptimization }
+  function toggleDashboard() { showDashboard = !showDashboard }
 </script>
 
 <div class="lvl-view">
@@ -121,15 +118,27 @@
 
   <div class="lvl-dashboard-strip">
     <div class="lvl-dash-item">
-      <span class="lvl-dash-label">Tiempo total</span>
+      <span class="lvl-dash-label">→80 Tiempo</span>
+      <span class="lvl-dash-val">{formatHours(totalTime80)}</span>
+    </div>
+    <div class="lvl-dash-item">
+      <span class="lvl-dash-label">→80 Dungs</span>
+      <span class="lvl-dash-val">{totalDungeons80}</span>
+    </div>
+    <div class="lvl-dash-item">
+      <span class="lvl-dash-label">→90 Tiempo</span>
       <span class="lvl-dash-val">{formatHours(totalTime)}</span>
     </div>
     <div class="lvl-dash-item">
-      <span class="lvl-dash-label">Dungeons totales</span>
+      <span class="lvl-dash-label">→90 Dungs</span>
       <span class="lvl-dash-val">{totalDungeons}</span>
     </div>
     <div class="lvl-dash-item">
-      <span class="lvl-dash-label">Pendientes</span>
+      <span class="lvl-dash-label">Pendientes 80</span>
+      <span class="lvl-dash-val">{pending80Count}/{personajes.length}</span>
+    </div>
+    <div class="lvl-dash-item">
+      <span class="lvl-dash-label">Pendientes 90</span>
       <span class="lvl-dash-val">{pendingCount}/{personajes.length}</span>
     </div>
     <div class="lvl-dash-item">
@@ -156,15 +165,7 @@
     <div class="lvl-detail">
       <div class="lvl-detail-header">
         <h3>{selectedResult.nombre} — {selectedResult.clase}</h3>
-        <div class="lvl-detail-actions">
-          <select value={selectedResult.objetivoNivel}
-            onchange={(e) => updateObjetivo(selectedResult.nombre, parseInt(e.currentTarget.value))}>
-            {#each [60, 70, 80, 90] as opt}
-              <option value={opt} selected={selectedResult.objetivoNivel === opt}>Nivel {opt}</option>
-            {/each}
-          </select>
-          <button class="lvl-detail-close" onclick={() => selectedChar = null}>✕</button>
-        </div>
+        <button class="lvl-detail-close" onclick={() => selectedChar = null}>✕</button>
       </div>
       <div class="lvl-detail-summary">
         <div class="lvl-detail-stat">
@@ -172,20 +173,26 @@
           <strong>{selectedResult.nivel}</strong>
         </div>
         <div class="lvl-detail-stat">
-          <span>XP restante</span>
-          <strong>{formatNumber(selectedResult.xpRemaining)}</strong>
-        </div>
-        <div class="lvl-detail-stat">
-          <span>Dungeons</span>
-          <strong>{selectedResult.dungeons || '✓'}</strong>
-        </div>
-        <div class="lvl-detail-stat">
-          <span>Tiempo</span>
-          <strong>{formatHours(selectedResult.timeHours)}</strong>
-        </div>
-        <div class="lvl-detail-stat">
           <span>XP/h</span>
           <strong>{formatNumber(selectedResult.xpPerHour)}</strong>
+        </div>
+        {#if !selectedResult.done80}
+          <div class="lvl-detail-stat">
+            <span>→80 Dungs</span>
+            <strong>{selectedResult.dungeonsTo80}</strong>
+          </div>
+          <div class="lvl-detail-stat">
+            <span>→80 Horas</span>
+            <strong>{formatHours(selectedResult.timeTo80)}</strong>
+          </div>
+        {/if}
+        <div class="lvl-detail-stat">
+          <span>→90 Dungs</span>
+          <strong>{selectedResult.done90 ? '✓' : selectedResult.dungeonsTo90}</strong>
+        </div>
+        <div class="lvl-detail-stat">
+          <span>→90 Horas</span>
+          <strong>{selectedResult.done90 ? '✓' : formatHours(selectedResult.timeTo90)}</strong>
         </div>
       </div>
       <DetailView personaje={selectedPersonaje} {config} roster={personajes} {count90} />
@@ -282,19 +289,6 @@
   .lvl-detail-header h3 {
     font-size: 0.7rem;
     color: var(--gold);
-  }
-  .lvl-detail-actions {
-    display: flex;
-    gap: 6px;
-    align-items: center;
-  }
-  .lvl-detail-actions select {
-    background: var(--input-bg);
-    border: 1px solid var(--border-subtle);
-    border-radius: var(--r-sm);
-    padding: 2px 4px;
-    font-size: 0.6rem;
-    color: var(--text-primary);
   }
   .lvl-detail-close {
     background: none;

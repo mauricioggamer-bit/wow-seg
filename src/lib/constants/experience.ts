@@ -1,4 +1,4 @@
-export const XP_CURVE: Record<number, number> = {
+const XP_ANCHORS: Record<number, number> = {
   10: 8490,
   11: 8150,
   12: 9210,
@@ -19,68 +19,51 @@ export const XP_CURVE: Record<number, number> = {
   27: 31985,
   28: 33960,
   29: 35985,
-  30: 38075,
-  31: 38430,
-  32: 38725,
-  33: 38970,
-  34: 39155,
-  35: 39280,
-  36: 39355,
-  37: 39370,
-  38: 39325,
-  39: 39225,
-  40: 39070,
-  41: 38860,
-  42: 38590,
-  43: 38265,
-  44: 37880,
-  45: 37440,
-  46: 36945,
-  47: 36395,
-  48: 35785,
-  49: 35115,
-  50: 255000,
-  51: 270000,
-  52: 285000,
-  53: 300000,
-  54: 315000,
-  55: 330000,
-  56: 345000,
-  57: 360000,
-  58: 375000,
-  59: 390000,
-  60: 405000,
-  61: 425000,
-  62: 445000,
-  63: 465000,
-  64: 485000,
-  65: 505000,
-  66: 525000,
-  67: 545000,
-  68: 565000,
-  69: 585000,
-  70: 225105,
-  71: 247375,
-  72: 270190,
-  73: 293540,
-  74: 317430,
-  75: 341865,
-  76: 366835,
-  77: 392350,
-  78: 418405,
-  79: 445000,
-  80: 600000,
-  81: 625000,
-  82: 650000,
-  83: 675000,
-  84: 700000,
-  85: 725000,
-  86: 750000,
-  87: 775000,
-  88: 800000,
-  89: 825000,
-  90: 850000,
+  30: 32075,
+  41: 37450,
+  50: 40435,
+  57: 48775,
+  70: 58645,
+  80: 403725,
 }
+
+const DUNGEON_XP_ANCHORS: Record<number, number> = {
+  30: 37500,
+  41: 50400,
+  50: 61350,
+  57: 68850,
+  70: 85650,
+  80: 105900,
+}
+
+function interpolate(anchors: Record<number, number>, level: number, extrapolate = false): number {
+  const keys = Object.keys(anchors).map(Number).sort((a, b) => a - b)
+  if (level < keys[0]) return anchors[keys[0]]
+  if (level >= keys[keys.length - 1]) {
+    if (!extrapolate) return anchors[keys[keys.length - 1]]
+    const lastKey = keys[keys.length - 1]
+    const prevKey = keys[keys.length - 2]
+    const step = (anchors[lastKey] - anchors[prevKey]) / (lastKey - prevKey)
+    return Math.round(anchors[lastKey] + step * (level - lastKey))
+  }
+  for (let i = 0; i < keys.length - 1; i++) {
+    if (level >= keys[i] && level < keys[i + 1]) {
+      const t = (level - keys[i]) / (keys[i + 1] - keys[i])
+      return Math.round(anchors[keys[i]] + t * (anchors[keys[i + 1]] - anchors[keys[i]]))
+    }
+  }
+  return anchors[keys[keys.length - 1]]
+}
+
+function buildXpCurve(): Record<number, number> {
+  const curve: Record<number, number> = {}
+  for (let level = 10; level <= 89; level++) {
+    curve[level] = interpolate(XP_ANCHORS, level, level > 80)
+  }
+  return curve
+}
+
+export const XP_CURVE: Record<number, number> = buildXpCurve()
 
 export const MAX_LEVEL = 90
 export const DEFAULT_OBJETIVO_NIVEL = 80
@@ -88,3 +71,15 @@ export const DEFAULT_OBJETIVO_NIVEL = 80
 export function getXpForLevel(level: number): number {
   return XP_CURVE[level] ?? 0
 }
+
+export function getDungeonXpForLevel(level: number): number {
+  return interpolate(DUNGEON_XP_ANCHORS, level, level > 80)
+}
+
+export const DUNGEON_XP_TABLE: { level: number; xp: number }[] = (() => {
+  const table: { level: number; xp: number }[] = []
+  for (let l = 10; l <= 90; l++) {
+    table.push({ level: l, xp: getDungeonXpForLevel(l) })
+  }
+  return table
+})()

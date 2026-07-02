@@ -39,21 +39,13 @@
 <div class="lvl-config">
   <div class="lvl-config-section">
     <div class="lvl-config-title">XP por Dungeon</div>
+    <div class="lvl-config-note">Recompensa timewalking: automática según nivel del personaje</div>
     <div class="lvl-config-row">
       <label>
-        <span>Recompensa</span>
-        <input type="number" value={config.xpRecompensa} min="0"
-          oninput={(e) => updateField('xpRecompensa', parseInt(e.currentTarget.value) || 0)} />
-      </label>
-      <label>
-        <span>Monstruos</span>
+        <span>XP Monstruos (extra por run)</span>
         <input type="number" value={config.xpMonstruos} min="0"
           oninput={(e) => updateField('xpMonstruos', parseInt(e.currentTarget.value) || 0)} />
       </label>
-      <div class="lvl-config-total">
-        <span>Total</span>
-        <strong>{(config.xpRecompensa + config.xpMonstruos).toLocaleString()}</strong>
-      </div>
     </div>
   </div>
 
@@ -182,14 +174,10 @@
     color: var(--text-primary);
     width: 100px;
   }
-  .lvl-config-total {
-    display: flex;
-    flex-direction: column;
-    gap: 1px;
-  }
-  .lvl-config-total strong {
-    font-size: 0.65rem;
-    color: var(--gold-light, #d4af37);
+  .lvl-config-note {
+    font-size: 0.45rem;
+    color: var(--text-dim);
+    font-style: italic;
   }
   .lvl-config-inline input {
     width: 60px;

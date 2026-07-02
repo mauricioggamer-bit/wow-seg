@@ -121,7 +121,6 @@ export interface CustomBuff {
 }
 
 export interface LevelingConfig {
-  xpRecompensa: number
   xpMonstruos: number
   duracionDungeon: number
   warbandMentor080: number
@@ -188,6 +187,27 @@ export interface OptimizationPlan {
   baselineTime: number
   timeSaved: number
   order: string[]
+}
+
+export interface SimulationStep {
+  nombre: string
+  clase: string
+  nivelInicial: number
+  nivelFinal: number
+  dungeonsUsed: number
+  timeUsed: number
+  completed: boolean
+  reached90: boolean
+}
+
+export interface SimulationResult {
+  steps: SimulationStep[]
+  totalDungeonsUsed: number
+  totalTimeUsed: number
+  charactersCompleted: number
+  count90Reached: number
+  remainingTime: number
+  remainingDungeons: number
 }
 
 export interface BackupData {

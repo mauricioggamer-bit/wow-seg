@@ -10,15 +10,18 @@
     formatHours,
     formatNumber,
   } from '../leveling/calculator'
+  import { getDungeonXpForLevel } from '../constants/experience'
   import { calculateStrategicValue } from '../leveling/strategicValue'
   import { optimize } from '../leveling/optimizer'
   import ConfigPanel from '../components/leveling/ConfigPanel.svelte'
   import CalculationTable from '../components/leveling/CalculationTable.svelte'
   import OptimizationResult from '../components/leveling/OptimizationResult.svelte'
   import DetailView from '../components/leveling/DetailView.svelte'
+  import Dashboard from '../components/leveling/Dashboard.svelte'
 
   let showConfig = $state(false)
   let showOptimization = $state(false)
+  let showDashboard = $state(false)
   let selectedChar = $state<string | null>(null)
 
   let personajes = $derived($personajesStore.filter(p => p.planeado_usar))
@@ -69,6 +72,10 @@
     showOptimization = !showOptimization
   }
 
+  function toggleDashboard() {
+    showDashboard = !showDashboard
+  }
+
   function updateObjetivo(nombre: string, nivel: number) {
     dataStore.updateObjetivoNivel(nombre, nivel)
   }
@@ -97,8 +104,8 @@
         <span class="lvl-buff-val" class:on={config.warMode} class:off={!config.warMode}>{config.warMode ? 'ON' : 'OFF'}</span>
       </div>
       <div class="lvl-buff-item-sm">
-        <span class="lvl-buff-label">XP/dungeon</span>
-        <span class="lvl-buff-val">{formatNumber(config.xpRecompensa + config.xpMonstruos)}</span>
+        <span class="lvl-buff-label">XP/dung @80</span>
+        <span class="lvl-buff-val">{formatNumber(getDungeonXpForLevel(80))}</span>
       </div>
       <div class="lvl-buff-item-sm">
         <span class="lvl-buff-label">Duración</span>
@@ -106,6 +113,7 @@
       </div>
     </div>
     <div class="lvl-toolbar">
+      <button class="wow-btn wow-btn-sm" onclick={toggleDashboard}>{showDashboard ? '✕ Dashboard' : '📊 Dashboard'}</button>
       <button class="wow-btn wow-btn-sm" onclick={toggleOptimization}>{showOptimization ? '✕ Optimizar' : '⚡ Optimizar'}</button>
       <button class="wow-btn wow-btn-sm" onclick={toggleConfig}>{showConfig ? '✕ Cerrar' : '⚙ Config'}</button>
     </div>
@@ -132,6 +140,10 @@
 
   {#if showOptimization}
     <OptimizationResult plan={optimizationPlan} />
+  {/if}
+
+  {#if showDashboard}
+    <Dashboard {personajes} {config} {count90} {results} plan={optimizationPlan} />
   {/if}
 
   {#if showConfig}

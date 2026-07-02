@@ -1,4 +1,4 @@
-import { XP_CURVE, getDungeonXpForLevel } from '../constants/experience'
+import { XP_CURVE, getDungeonXpForLevel, getMonsterXpForLevel } from '../constants/experience'
 import type { LevelingConfig, Personaje, LevelBreakdownEntry } from '../types'
 
 export function getXpRemaining(nivel: number, objetivo: number): number {
@@ -54,7 +54,7 @@ export function getEffectiveXpPerDungeon(config: LevelingConfig, nivel: number, 
   const monsterMult = 1 + getMonsterBuffPct({ ...config }, nivel)
   const baseReward = getDungeonXpForLevel(nivel)
   const xpReward = baseReward * rewardMult
-  const xpMobs = config.xpMonstruos * monsterMult
+  const xpMobs = getMonsterXpForLevel(nivel, config.xpMonstruos) * monsterMult
   return Math.round(xpReward + xpMobs)
 }
 

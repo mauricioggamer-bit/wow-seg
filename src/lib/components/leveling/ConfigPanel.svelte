@@ -42,7 +42,7 @@
     <div class="lvl-config-note">Recompensa timewalking: automática según nivel del personaje</div>
     <div class="lvl-config-row">
       <label>
-        <span>XP Monstruos (extra por run)</span>
+        <span>XP Monstruos @80 (escala por nivel)</span>
         <input type="number" value={config.xpMonstruos} min="0"
           oninput={(e) => updateField('xpMonstruos', parseInt(e.currentTarget.value) || 0)} />
       </label>

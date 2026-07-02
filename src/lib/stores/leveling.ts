@@ -4,7 +4,7 @@ import type { LevelingConfig, CustomBuff } from '../types'
 const STORAGE_KEY = 'wowseg_leveling_config'
 
 const DEFAULT_CONFIG: LevelingConfig = {
-  xpMonstruos: 0,
+  xpMonstruos: 112892,
   duracionDungeon: 18,
   warbandMentor080: 30,
   knowledgeOfTimeways: 30,

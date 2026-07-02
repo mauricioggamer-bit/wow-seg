@@ -4,7 +4,7 @@
   import { simulateByTime } from '../../leveling/simulator'
   import TimeChart from './TimeChart.svelte'
   import DungeonChart from './DungeonChart.svelte'
-  import WarbandEvolutionChart from './WarbandEvolutionChart.svelte'
+  import XpPerHourChart from './XpPerHourChart.svelte'
   import RoiChart from './RoiChart.svelte'
 
   let {
@@ -46,8 +46,8 @@
     </div>
 
     <div class="lvl-dash-card">
-      <div class="lvl-dash-card-title">Evolución Warband Mentor</div>
-      <WarbandEvolutionChart {plan} />
+      <div class="lvl-dash-card-title">XP/hora por personaje</div>
+      <XpPerHourChart {results} />
     </div>
 
     <div class="lvl-dash-card">

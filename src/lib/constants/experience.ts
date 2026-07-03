@@ -58,7 +58,7 @@ function interpolate(anchors: Record<number, number>, level: number, extrapolate
 function buildXpCurve(): Record<number, number> {
   const curve: Record<number, number> = {}
   const overrides = loadXpOverrides()
-  for (let level = 10; level <= 89; level++) {
+  for (let level = 10; level <= 90; level++) {
     if (overrides[level] !== undefined) {
       curve[level] = overrides[level]
     } else {

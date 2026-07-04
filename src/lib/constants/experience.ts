@@ -36,37 +36,29 @@ const XP_REQUIRED_PER_LEVEL: Record<number, number> = {
  * DUNGEON_REWARD_XP_TABLE — XP de recompensa por completar una dungeon de Timewalking
  *
  * Esta es la XP base que recibís al completar la dungeon (no incluye monstruos).
- * Solo hay anclas conocidas en niveles clave; entre anclas se interpola linealmente.
+ * Valores reales (medidos) en niveles 30, 41, 50, 57, 70, 80, 89.
+ * Valores extrapolados por fórmula de tramo (10-79 y 80-90) en el resto.
+ * Antes eran 6 anclas dispersas con interpolación lineal — ahora tabla exacta.
  * El usuario puede sobreescribir valores exactos via DungeonXpModal.
  */
 const DUNGEON_REWARD_XP_TABLE: Record<number, number> = {
-  30: 37500,
-  41: 50400,
-  50: 61350,
-  57: 68850,
-  70: 85650,
-  80: 105900,
-}
-
-/* ---- Interpolación lineal entre anclas (usada solo para dungeon reward) ---- */
-
-function interpolate(anchors: Record<number, number>, level: number, extrapolate = false): number {
-  const keys = Object.keys(anchors).map(Number).sort((a, b) => a - b)
-  if (level < keys[0]) return anchors[keys[0]]
-  if (level >= keys[keys.length - 1]) {
-    if (!extrapolate) return anchors[keys[keys.length - 1]]
-    const lastKey = keys[keys.length - 1]
-    const prevKey = keys[keys.length - 2]
-    const step = (anchors[lastKey] - anchors[prevKey]) / (lastKey - prevKey)
-    return Math.round(anchors[lastKey] + step * (level - lastKey))
-  }
-  for (let i = 0; i < keys.length - 1; i++) {
-    if (level >= keys[i] && level < keys[i + 1]) {
-      const t = (level - keys[i]) / (keys[i + 1] - keys[i])
-      return Math.round(anchors[keys[i]] + t * (anchors[keys[i + 1]] - anchors[keys[i]]))
-    }
-  }
-  return anchors[keys[keys.length - 1]]
+  10: 13323, 11: 14521, 12: 15718, 13: 16916, 14: 18113,
+  15: 19311, 16: 20509, 17: 21706, 18: 22904, 19: 24101,
+  20: 25299, 21: 26497, 22: 27694, 23: 28892, 24: 30089,
+  25: 31287, 26: 32485, 27: 33682, 28: 34880, 29: 36077,
+  30: 37500, 31: 38473, 32: 39670, 33: 40868, 34: 42065,
+  35: 43263, 36: 44461, 37: 45658, 38: 46856, 39: 48053,
+  40: 49251, 41: 50400, 42: 51646, 43: 52844, 44: 54041,
+  45: 55239, 46: 56437, 47: 57634, 48: 58832, 49: 60029,
+  50: 61350, 51: 62425, 52: 63622, 53: 64820, 54: 66017,
+  55: 67215, 56: 68413, 57: 68850, 58: 70808, 59: 72005,
+  60: 73203, 61: 74401, 62: 75598, 63: 76796, 64: 77993,
+  65: 79191, 66: 80389, 67: 81586, 68: 82784, 69: 83981,
+  70: 85650, 71: 86377, 72: 87574, 73: 88772, 74: 89969,
+  75: 91167, 76: 92365, 77: 93562, 78: 94760, 79: 95957,
+  80: 105900, 81: 107110, 82: 108321, 83: 109532, 84: 110743,
+  85: 111954, 86: 113166, 87: 114377, 88: 115588, 89: 116800,
+  90: 118010,
 }
 
 /* ---- XP_CURVE builder (lookup directo, sin interpolación) ---- */
@@ -171,11 +163,11 @@ export function getXpForLevel(level: number): number {
  * getDungeonXpForLevel — XP de recompensa por completar una dungeon de Timewalking
  *
  * No incluye XP de monstruos (ver getMonsterXpForLevel).
- * Consulta overrides del usuario primero; si no hay, interpola entre anclas.
+ * Consulta overrides del usuario primero; si no hay, lookup directo en la tabla exacta.
  */
 export function getDungeonXpForLevel(level: number): number {
   if (dungeonXpOverrides[level] !== undefined) return dungeonXpOverrides[level]
-  return interpolate(DUNGEON_REWARD_XP_TABLE, level, level > 80)
+  return DUNGEON_REWARD_XP_TABLE[level] ?? 0
 }
 
 export const DUNGEON_XP_TABLE: { level: number; xp: number }[] = (() => {

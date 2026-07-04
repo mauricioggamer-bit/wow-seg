@@ -34,7 +34,7 @@
   let hasSidebar = $derived($uiStore.currentView === 'warband')
 
   $effect(() => {
-    if ($authStore.authenticated && !$uiStore.currentWarband) {
+    if ($authStore.authenticated && !$uiStore.warbandInitialized) {
       const wbs = $warbandsStore
       if (wbs.length > 0) uiStore.selectWarband(wbs[0].nombre)
     }

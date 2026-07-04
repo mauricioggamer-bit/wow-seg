@@ -30,6 +30,7 @@ function createUiStore() {
   const { subscribe, set, update } = writable({
     currentView: 'warband' as ViewType,
     currentWarband: null as string | null,
+    warbandInitialized: false,
     selectedCharacter: null as string | null,
     showDetailPanel: false,
     showAuthModal: false,
@@ -48,7 +49,7 @@ function createUiStore() {
       update(s => ({ ...s, currentView: view, selectedCharacter: null, showDetailPanel: false }))
     },
     selectWarband(nombre: string | null) {
-      update(s => ({ ...s, currentWarband: nombre, selectedCharacter: null, showDetailPanel: false }))
+      update(s => ({ ...s, currentWarband: nombre, warbandInitialized: true, selectedCharacter: null, showDetailPanel: false }))
     },
     selectCharacter(nombre: string | null) {
       update(s => ({ ...s, selectedCharacter: nombre, showDetailPanel: !!nombre }))

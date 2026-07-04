@@ -1,13 +1,16 @@
 <script lang="ts">
-  import type { LevelingResult } from '../../types'
+  import type { LevelingResult, Personaje } from '../../types'
+  import { dataStore } from '../../stores/data'
   import { formatNumber, formatHours } from '../../leveling/calculator'
   import { clsClass } from '../../constants'
 
   let {
     results,
+    personajes,
     onSelect,
   }: {
     results: LevelingResult[]
+    personajes: Personaje[]
     onSelect?: (nombre: string) => void
   } = $props()
 
@@ -34,6 +37,14 @@
   function parseReasons(text: string): string[] {
     return text.split(/(?<=\.)\s+/).filter(Boolean).slice(0, 6)
   }
+
+  function getTimewaysPct(nombre: string): number {
+    return personajes.find(p => p.nombre === nombre)?.timewaysPct ?? 0
+  }
+
+  function setTimewaysPct(nombre: string, pct: number) {
+    dataStore.updateTimewaysPct(nombre, pct)
+  }
 </script>
 
 <div class="lvl-table-wrap">
@@ -51,6 +62,7 @@
         <th>#</th>
         <th>Personaje</th>
         <th>Nivel</th>
+        <th class="lvl-col-tw">Timeways</th>
         {#if viewMode !== 'to90'}
           <th class="lvl-col-80">→80 Dungs</th>
           <th class="lvl-col-80">→80 Horas</th>
@@ -74,6 +86,18 @@
             <span class="lvl-char-class" style="color: {clsClass(r.clase)}">{r.clase}</span>
           </td>
           <td class="lvl-num">{r.nivel}</td>
+          <td class="lvl-tw-cell" onclick={(e) => e.stopPropagation()}>
+            <input
+              type="range"
+              min="0"
+              max="30"
+              step="5"
+              value={getTimewaysPct(r.nombre)}
+              oninput={(e) => setTimewaysPct(r.nombre, parseInt(e.currentTarget.value))}
+              class="lvl-tw-slider"
+            />
+            <span class="lvl-tw-val">+{getTimewaysPct(r.nombre)}%</span>
+          </td>
           {#if viewMode !== 'to90'}
             <td class="lvl-num lvl-col-80">{r.done80 ? '✓' : r.dungeonsTo80 || '✓'}</td>
             <td class="lvl-num lvl-col-80">{r.done80 ? '✓' : formatHours(r.timeTo80)}</td>
@@ -160,6 +184,7 @@
   }
   .lvl-col-80 { border-right: 1px solid rgba(255,255,255,0.06); }
   .lvl-col-90 { border-left: 1px solid rgba(255,255,255,0.06); }
+  .lvl-col-tw { border-left: 1px solid rgba(255,255,255,0.06); border-right: 1px solid rgba(255,255,255,0.06); }
   .lvl-table td {
     padding: 3px 6px;
     border-bottom: 1px solid var(--border-subtle);
@@ -200,6 +225,25 @@
   .lvl-num {
     text-align: right;
     font-variant-numeric: tabular-nums;
+  }
+  .lvl-tw-cell {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    cursor: default;
+  }
+  .lvl-tw-slider {
+    width: 60px;
+    height: 4px;
+    cursor: pointer;
+    accent-color: var(--gold);
+  }
+  .lvl-tw-val {
+    font-size: 0.5rem;
+    color: var(--gold-light, #d4af37);
+    font-family: var(--font-heading);
+    white-space: nowrap;
+    min-width: 32px;
   }
   .lvl-strat-cell {
     position: relative;

@@ -47,7 +47,7 @@ function createUiStore() {
     setView(view: ViewType) {
       update(s => ({ ...s, currentView: view, selectedCharacter: null, showDetailPanel: false }))
     },
-    selectWarband(nombre: string) {
+    selectWarband(nombre: string | null) {
       update(s => ({ ...s, currentWarband: nombre, selectedCharacter: null, showDetailPanel: false }))
     },
     selectCharacter(nombre: string | null) {

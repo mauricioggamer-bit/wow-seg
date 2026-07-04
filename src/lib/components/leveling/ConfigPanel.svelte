@@ -1,11 +1,9 @@
 <script lang="ts">
   import { levelingStore } from '../../stores/leveling'
-  import { personajesStore, dataStore } from '../../stores/data'
-  import type { CustomBuff, Personaje } from '../../types'
+  import type { CustomBuff } from '../../types'
   import { saveXpOverrides, clearXpOverrides, getXpOverrides, rebuildXpCurve, getDungeonXpForLevel } from '../../constants/experience'
 
   let config = $derived($levelingStore)
-  let personajes = $derived(($personajesStore as Personaje[]).filter(p => p.planeado_usar))
 
   let newBuffName = $state('')
   let newBuffPct = $state(10)
@@ -40,10 +38,6 @@
 
   function updateBuff(id: string, pct: number) {
     levelingStore.updateCustomBuff(id, { percentage: pct })
-  }
-
-  function updateTimeways(nombre: string, pct: number) {
-    dataStore.updateTimewaysPct(nombre, Math.max(0, Math.min(30, pct)))
   }
 
   function addOverride() {
@@ -100,23 +94,6 @@
         <option value={opt} selected={config.warbandMentor080 === opt}>{opt}%</option>
       {/each}
     </select>
-  </div>
-
-  <div class="lvl-config-section">
-    <div class="lvl-config-title">Knowledge of Timeways — por personaje</div>
-    <div class="lvl-config-note">El buff depende de los runs realizados por cada personaje. Máximo 30%.</div>
-    <div class="lvl-timeways-list">
-      {#each personajes as p (p.nombre)}
-        <div class="lvl-timeways-item">
-          <span class="lvl-timeways-name">{p.nombre}</span>
-          <span class="lvl-timeways-lvl">Nv {p.nivel}</span>
-          <input type="range" min="0" max="30" step="5"
-            value={p.timewaysPct ?? 0}
-            oninput={(e) => updateTimeways(p.nombre, parseInt(e.currentTarget.value))} />
-          <span class="lvl-timeways-pct">+{p.timewaysPct ?? 0}%</span>
-        </div>
-      {/each}
-    </div>
   </div>
 
   <div class="lvl-config-section">
@@ -252,50 +229,6 @@
   .lvl-config-unit {
     font-size: 0.5rem !important;
     color: var(--text-muted);
-  }
-  .lvl-timeways-list {
-    display: flex;
-    flex-direction: column;
-    gap: 2px;
-    margin-top: 3px;
-    max-height: 160px;
-    overflow-y: auto;
-    padding-right: 3px;
-  }
-  .lvl-timeways-item {
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    padding: 2px 4px;
-    background: rgba(0, 0, 0, 0.3);
-    border-radius: var(--r-sm);
-    font-size: 0.5rem;
-  }
-  .lvl-timeways-name {
-    color: var(--text-secondary);
-    width: 90px;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-    flex-shrink: 0;
-  }
-  .lvl-timeways-lvl {
-    color: var(--text-dim);
-    font-size: 0.45rem;
-    width: 36px;
-    flex-shrink: 0;
-  }
-  .lvl-timeways-item input[type="range"] {
-    flex: 1;
-    width: auto;
-  }
-  .lvl-timeways-pct {
-    color: var(--gold);
-    font-family: var(--font-heading);
-    font-size: 0.5rem;
-    width: 32px;
-    text-align: right;
-    flex-shrink: 0;
   }
   .lvl-checkbox {
     display: flex !important;

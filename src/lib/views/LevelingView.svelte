@@ -1,7 +1,8 @@
 <script lang="ts">
   import { personajesStore, dataStore } from '../stores/data'
+  import { currentWarband } from '../stores/ui'
   import { levelingStore } from '../stores/leveling'
-  import type { LevelingResult } from '../types'
+  import type { LevelingResult, Personaje } from '../types'
   import {
     calculateBoth,
     getWarbandMentor8090FromRoster,
@@ -28,7 +29,12 @@
   let showDungeonXp = $state(false)
   let selectedChar = $state<string | null>(null)
 
-  let personajes = $derived($personajesStore.filter(p => p.planeado_usar))
+  let activeWarband = $derived($currentWarband && $currentWarband !== '' ? $currentWarband : null)
+  let personajes = $derived(
+    $personajesStore
+      .filter(p => p.planeado_usar)
+      .filter(p => !activeWarband || p.warband === activeWarband)
+  )
   let config = $derived($levelingStore)
   let count90 = $derived(personajes.filter(p => p.nivel >= 90).length)
   let warbandMentor8090 = $derived(getWarbandMentor8090FromRoster($personajesStore))
@@ -176,7 +182,7 @@
     </div>
   </div>
 
-  <CalculationTable {results} onSelect={selectChar} />
+  <CalculationTable {results} personajes={$personajesStore.filter(p => p.planeado_usar)} onSelect={selectChar} />
 </div>
 
 <Modal bind:open={showDashboard} title="Dashboard">

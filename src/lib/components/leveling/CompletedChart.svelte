@@ -1,6 +1,5 @@
 <script lang="ts">
   import type { SimulationResult } from '../../types'
-  import { clsClass } from '../../constants'
 
   let { sim, totalPending }: { sim: SimulationResult; totalPending: number } = $props()
 
@@ -15,8 +14,8 @@
 </script>
 
 <svg viewBox="0 0 {W} {H}" class="lvl-chart" preserveAspectRatio="xMidYMid meet">
-  <rect x={PAD_L} y={PAD_T} width={innerW} height={innerH} fill="var(--chart-bg-bar, rgba(0,0,0,0.4))" rx="3" />
-  <rect x={PAD_L} y={PAD_T} width={Math.max(0, barW)} height={innerH} fill="var(--gold)" opacity="0.8" rx="3" />
+  <rect x={PAD_L} y={PAD_T} width={innerW} height={innerH} class="lvl-chart-bg" rx="3" />
+  <rect x={PAD_L} y={PAD_T} width={Math.max(0, barW)} height={innerH} class="lvl-chart-fill" rx="3" />
   <text x={PAD_L + 2} y={PAD_T + innerH / 2 + 2} class="lvl-chart-bar-text">
     {sim.charactersCompleted}/{totalPending} completados
   </text>
@@ -30,6 +29,8 @@
 
 <style>
   .lvl-chart { width: 100%; height: auto; }
+  :global(.lvl-chart-bg) { fill: var(--chart-bg-bar, rgba(0,0,0,0.4)); }
+  :global(.lvl-chart-fill) { fill: var(--gold); opacity: var(--chart-bar-opacity, 0.85); }
   :global(.lvl-chart-bar-text) { fill: var(--text-primary); font-size: 5px; font-family: var(--font-heading); }
   :global(.lvl-chart-axis) { fill: var(--chart-axis-text, var(--text-dim)); font-size: 5px; }
 </style>

@@ -1,6 +1,6 @@
 <script lang="ts">
   import type { LevelingResult } from '../../types'
-  import { clsClass } from '../../constants'
+  import { CLASS_MAP, PERS_CLASS_COLORS } from '../../constants'
 
   let { results }: { results: LevelingResult[] } = $props()
 
@@ -39,10 +39,8 @@
       width={barW}
       height={barH(r.dungeonsTo90)}
       rx="2"
-      fill={clsClass(r.clase)}
-      opacity="var(--chart-bar-opacity, 0.8)"
-      stroke="var(--chart-bar-stroke, none)"
-      stroke-width="0.5"
+      class="lvl-bar"
+      fill={PERS_CLASS_COLORS[CLASS_MAP[r.clase] ?? 'warrior']}
     />
     {#if barW >= 18}
       <text
@@ -60,13 +58,22 @@
       transform="rotate(-30 {barX(i) + barW / 2} {H - 4})"
     >{r.nombre.slice(0, 6)}</text>
   {/each}
-  <line x1={PAD_L} y1={PAD_T + innerH} x2={W - PAD_R} y2={PAD_T + innerH} stroke="var(--chart-axis-line, rgba(255,255,255,0.1))" stroke-width="0.5" />
+  <line x1={PAD_L} y1={PAD_T + innerH} x2={W - PAD_R} y2={PAD_T + innerH} class="lvl-chart-axis-line" />
 </svg>
 
 <style>
   .lvl-chart {
     width: 100%;
     height: auto;
+  }
+  :global(.lvl-bar) {
+    opacity: var(--chart-bar-opacity, 0.85);
+    stroke: var(--chart-bar-stroke, none);
+    stroke-width: 0.5;
+  }
+  :global(.lvl-chart-axis-line) {
+    stroke: var(--chart-axis-line, rgba(255,255,255,0.1));
+    stroke-width: 0.5;
   }
   :global(.lvl-chart-val) {
     fill: var(--chart-val, var(--gold-light));

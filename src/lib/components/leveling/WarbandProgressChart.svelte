@@ -42,12 +42,12 @@
 {#if dataPoints.length > 1}
   <svg viewBox="0 0 {W} {H}" class="lvl-chart" preserveAspectRatio="xMidYMid meet">
     {#each [5, 10, 15, 20, 25] as lvl}
-      <line x1={PAD_L} y1={py(lvl)} x2={W - PAD_R} y2={py(lvl)} stroke="var(--chart-grid, rgba(255,255,255,0.05))" stroke-width="0.5" />
+      <line x1={PAD_L} y1={py(lvl)} x2={W - PAD_R} y2={py(lvl)} class="lvl-chart-grid" />
       <text x="2" y={py(lvl) + 2} class="lvl-chart-axis">{lvl}%</text>
     {/each}
-    <path d={pathD} fill="none" stroke="var(--gold)" stroke-width="1.5" />
+    <path d={pathD} class="lvl-chart-line" />
     {#each dataPoints as pt, i (pt.label)}
-      <circle cx={px(i)} cy={py(pt.y)} r="2.5" fill="var(--gold)" />
+      <circle cx={px(i)} cy={py(pt.y)} r="2.5" class="lvl-chart-dot" />
       {#if i > 0}
         <text x={px(i)} y={py(pt.y) - 4} text-anchor="middle" class="lvl-chart-val">+{pt.buffPct}%</text>
       {/if}
@@ -62,8 +62,11 @@
 
 <style>
   .lvl-chart { width: 100%; height: auto; }
-  :global(.lvl-chart-val) { fill: var(--gold-light, #d4af37); font-size: 5px; font-family: var(--font-heading); }
-  :global(.lvl-chart-label) { fill: var(--text-muted); font-size: 5px; }
+  :global(.lvl-chart-line) { fill: none; stroke: var(--gold); stroke-width: 1.5; }
+  :global(.lvl-chart-dot) { fill: var(--gold); }
+  :global(.lvl-chart-grid) { stroke: var(--chart-grid, rgba(255,255,255,0.05)); stroke-width: 0.5; }
+  :global(.lvl-chart-val) { fill: var(--chart-val, var(--gold-light)); font-size: 5px; font-family: var(--font-heading); }
+  :global(.lvl-chart-label) { fill: var(--chart-label, var(--text-muted)); font-size: 5px; }
   :global(.lvl-chart-axis) { fill: var(--chart-axis-text, var(--text-dim)); font-size: 5px; }
   .lvl-chart-empty { font-size: 0.5rem; color: var(--text-dim); text-align: center; padding: 20px 0; }
 </style>

@@ -1,33 +1,45 @@
-const XP_ANCHORS: Record<number, number> = {
-  10: 8490,
-  11: 8150,
-  12: 9210,
-  13: 10335,
-  14: 11510,
-  15: 12745,
-  16: 14035,
-  17: 15385,
-  18: 16790,
-  19: 18250,
-  20: 19770,
-  21: 21345,
-  22: 22975,
-  23: 24665,
-  24: 26410,
-  25: 28210,
-  26: 30070,
-  27: 31985,
-  28: 33960,
-  29: 35985,
-  30: 32075,
-  41: 37450,
-  50: 40435,
-  57: 48775,
-  70: 58645,
-  80: 403725,
+/**
+ * XP_REQUIRED_PER_LEVEL — XP necesaria para subir de nivel (curva de Timewalking)
+ *
+ * Fuente: tabla oficial de WoW Timewalking (Col C).
+ * Niveles 1-79: escalado de Timewalking (acelerado vs retail).
+ * Niveles 80-89: Timewalking + 33.3% bonus (tramo final endurecido).
+ * Nivel 90: 99,999,999 = nivel máximo, no se puede subir más.
+ *
+ * Antes estos valores eran anclas dispersas con interpolación lineal,
+ * lo que producía drift en tramos sin ancla (31-40, 42-49, 51-56, 58-69).
+ * Ahora son exactos nivel por nivel.
+ */
+const XP_REQUIRED_PER_LEVEL: Record<number, number> = {
+  1: 250, 2: 655, 3: 1245, 4: 2025, 5: 2995,
+  6: 4155, 7: 5505, 8: 7040, 9: 8770, 10: 10590,
+  11: 11685, 12: 12795, 13: 13920, 14: 15055, 15: 16210,
+  16: 17380, 17: 18560, 18: 19755, 19: 20970, 20: 22195,
+  21: 23435, 22: 24690, 23: 25960, 24: 27245, 25: 28545,
+  26: 29860, 27: 31190, 28: 32535, 29: 33890, 30: 32075,
+  31: 32700, 32: 33295, 33: 33865, 34: 34410, 35: 34925,
+  36: 35415, 37: 35875, 38: 36310, 39: 36720, 40: 37100,
+  41: 37450, 42: 37780, 43: 38075, 44: 38350, 45: 38595,
+  46: 38810, 47: 39000, 48: 39165, 49: 39300, 50: 40435,
+  51: 41590, 52: 42750, 53: 43930, 54: 45120, 55: 46325,
+  56: 47545, 57: 48775, 58: 50020, 59: 51280, 60: 52555,
+  61: 53840, 62: 55140, 63: 56455, 64: 57780, 65: 59120,
+  66: 60475, 67: 61845, 68: 63225, 69: 64620, 70: 58645,
+  71: 60335, 72: 62045, 73: 63780, 74: 65540, 75: 67325,
+  76: 69130, 77: 70965, 78: 72820, 79: 74700,
+  80: 403725, 81: 423390, 82: 443395, 83: 463740, 84: 484430,
+  85: 505455, 86: 526825, 87: 548535, 88: 570590, 89: 592980,
+  90: 99999999,
 }
 
-const DUNGEON_XP_ANCHORS: Record<number, number> = {
+/**
+ * DUNGEON_REWARD_XP_TABLE — XP de recompensa por completar una dungeon de Timewalking
+ *
+ * Esta es la XP base que recibís al completar la dungeon (no incluye monstruos).
+ * Solo hay anclas conocidas en niveles clave; entre anclas se interpola linealmente.
+ * El usuario puede sobreescribir valores exactos via DungeonXpModal.
+ */
+const DUNGEON_REWARD_XP_TABLE: Record<number, number> = {
   30: 37500,
   41: 50400,
   50: 61350,
@@ -35,6 +47,8 @@ const DUNGEON_XP_ANCHORS: Record<number, number> = {
   70: 85650,
   80: 105900,
 }
+
+/* ---- Interpolación lineal entre anclas (usada solo para dungeon reward) ---- */
 
 function interpolate(anchors: Record<number, number>, level: number, extrapolate = false): number {
   const keys = Object.keys(anchors).map(Number).sort((a, b) => a - b)
@@ -55,18 +69,22 @@ function interpolate(anchors: Record<number, number>, level: number, extrapolate
   return anchors[keys[keys.length - 1]]
 }
 
+/* ---- XP_CURVE builder (lookup directo, sin interpolación) ---- */
+
 function buildXpCurve(): Record<number, number> {
   const curve: Record<number, number> = {}
   const overrides = loadXpOverrides()
-  for (let level = 10; level <= 90; level++) {
+  for (let level = 1; level <= 90; level++) {
     if (overrides[level] !== undefined) {
       curve[level] = overrides[level]
     } else {
-      curve[level] = interpolate(XP_ANCHORS, level, level > 80)
+      curve[level] = XP_REQUIRED_PER_LEVEL[level] ?? 0
     }
   }
   return curve
 }
+
+/* ---- XP overrides (usuario edita XP necesaria por nivel) ---- */
 
 const STORAGE_KEY_OVERRIDES = 'wowseg_xp_overrides'
 
@@ -94,7 +112,7 @@ export function getXpOverrides(): Record<number, number> {
   return loadXpOverrides()
 }
 
-/* Dungeon XP overrides — user-edited per-level dungeon XP */
+/* ---- Dungeon XP overrides (usuario edita XP de recompensa por dungeon) ---- */
 
 const STORAGE_KEY_DUNGEON_OVERRIDES = 'wowseg_dungeon_xp_overrides'
 
@@ -128,6 +146,8 @@ export function rebuildDungeonXpCurve(): void {
   dungeonXpOverrides = loadDungeonXpOverrides()
 }
 
+/* ---- XP_CURVE proxy (reactive lookup) ---- */
+
 let xpCurve = buildXpCurve()
 
 export function rebuildXpCurve(): void {
@@ -147,9 +167,15 @@ export function getXpForLevel(level: number): number {
   return XP_CURVE[level] ?? 0
 }
 
+/**
+ * getDungeonXpForLevel — XP de recompensa por completar una dungeon de Timewalking
+ *
+ * No incluye XP de monstruos (ver getMonsterXpForLevel).
+ * Consulta overrides del usuario primero; si no hay, interpola entre anclas.
+ */
 export function getDungeonXpForLevel(level: number): number {
   if (dungeonXpOverrides[level] !== undefined) return dungeonXpOverrides[level]
-  return interpolate(DUNGEON_XP_ANCHORS, level, level > 80)
+  return interpolate(DUNGEON_REWARD_XP_TABLE, level, level > 80)
 }
 
 export const DUNGEON_XP_TABLE: { level: number; xp: number }[] = (() => {
@@ -160,6 +186,12 @@ export const DUNGEON_XP_TABLE: { level: number; xp: number }[] = (() => {
   return table
 })()
 
+/**
+ * getMonsterXpForLevel — XP total de monstruos derrotados en una dungeon
+ *
+ * Escala proporcionalmente a la recompensa de dungeon del mismo nivel.
+ * El valor base se configura en xpMonstruos @80 (LevelingConfig) y se escala.
+ */
 const MONSTER_XP_REF_LEVEL = 80
 
 export function getMonsterXpForLevel(level: number, monsterXpAt80: number): number {

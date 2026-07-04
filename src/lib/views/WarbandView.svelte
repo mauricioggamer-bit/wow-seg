@@ -3,8 +3,10 @@
   import { uiStore, currentWarband } from '../stores/ui'
   import { clsClass } from '../constants'
 
+  let activeWb = $derived($currentWarband === '' ? null : ($currentWarband || $personajesStore[0]?.warband || null))
+
   let filtered = $derived.by(() => {
-    let chars = $personajesStore.filter(c => c.warband === ($currentWarband || $personajesStore[0]?.warband))
+    let chars = activeWb ? $personajesStore.filter(c => c.warband === activeWb) : $personajesStore
     const f = $uiStore.filters
     if (f.searchText) {
       const q = f.searchText.toLowerCase()
@@ -19,7 +21,7 @@
 
 <div class="wow-panel">
   <div class="wow-panel-header">
-    <h2>{$currentWarband || $personajesStore[0]?.warband}</h2>
+    <h2>{activeWb || 'Todos'}</h2>
     <span class="text-sm text-muted">{filtered.length} personajes</span>
   </div>
   <div class="wow-panel-body">

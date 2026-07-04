@@ -8,7 +8,7 @@
   let filterText = $state('')
   let showAll = $state(false)
 
-  let activeWarband = $derived(showAll ? null : ($currentWarband || $personajesStore[0]?.warband || null))
+  let activeWarband = $derived(showAll || $currentWarband === '' ? null : ($currentWarband || $personajesStore[0]?.warband || null))
 
   let scoped = $derived(
     activeWarband ? $personajesStore.filter(c => c.warband === activeWarband) : $personajesStore

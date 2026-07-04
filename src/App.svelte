@@ -430,7 +430,7 @@
         {:else if $uiStore.currentView === 'keybinds'}
           <KeybindView />
         {:else if $uiStore.currentView === 'leveling'}
-          <LevelingView />
+          <LevelingView {openCharEdit} />
         {/if}
       </div>
       {#if $uiStore.currentView === 'warband'}

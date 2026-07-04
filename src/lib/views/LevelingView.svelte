@@ -23,6 +23,8 @@
   import OptimizationResult from '../components/leveling/OptimizationResult.svelte'
   import Dashboard from '../components/leveling/Dashboard.svelte'
 
+  let { openCharEdit }: { openCharEdit?: (name: string) => void } = $props()
+
   let showConfig = $state(false)
   let showOptimization = $state(false)
   let showDashboard = $state(false)
@@ -199,15 +201,16 @@
 
 <DungeonXpModal bind:open={showDungeonXp} />
 
-<DetailDrawer
-  open={drawerOpen}
-  result={selectedResult}
-  personaje={selectedPersonaje}
-  {config}
-  roster={personajes}
-  {count90}
-  onClose={closeDrawer}
-/>
+  <DetailDrawer
+    open={drawerOpen}
+    result={selectedResult}
+    personaje={selectedPersonaje}
+    {config}
+    roster={personajes}
+    {count90}
+    onEditChar={openCharEdit}
+    onClose={closeDrawer}
+  />
 
 <style>
   .lvl-view {

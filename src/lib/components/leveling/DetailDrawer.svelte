@@ -10,6 +10,7 @@
     config,
     roster,
     count90,
+    onEditChar,
     onClose,
   }: {
     open?: boolean
@@ -18,6 +19,7 @@
     config: LevelingConfig
     roster: Personaje[]
     count90: number
+    onEditChar?: (name: string) => void
     onClose?: () => void
   } = $props()
 
@@ -32,7 +34,13 @@
   <aside class="drawer" role="dialog" aria-label="Detalle del personaje">
     <div class="drawer-header">
       <h3>{result.nombre} — {result.clase}</h3>
-      <button class="drawer-close" onclick={close} aria-label="Cerrar">✕</button>
+      <div class="drawer-actions">
+        {#if onEditChar}
+          <button onclick={() => onEditChar(result.nombre)} title="Editar personaje"
+            style="background:none;border:none;cursor:pointer;font-size:0.7rem;padding:0 4px;">✏️</button>
+        {/if}
+        <button class="drawer-close" onclick={close} aria-label="Cerrar">✕</button>
+      </div>
     </div>
     <div class="drawer-summary">
       <div class="drawer-stat">
@@ -110,6 +118,11 @@
     color: var(--gold);
     margin: 0;
     font-family: var(--font-heading);
+  }
+  .drawer-actions {
+    display: flex;
+    align-items: center;
+    gap: 2px;
   }
   .drawer-close {
     background: none;

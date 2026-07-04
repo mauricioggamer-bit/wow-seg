@@ -15,7 +15,7 @@
 </script>
 
 <svg viewBox="0 0 {W} {H}" class="lvl-chart" preserveAspectRatio="xMidYMid meet">
-  <rect x={PAD_L} y={PAD_T} width={innerW} height={innerH} fill="rgba(0,0,0,0.4)" rx="3" />
+  <rect x={PAD_L} y={PAD_T} width={innerW} height={innerH} fill="var(--chart-bg-bar, rgba(0,0,0,0.4))" rx="3" />
   <rect x={PAD_L} y={PAD_T} width={Math.max(0, barW)} height={innerH} fill="var(--gold)" opacity="0.8" rx="3" />
   <text x={PAD_L + 2} y={PAD_T + innerH / 2 + 2} class="lvl-chart-bar-text">
     {sim.charactersCompleted}/{totalPending} completados
@@ -31,5 +31,5 @@
 <style>
   .lvl-chart { width: 100%; height: auto; }
   :global(.lvl-chart-bar-text) { fill: var(--text-primary); font-size: 5px; font-family: var(--font-heading); }
-  :global(.lvl-chart-axis) { fill: var(--text-dim); font-size: 5px; }
+  :global(.lvl-chart-axis) { fill: var(--chart-axis-text, var(--text-dim)); font-size: 5px; }
 </style>

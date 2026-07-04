@@ -41,7 +41,9 @@
       height={barH(r.timeTo90)}
       rx="2"
       fill={clsClass(r.clase)}
-      opacity="0.8"
+      opacity="var(--chart-bar-opacity, 0.8)"
+      stroke="var(--chart-bar-stroke, none)"
+      stroke-width="0.5"
     />
     {#if barW >= 18}
       <text
@@ -59,7 +61,7 @@
       transform="rotate(-30 {barX(i) + barW / 2} {H - 4})"
     >{r.nombre.slice(0, 6)}</text>
   {/each}
-  <line x1={PAD_L} y1={PAD_T + innerH} x2={W - PAD_R} y2={PAD_T + innerH} stroke="rgba(255,255,255,0.1)" stroke-width="0.5" />
+  <line x1={PAD_L} y1={PAD_T + innerH} x2={W - PAD_R} y2={PAD_T + innerH} stroke="var(--chart-axis-line, rgba(255,255,255,0.1))" stroke-width="0.5" />
 </svg>
 
 <style>
@@ -68,12 +70,12 @@
     height: auto;
   }
   :global(.lvl-chart-val) {
-    fill: var(--gold-light, #d4af37);
+    fill: var(--chart-val, var(--gold-light));
     font-size: 5px;
     font-family: var(--font-heading);
   }
   :global(.lvl-chart-label) {
-    fill: var(--text-muted);
+    fill: var(--chart-label, var(--text-muted));
     font-size: 5px;
   }
 </style>

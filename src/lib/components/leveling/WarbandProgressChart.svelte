@@ -42,7 +42,7 @@
 {#if dataPoints.length > 1}
   <svg viewBox="0 0 {W} {H}" class="lvl-chart" preserveAspectRatio="xMidYMid meet">
     {#each [5, 10, 15, 20, 25] as lvl}
-      <line x1={PAD_L} y1={py(lvl)} x2={W - PAD_R} y2={py(lvl)} stroke="rgba(255,255,255,0.05)" stroke-width="0.5" />
+      <line x1={PAD_L} y1={py(lvl)} x2={W - PAD_R} y2={py(lvl)} stroke="var(--chart-grid, rgba(255,255,255,0.05))" stroke-width="0.5" />
       <text x="2" y={py(lvl) + 2} class="lvl-chart-axis">{lvl}%</text>
     {/each}
     <path d={pathD} fill="none" stroke="var(--gold)" stroke-width="1.5" />
@@ -64,6 +64,6 @@
   .lvl-chart { width: 100%; height: auto; }
   :global(.lvl-chart-val) { fill: var(--gold-light, #d4af37); font-size: 5px; font-family: var(--font-heading); }
   :global(.lvl-chart-label) { fill: var(--text-muted); font-size: 5px; }
-  :global(.lvl-chart-axis) { fill: var(--text-dim); font-size: 5px; }
+  :global(.lvl-chart-axis) { fill: var(--chart-axis-text, var(--text-dim)); font-size: 5px; }
   .lvl-chart-empty { font-size: 0.5rem; color: var(--text-dim); text-align: center; padding: 20px 0; }
 </style>

@@ -12,18 +12,20 @@
     formatHours,
     formatNumber,
   } from '../leveling/calculator'
-  import { getDungeonXpForLevel } from '../constants/experience'
   import { calculateStrategicValue } from '../leveling/strategicValue'
   import { optimize } from '../leveling/optimizer'
+  import Modal from '../components/leveling/Modal.svelte'
+  import DetailDrawer from '../components/leveling/DetailDrawer.svelte'
+  import DungeonXpModal from '../components/leveling/DungeonXpModal.svelte'
   import ConfigPanel from '../components/leveling/ConfigPanel.svelte'
   import CalculationTable from '../components/leveling/CalculationTable.svelte'
   import OptimizationResult from '../components/leveling/OptimizationResult.svelte'
-  import DetailView from '../components/leveling/DetailView.svelte'
   import Dashboard from '../components/leveling/Dashboard.svelte'
 
   let showConfig = $state(false)
   let showOptimization = $state(false)
   let showDashboard = $state(false)
+  let showDungeonXp = $state(false)
   let selectedChar = $state<string | null>(null)
 
   let personajes = $derived($personajesStore.filter(p => p.planeado_usar))
@@ -63,6 +65,7 @@
           roi: roiMap.get(p.nombre) ?? 0,
           strategicStars: sv.stars,
           strategicText: sv.reasons.join(' '),
+          strategicScore: sv.totalScore,
           warbandImpact: sv.warbandImpact,
         }
       })
@@ -76,9 +79,14 @@
   let selectedResult = $derived(results.find(r => r.nombre === selectedChar))
   let selectedPersonaje = $derived($personajesStore.find(p => p.nombre === selectedChar))
 
+  let drawerOpen = $derived(!!selectedChar && !!selectedResult && !!selectedPersonaje)
+
   function toggleConfig() { showConfig = !showConfig }
   function toggleOptimization() { showOptimization = !showOptimization }
   function toggleDashboard() { showDashboard = !showDashboard }
+  function toggleDungeonXp() { showDungeonXp = !showDungeonXp }
+  function selectChar(nombre: string) { selectedChar = selectedChar === nombre ? null : nombre }
+  function closeDrawer() { selectedChar = null }
 
   function exportCSVData() {
     const csv = dataStore.exportCSV()
@@ -119,119 +127,81 @@
         <span class="lvl-buff-label">Warband 80-90</span>
         <span class="lvl-buff-val">+{warbandMentor8090}%</span>
         <span class="lvl-buff-bar">{'█'.repeat(count90)}{'░'.repeat(5 - count90)}</span>
-        {#if count90 < 5}
-          <span class="lvl-buff-next">Próx: +{Math.min((count90 + 1) * 5, 25)}% (falta 1 pj)</span>
-        {/if}
-      </div>
-      <div class="lvl-buff-item-sm">
-        <span class="lvl-buff-label">Timeways</span>
-        <span class="lvl-buff-val">+{config.knowledgeOfTimeways}%</span>
       </div>
       <div class="lvl-buff-item-sm">
         <span class="lvl-buff-label">War Mode</span>
         <span class="lvl-buff-val" class:on={config.warMode} class:off={!config.warMode}>{config.warMode ? 'ON' : 'OFF'}</span>
       </div>
       <div class="lvl-buff-item-sm">
-        <span class="lvl-buff-label">XP/dung @80</span>
-        <span class="lvl-buff-val">{formatNumber(getDungeonXpForLevel(80))}</span>
-      </div>
-      <div class="lvl-buff-item-sm">
         <span class="lvl-buff-label">Duración</span>
         <span class="lvl-buff-val">{config.duracionDungeon}min</span>
+      </div>
+      <div class="lvl-divider" aria-hidden="true"></div>
+      <div class="lvl-buff-item-sm">
+        <span class="lvl-buff-label">→80 Tiempo</span>
+        <span class="lvl-buff-val">{formatHours(totalTime80)}</span>
+      </div>
+      <div class="lvl-buff-item-sm">
+        <span class="lvl-buff-label">→80 Dungs</span>
+        <span class="lvl-buff-val">{totalDungeons80}</span>
+      </div>
+      <div class="lvl-buff-item-sm">
+        <span class="lvl-buff-label">→90 Tiempo</span>
+        <span class="lvl-buff-val">{formatHours(totalTime)}</span>
+      </div>
+      <div class="lvl-buff-item-sm">
+        <span class="lvl-buff-label">→90 Dungs</span>
+        <span class="lvl-buff-val">{totalDungeons}</span>
+      </div>
+      <div class="lvl-buff-item-sm">
+        <span class="lvl-buff-label">Pendientes 80</span>
+        <span class="lvl-buff-val">{pending80Count}/{personajes.length}</span>
+      </div>
+      <div class="lvl-buff-item-sm">
+        <span class="lvl-buff-label">Pendientes 90</span>
+        <span class="lvl-buff-val">{pendingCount}/{personajes.length}</span>
+      </div>
+      <div class="lvl-buff-item-sm">
+        <span class="lvl-buff-label">Nivel 90</span>
+        <span class="lvl-buff-val">{count90} pjs</span>
       </div>
     </div>
     <div class="lvl-toolbar">
       <button class="wow-btn wow-btn-sm" onclick={toggleDashboard}>{showDashboard ? '✕ Dashboard' : '📊 Dashboard'}</button>
       <button class="wow-btn wow-btn-sm" onclick={toggleOptimization}>{showOptimization ? '✕ Optimizar' : '⚡ Optimizar'}</button>
+      <button class="wow-btn wow-btn-sm" onclick={toggleDungeonXp}>🏰 XP Mazmorra</button>
       <button class="wow-btn wow-btn-sm" onclick={toggleConfig}>{showConfig ? '✕ Cerrar' : '⚙ Config'}</button>
       <button class="wow-btn wow-btn-sm" onclick={exportCSVData}>📥 CSV</button>
       <button class="wow-btn wow-btn-sm" onclick={exportPlanJSON}>📋 Plan</button>
     </div>
   </div>
 
-  <div class="lvl-dashboard-strip">
-    <div class="lvl-dash-item">
-      <span class="lvl-dash-label">→80 Tiempo</span>
-      <span class="lvl-dash-val">{formatHours(totalTime80)}</span>
-    </div>
-    <div class="lvl-dash-item">
-      <span class="lvl-dash-label">→80 Dungs</span>
-      <span class="lvl-dash-val">{totalDungeons80}</span>
-    </div>
-    <div class="lvl-dash-item">
-      <span class="lvl-dash-label">→90 Tiempo</span>
-      <span class="lvl-dash-val">{formatHours(totalTime)}</span>
-    </div>
-    <div class="lvl-dash-item">
-      <span class="lvl-dash-label">→90 Dungs</span>
-      <span class="lvl-dash-val">{totalDungeons}</span>
-    </div>
-    <div class="lvl-dash-item">
-      <span class="lvl-dash-label">Pendientes 80</span>
-      <span class="lvl-dash-val">{pending80Count}/{personajes.length}</span>
-    </div>
-    <div class="lvl-dash-item">
-      <span class="lvl-dash-label">Pendientes 90</span>
-      <span class="lvl-dash-val">{pendingCount}/{personajes.length}</span>
-    </div>
-    <div class="lvl-dash-item">
-      <span class="lvl-dash-label">Nivel 90</span>
-      <span class="lvl-dash-val">{count90} pjs</span>
-    </div>
-  </div>
-
-  {#if showOptimization}
-    <OptimizationResult plan={optimizationPlan} />
-  {/if}
-
-  {#if showDashboard}
-    <Dashboard {personajes} {config} {count90} {results} plan={optimizationPlan} />
-  {/if}
-
-  {#if showConfig}
-    <ConfigPanel />
-  {/if}
-
-  <CalculationTable {results} onSelect={(nombre) => selectedChar = selectedChar === nombre ? null : nombre} />
-
-  {#if selectedResult && selectedPersonaje}
-    <div class="lvl-detail">
-      <div class="lvl-detail-header">
-        <h3>{selectedResult.nombre} — {selectedResult.clase}</h3>
-        <button class="lvl-detail-close" onclick={() => selectedChar = null}>✕</button>
-      </div>
-      <div class="lvl-detail-summary">
-        <div class="lvl-detail-stat">
-          <span>Nivel</span>
-          <strong>{selectedResult.nivel}</strong>
-        </div>
-        <div class="lvl-detail-stat">
-          <span>XP/h</span>
-          <strong>{formatNumber(selectedResult.xpPerHour)}</strong>
-        </div>
-        {#if !selectedResult.done80}
-          <div class="lvl-detail-stat">
-            <span>→80 Dungs</span>
-            <strong>{selectedResult.dungeonsTo80}</strong>
-          </div>
-          <div class="lvl-detail-stat">
-            <span>→80 Horas</span>
-            <strong>{formatHours(selectedResult.timeTo80)}</strong>
-          </div>
-        {/if}
-        <div class="lvl-detail-stat">
-          <span>→90 Dungs</span>
-          <strong>{selectedResult.done90 ? '✓' : selectedResult.dungeonsTo90}</strong>
-        </div>
-        <div class="lvl-detail-stat">
-          <span>→90 Horas</span>
-          <strong>{selectedResult.done90 ? '✓' : formatHours(selectedResult.timeTo90)}</strong>
-        </div>
-      </div>
-      <DetailView personaje={selectedPersonaje} {config} roster={personajes} {count90} />
-    </div>
-  {/if}
+  <CalculationTable {results} onSelect={selectChar} />
 </div>
+
+<Modal bind:open={showDashboard} title="Dashboard">
+  <Dashboard {personajes} {config} {count90} {results} plan={optimizationPlan} />
+</Modal>
+
+<Modal bind:open={showOptimization} title="Optimización">
+  <OptimizationResult plan={optimizationPlan} />
+</Modal>
+
+<Modal bind:open={showConfig} title="Configuración">
+  <ConfigPanel />
+</Modal>
+
+<DungeonXpModal bind:open={showDungeonXp} />
+
+<DetailDrawer
+  open={drawerOpen}
+  result={selectedResult}
+  personaje={selectedPersonaje}
+  {config}
+  roster={personajes}
+  {count90}
+  onClose={closeDrawer}
+/>
 
 <style>
   .lvl-view {
@@ -251,6 +221,7 @@
     display: flex;
     gap: 6px;
     flex-wrap: wrap;
+    align-items: stretch;
   }
   .lvl-buff-item-sm {
     display: flex;
@@ -261,6 +232,12 @@
     border: 1px solid var(--border-subtle);
     border-radius: var(--r-sm);
     font-size: 0.5rem;
+  }
+  .lvl-divider {
+    width: 1px;
+    background: var(--border-subtle);
+    align-self: stretch;
+    margin: 0 2px;
   }
   .lvl-buff-label {
     color: var(--text-muted);
@@ -275,10 +252,6 @@
   }
   .lvl-buff-val.on { color: var(--green, #38a169); }
   .lvl-buff-val.off { color: var(--text-dim); }
-  .lvl-buff-next {
-    font-size: 0.4rem;
-    color: var(--text-dim);
-  }
   .lvl-buff-bar {
     font-family: var(--font-heading);
     font-size: 0.55rem;
@@ -290,75 +263,6 @@
   .lvl-toolbar {
     display: flex;
     gap: 4px;
-  }
-  .lvl-dashboard-strip {
-    display: flex;
-    gap: 6px;
     flex-wrap: wrap;
-    padding: 4px 0;
-    border-top: 1px solid var(--border-subtle);
-    border-bottom: 1px solid var(--border-subtle);
-  }
-  .lvl-dash-item {
-    display: flex;
-    flex-direction: column;
-    gap: 0;
-  }
-  .lvl-dash-label {
-    font-size: 0.45rem;
-    color: var(--text-muted);
-    text-transform: uppercase;
-  }
-  .lvl-dash-val {
-    font-family: var(--font-heading);
-    font-size: 0.7rem;
-    color: var(--gold-light, #d4af37);
-    font-weight: 600;
-  }
-  .lvl-detail {
-    background: var(--bg-soft, rgba(0,0,0,0.3));
-    border: 1px solid var(--gold);
-    border-radius: var(--r-md);
-    padding: 8px;
-  }
-  .lvl-detail-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 6px;
-  }
-  .lvl-detail-header h3 {
-    font-size: 0.7rem;
-    color: var(--gold);
-  }
-  .lvl-detail-close {
-    background: none;
-    border: none;
-    color: var(--text-muted);
-    cursor: pointer;
-    font-size: 0.7rem;
-  }
-  .lvl-detail-summary {
-    display: flex;
-    gap: 10px;
-    flex-wrap: wrap;
-    padding-bottom: 6px;
-    margin-bottom: 6px;
-    border-bottom: 1px solid var(--border-subtle);
-    font-size: 0.6rem;
-  }
-  .lvl-detail-stat {
-    display: flex;
-    flex-direction: column;
-    gap: 1px;
-  }
-  .lvl-detail-stat span {
-    font-size: 0.45rem;
-    color: var(--text-muted);
-    text-transform: uppercase;
-  }
-  .lvl-detail-stat strong {
-    font-size: 0.65rem;
-    color: var(--gold-light, #d4af37);
   }
 </style>

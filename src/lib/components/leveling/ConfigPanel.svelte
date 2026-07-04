@@ -1,9 +1,11 @@
 <script lang="ts">
   import { levelingStore } from '../../stores/leveling'
-  import type { CustomBuff } from '../../types'
+  import { personajesStore, dataStore } from '../../stores/data'
+  import type { CustomBuff, Personaje } from '../../types'
   import { saveXpOverrides, clearXpOverrides, getXpOverrides, rebuildXpCurve, getDungeonXpForLevel } from '../../constants/experience'
 
   let config = $derived($levelingStore)
+  let personajes = $derived(($personajesStore as Personaje[]).filter(p => p.planeado_usar))
 
   let newBuffName = $state('')
   let newBuffPct = $state(10)
@@ -40,8 +42,12 @@
     levelingStore.updateCustomBuff(id, { percentage: pct })
   }
 
+  function updateTimeways(nombre: string, pct: number) {
+    dataStore.updateTimewaysPct(nombre, Math.max(0, Math.min(30, pct)))
+  }
+
   function addOverride() {
-    if (overrideLevel < 10 || overrideLevel > 89 || overrideXp <= 0) return
+    if (overrideLevel < 10 || overrideLevel > 90 || overrideXp <= 0) return
     const next = { ...overrides, [overrideLevel]: overrideXp }
     overrides = next
     saveXpOverrides(next)
@@ -97,12 +103,20 @@
   </div>
 
   <div class="lvl-config-section">
-    <div class="lvl-config-title">Knowledge of Timeways</div>
-    <select onchange={(e) => updateField('knowledgeOfTimeways', parseInt(e.currentTarget.value))}>
-      {#each buffOptions as opt}
-        <option value={opt} selected={config.knowledgeOfTimeways === opt}>{opt}%</option>
+    <div class="lvl-config-title">Knowledge of Timeways — por personaje</div>
+    <div class="lvl-config-note">El buff depende de los runs realizados por cada personaje. Máximo 30%.</div>
+    <div class="lvl-timeways-list">
+      {#each personajes as p (p.nombre)}
+        <div class="lvl-timeways-item">
+          <span class="lvl-timeways-name">{p.nombre}</span>
+          <span class="lvl-timeways-lvl">Nv {p.nivel}</span>
+          <input type="range" min="0" max="30" step="5"
+            value={p.timewaysPct ?? 0}
+            oninput={(e) => updateTimeways(p.nombre, parseInt(e.currentTarget.value))} />
+          <span class="lvl-timeways-pct">+{p.timewaysPct ?? 0}%</span>
+        </div>
       {/each}
-    </select>
+    </div>
   </div>
 
   <div class="lvl-config-section">
@@ -153,7 +167,7 @@
     <div class="lvl-config-title">Curva XP — Overrides por nivel</div>
     <div class="lvl-config-note">Edita el XP por nivel manualmente. Vacío = usa interpolación automática.</div>
     <div class="lvl-xp-add">
-      <input type="number" class="lvl-xp-level" placeholder="Nivel (10–89)" min="10" max="89" bind:value={overrideLevel} />
+      <input type="number" class="lvl-xp-level" placeholder="Nivel (10–90)" min="10" max="90" bind:value={overrideLevel} />
       <input type="number" class="lvl-xp-val" placeholder="XP requerido" min="1" bind:value={overrideXp} />
       <button class="wow-btn wow-btn-sm" onclick={addOverride}>+ Override</button>
       <button class="wow-btn wow-btn-sm" onclick={clearAllOverrides} disabled={Object.keys(overrides).length === 0}>Limpiar</button>
@@ -238,6 +252,50 @@
   .lvl-config-unit {
     font-size: 0.5rem !important;
     color: var(--text-muted);
+  }
+  .lvl-timeways-list {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    margin-top: 3px;
+    max-height: 160px;
+    overflow-y: auto;
+    padding-right: 3px;
+  }
+  .lvl-timeways-item {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 2px 4px;
+    background: rgba(0, 0, 0, 0.3);
+    border-radius: var(--r-sm);
+    font-size: 0.5rem;
+  }
+  .lvl-timeways-name {
+    color: var(--text-secondary);
+    width: 90px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    flex-shrink: 0;
+  }
+  .lvl-timeways-lvl {
+    color: var(--text-dim);
+    font-size: 0.45rem;
+    width: 36px;
+    flex-shrink: 0;
+  }
+  .lvl-timeways-item input[type="range"] {
+    flex: 1;
+    width: auto;
+  }
+  .lvl-timeways-pct {
+    color: var(--gold);
+    font-family: var(--font-heading);
+    font-size: 0.5rem;
+    width: 32px;
+    text-align: right;
+    flex-shrink: 0;
   }
   .lvl-checkbox {
     display: flex !important;

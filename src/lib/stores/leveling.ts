@@ -7,7 +7,6 @@ const DEFAULT_CONFIG: LevelingConfig = {
   xpMonstruos: 112892,
   duracionDungeon: 18,
   warbandMentor080: 30,
-  knowledgeOfTimeways: 30,
   warMode: false,
   warModeTarget: 'both',
   customBuffs: [],

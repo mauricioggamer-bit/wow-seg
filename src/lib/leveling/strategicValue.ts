@@ -62,7 +62,7 @@ export function calculateStrategicValue(
       for (const other of pendingRoster) {
         if (other.nombre === personaje.nombre) continue
         if (other.nivel >= 80 && other.nivel < 90) {
-          const oldXpPerDungeon = getEffectiveXpPerDungeon(config, other.nivel, count90)
+          const oldXpPerDungeon = getEffectiveXpPerDungeon(config, other.nivel, count90, other.timewaysPct ?? 0)
           const newXpPerDungeon = oldXpPerDungeon * (1 + buffDelta / 100)
           const xpRem = getXpRemaining(other.nivel, 90)
           const oldDungeons = Math.ceil(xpRem / oldXpPerDungeon)

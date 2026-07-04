@@ -39,6 +39,7 @@ export interface Personaje {
   descripcion?: string
   tipo?: 'iconico' | 'funcional'
   objetivoNivel?: number
+  timewaysPct?: number
   tareas: Tarea[]
 }
 
@@ -124,7 +125,6 @@ export interface LevelingConfig {
   xpMonstruos: number
   duracionDungeon: number
   warbandMentor080: number
-  knowledgeOfTimeways: number
   warMode: boolean
   warModeTarget: 'monsters' | 'reward' | 'both'
   customBuffs: CustomBuff[]
@@ -146,6 +146,7 @@ export interface LevelingResult {
   roi: number
   strategicStars: number
   strategicText: string
+  strategicScore: number
   warbandImpact: number
 }
 

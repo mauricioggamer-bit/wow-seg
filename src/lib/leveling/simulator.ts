@@ -61,7 +61,7 @@ export function simulateByTime(
       })
     } else {
       const dungeonsDoable = Math.floor(timeLeft / config.duracionDungeon)
-      const xpPerDungeon = getEffectiveXpPerDungeon(config, p.nivel, count90)
+      const xpPerDungeon = getEffectiveXpPerDungeon(config, p.nivel, count90, p.timewaysPct ?? 0)
       const xpGained = dungeonsDoable * xpPerDungeon
 
       let nivelFinal = p.nivel
@@ -156,7 +156,7 @@ export function simulateByDungeons(
       })
     } else {
       const dungeonsDoable = dungeonsLeft
-      const xpPerDungeon = getEffectiveXpPerDungeon(config, p.nivel, count90)
+      const xpPerDungeon = getEffectiveXpPerDungeon(config, p.nivel, count90, p.timewaysPct ?? 0)
       const xpGained = dungeonsDoable * xpPerDungeon
 
       let nivelFinal = p.nivel
@@ -237,7 +237,7 @@ export function getTimeRecommendations(
     } else {
       const dungeonsDoable = Math.floor(timeLeftMin / config.duracionDungeon)
       if (dungeonsDoable <= 0) break
-      const xpPerDungeon = getEffectiveXpPerDungeon(config, p.nivel, count90)
+      const xpPerDungeon = getEffectiveXpPerDungeon(config, p.nivel, count90, p.timewaysPct ?? 0)
       const xpGained = dungeonsDoable * xpPerDungeon
 
       let nivelFinal = p.nivel

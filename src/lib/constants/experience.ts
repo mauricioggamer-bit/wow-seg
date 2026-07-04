@@ -94,6 +94,40 @@ export function getXpOverrides(): Record<number, number> {
   return loadXpOverrides()
 }
 
+/* Dungeon XP overrides — user-edited per-level dungeon XP */
+
+const STORAGE_KEY_DUNGEON_OVERRIDES = 'wowseg_dungeon_xp_overrides'
+
+function loadDungeonXpOverrides(): Record<number, number> {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY_DUNGEON_OVERRIDES)
+    if (raw) return JSON.parse(raw)
+  } catch { /* empty */ }
+  return {}
+}
+
+export function saveDungeonXpOverrides(overrides: Record<number, number>): void {
+  try {
+    localStorage.setItem(STORAGE_KEY_DUNGEON_OVERRIDES, JSON.stringify(overrides))
+  } catch { /* empty */ }
+}
+
+export function clearDungeonXpOverrides(): void {
+  try {
+    localStorage.removeItem(STORAGE_KEY_DUNGEON_OVERRIDES)
+  } catch { /* empty */ }
+}
+
+export function getDungeonXpOverrides(): Record<number, number> {
+  return loadDungeonXpOverrides()
+}
+
+let dungeonXpOverrides = loadDungeonXpOverrides()
+
+export function rebuildDungeonXpCurve(): void {
+  dungeonXpOverrides = loadDungeonXpOverrides()
+}
+
 let xpCurve = buildXpCurve()
 
 export function rebuildXpCurve(): void {
@@ -114,6 +148,7 @@ export function getXpForLevel(level: number): number {
 }
 
 export function getDungeonXpForLevel(level: number): number {
+  if (dungeonXpOverrides[level] !== undefined) return dungeonXpOverrides[level]
   return interpolate(DUNGEON_XP_ANCHORS, level, level > 80)
 }
 

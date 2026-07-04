@@ -22,7 +22,7 @@
 
   let ranges = $derived((() => {
     const nivel = personaje.nivel
-    const xpPerDungeon = getEffectiveXpPerDungeon(config, nivel, count90)
+    const xpPerDungeon = getEffectiveXpPerDungeon(config, nivel, count90, personaje.timewaysPct ?? 0)
     const targets = [60, 70, 80, 90].filter(t => t > nivel)
     return targets.map(t => {
       const xp = getXpRemaining(nivel, t)

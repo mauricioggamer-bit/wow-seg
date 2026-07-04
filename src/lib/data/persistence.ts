@@ -67,7 +67,7 @@ export function initSeed(): WowData {
 const VALID_PERSONAJE_KEYS = new Set([
   'nombre', 'clase', 'nivel', 'faccion', 'raza', 'reino', 'warband',
   'mision_principal', 'expansion_por_defecto', 'parecidos', 'profesiones',
-  'planeado_usar', 'descripcion', 'tipo', 'objetivoNivel', 'tareas',
+  'planeado_usar', 'descripcion', 'tipo', 'objetivoNivel', 'timewaysPct', 'tareas',
 ])
 
 const VALID_TAREA_KEYS = new Set([
@@ -109,6 +109,9 @@ export function normalizeData(data: WowData): WowData {
     if (p.descripcion === undefined) p.descripcion = ''
     if (p.tipo === undefined) p.tipo = 'funcional'
     if (p.objetivoNivel === undefined || typeof p.objetivoNivel !== 'number') p.objetivoNivel = 90
+    if (p.timewaysPct === undefined || typeof p.timewaysPct !== 'number') p.timewaysPct = 0
+    if (p.timewaysPct < 0) p.timewaysPct = 0
+    if (p.timewaysPct > 30) p.timewaysPct = 30
     if (p.parecidos === undefined) {
       const single = (p as any).parecido
       p.parecidos = single ? [single] : []

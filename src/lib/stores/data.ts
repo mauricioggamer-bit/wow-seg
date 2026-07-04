@@ -49,6 +49,15 @@ function createDataStore() {
         return d
       })
     },
+    updateTimewaysPct(nombre: string, pct: number) {
+      update(d => {
+        const p = d.personajes.find(pj => pj.nombre === nombre)
+        if (!p) return d
+        p.timewaysPct = Math.max(0, Math.min(30, pct))
+        saveData(d)
+        return d
+      })
+    },
     toggleTarea(nombrePersonaje: string, tareaId: string) {
       update(d => {
         const p = d.personajes.find(pj => pj.nombre === nombrePersonaje)
@@ -217,6 +226,7 @@ addTarea(nombrePersonaje: string, tarea: { nombre: string; tipoContenido?: TipoC
           planeado_usar: p.planeado_usar ?? true,
           descripcion: p.descripcion ?? '',
           tipo: p.tipo ?? 'funcional',
+          timewaysPct: 0,
           tareas: [],
         }
         d.personajes.push(nuevo)

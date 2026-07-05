@@ -1,41 +1,24 @@
-import { XP_CURVE, getDungeonXpForLevel, getMonsterXpForLevel } from '../constants/experience'
 import type { LevelingConfig, Personaje, LevelBreakdownEntry } from '../types'
+import { getDungeonXpAtLevel, getBuffPercentages, getXpRequired } from '../simulation/domain'
+import { formatNumber, formatHours } from '../format'
+
+export { formatNumber, formatHours }
 
 export function getXpRemaining(nivel: number, objetivo: number): number {
   if (nivel >= objetivo) return 0
   let total = 0
   for (let l = nivel + 1; l < objetivo; l++) {
-    total += XP_CURVE[l] ?? 0
+    total += getXpRequired(l)
   }
   return total
 }
 
 export function getRewardBuffPct(config: LevelingConfig, nivel: number, timewaysPct = 0): number {
-  let pct = 0
-  pct += timewaysPct
-  if (nivel < 80) pct += config.warbandMentor080
-  pct += getWarbandMentor8090Bonus(nivel, config)
-  if (config.warMode && (config.warModeTarget === 'reward' || config.warModeTarget === 'both')) {
-    pct += 15
-  }
-  for (const buff of config.customBuffs) {
-    if (buff.target === 'reward' || buff.target === 'both') pct += buff.percentage
-  }
-  return pct / 100
+  return getBuffPercentages(nivel, config, 0, timewaysPct).rewardPct / 100
 }
 
 export function getMonsterBuffPct(config: LevelingConfig, nivel: number, timewaysPct = 0): number {
-  let pct = 0
-  pct += timewaysPct
-  if (nivel < 80) pct += config.warbandMentor080
-  pct += getWarbandMentor8090Bonus(nivel, config)
-  if (config.warMode && (config.warModeTarget === 'monsters' || config.warModeTarget === 'both')) {
-    pct += 15
-  }
-  for (const buff of config.customBuffs) {
-    if (buff.target === 'monsters' || buff.target === 'both') pct += buff.percentage
-  }
-  return pct / 100
+  return getBuffPercentages(nivel, config, 0, timewaysPct).monsterPct / 100
 }
 
 export function getWarbandMentor8090Bonus(nivel: number, _config: LevelingConfig, count90?: number): number {
@@ -50,12 +33,7 @@ export function getWarbandMentor8090FromRoster(personajes: Personaje[]): number 
 }
 
 export function getEffectiveXpPerDungeon(config: LevelingConfig, nivel: number, count90?: number, timewaysPct = 0): number {
-  const rewardMult = 1 + getRewardBuffPct({ ...config }, nivel, timewaysPct)
-  const monsterMult = 1 + getMonsterBuffPct({ ...config }, nivel, timewaysPct)
-  const baseReward = getDungeonXpForLevel(nivel)
-  const xpReward = baseReward * rewardMult
-  const xpMobs = getMonsterXpForLevel(nivel, config.xpMonstruos) * monsterMult
-  return Math.round(xpReward + xpMobs)
+  return getDungeonXpAtLevel(nivel, config, count90, timewaysPct)
 }
 
 export function getDungeonsNeeded(xpRemaining: number, xpPerDungeon: number): number {
@@ -205,7 +183,7 @@ export function getLevelBreakdown(
   let cumDungeons = 0
   let cumTime = 0
   for (let l = nivel + 1; l < objetivo; l++) {
-    const xpNeeded = XP_CURVE[l] ?? 0
+    const xpNeeded = getXpRequired(l)
     const xpPerDungeon = getEffectiveXpPerDungeon(config, l - 1, count90, personaje.timewaysPct ?? 0)
     const dungeons = getDungeonsNeeded(xpNeeded, xpPerDungeon)
     cumDungeons += dungeons
@@ -220,14 +198,4 @@ export function getLevelBreakdown(
     })
   }
   return entries
-}
-
-export function formatNumber(n: number): string {
-  return n.toLocaleString('es-ES')
-}
-
-export function formatHours(hours: number): string {
-  if (hours < 1) return `${Math.round(hours * 60)}min`
-  if (hours < 10) return `${hours.toFixed(1)}h`
-  return `${Math.round(hours)}h`
 }

@@ -1,7 +1,5 @@
 import type { SimulationState, SimulationContext, DungeonXpBreakdown, ActiveBuff, ModifierContribution } from '../types'
-import { XP_REQUIRED_PER_LEVEL } from '../tables/xp-required'
-import { DUNGEON_REWARD_XP_TABLE } from '../tables/dungeon-reward'
-import { getMonsterXpForLevel } from '../tables/monster-xp'
+import { getXpForLevel, getDungeonXpForLevel, getMonsterXpForLevel } from '../../constants/experience'
 import type { GameModel, LevelUpEffects } from './types'
 
 export class WoWRetailModel implements GameModel {
@@ -10,7 +8,7 @@ export class WoWRetailModel implements GameModel {
   }
 
   getXpRequired(level: number): number {
-    return XP_REQUIRED_PER_LEVEL[level] ?? 0
+    return getXpForLevel(level)
   }
 
   getActiveBuffs(state: SimulationState, ctx: SimulationContext): ActiveBuff[] {
@@ -48,7 +46,7 @@ export class WoWRetailModel implements GameModel {
 
   calculateDungeonXp(state: SimulationState, ctx: SimulationContext): DungeonXpBreakdown {
     const level = state.level
-    const baseReward = DUNGEON_REWARD_XP_TABLE[level] ?? 0
+    const baseReward = getDungeonXpForLevel(level)
     const baseMonster = getMonsterXpForLevel(level, ctx.config.xpMonstruos)
     const buffs = this.getActiveBuffs(state, ctx)
 

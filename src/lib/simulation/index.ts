@@ -21,9 +21,8 @@ export { TypedEventBus } from './event-bus'
 export type { DungeonCompletedPayload, LevelUpPayload, TargetReachedPayload, BreakpointUnlockedPayload, SimulationFinishedPayload, EventPayloadMap, EventName } from './event-bus'
 
 export {
-  XP_REQUIRED_PER_LEVEL,
-  DUNGEON_REWARD_XP_TABLE,
-  MONSTER_XP_REF_LEVEL,
+  getXpForLevel,
+  getDungeonXpForLevel,
   getMonsterXpForLevel,
   getXpOverrides,
   saveXpOverrides,
@@ -39,6 +38,8 @@ export { WoWRetailModel } from './game-model/wow-retail'
 export { createContext, createState, createLevelState } from './context'
 
 export { buildBreakdown } from './breakdown'
+
+export { getDungeonXpAtLevel, getBuffPercentages, getXpRequired } from './domain'
 
 export { defaultHooks } from './hooks'
 

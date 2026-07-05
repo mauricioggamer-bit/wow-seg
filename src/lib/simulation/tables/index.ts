@@ -1,6 +1,4 @@
-export { XP_REQUIRED_PER_LEVEL } from './xp-required'
-export { DUNGEON_REWARD_XP_TABLE } from './dungeon-reward'
-export { MONSTER_XP_REF_LEVEL, getMonsterXpForLevel } from './monster-xp'
+export { getXpForLevel, getDungeonXpForLevel, getMonsterXpForLevel } from '../../constants/experience'
 export {
   getXpOverrides,
   saveXpOverrides,
@@ -8,4 +6,4 @@ export {
   getDungeonXpOverrides,
   saveDungeonXpOverrides,
   clearDungeonXpOverrides,
-} from './overrides'
+} from '../../constants/experience'

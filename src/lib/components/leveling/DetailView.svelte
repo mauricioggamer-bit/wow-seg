@@ -117,8 +117,8 @@
   }
 
   let dual = $derived({
-    done80: simResult.finalState.level >= 80,
-    done90: simResult.finalState.level >= 90,
+    done80: simResult.context.character.nivel >= 80,
+    done90: simResult.context.character.nivel >= 90,
     dungeonsTo80: getTo80(simResult).dungeons,
     timeTo80: getTo80(simResult).time,
     dungeonsTo90: simResult.metrics.totalDungeons,

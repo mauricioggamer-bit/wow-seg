@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { slide, fade } from 'svelte/transition'
   import type { Personaje, LevelingConfig, LevelingResult } from '../../types'
   import { formatNumber, formatHours } from '../../leveling/calculator'
   import DetailView from './DetailView.svelte'
@@ -30,8 +31,8 @@
 </script>
 
 {#if open && result && personaje}
-  <div class="drawer-overlay" onclick={close} role="presentation"></div>
-  <aside class="drawer" role="dialog" aria-label="Detalle del personaje">
+  <div class="drawer-overlay" transition:fade={{ duration: 150 }} onclick={close} role="presentation"></div>
+  <aside class="drawer" transition:slide={{ duration: 200, axis: 'x' }} role="dialog" aria-label="Detalle del personaje">
     <div class="drawer-header">
       <h3>{result.nombre} — {result.clase}</h3>
       <div class="drawer-actions">
@@ -99,11 +100,6 @@
     z-index: 999;
     display: flex;
     flex-direction: column;
-    animation: slide-in 0.2s ease-out;
-  }
-  @keyframes slide-in {
-    from { transform: translateX(100%); }
-    to { transform: translateX(0); }
   }
   .drawer-header {
     display: flex;

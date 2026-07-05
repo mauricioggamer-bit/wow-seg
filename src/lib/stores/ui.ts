@@ -41,6 +41,7 @@ function createUiStore() {
     activeModal: null as string | null,
     filters: defaultFilters as Filters,
     statusMessage: { text: '', tone: 'idle' as 'idle' | 'syncing' | 'ok' | 'error' },
+    toast: '',
   })
 
   return {
@@ -68,6 +69,9 @@ function createUiStore() {
     },
     closeModal() {
       update(s => ({ ...s, activeModal: null }))
+    },
+    setToast(msg: string) {
+      update(s => ({ ...s, toast: msg }))
     },
   }
 }

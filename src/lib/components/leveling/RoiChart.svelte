@@ -23,7 +23,7 @@
   <svg viewBox="0 0 {W} {H}" class="lvl-chart" preserveAspectRatio="xMidYMid meet">
     {#each pending as r, i (r.nombre)}
       <rect x={barX(i)} y={barY(r.roi)} width={barW} height={barH(r.roi)} rx="2"
-        class="lvl-bar" fill={PERS_CLASS_COLORS[CLASS_MAP[r.clase] ?? 'warrior']} />
+        class="lvl-bar" fill={PERS_CLASS_COLORS[CLASS_MAP[r.clase] ?? 'warrior']}><title>{r.nombre}: +{r.roi.toFixed(1)}h</title></rect>
       {#if barW >= 18 && r.roi > 0}
         <text x={barX(i) + barW / 2} y={barY(r.roi) - 2} text-anchor="middle" class="lvl-chart-val">
           +{r.roi.toFixed(1)}h
@@ -31,6 +31,9 @@
       {/if}
       <text x={barX(i) + barW / 2} y={H - 4} text-anchor="middle" class="lvl-chart-label"
         transform="rotate(-30 {barX(i) + barW / 2} {H - 4})">{r.nombre.slice(0, 6)}</text>
+    {/each}
+    {#each [0.25, 0.5, 0.75] as pct}
+      <line x1={PAD_L} y1={PAD_T + innerH * (1 - pct)} x2={W - PAD_R} y2={PAD_T + innerH * (1 - pct)} class="lvl-chart-grid" />
     {/each}
     <line x1={PAD_L} y1={PAD_T + innerH} x2={W - PAD_R} y2={PAD_T + innerH} class="lvl-chart-axis-line" />
   </svg>
@@ -43,6 +46,15 @@
   :global(.lvl-bar) {
     opacity: var(--chart-bar-opacity, 0.85);
     stroke: var(--chart-bar-stroke, none);
+    stroke-width: 0.5;
+    transition: opacity 0.15s, filter 0.15s;
+  }
+  :global(.lvl-bar:hover) {
+    opacity: 1;
+    filter: brightness(1.25);
+  }
+  :global(.lvl-chart-grid) {
+    stroke: var(--chart-grid, rgba(255,255,255,0.05));
     stroke-width: 0.5;
   }
   :global(.lvl-chart-axis-line) {

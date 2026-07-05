@@ -47,7 +47,7 @@
     {/each}
     <path d={pathD} class="lvl-chart-line" />
     {#each dataPoints as pt, i (pt.label)}
-      <circle cx={px(i)} cy={py(pt.y)} r="2.5" class="lvl-chart-dot" />
+      <circle cx={px(i)} cy={py(pt.y)} r="2.5" class="lvl-chart-dot"><title>{pt.label}: +{pt.buffPct}% buff</title></circle>
       {#if i > 0}
         <text x={px(i)} y={py(pt.y) - 4} text-anchor="middle" class="lvl-chart-val">+{pt.buffPct}%</text>
       {/if}
@@ -63,7 +63,8 @@
 <style>
   .lvl-chart { width: 100%; height: auto; }
   :global(.lvl-chart-line) { fill: none; stroke: var(--gold); stroke-width: 1.5; }
-  :global(.lvl-chart-dot) { fill: var(--gold); }
+  :global(.lvl-chart-dot) { fill: var(--gold); transition: r 0.15s; }
+  :global(.lvl-chart-dot:hover) { r: 4; filter: brightness(1.3); }
   :global(.lvl-chart-grid) { stroke: var(--chart-grid, rgba(255,255,255,0.05)); stroke-width: 0.5; }
   :global(.lvl-chart-val) { fill: var(--chart-val, var(--gold-light)); font-size: 5px; font-family: var(--font-heading); }
   :global(.lvl-chart-label) { fill: var(--chart-label, var(--text-muted)); font-size: 5px; }

@@ -85,7 +85,6 @@
   {#each Object.entries(grouped) as [wb, tareas]}
     <div class="dash-group">
       <div class="dash-group-header">
-        <span class="arrow">▶</span>
         <strong>{wb}</strong>
         <span class="text-xs text-muted">({tareas.filter(t => t.hecho).length}/{tareas.length})</span>
       </div>

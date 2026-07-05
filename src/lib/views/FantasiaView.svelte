@@ -1,6 +1,8 @@
 <script lang="ts">
   import { personajesStore, dataStore } from '../stores/data'
   import { uiStore, currentWarband } from '../stores/ui'
+
+  function toast(msg: string) { uiStore.setToast(msg) }
   import { CLASS_MAP, PERS_CLASS_ICONS, PERS_CLASS_COLORS } from '../constants'
 
   let editing = $state<Record<string, string[]>>({})
@@ -56,12 +58,14 @@
   function saveDesc(charName: string) {
     const val = descBuffer[charName] ?? ''
     dataStore.updatePersonaje(charName, { descripcion: val })
+    toast('Descripción guardada')
   }
 
   function toggleTipo(charName: string) {
     const c = $personajesStore.find(p => p.nombre === charName)
     if (!c) return
     dataStore.updatePersonaje(charName, { tipo: (c.tipo === 'iconico' ? 'funcional' : 'iconico') })
+    toast(c.tipo === 'iconico' ? 'Cambiado a Funcional' : 'Cambiado a Icónico')
   }
 </script>
 

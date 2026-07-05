@@ -1,6 +1,7 @@
 <script lang="ts">
   import { onMount, onDestroy, untrack } from 'svelte'
   import { personajesStore, dataStore, misionesStore } from '../stores/data'
+  import { uiStore } from '../stores/ui'
   import { CLASS_MAP, PERS_CLASS_ICONS, PERS_CLASS_COLORS, EXPANSIONS } from '../constants'
   import mapa_svgs from '../data/mapa_svgs'
 
@@ -164,7 +165,9 @@
           const newExp = expBtn.getAttribute('data-drop-exp')
           const charName = id.replace('char_', '')
           if (newExp && charName) {
+            const expNom = EXPANSIONS.find(e => e.id === newExp)?.nombre || newExp
             dataStore.moveCharToExpansion(charName, newExp)
+            uiStore.setToast(`${charName} movido a ${expNom}`)
           }
         } else {
           savePositions()

@@ -5,7 +5,7 @@
   import FilterBar from './lib/components/FilterBar.svelte'
   import DetailPanel from './lib/components/DetailPanel.svelte'
   import Dialog from './lib/components/Dialog.svelte'
-  import StatusBar from './lib/components/StatusBar.svelte'
+  import Toast from './lib/components/Toast.svelte'
   import AuthView from './lib/views/AuthView.svelte'
   import WarbandView from './lib/views/WarbandView.svelte'
   import AllTasksView from './lib/views/AllTasksView.svelte'
@@ -27,6 +27,7 @@
   import { DUNGEON_EXPANSION_IDS, RAID_EXPANSION_IDS, WORLDBOSS_EXPANSION_IDS, dungeonsForExpansion, raidsForExpansion, worldBossesForExpansion, expNombre } from './lib/constants/wowContent'
   import { PROFESIONES } from './lib/constants/profesiones'
   import type { TipoContenido, DungeonDifficulty, RaidDifficulty } from './lib/constants/wowContent'
+  import { fade } from 'svelte/transition'
   import type { Tarea, Mision, ProfesionSlot } from './lib/types'
 
   let charOpts = $derived($personajesStore.map(p => p.nombre))
@@ -408,30 +409,34 @@
     <WarbandTabs />
     <div class="warband-layout" class:has-sidebar={hasSidebar}>
       <div class="warband-main">
-        {#if $uiStore.currentView === 'warband'}
-          <FilterBar />
-          <WarbandView />
-        {:else if $uiStore.currentView === 'tareas'}
-          <TareasView {openTaskEdit} {openTaskNew} />
-        {:else if $uiStore.currentView === 'tabla'}
-          <TablaView {openTaskEdit} {openMissionEdit} />
-        {:else if $uiStore.currentView === 'priority'}
-          <PriorityView {openTaskEdit} {openMissionEdit} />
-        {:else if $uiStore.currentView === 'time'}
-          <TimeView {openTaskEdit} {openMissionEdit} />
-        {:else if $uiStore.currentView === 'personajes'}
-          <PersonajesView {openCharEdit} {openNewChar} />
-        {:else if $uiStore.currentView === 'mapa'}
-          <MapaView {openTaskEdit} {openMissionEdit} openNewItemForChar={(char) => { resetMissionForm(); misionPersonaje = char; uiStore.openModal('MissionNew') }} />
-        {:else if $uiStore.currentView === 'fantasia'}
-          <FantasiaView />
-        {:else if $uiStore.currentView === 'profesion'}
-          <ProfesionView />
-        {:else if $uiStore.currentView === 'keybinds'}
-          <KeybindView />
-        {:else if $uiStore.currentView === 'leveling'}
-          <LevelingView {openCharEdit} />
-        {/if}
+        {#key $uiStore.currentView}
+          <div transition:fade={{ duration: 100 }}>
+            {#if $uiStore.currentView === 'warband'}
+              <FilterBar />
+              <WarbandView />
+            {:else if $uiStore.currentView === 'tareas'}
+              <TareasView {openTaskEdit} {openTaskNew} />
+            {:else if $uiStore.currentView === 'tabla'}
+              <TablaView {openTaskEdit} {openMissionEdit} />
+            {:else if $uiStore.currentView === 'priority'}
+              <PriorityView {openTaskEdit} {openMissionEdit} />
+            {:else if $uiStore.currentView === 'time'}
+              <TimeView {openTaskEdit} {openMissionEdit} />
+            {:else if $uiStore.currentView === 'personajes'}
+              <PersonajesView {openCharEdit} {openNewChar} />
+            {:else if $uiStore.currentView === 'mapa'}
+              <MapaView {openTaskEdit} {openMissionEdit} openNewItemForChar={(char) => { resetMissionForm(); misionPersonaje = char; uiStore.openModal('MissionNew') }} />
+            {:else if $uiStore.currentView === 'fantasia'}
+              <FantasiaView />
+            {:else if $uiStore.currentView === 'profesion'}
+              <ProfesionView />
+            {:else if $uiStore.currentView === 'keybinds'}
+              <KeybindView />
+            {:else if $uiStore.currentView === 'leveling'}
+              <LevelingView {openCharEdit} />
+            {/if}
+          </div>
+        {/key}
       </div>
       {#if $uiStore.currentView === 'warband'}
         <aside class="detail-sidebar">
@@ -444,7 +449,7 @@
       {/if}
     </div>
   </div>
-  <StatusBar />
+  <Toast />
 
   <!-- Modal: Nueva Misión -->
   <Dialog show={$uiStore.activeModal === 'MissionNew'} title="Nueva Misión" onclose={() => uiStore.closeModal()}>
@@ -1014,6 +1019,7 @@
     grid-template-columns: 1fr;
     gap: 8px;
     margin-top: 4px;
+    transition: grid-template-columns 0.25s ease;
   }
   .warband-layout.has-sidebar {
     grid-template-columns: 1fr 1fr;

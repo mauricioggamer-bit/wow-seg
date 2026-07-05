@@ -827,6 +827,10 @@ a:hover { color: var(--gold-light); }
 .gist-status.warn { color: var(--orange); }
 .gist-status.error { color: var(--ember); }
 .gist-status.syncing { color: var(--gold); }
+.header-gist-status { font-size:0.5rem; color:var(--text-dim); margin-left:2px; }
+.header-gist-status.ok { color:var(--green); }
+.header-gist-status.error { color:var(--ember); }
+.header-gist-status.syncing { color:var(--gold); }
 
 .loading-spinner {
   display: inline-block;

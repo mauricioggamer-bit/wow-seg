@@ -44,6 +44,9 @@
   <button class="wow-btn wow-btn-sm" onclick={() => uiStore.openModal('GistConfig')} title="Sincronizar Gist">
     ☁
   </button>
+  <span class="header-gist-status" class:ok={$gistStore.status.tone === 'ok'} class:error={$gistStore.status.tone === 'error'} class:syncing={$gistStore.status.tone === 'syncing'}>
+    {$gistStore.status.text || ''}
+  </span>
   <button class="wow-btn wow-btn-sm" onclick={() => uiStore.openModal('WarbandManage')} title="Gestionar Warbands">
     📁
   </button>

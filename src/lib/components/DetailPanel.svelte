@@ -44,7 +44,7 @@
           style="font-size:0.6rem;padding:2px 6px">+ Misión</button>
         <button onclick={() => openCharEdit?.(selected.nombre)} title="Editar personaje"
           style="background:none;border:none;cursor:pointer;font-size:0.7rem;padding:0 2px">✏️</button>
-        <button class="wow-btn wow-btn-icon" onclick={() => uiStore.selectCharacter(null)}>✕</button>
+        <button class="wow-btn wow-btn-icon" onclick={() => uiStore.selectCharacter(null)} title="Cerrar">✕</button>
       </div>
     </div>
     <div class="wow-panel-body">

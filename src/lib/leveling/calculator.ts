@@ -21,10 +21,13 @@ export function getMonsterBuffPct(config: LevelingConfig, nivel: number, timeway
   return getBuffPercentages(nivel, config, 0, timewaysPct).monsterPct / 100
 }
 
+export function getWarbandMentor8090Pct(count90: number): number {
+  return Math.min(count90 * 5, 25)
+}
+
 export function getWarbandMentor8090Bonus(nivel: number, _config: LevelingConfig, count90?: number): number {
   if (nivel < 80 || nivel >= 90) return 0
-  const count = count90 ?? 0
-  return Math.min(count * 5, 25)
+  return getWarbandMentor8090Pct(count90 ?? 0)
 }
 
 export function getWarbandMentor8090FromRoster(personajes: Personaje[]): number {

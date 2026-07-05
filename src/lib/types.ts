@@ -21,6 +21,7 @@ export interface Tarea {
 export interface ProfesionSlot {
   id: string
   nivel: number
+  esMainCrafter?: boolean
 }
 
 export interface Personaje {

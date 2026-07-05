@@ -10,7 +10,8 @@ export interface ObjectiveWeights {
 import type { RosterState } from './roster-state'
 import type { Personaje, LevelingConfig } from '../types'
 import type { PatronSemanal } from './temporal-simulator'
-import { getXpRemaining } from '../leveling/calculator'
+import { getXpRemaining, getEffectiveXpPerDungeon } from '../leveling/calculator'
+import { getXpForLevel } from '../constants/experience'
 
 export interface SimulationOutcome {
   xpTotal: number
@@ -40,13 +41,48 @@ function computediasHastaLimite(fechaInicio: Date, fechaLimite: Date): number {
   return Math.max(1, (fechaLimite.getTime() - fechaInicio.getTime()) / msPorSemana())
 }
 
-function sumXpRemainingTo90(roster: Personaje[]): number {
-  let total = 0
-  for (const p of roster) {
-    if (!p.planeado_usar || p.nivel >= 90) continue
-    total += getXpRemaining(p.nivel, 90)
+/*
+ * Heurística de calibración para maxXpTotal: estima cuánto XP es alcanzable
+ * dentro de maxTiempoTotal horas asignando greedy las horas a los personajes
+ * con mayor XP/hora primero. NO es una simulación — ignora la retroalimentación
+ * de Warband y no simula level-ups dinámicos. Es una cota gruesa para que el
+ * denominador del score refleje el presupuesto real de tiempo, no el XP total
+ * teórico de todo el roster.
+ */
+function computeAchievableXp(
+  roster: Personaje[],
+  config: LevelingConfig,
+  maxTiempoTotal: number,
+  maxTimewaysPct: number,
+  count90: number,
+): number {
+  const pendientes = roster.filter(p => p.planeado_usar && p.nivel < 90)
+  if (pendientes.length === 0) return 500_000_000
+  if (maxTiempoTotal <= 0) return 1
+
+  const maxLevel = 90
+
+  const candidates = pendientes.map(p => {
+    const xpPerDungeon = getEffectiveXpPerDungeon(config, p.nivel, count90, maxTimewaysPct)
+    const hoursPerDungeon = config.duracionDungeon / 60
+    const xpPerHour = hoursPerDungeon > 0 ? xpPerDungeon / hoursPerDungeon : 0
+    const xpTo90 = getXpRemaining(p.nivel, maxLevel) + getXpForLevel(maxLevel)
+    const hoursTo90 = xpPerHour > 0 ? xpTo90 / xpPerHour : Infinity
+    return { xpPerHour, hoursTo90 }
+  })
+
+  candidates.sort((a, b) => b.xpPerHour - a.xpPerHour)
+
+  let remainingHours = maxTiempoTotal
+  let totalXp = 0
+  for (const c of candidates) {
+    if (remainingHours <= 0 || c.xpPerHour <= 0) break
+    const hoursForThisChar = Math.min(remainingHours, c.hoursTo90)
+    totalXp += hoursForThisChar * c.xpPerHour
+    remainingHours -= hoursForThisChar
   }
-  return total
+
+  return Math.max(Math.round(totalXp), 1)
 }
 
 export function computeNormalizationCaps(
@@ -73,10 +109,15 @@ export function computeNormalizationCaps(
   const maxTiempoTotal = Math.max(Math.round(totalSemanal * semanas), 1)
 
   /*
-   * maxXpTotal: XP total necesaria para llevar TODOS los pendientes a 90.
-   * Usa getXpRemaining de calculator.ts para no reimplementar la lógica.
+   * maxXpTotal: XP máximo alcanzable dentro de maxTiempoTotal horas,
+   * asignando greedy las horas a los personajes con mayor XP/hora primero.
+   * Es una heurística de calibración, NO una simulación.
    */
-  const maxXpTotal = totalPendientes > 0 ? sumXpRemainingTo90(roster) : 500_000_000
+  const maxTimewaysPct = Math.max(0, ...pendientes.map(p => p.timewaysPct ?? 0))
+  const count90Roster = roster.filter(p => p.planeado_usar && p.nivel >= 90).length
+  const maxXpTotal = totalPendientes > 0
+    ? computeAchievableXp(roster, config, maxTiempoTotal, maxTimewaysPct, count90Roster)
+    : 500_000_000
 
   /*
    * maxTiempoAhorradoFuturo: cota superior del ahorro de tiempo futuro.

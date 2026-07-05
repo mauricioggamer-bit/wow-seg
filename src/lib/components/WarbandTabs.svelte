@@ -13,10 +13,12 @@
   let isAll = $derived(!$currentWarband || $currentWarband === '')
 </script>
 
-<div class="warband-tabs" id="warbandTabs" style="display: {show ? '' : 'none'}">
+<div class="warband-tabs" id="warbandTabs" role="tablist" style="display: {show ? '' : 'none'}">
   <button
     class="warband-tab"
     class:active={isAll}
+    role="tab"
+    aria-selected={isAll}
     onclick={() => selectWarband(null)}
   >
     Todos ({totalPjs})
@@ -25,6 +27,8 @@
     <button
       class="warband-tab"
       class:active={$currentWarband === wb.nombre}
+      role="tab"
+      aria-selected={$currentWarband === wb.nombre}
       onclick={() => selectWarband(wb.nombre)}
     >
       {wb.nombre} ({wb.personajes.length})

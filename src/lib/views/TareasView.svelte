@@ -2,14 +2,23 @@
   import { personajesStore, dataStore } from '../stores/data'
   import { uiStore, currentWarband } from '../stores/ui'
   import { clsClass, CLASS_MAP, PERS_CLASS_ICONS, PERS_CLASS_COLORS } from '../constants'
+  import VirtualList from '../components/VirtualList.svelte'
 
   let { openTaskEdit, openTaskNew }: {
     openTaskEdit?: (charName: string, taskId: string) => void
     openTaskNew?: (charName: string) => void
   } = $props()
 
+  let filterInput = $state('')
   let filterText = $state('')
   let showAll = $state(false)
+
+  let debounceTimer: ReturnType<typeof setTimeout> | undefined
+  $effect(() => {
+    clearTimeout(debounceTimer)
+    debounceTimer = setTimeout(() => { filterText = filterInput }, 300)
+    return () => clearTimeout(debounceTimer)
+  })
 
   let activeWarband = $derived(showAll || $currentWarband === '' ? null : ($currentWarband || $personajesStore[0]?.warband || null))
 
@@ -35,10 +44,10 @@
   <div class="tareas-header">
     <span class="tareas-title">✅ {activeWarband ? activeWarband : 'Todas'} ({sorted.length})</span>
     <label class="tareas-toggle"><input type="checkbox" bind:checked={showAll} /> Todas</label>
-    <input class="tareas-search" type="text" placeholder="Filtrar personajes..." bind:value={filterText} />
+    <input class="tareas-search" type="text" placeholder="Filtrar personajes..." bind:value={filterInput} />
   </div>
-  <div class="tareas-list">
-    {#each sorted as c (c.nombre)}
+  <VirtualList items={sorted} itemHeight={48}>
+    {#snippet children(c, _i)}
       {@const clsKey = CLASS_MAP[c.clase] || 'warrior'}
       {@const color = PERS_CLASS_COLORS[clsKey] || '#c9a84c'}
       {@const tasks = sortedTasks(c.tareas)}
@@ -73,8 +82,8 @@
             onclick={() => openTaskNew?.(c.nombre)}>+ Asignar</button>
         </div>
       </div>
-    {/each}
-  </div>
+    {/snippet}
+  </VirtualList>
 </div>
 
 <style>
@@ -86,7 +95,7 @@
   .tareas-search { background:var(--input-bg); border:1px solid var(--border-subtle); border-radius:var(--r-sm); padding:3px 8px; color:var(--text-primary); font-size:0.5rem; font-family:var(--font-body); width:180px; }
   .tareas-search:focus { outline:none; border-color:var(--gold-dim); }
   .tareas-search::placeholder { color:var(--text-dim); }
-  .tareas-list { flex:1; overflow-y:auto; padding:4px 8px; }
+  :global(.tareas-panel > .vl-container) { padding: 4px 8px; flex: 1; }
   .tareas-row { display:flex; align-items:flex-start; gap:8px; padding:6px; border-bottom:1px solid var(--border-subtle); transition:background var(--t-fast); }
   .tareas-row:hover { background:var(--bg-raised); border-radius:2px; }
   .tareas-char { display:flex; align-items:center; gap:4px; flex-shrink:0; min-width:160px; }

@@ -28,11 +28,31 @@
   import { PROFESIONES } from './lib/constants/profesiones'
   import type { TipoContenido, DungeonDifficulty, RaidDifficulty } from './lib/constants/wowContent'
   import { fade } from 'svelte/transition'
-  import type { Tarea, Mision, ProfesionSlot } from './lib/types'
+  import type { Tarea, Mision, ProfesionSlot, ViewType } from './lib/types'
 
   let charOpts = $derived($personajesStore.map(p => p.nombre))
 
   let hasSidebar = $derived($uiStore.currentView === 'warband')
+
+  const VIEW_KEYS: Record<string, string> = {
+    '1': 'warband', '2': 'tareas', '3': 'tabla',
+    '4': 'priority', '5': 'time', '6': 'personajes',
+    '7': 'mapa', '8': 'fantasia', '9': 'profesion',
+    '0': 'leveling',
+  }
+
+  $effect(() => {
+    function onKey(e: KeyboardEvent) {
+      const tag = (e.target as HTMLElement)?.tagName
+      if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT') return
+      const key = VIEW_KEYS[e.key]
+      if (key) { e.preventDefault(); uiStore.setView(key as ViewType) }
+    }
+    if ($authStore.authenticated) {
+      document.addEventListener('keydown', onKey)
+      return () => document.removeEventListener('keydown', onKey)
+    }
+  })
 
   $effect(() => {
     if ($authStore.authenticated && !$uiStore.warbandInitialized) {
@@ -404,9 +424,13 @@
       <Header />
     </div>
   </header>
-  <div class="app-container">
-    <ViewSwitcher />
-    <WarbandTabs />
+  <main id="main-content" class="app-container">
+    <nav aria-label="Vistas principales">
+      <ViewSwitcher />
+    </nav>
+    <nav aria-label="Filtro de warband">
+      <WarbandTabs />
+    </nav>
     <div class="warband-layout" class:has-sidebar={hasSidebar}>
       <div class="warband-main">
         {#key $uiStore.currentView}
@@ -448,7 +472,7 @@
         </aside>
       {/if}
     </div>
-  </div>
+  </main>
   <Toast />
 
   <!-- Modal: Nueva Misión -->

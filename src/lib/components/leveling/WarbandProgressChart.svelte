@@ -45,9 +45,9 @@
       <line x1={PAD_L} y1={py(lvl)} x2={W - PAD_R} y2={py(lvl)} class="lvl-chart-grid" />
       <text x="2" y={py(lvl) + 2} class="lvl-chart-axis">{lvl}%</text>
     {/each}
-    <path d={pathD} class="lvl-chart-line" />
+    <path d={pathD} class="lvl-chart-line" style="animation: lvl-bar-in 0.5s ease both" />
     {#each dataPoints as pt, i (pt.label)}
-      <circle cx={px(i)} cy={py(pt.y)} r="2.5" class="lvl-chart-dot"><title>{pt.label}: +{pt.buffPct}% buff</title></circle>
+      <circle cx={px(i)} cy={py(pt.y)} r="2.5" class="lvl-chart-dot" style="animation-delay:{i * 0.05}s"><title>{pt.label}: +{pt.buffPct}% buff</title></circle>
       {#if i > 0}
         <text x={px(i)} y={py(pt.y) - 4} text-anchor="middle" class="lvl-chart-val">+{pt.buffPct}%</text>
       {/if}
@@ -63,11 +63,15 @@
 <style>
   .lvl-chart { width: 100%; height: auto; }
   :global(.lvl-chart-line) { fill: none; stroke: var(--gold); stroke-width: 1.5; }
-  :global(.lvl-chart-dot) { fill: var(--gold); transition: r 0.15s; }
+  :global(.lvl-chart-dot) { fill: var(--gold); animation: lvl-bar-in 0.3s ease both; transition: r 0.15s; }
   :global(.lvl-chart-dot:hover) { r: 4; filter: brightness(1.3); }
   :global(.lvl-chart-grid) { stroke: var(--chart-grid, rgba(255,255,255,0.05)); stroke-width: 0.5; }
   :global(.lvl-chart-val) { fill: var(--chart-val, var(--gold-light)); font-size: 5px; font-family: var(--font-heading); }
   :global(.lvl-chart-label) { fill: var(--chart-label, var(--text-muted)); font-size: 5px; }
   :global(.lvl-chart-axis) { fill: var(--chart-axis-text, var(--text-dim)); font-size: 5px; }
   .lvl-chart-empty { font-size: 0.5rem; color: var(--text-dim); text-align: center; padding: 20px 0; }
+  @keyframes lvl-bar-in {
+    from { opacity: 0; }
+    to { opacity: 1; }
+  }
 </style>

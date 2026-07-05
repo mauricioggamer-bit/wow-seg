@@ -6,14 +6,16 @@
   let reinos = $derived([...new Set($personajesStore.map(c => c.reino))].sort())
 </script>
 
-<div class="filter-bar mb-2">
+<div class="filter-bar mb-2" role="search" aria-label="Filtrar personajes">
   <input
     type="text"
     placeholder="Buscar..."
+    aria-label="Buscar personajes"
     value={$uiStore.filters.searchText}
     oninput={(e) => uiStore.setFilter('searchText', e.currentTarget.value)}
   />
   <select
+    aria-label="Filtrar por clase"
     value={$uiStore.filters.clase[0] || ''}
     onchange={(e) => uiStore.setFilter('clase', e.currentTarget.value ? [e.currentTarget.value] : [])}
   >
@@ -23,6 +25,7 @@
     {/each}
   </select>
   <select
+    aria-label="Filtrar por reino"
     value={$uiStore.filters.reino}
     onchange={(e) => uiStore.setFilter('reino', e.currentTarget.value)}
   >
@@ -32,6 +35,7 @@
     {/each}
   </select>
   <select
+    aria-label="Filtrar por estado"
     value={$uiStore.filters.soloActivos ? 'activos' : 'todos'}
     onchange={(e) => uiStore.setFilter('soloActivos', e.currentTarget.value === 'activos')}
   >

@@ -1,7 +1,6 @@
 <script lang="ts">
   import { uiStore } from '../stores/ui'
   import { dataStore, personajesStore, misionesStore } from '../stores/data'
-  import type { Personaje } from '../types'
 
   let { openTaskEdit, openMissionEdit }: { openTaskEdit?: (char: string, taskId: string) => void, openMissionEdit?: (m: any) => void } = $props()
 
@@ -9,6 +8,9 @@
     personaje: '', warband: '', tipo: '', expansion: '', prioridad: '',
     tiempo: '', estado: '', search: '', clase: '', faccion: '', reino: '', activo: '', cooldown: '',
   })
+
+  let sortKey = $state('')
+  let sortDir = $state<'asc' | 'desc'>('asc')
 
   let personajes = $derived($personajesStore)
   let warbands = $derived([...new Set(personajes.map(p => p.warband))].sort())
@@ -61,138 +63,170 @@
     }
     return all
   })
+
+  let sortedItems = $derived.by(() => {
+    if (!sortKey) return items
+    const sorted = [...items].sort((a, b) => {
+      const va = (a as any)[sortKey]
+      const vb = (b as any)[sortKey]
+      const cav = typeof va === 'string' ? va.toLowerCase() : va
+      const cbv = typeof vb === 'string' ? vb.toLowerCase() : vb
+      if (cav < cbv) return sortDir === 'asc' ? -1 : 1
+      if (cav > cbv) return sortDir === 'asc' ? 1 : -1
+      return 0
+    })
+    return sorted
+  })
+
+  type AriaSort = 'ascending' | 'descending' | 'none'
+
+  function ariaSort(key: string): AriaSort {
+    return sortKey === key ? (sortDir + 'ending') as AriaSort : 'none'
+  }
+
+  function toggleSort(key: string) {
+    if (sortKey === key) {
+      sortDir = sortDir === 'asc' ? 'desc' : 'asc'
+    } else {
+      sortKey = key
+      sortDir = 'asc'
+    }
+  }
+
+  function sortIcon(key: string): string {
+    if (sortKey !== key) return ''
+    return sortDir === 'asc' ? ' ▲' : ' ▼'
+  }
 </script>
 
-<div class="wow-panel" style="margin-top:4px">
+  <div class="wow-panel tv-panel">
   <div class="wow-panel-header">
     <h3>Tabla Unificada</h3>
     <span class="text-sm text-muted">{items.length} ítems</span>
   </div>
-  <div class="wow-panel-body" style="padding:6px 8px">
-    <div class="filter-bar" style="gap:2px;flex-wrap:wrap">
-      <span class="text-xs text-muted">Pers:</span>
-      <select bind:value={tf.personaje} style="font-size:0.55rem;padding:1px 3px;max-width:80px">
-        <option value="">Todos</option>
-        {#each personajes as p}
-          <option value={p.nombre}>{p.nombre}</option>
-        {/each}
-      </select>
-      <span class="text-xs text-muted">Wb:</span>
-      <select bind:value={tf.warband} style="font-size:0.55rem;padding:1px 3px;max-width:70px">
-        <option value="">Todos</option>
-        {#each warbands as w}
-          <option value={w}>{w}</option>
-        {/each}
-      </select>
-      <span class="text-xs text-muted">Tipo:</span>
-      <select bind:value={tf.tipo} style="font-size:0.55rem;padding:1px 3px;max-width:70px">
-        <option value="">Todos</option>
-        <option value="weekly">Semanal</option>
-        <option value="daily">Diaria</option>
-        <option value="farm_libre">Farm</option>
-        <option value="mision">Misión</option>
-        <option value="achievement">Logro</option>
-      </select>
-      <span class="text-xs text-muted">Exp:</span>
-      <select bind:value={tf.expansion} style="font-size:0.55rem;padding:1px 3px;max-width:65px">
-        <option value="">Todas</option>
-        <option value="tww">TWW</option>
-        <option value="dragonflight">DF</option>
-        <option value="shadowlands">SL</option>
-        <option value="legion">Legion</option>
-        <option value="bfa">BFA</option>
-        <option value="draenor">Draenor</option>
-        <option value="mop">MOP</option>
-        <option value="cata">Cata</option>
-        <option value="wotlk">WOTLK</option>
-        <option value="midnight">Mid.</option>
-        <option value="classic">Classic</option>
-      </select>
-      <span class="text-xs text-muted">Prio:</span>
-      <select bind:value={tf.prioridad} style="font-size:0.55rem;padding:1px 3px;max-width:50px">
-        <option value="">Todas</option>
-        <option value="1">P1</option>
-        <option value="2">P2</option>
-        <option value="3">P3</option>
-      </select>
-      <span class="text-xs text-muted">Tpo:</span>
-      <select bind:value={tf.tiempo} style="font-size:0.55rem;padding:1px 3px;max-width:55px">
-        <option value="">Todos</option>
-        <option value="rapido">≤15m</option>
-        <option value="medio">16-30</option>
-        <option value="largo">31-60</option>
-        <option value="maraton">>60</option>
-      </select>
-      <span class="text-xs text-muted">Edo:</span>
-      <select bind:value={tf.estado} style="font-size:0.55rem;padding:1px 3px;max-width:65px">
-        <option value="">Todos</option>
-        <option value="pendiente">Pend.</option>
-        <option value="completada">Hecho</option>
-      </select>
-      <input type="text" placeholder="🔍" bind:value={tf.search} style="font-size:0.55rem;padding:1px 3px;width:60px">
+    <div class="wow-panel-body tv-body">
+      <div class="tv-filters">
+        <span class="text-xs text-muted">Pers:</span>
+        <select class="tv-select tv-select-80" bind:value={tf.personaje}>
+          <option value="">Todos</option>
+          {#each personajes as p}
+            <option value={p.nombre}>{p.nombre}</option>
+          {/each}
+        </select>
+        <span class="text-xs text-muted">Wb:</span>
+        <select class="tv-select tv-select-70" bind:value={tf.warband}>
+          <option value="">Todos</option>
+          {#each warbands as w}
+            <option value={w}>{w}</option>
+          {/each}
+        </select>
+        <span class="text-xs text-muted">Tipo:</span>
+        <select class="tv-select tv-select-70" bind:value={tf.tipo}>
+          <option value="">Todos</option>
+          <option value="weekly">Semanal</option>
+          <option value="daily">Diaria</option>
+          <option value="farm_libre">Farm</option>
+          <option value="mision">Misión</option>
+          <option value="achievement">Logro</option>
+        </select>
+        <span class="text-xs text-muted">Exp:</span>
+        <select class="tv-select tv-select-65" bind:value={tf.expansion}>
+          <option value="">Todas</option>
+          <option value="tww">TWW</option>
+          <option value="dragonflight">DF</option>
+          <option value="shadowlands">SL</option>
+          <option value="legion">Legion</option>
+          <option value="bfa">BFA</option>
+          <option value="draenor">Draenor</option>
+          <option value="mop">MOP</option>
+          <option value="cata">Cata</option>
+          <option value="wotlk">WOTLK</option>
+          <option value="midnight">Mid.</option>
+          <option value="classic">Classic</option>
+        </select>
+        <span class="text-xs text-muted">Prio:</span>
+        <select class="tv-select tv-select-50" bind:value={tf.prioridad}>
+          <option value="">Todas</option>
+          <option value="1">P1</option>
+          <option value="2">P2</option>
+          <option value="3">P3</option>
+        </select>
+        <span class="text-xs text-muted">Tpo:</span>
+        <select class="tv-select tv-select-55" bind:value={tf.tiempo}>
+          <option value="">Todos</option>
+          <option value="rapido">≤15m</option>
+          <option value="medio">16-30</option>
+          <option value="largo">31-60</option>
+          <option value="maraton">>60</option>
+        </select>
+        <span class="text-xs text-muted">Edo:</span>
+        <select class="tv-select tv-select-65" bind:value={tf.estado}>
+          <option value="">Todos</option>
+          <option value="pendiente">Pend.</option>
+          <option value="completada">Hecho</option>
+        </select>
+        <input type="text" placeholder="🔍" class="tv-search" bind:value={tf.search}>
+      </div>
+      <div class="tv-filters tv-filters-second">
+        <span class="text-xs text-muted">Clase:</span>
+        <select class="tv-select tv-select-80" bind:value={tf.clase}>
+          <option value="">Todas</option>
+          {#each clases as cl}
+            <option value={cl}>{cl}</option>
+          {/each}
+        </select>
+        <span class="text-xs text-muted">Facción:</span>
+        <select class="tv-select tv-select-65" bind:value={tf.faccion}>
+          <option value="">Todas</option>
+          <option value="Horda">Horda</option>
+          <option value="Alianza">Alianza</option>
+        </select>
+        <span class="text-xs text-muted">Reino:</span>
+        <select class="tv-select tv-select-70" bind:value={tf.reino}>
+          <option value="">Todos</option>
+          {#each reinos as r}
+            <option value={r}>{r}</option>
+          {/each}
+        </select>
+        <span class="text-xs text-muted">Activo:</span>
+        <select class="tv-select tv-select-60" bind:value={tf.activo}>
+          <option value="">Todos</option>
+          <option value="si">Sí</option>
+          <option value="no">No</option>
+        </select>
+        <span class="text-xs text-muted">Cool:</span>
+        <select class="tv-select tv-select-70" bind:value={tf.cooldown}>
+          <option value="">Todos</option>
+          <option value="weekly">Semanal</option>
+          <option value="daily">Diaria</option>
+          <option value="farm_libre">Farm</option>
+        </select>
     </div>
-    <div class="filter-bar" style="gap:2px;flex-wrap:wrap;margin-top:2px">
-      <span class="text-xs text-muted">Clase:</span>
-      <select bind:value={tf.clase} style="font-size:0.55rem;padding:1px 3px;max-width:80px">
-        <option value="">Todas</option>
-        {#each clases as cl}
-          <option value={cl}>{cl}</option>
-        {/each}
-      </select>
-      <span class="text-xs text-muted">Facción:</span>
-      <select bind:value={tf.faccion} style="font-size:0.55rem;padding:1px 3px;max-width:65px">
-        <option value="">Todas</option>
-        <option value="Horda">Horda</option>
-        <option value="Alianza">Alianza</option>
-      </select>
-      <span class="text-xs text-muted">Reino:</span>
-      <select bind:value={tf.reino} style="font-size:0.55rem;padding:1px 3px;max-width:70px">
-        <option value="">Todos</option>
-        {#each reinos as r}
-          <option value={r}>{r}</option>
-        {/each}
-      </select>
-      <span class="text-xs text-muted">Activo:</span>
-      <select bind:value={tf.activo} style="font-size:0.55rem;padding:1px 3px;max-width:60px">
-        <option value="">Todos</option>
-        <option value="si">Sí</option>
-        <option value="no">No</option>
-      </select>
-      <span class="text-xs text-muted">Cool:</span>
-      <select bind:value={tf.cooldown} style="font-size:0.55rem;padding:1px 3px;max-width:70px">
-        <option value="">Todos</option>
-        <option value="weekly">Semanal</option>
-        <option value="daily">Diaria</option>
-        <option value="farm_libre">Farm</option>
-      </select>
-    </div>
-    <div class="task-table-wrap" style="margin-top:4px">
+    <div class="tv-table-wrap">
       <table class="task-table">
           <thead>
             <tr>
-              <th style="width:24px"></th>
-              <th style="width:85px">Personaje</th>
-              <th>Nombre</th>
-              <th style="width:48px">Tipo</th>
-              <th style="width:38px">Exp</th>
-              <th style="width:32px">Prio</th>
-              <th style="width:40px">Tiempo</th>
-              <th style="width:42px">Cool.</th>
-              <th>Recompensa</th>
-              <th style="width:52px">Estado</th>
-              <th style="width:40px">Acciones</th>
+              <th class="tv-col-xs"></th>
+              <th class="tv-col-personaje" role="columnheader" aria-sort={ariaSort('personaje')} onclick={() => toggleSort('personaje')}>Personaje{sortIcon('personaje')}</th>
+              <th role="columnheader" aria-sort={ariaSort('nombre')} onclick={() => toggleSort('nombre')}>Nombre{sortIcon('nombre')}</th>
+              <th class="tv-col-tipo" role="columnheader" aria-sort={ariaSort('tipo')} onclick={() => toggleSort('tipo')}>Tipo{sortIcon('tipo')}</th>
+              <th class="tv-col-exp" role="columnheader" aria-sort={ariaSort('expansion')} onclick={() => toggleSort('expansion')}>Exp{sortIcon('expansion')}</th>
+              <th class="tv-col-prio" role="columnheader" aria-sort={ariaSort('prioridad')} onclick={() => toggleSort('prioridad')}>Prio{sortIcon('prioridad')}</th>
+              <th class="tv-col-tiempo" role="columnheader" aria-sort={ariaSort('tiempo_min')} onclick={() => toggleSort('tiempo_min')}>Tiempo{sortIcon('tiempo_min')}</th>
+              <th class="tv-col-cooldown" role="columnheader" aria-sort={ariaSort('cooldown')} onclick={() => toggleSort('cooldown')}>Cool.{sortIcon('cooldown')}</th>
+              <th role="columnheader" aria-sort={ariaSort('recompensa')} onclick={() => toggleSort('recompensa')}>Recompensa{sortIcon('recompensa')}</th>
+              <th class="tv-col-estado" role="columnheader" aria-sort={ariaSort('hecho')} onclick={() => toggleSort('hecho')}>Estado{sortIcon('hecho')}</th>
+              <th class="tv-col-acciones">Acciones</th>
             </tr>
           </thead>
         <tbody>
-          {#if items.length === 0}
+          {#if sortedItems.length === 0}
             <tr>
-              <td colspan="11" style="text-align:center;padding:16px;color:var(--text-muted);font-size:0.75rem">
-                No hay ítems. ¡Creá una tarea o misión!
-              </td>
+              <td colspan="11" class="tv-empty">No hay ítems. ¡Creá una tarea o misión!</td>
             </tr>
           {:else}
-            {#each items as item}
-              <tr class:done={item.hecho} style={item.hecho ? 'opacity:0.55' : ''}>
+            {#each sortedItems as item}
+              <tr class:done={item.hecho} class:tv-done={item.hecho}>
                 <td>
                   <input
                     type="checkbox" class="task-check" checked={item.hecho}
@@ -202,11 +236,10 @@
                     }}
                   />
                 </td>
-                <td class="char-cell" style="cursor:pointer;font-size:0.7rem"
-                  onclick={() => { uiStore.selectCharacter(item._char); uiStore.setView('warband') }}>
+                <td class="tv-char" onclick={() => { uiStore.selectCharacter(item._char); uiStore.setView('warband') }}>
                   {item.personaje || '—'}
                 </td>
-                <td style="font-size:0.7rem;cursor:pointer">
+                <td class="tv-name">
                   {item.nombre}
                   {#if item.tags?.length}
                     {#each item.tags as tag}
@@ -215,28 +248,26 @@
                   {/if}
                 </td>
                 <td><span class="text-xs text-muted">{item.tipo}</span></td>
-                <td><span class="text-xs" style="color:var(--gold);font-weight:500">{item.expansion || '—'}</span></td>
+                <td><span class="tv-exp">{item.expansion || '—'}</span></td>
                 <td><span class="text-xs text-muted">P{item.prioridad}</span></td>
                 <td class="text-xs text-muted">{item.tiempo_min}min</td>
                 <td class="text-xs text-muted">{item.cooldown}</td>
                 <td class="text-xs">{#if item.recompensa}<span class="task-reward">{item.recompensa}</span>{/if}</td>
                 <td>
-                  <span class="text-xs" style={item.hecho ? '' : 'color:var(--gold)'}>
+                  <span class="text-xs" class:tv-pend={!item.hecho}>
                     {item.hecho ? '✓ Hecho' : '○ Pendiente'}
                   </span>
                 </td>
                 <td>
-                  <div style="display:flex;gap:2px">
+                  <div class="tv-actions">
                     <button onclick={() => {
                       if (item._origen === 'tarea' && openTaskEdit) openTaskEdit(item._char, item.id)
                       else if (openMissionEdit) openMissionEdit(item)
-                    }} title="Editar"
-                      style="background:none;border:none;cursor:pointer;font-size:0.6rem;padding:0 2px">✏️</button>
+                    }} title="Editar" class="tv-btn">✏️</button>
                     <button onclick={() => {
                       if (item._origen === 'tarea') { if (confirm('¿Eliminar tarea?')) dataStore.deleteTarea(item._char, item.id) }
                       else { if (confirm('¿Eliminar misión?')) dataStore.deleteMision(item.id) }
-                    }} title="Eliminar"
-                      style="background:none;border:none;cursor:pointer;font-size:0.6rem;padding:0 2px">🗑️</button>
+                    }} title="Eliminar" class="tv-btn">🗑️</button>
                   </div>
                 </td>
               </tr>
@@ -247,3 +278,37 @@
     </div>
   </div>
 </div>
+
+<style>
+  .tv-panel { margin-top: 4px; }
+  .tv-body { padding: 6px 8px; }
+  .tv-filters { display: flex; gap: 2px; flex-wrap: wrap; }
+  .tv-filters-second { display: flex; gap: 2px; flex-wrap: wrap; margin-top: 2px; }
+  .tv-select { font-size: 0.55rem; padding: 1px 3px; }
+  .tv-select-80 { max-width: 80px; }
+  .tv-select-70 { max-width: 70px; }
+  .tv-select-65 { max-width: 65px; }
+  .tv-select-60 { max-width: 60px; }
+  .tv-select-55 { max-width: 55px; }
+  .tv-select-50 { max-width: 50px; }
+  .tv-search { font-size: 0.55rem; padding: 1px 3px; width: 60px; }
+  .tv-table-wrap { margin-top: 4px; }
+  .tv-col-xs { width: 24px; }
+  .tv-col-personaje { width: 85px; cursor: pointer; user-select: none; }
+  .tv-col-tipo { width: 48px; cursor: pointer; user-select: none; }
+  .tv-col-exp { width: 38px; cursor: pointer; user-select: none; }
+  .tv-col-prio { width: 32px; cursor: pointer; user-select: none; }
+  .tv-col-tiempo { width: 40px; cursor: pointer; user-select: none; }
+  .tv-col-cooldown { width: 42px; cursor: pointer; user-select: none; }
+  .tv-col-estado { width: 52px; cursor: pointer; user-select: none; }
+  .tv-col-acciones { width: 40px; }
+  .tv-empty { text-align: center; padding: 16px; color: var(--text-muted); font-size: 0.75rem; }
+  .tv-done { opacity: 0.55; }
+  .tv-char { cursor: pointer; font-size: 0.7rem; }
+  .tv-name { font-size: 0.7rem; cursor: pointer; }
+  .tv-exp { font-size: 0.65rem; color: var(--gold); font-weight: 500; }
+  .tv-pend { color: var(--gold); }
+  .tv-actions { display: flex; gap: 2px; }
+  .tv-btn { background: none; border: none; cursor: pointer; font-size: 0.6rem; padding: 0 2px; }
+  th[role="columnheader"]:hover { color: var(--gold-dim); }
+</style>

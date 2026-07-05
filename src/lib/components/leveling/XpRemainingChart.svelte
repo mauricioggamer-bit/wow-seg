@@ -24,7 +24,8 @@
   <svg viewBox="0 0 {W} {H}" class="lvl-chart" preserveAspectRatio="xMidYMid meet">
     {#each pending as r, i (r.nombre)}
       <rect x={barX(i)} y={barY(r.xpTo90)} width={barW} height={barH(r.xpTo90)} rx="2"
-        class="lvl-bar" fill={PERS_CLASS_COLORS[CLASS_MAP[r.clase] ?? 'warrior']}><title>{r.nombre}: {formatNumber(r.xpTo90)} XP</title></rect>
+        class="lvl-bar" fill={PERS_CLASS_COLORS[CLASS_MAP[r.clase] ?? 'warrior']}
+        style="animation-delay:{i * 0.04}s"><title>{r.nombre}: {formatNumber(r.xpTo90)} XP</title></rect>
       {#if barW >= 18}
         <text x={barX(i) + barW / 2} y={barY(r.xpTo90) - 2} text-anchor="middle" class="lvl-chart-val">
           {formatNumber(r.xpTo90)}
@@ -45,6 +46,7 @@
 <style>
   .lvl-chart { width: 100%; height: auto; }
   :global(.lvl-bar) {
+    animation: lvl-bar-in 0.35s ease both;
     opacity: var(--chart-bar-opacity, 0.85);
     stroke: var(--chart-bar-stroke, none);
     stroke-width: 0.5;
@@ -65,4 +67,8 @@
   :global(.lvl-chart-val) { fill: var(--chart-val, var(--gold-light)); font-size: 5px; font-family: var(--font-heading); }
   :global(.lvl-chart-label) { fill: var(--chart-label, var(--text-muted)); font-size: 5px; }
   .lvl-chart-empty { font-size: 0.5rem; color: var(--text-dim); text-align: center; padding: 20px 0; }
+  @keyframes lvl-bar-in {
+    from { opacity: 0; }
+    to { opacity: var(--chart-bar-opacity, 0.85); }
+  }
 </style>

@@ -42,6 +42,7 @@
       rx="2"
       class="lvl-bar"
       fill={PERS_CLASS_COLORS[CLASS_MAP[r.clase] ?? 'warrior']}
+      style="animation-delay:{i * 0.04}s"
     ><title>{r.nombre}: {formatHours(r.timeTo90)}</title></rect>
     {#if barW >= 18}
       <text
@@ -75,10 +76,15 @@
     stroke: var(--chart-bar-stroke, none);
     stroke-width: 0.5;
     transition: opacity 0.15s, filter 0.15s;
+    animation: lvl-bar-in 0.35s ease both;
   }
   :global(.lvl-bar:hover) {
     opacity: 1;
     filter: brightness(1.25);
+  }
+  @keyframes lvl-bar-in {
+    from { opacity: 0; }
+    to { opacity: var(--chart-bar-opacity, 0.85); }
   }
   :global(.lvl-chart-grid) {
     stroke: var(--chart-grid, rgba(255,255,255,0.05));

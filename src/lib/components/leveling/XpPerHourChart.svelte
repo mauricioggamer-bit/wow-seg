@@ -43,6 +43,7 @@
         rx="2"
         class="lvl-bar"
         fill={PERS_CLASS_COLORS[CLASS_MAP[r.clase] ?? 'warrior']}
+        style="animation-delay:{i * 0.04}s"
       ><title>{r.nombre}: {formatNumber(r.xpPerHour)} XP/h</title></rect>
       {#if barW >= 18}
         <text
@@ -75,6 +76,7 @@
     height: auto;
   }
   :global(.lvl-bar) {
+    animation: lvl-bar-in 0.35s ease both;
     opacity: var(--chart-bar-opacity, 0.85);
     stroke: var(--chart-bar-stroke, none);
     stroke-width: 0.5;
@@ -106,5 +108,9 @@
     color: var(--text-dim);
     text-align: center;
     padding: 20px 0;
+  }
+  @keyframes lvl-bar-in {
+    from { opacity: 0; }
+    to { opacity: var(--chart-bar-opacity, 0.85); }
   }
 </style>

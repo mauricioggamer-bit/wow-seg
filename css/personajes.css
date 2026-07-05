@@ -1,0 +1,378 @@
+/* ══════════════════════════════════════════════════════════════
+   PERSONAJES VIEW — WoW Character Selection Screen
+══════════════════════════════════════════════════════════════ */
+
+#personajesPanel {
+  background: var(--bg-base);
+  color: var(--gold);
+  font-size: 12px;
+  height: calc(100vh - 100px);
+  overflow: hidden;
+  display: none;
+  flex-direction: column;
+  user-select: none;
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--r-md);
+  margin-top: 8px;
+}
+
+#personajesPanel.open { display: flex; }
+
+.pers-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 5px 14px;
+  background: linear-gradient(180deg, #1a0c00, #0a0500);
+  border-bottom: 1px solid var(--border-main);
+  flex-shrink: 0;
+}
+
+.pers-faction-title {
+  font-size: 13px;
+  font-weight: bold;
+  letter-spacing: 3px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.pers-faction-title.a { color: var(--alliance); }
+.pers-faction-title.h { color: var(--horde); }
+
+.pers-center-title {
+  color: var(--gold-light);
+  font-size: 14px;
+  letter-spacing: 5px;
+  text-shadow: 0 0 12px var(--gold);
+  text-align: center;
+}
+.pers-center-title small {
+  display: block;
+  font-size: 9px;
+  color: var(--text-muted);
+  letter-spacing: 2px;
+  margin-top: 1px;
+}
+
+.pers-body-row {
+  display: flex;
+  flex: 1;
+  overflow: hidden;
+}
+
+/* ── RACE PANELS ─────────────────────────────────────────── */
+
+.pers-race-panel {
+  width: 125px;
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  padding: 6px 4px;
+  gap: 2px;
+  overflow-y: auto;
+}
+#pers-panel-alliance-trad {
+  border-right: 1px solid var(--border-subtle);
+  background: linear-gradient(180deg, rgba(26,74,153,0.13), var(--bg-soft));
+}
+#pers-panel-alliance-allied {
+  border-right: 1px solid var(--border-subtle);
+  background: linear-gradient(180deg, rgba(26,74,153,0.07), var(--bg-soft));
+}
+#pers-panel-horde-allied {
+  border-left: 1px solid var(--border-subtle);
+  background: linear-gradient(180deg, rgba(136,21,0,0.07), var(--bg-soft));
+}
+#pers-panel-horde-trad {
+  border-left: 1px solid var(--border-subtle);
+  background: linear-gradient(180deg, rgba(136,21,0,0.13), var(--bg-soft));
+}
+
+.pers-panel-faction-label {
+  font-size: 9px;
+  letter-spacing: 2px;
+  text-align: center;
+  padding: 2px 0 4px;
+  border-bottom: 1px solid var(--border-subtle);
+  margin-bottom: 4px;
+}
+.pers-panel-faction-label.a,
+.pers-panel-faction-label.a-inner { color: var(--alliance); }
+.pers-panel-faction-label.a-inner { opacity: 0.65; }
+.pers-panel-faction-label.h,
+.pers-panel-faction-label.h-inner { color: var(--horde); }
+.pers-panel-faction-label.h-inner { opacity: 0.65; }
+
+.pers-race-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 6px;
+  border: 1px solid transparent;
+  border-radius: 2px;
+  cursor: pointer;
+  transition: all 0.12s;
+  background: none;
+  width: 100%;
+  color: var(--text-primary);
+  text-align: left;
+  font-family: inherit;
+  font-size: 12px;
+}
+.pers-race-btn:hover { background: rgba(26,12,0,0.53); border-color: var(--border-main); }
+.pers-race-btn.active-a {
+  background: rgba(10,32,80,0.6);
+  border-color: var(--alliance);
+  box-shadow: 0 0 8px rgba(26,74,153,0.5);
+}
+.pers-race-btn.active-h {
+  background: rgba(58,8,0,0.6);
+  border-color: var(--horde);
+  box-shadow: 0 0 8px rgba(136,21,0,0.5);
+}
+.pers-race-icon { font-size: 20px; line-height: 1; }
+.pers-race-name { color: var(--gold); font-size: 11px; line-height: 1.3; }
+.pers-race-type { color: var(--text-muted); font-size: 10px; }
+
+/* ── CENTER PANEL ────────────────────────────────────────── */
+
+#pers-panel-center {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  position: relative;
+}
+
+#pers-filter-bar {
+  position: relative;
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 5px 8px;
+  background: rgba(10,5,0,0.53);
+  border-bottom: 1px solid var(--border-subtle);
+  flex-shrink: 0;
+  flex-wrap: wrap;
+}
+.pers-filter-label { color: var(--text-muted); font-size: 10px; margin-right: 2px; }
+.pers-filter-chip {
+  border: 1px solid var(--border-main);
+  background: none;
+  color: var(--gold-dim);
+  font-family: inherit;
+  font-size: 10px;
+  padding: 2px 7px;
+  cursor: pointer;
+  border-radius: 1px;
+  letter-spacing: 0.5px;
+  transition: all 0.12s;
+}
+.pers-filter-chip:hover { color: var(--gold); border-color: var(--gold-dim); background: rgba(26,12,0,0.53); }
+.pers-filter-chip.active {
+  border-color: var(--gold);
+  color: var(--gold-light);
+  background: rgba(42,24,0,0.6);
+  text-shadow: 0 0 6px var(--gold);
+}
+.pers-filter-sep { color: var(--border-subtle); }
+.pers-level-input {
+  width: 48px;
+  background: rgba(10,5,0,0.8);
+  border: 1px solid var(--border-main);
+  color: var(--gold);
+  font-size: 0.45rem;
+  padding: 2px 4px;
+  border-radius: 2px;
+  font-family: inherit;
+  text-align: center;
+}
+.pers-level-input:focus { outline: none; border-color: var(--gold); }
+.pers-level-input::placeholder { color: var(--text-dim); }
+
+#pers-char-grid {
+  position: relative;
+  z-index: 2;
+  flex: 1;
+  overflow-y: auto;
+  padding: 10px;
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 8px;
+  align-content: start;
+}
+
+.pers-char-card {
+  border: 1px solid var(--border-subtle);
+  background: linear-gradient(180deg, rgba(22,10,0,0.53), rgba(10,5,0,0.53));
+  border-radius: 2px;
+  padding: 8px;
+  cursor: pointer;
+  transition: all 0.15s;
+  text-align: center;
+  position: relative;
+}
+.pers-char-card:hover { border-color: var(--border-main); background: rgba(31,14,0,0.53); }
+.pers-char-card.selected-a { border-color: var(--alliance); background: rgba(10,32,80,0.5); box-shadow: 0 0 12px rgba(26,74,153,0.5); }
+.pers-char-card.selected-h { border-color: var(--horde);    background: rgba(58,8,0,0.5);    box-shadow: 0 0 12px rgba(136,21,0,0.5); }
+
+.pers-card-icon {
+  font-size: 28px;
+  line-height: 1.2;
+  margin-bottom: 4px;
+  transition: color 0.2s;
+}
+.pers-card-name {
+  font-size: 11px;
+  font-weight: bold;
+  letter-spacing: 1px;
+  color: var(--gold-light);
+}
+.pers-card-meta { color: var(--text-muted); font-size: 0.45rem; margin-top: 1px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.pers-card-parecido { font-weight: 600; }
+.pers-card-faction-tag {
+  font-size: 8px;
+  position: absolute;
+  top: 4px;
+  right: 5px;
+  letter-spacing: 1px;
+}
+.pers-card-faction-tag.a { color: var(--alliance); }
+.pers-card-faction-tag.h { color: var(--horde); }
+
+.pers-empty-state {
+  grid-column: 1/-1;
+  text-align: center;
+  padding: 40px;
+  color: var(--text-muted);
+  font-size: 11px;
+  line-height: 2;
+}
+.pers-empty-state .big { font-size: 32px; display: block; margin-bottom: 8px; }
+
+.pers-char-card.add-new {
+  border-style: dashed;
+  border-color: var(--border-subtle);
+  color: var(--text-muted);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 90px;
+  gap: 4px;
+}
+.pers-char-card.add-new:hover { color: var(--gold-dim); border-color: var(--border-main); }
+.pers-add-icon { font-size: 24px; }
+
+/* ── CLASS BAR ───────────────────────────────────────────── */
+
+#pers-class-bar-wrap {
+  position: relative;
+  z-index: 2;
+  border-top: 1px solid var(--border-subtle);
+  background: linear-gradient(180deg, rgba(14,7,0,0.53), rgba(6,4,1,0.8));
+  padding: 5px 8px;
+  flex-shrink: 0;
+}
+#pers-class-bar {
+  display: flex;
+  gap: 3px;
+  justify-content: center;
+  overflow-x: auto;
+  padding-bottom: 2px;
+}
+.pers-class-btn {
+  background: none;
+  border: 1px solid var(--border-subtle);
+  color: var(--text-muted);
+  font-family: inherit;
+  font-size: 11px;
+  padding: 4px 10px;
+  cursor: pointer;
+  border-radius: 2px;
+  white-space: nowrap;
+  transition: all 0.12s;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1px;
+  min-width: 64px;
+}
+.pers-class-btn:hover { background: rgba(26,12,0,0.6); border-color: var(--border-main); color: var(--gold-dim); }
+.pers-class-btn.active {
+  background: rgba(42,21,0,0.6);
+  border-color: var(--gold);
+  color: var(--gold-light);
+}
+.pers-cbtn-icon { font-size: 14px; line-height: 1; }
+.pers-cbtn-label { font-size: 9px; letter-spacing: 0.3px; }
+
+/* ── FOOTER ──────────────────────────────────────────────── */
+
+#pers-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 5px 14px;
+  background: linear-gradient(0deg, #100800, #0a0500);
+  border-top: 1px solid var(--border-main);
+  flex-shrink: 0;
+}
+.pers-foot-btn {
+  background: linear-gradient(180deg, #2a1500, #170900);
+  border: 1px solid #7a4a10;
+  color: var(--gold-light);
+  font-family: inherit;
+  font-size: 12px;
+  letter-spacing: 1px;
+  padding: 5px 18px;
+  cursor: pointer;
+  border-radius: 2px;
+  transition: all 0.15s;
+}
+.pers-foot-btn:hover { background: linear-gradient(180deg, #3a2000, #1f0e00); border-color: var(--gold); }
+.pers-foot-btn:disabled { opacity: 0.3; pointer-events: none; }
+.pers-foot-btn.primary { border-color: #c8a84b; background: linear-gradient(180deg, #3a2800, #1f1200); }
+.pers-foot-btn.primary:hover { background: linear-gradient(180deg, #5a3a00, #2a1800); box-shadow: 0 0 10px var(--gold-dim); }
+
+.pers-realm-info { color: var(--text-muted); font-size: 10px; text-align: center; line-height: 1.6; }
+.pers-realm-ping { color: #44cc44; }
+
+#personajesPanel ::-webkit-scrollbar { width: 5px; height: 5px; }
+#personajesPanel ::-webkit-scrollbar-track { background: var(--bg-soft); }
+#personajesPanel ::-webkit-scrollbar-thumb { background: var(--border-main); border-radius: 3px; }
+
+@media (max-width: 768px) {
+  .pers-race-panel { width: 80px; }
+  .pers-race-name { font-size: 8px; }
+  .pers-race-type { display: none; }
+  .pers-race-icon { font-size: 16px; }
+  .pers-center-title { font-size: 11px; letter-spacing: 2px; }
+  .pers-center-title small { font-size: 7px; }
+  .pers-header { padding: 3px 8px; }
+  .pers-faction-title { font-size: 10px; }
+  #pers-char-grid { grid-template-columns: repeat(3, 1fr); padding: 6px; gap: 4px; }
+  #pers-footer { flex-direction: column; gap: 4px; padding: 4px 8px; }
+  .pers-foot-btn { font-size: 10px; padding: 3px 10px; }
+  .pers-card-icon { font-size: 20px; }
+}
+
+[data-theme="light"] .pers-header,
+[data-theme="light"] #pers-footer { background: linear-gradient(180deg,#ddd8c8,#c8c0b0); }
+[data-theme="light"] .pers-panel-a:nth-child(1) { background: linear-gradient(180deg,rgba(26,74,153,0.06),var(--bg-soft)); }
+[data-theme="light"] .pers-panel-a:nth-child(2) { background: linear-gradient(180deg,rgba(26,74,153,0.03),var(--bg-soft)); }
+[data-theme="light"] .pers-panel-h:nth-child(1) { background: linear-gradient(180deg,rgba(136,21,0,0.03),var(--bg-soft)); }
+[data-theme="light"] .pers-panel-h:nth-child(2) { background: linear-gradient(180deg,rgba(136,21,0,0.06),var(--bg-soft)); }
+[data-theme="light"] #pers-filter-bar { background: rgba(200,192,176,0.53); }
+[data-theme="light"] #pers-class-bar-wrap { background: linear-gradient(180deg,rgba(200,192,176,0.53),rgba(180,172,160,0.8)); }
+[data-theme="light"] .pers-race-btn:hover { background: rgba(180,172,160,0.53); }
+[data-theme="light"] .pers-char-card { background: linear-gradient(180deg,rgba(230,224,216,0.53),rgba(220,214,204,0.53)); }
+[data-theme="light"] .pers-char-card:hover { background: rgba(220,214,204,0.53); }
+[data-theme="light"] .pers-class-btn:hover { background: rgba(200,192,176,0.6); }
+[data-theme="light"] .pers-level-input { background: rgba(200,192,176,0.8); }
+[data-theme="light"] .pers-foot-btn { background: linear-gradient(180deg,#c8b898,#b8a888); border-color: #8a7a60; color: #1a1a0a; }
+[data-theme="light"] .pers-foot-btn:hover { background: linear-gradient(180deg,#d8c8a8,#c8b898); }
+[data-theme="light"] .pers-foot-btn.primary { border-color: #8a7530; background: linear-gradient(180deg,#c8b040,#b0a030); color: #1a1a0a; }
+[data-theme="light"] .pers-foot-btn.primary:hover { background: linear-gradient(180deg,#d8c850,#c0b040); }

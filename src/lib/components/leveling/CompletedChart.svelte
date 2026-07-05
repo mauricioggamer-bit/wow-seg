@@ -15,7 +15,7 @@
 
 <svg viewBox="0 0 {W} {H}" class="lvl-chart" preserveAspectRatio="xMidYMid meet">
   <rect x={PAD_L} y={PAD_T} width={innerW} height={innerH} class="lvl-chart-bg" rx="3" />
-  <rect x={PAD_L} y={PAD_T} width={Math.max(0, barW)} height={innerH} class="lvl-chart-fill" rx="3"><title>{sim.charactersCompleted}/{totalPending} ({completedPct.toFixed(0)}%)</title></rect>
+  <rect x={PAD_L} y={PAD_T} width={Math.max(0, barW)} height={innerH} class="lvl-chart-fill" rx="3" style="animation: lvl-bar-in 0.4s ease both"><title>{sim.charactersCompleted}/{totalPending} ({completedPct.toFixed(0)}%)</title></rect>
   <text x={PAD_L + 2} y={PAD_T + innerH / 2 + 2} class="lvl-chart-bar-text">
     {sim.charactersCompleted}/{totalPending} completados
   </text>

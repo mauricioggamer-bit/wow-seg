@@ -110,25 +110,26 @@
         {#if charMisiones.length > 0}
           <div class="task-list">
             {#each charMisiones as m}
-              <div class="task-item" class:done={m.estado === 'completada'} style="position:relative">
+              <div class="task-item dp-mission" class:done={m.estado === 'completada'}>
                 <input type="checkbox" class="task-check" checked={m.estado === 'completada'}
                   onchange={() => dataStore.toggleMision(m.id)} />
+                <span class="dp-mission-badge">M</span>
                 <div class="task-info">
-                  <div class="task-name" style="cursor:pointer">{m.nombre}</div>
+                  <div class="task-name dp-name">{m.nombre}</div>
                   <div class="task-meta">
                     <span class="text-xs text-muted">P{m.prioridad}</span>
                     <span>{m.tiempo_min || 0} min</span>
                     <span>{m.tipo}</span>
                     {#if m.expansion}
-                      <span style="color:var(--gold);font-size:0.6rem">{m.expansion}</span>
+                      <span class="dp-exp">{m.expansion}</span>
                     {/if}
                   </div>
                 </div>
-                <div style="display:flex;gap:2px;align-items:center;flex-shrink:0">
+                <div class="dp-actions">
                   <button onclick={() => openMissionEdit?.(m)} title="Editar"
-                    style="background:none;border:none;cursor:pointer;font-size:0.65rem;padding:0 2px">✏️</button>
+                    class="dp-btn">✏️</button>
                   <button onclick={() => { if (confirm('¿Eliminar misión?')) dataStore.deleteMision(m.id) }} title="Eliminar"
-                    style="background:none;border:none;cursor:pointer;font-size:0.65rem;padding:0 2px">🗑️</button>
+                    class="dp-btn">🗑️</button>
                 </div>
               </div>
             {/each}
@@ -138,3 +139,13 @@
     </div>
   </div>
 {/if}
+
+<style>
+  .dp-mission { position: relative; border-left: 2px solid #9b59b6 !important; }
+  .dp-mission.done { border-left-color: #6c3483 !important; }
+  .dp-mission-badge { position: absolute; top: 2px; left: 20px; font-size: 0.5rem; background: #9b59b6; color: #fff; border-radius: 2px; padding: 0 3px; line-height: 1.2; font-weight: 600; letter-spacing: 0.03em; }
+  .dp-name { cursor: pointer; }
+  .dp-exp { color: var(--gold); font-size: 0.6rem; }
+  .dp-actions { display: flex; gap: 2px; align-items: center; flex-shrink: 0; }
+  .dp-btn { background: none; border: none; cursor: pointer; font-size: 0.65rem; padding: 0 2px; }
+</style>

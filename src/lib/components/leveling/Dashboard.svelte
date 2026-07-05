@@ -26,6 +26,7 @@
     plan: OptimizationPlan
   } = $props()
 
+  let dashTab = $state('charts')
   let hoursPerWeek = $state(10)
 
   let totalTime = $derived(getTotalTimeHours(personajes, config, count90))
@@ -43,102 +44,113 @@
 </script>
 
 <div class="lvl-dashboard">
-  <div class="lvl-dash-grid">
-    <div class="lvl-dash-card">
-      <div class="lvl-dash-card-title">Tiempo por personaje</div>
-      <TimeChart {results} />
-    </div>
-    <div class="lvl-dash-card">
-      <div class="lvl-dash-card-title">Dungeons por personaje</div>
-      <DungeonChart {results} />
-    </div>
-    <div class="lvl-dash-card">
-      <div class="lvl-dash-card-title">XP/hora por personaje</div>
-      <XpPerHourChart {results} />
-    </div>
-    <div class="lvl-dash-card">
-      <div class="lvl-dash-card-title">XP restante por personaje</div>
-      <XpRemainingChart {results} />
-    </div>
-    <div class="lvl-dash-card">
-      <div class="lvl-dash-card-title">ROI (horas ahorradas netas)</div>
-      <RoiChart {results} />
-    </div>
-    <div class="lvl-dash-card">
-      <div class="lvl-dash-card-title">Progreso Warband Mentor 80-90</div>
-      <WarbandProgressChart {plan} />
-    </div>
-    <div class="lvl-dash-card">
-      <div class="lvl-dash-card-title">Personajes completados</div>
-      <CompletedChart {sim} totalPending={pendingCount} />
-    </div>
+  <div class="lvl-dash-tabs" role="tablist">
+    <button class="lvl-dash-tab" class:active={dashTab === 'charts'} role="tab" aria-selected={dashTab === 'charts'} onclick={() => dashTab = 'charts'}>📊 Gráficos</button>
+    <button class="lvl-dash-tab" class:active={dashTab === 'sim'} role="tab" aria-selected={dashTab === 'sim'} onclick={() => dashTab = 'sim'}>🎯 Simulación</button>
   </div>
 
-  <div class="lvl-dash-metrics">
-    <div class="lvl-dm-item"><span>XP total pendiente</span><strong>{totalXp.toLocaleString('es-ES')}</strong></div>
-    <div class="lvl-dm-item"><span>Dungeons totales</span><strong>{totalDungeons}</strong></div>
-    <div class="lvl-dm-item"><span>Tiempo total</span><strong>{formatHours(totalTime)}</strong></div>
-    <div class="lvl-dm-item"><span>Tiempo/nivel prom.</span><strong>{avgTimePerLevel > 0 ? formatHours(avgTimePerLevel) : '—'}</strong></div>
-    <div class="lvl-dm-item"><span>Horas ahorradas</span><strong class="saved">{formatHours(hoursSaved)}</strong></div>
-    <div class="lvl-dm-item">
-      <span>Próximo breakpoint</span>
-      <strong>{nextBreakpoint !== null ? `+${nextBreakpoint}%` : 'Máximo (25%)'}</strong>
-    </div>
-  </div>
-
-  <div class="lvl-whatif">
-    <div class="lvl-whatif-header">
-      <span>Simulación: ¿Cuánto logro con</span>
-      <input type="range" min="1" max="40" bind:value={hoursPerWeek} />
-      <strong>{hoursPerWeek}h/semana?</strong>
-    </div>
-    <div class="lvl-whatif-stats">
-      <div class="lvl-wf-stat"><span>Semanas para completar</span><strong>{weeksNeeded}</strong></div>
-      <div class="lvl-wf-stat"><span>Completados</span><strong>{sim.charactersCompleted}/{pendingCount}</strong></div>
-      <div class="lvl-wf-stat"><span>Dungeons</span><strong>{sim.totalDungeonsUsed}</strong></div>
-      <div class="lvl-wf-stat"><span>Tiempo usado</span><strong>{formatHours(sim.totalTimeUsed)}</strong></div>
-      <div class="lvl-wf-stat"><span>Llegan a 90</span><strong>{sim.count90Reached} pjs</strong></div>
-    </div>
-
-    {#if recs.length > 0}
-      <div class="lvl-recs">
-        <div class="lvl-recs-title">Recomendación:</div>
-        {#each recs as rec}
-          <div class="lvl-rec-item">
-            <span class="lvl-rec-option">{rec.option}</span>
-            <span class="lvl-rec-desc">{rec.description}</span>
-            {#if rec.benefit > 0}
-              <span class="lvl-rec-benefit">Beneficio: {formatHours(rec.benefit)} ahorrados</span>
-            {/if}
-          </div>
-        {/each}
+  {#if dashTab === 'charts'}
+    <div class="lvl-dash-grid">
+      <div class="lvl-dash-card">
+        <div class="lvl-dash-card-title">Tiempo por personaje</div>
+        <TimeChart {results} />
       </div>
-    {/if}
-
-    {#if sim.steps.length > 0 && sim.charactersCompleted < pendingCount}
-      <div class="lvl-whatif-progress">
-        <div class="lvl-wf-progress-title">Progreso (orden óptimo):</div>
-        {#each sim.steps as step (step.nombre)}
-          <div class="lvl-wf-step" class:done={step.completed}>
-            <span class="lvl-wf-step-name">{step.nombre}</span>
-            {#if step.completed}
-              <span class="lvl-wf-step-status">✓ Nivel {step.nivelFinal} {step.reached90 ? '(★90)' : ''}</span>
-            {:else if step.dungeonsUsed > 0}
-              <span class="lvl-wf-step-status">→ Nivel {step.nivelFinal} ({step.dungeonsUsed} dungs)</span>
-            {:else}
-              <span class="lvl-wf-step-status">— Sin tiempo</span>
-            {/if}
-          </div>
-        {/each}
+      <div class="lvl-dash-card">
+        <div class="lvl-dash-card-title">Dungeons por personaje</div>
+        <DungeonChart {results} />
       </div>
-    {/if}
-  </div>
+      <div class="lvl-dash-card">
+        <div class="lvl-dash-card-title">XP/hora por personaje</div>
+        <XpPerHourChart {results} />
+      </div>
+      <div class="lvl-dash-card">
+        <div class="lvl-dash-card-title">XP restante por personaje</div>
+        <XpRemainingChart {results} />
+      </div>
+      <div class="lvl-dash-card">
+        <div class="lvl-dash-card-title">ROI (horas ahorradas netas)</div>
+        <RoiChart {results} />
+      </div>
+      <div class="lvl-dash-card">
+        <div class="lvl-dash-card-title">Progreso Warband Mentor 80-90</div>
+        <WarbandProgressChart {plan} />
+      </div>
+      <div class="lvl-dash-card">
+        <div class="lvl-dash-card-title">Personajes completados</div>
+        <CompletedChart {sim} totalPending={pendingCount} />
+      </div>
+    </div>
+  {:else}
+    <div class="lvl-dash-metrics">
+      <div class="lvl-dm-item"><span>XP total pendiente</span><strong>{totalXp.toLocaleString('es-ES')}</strong></div>
+      <div class="lvl-dm-item"><span>Dungeons totales</span><strong>{totalDungeons}</strong></div>
+      <div class="lvl-dm-item"><span>Tiempo total</span><strong>{formatHours(totalTime)}</strong></div>
+      <div class="lvl-dm-item"><span>Tiempo/nivel prom.</span><strong>{avgTimePerLevel > 0 ? formatHours(avgTimePerLevel) : '—'}</strong></div>
+      <div class="lvl-dm-item"><span>Horas ahorradas</span><strong class="saved">{formatHours(hoursSaved)}</strong></div>
+      <div class="lvl-dm-item">
+        <span>Próximo breakpoint</span>
+        <strong>{nextBreakpoint !== null ? `+${nextBreakpoint}%` : 'Máximo (25%)'}</strong>
+      </div>
+    </div>
 
-  <DungeonSimulation {personajes} {config} {count90} />
+    <div class="lvl-whatif">
+      <div class="lvl-whatif-header">
+        <span>Simulación: ¿Cuánto logro con</span>
+        <input type="range" min="1" max="40" bind:value={hoursPerWeek} />
+        <strong>{hoursPerWeek}h/semana?</strong>
+      </div>
+      <div class="lvl-whatif-stats">
+        <div class="lvl-wf-stat"><span>Semanas para completar</span><strong>{weeksNeeded}</strong></div>
+        <div class="lvl-wf-stat"><span>Completados</span><strong>{sim.charactersCompleted}/{pendingCount}</strong></div>
+        <div class="lvl-wf-stat"><span>Dungeons</span><strong>{sim.totalDungeonsUsed}</strong></div>
+        <div class="lvl-wf-stat"><span>Tiempo usado</span><strong>{formatHours(sim.totalTimeUsed)}</strong></div>
+        <div class="lvl-wf-stat"><span>Llegan a 90</span><strong>{sim.count90Reached} pjs</strong></div>
+      </div>
+
+      {#if recs.length > 0}
+        <div class="lvl-recs">
+          <div class="lvl-recs-title">Recomendación:</div>
+          {#each recs as rec}
+            <div class="lvl-rec-item">
+              <span class="lvl-rec-option">{rec.option}</span>
+              <span class="lvl-rec-desc">{rec.description}</span>
+              {#if rec.benefit > 0}
+                <span class="lvl-rec-benefit">Beneficio: {formatHours(rec.benefit)} ahorrados</span>
+              {/if}
+            </div>
+          {/each}
+        </div>
+      {/if}
+
+      {#if sim.steps.length > 0 && sim.charactersCompleted < pendingCount}
+        <div class="lvl-whatif-progress">
+          <div class="lvl-wf-progress-title">Progreso (orden óptimo):</div>
+          {#each sim.steps as step (step.nombre)}
+            <div class="lvl-wf-step" class:done={step.completed}>
+              <span class="lvl-wf-step-name">{step.nombre}</span>
+              {#if step.completed}
+                <span class="lvl-wf-step-status">✓ Nivel {step.nivelFinal} {step.reached90 ? '(★90)' : ''}</span>
+              {:else if step.dungeonsUsed > 0}
+                <span class="lvl-wf-step-status">→ Nivel {step.nivelFinal} ({step.dungeonsUsed} dungs)</span>
+              {:else}
+                <span class="lvl-wf-step-status">— Sin tiempo</span>
+              {/if}
+            </div>
+          {/each}
+        </div>
+      {/if}
+    </div>
+
+    <DungeonSimulation {personajes} {config} {count90} />
+  {/if}
 </div>
 
 <style>
   .lvl-dashboard { display: flex; flex-direction: column; gap: 8px; }
+  .lvl-dash-tabs { display: flex; gap: 0; border-bottom: 1px solid var(--border-subtle); }
+  .lvl-dash-tab { background: none; border: none; padding: 6px 14px; font-size: 0.55rem; font-family: var(--font-heading); color: var(--text-muted); cursor: pointer; border-bottom: 2px solid transparent; transition: all 0.12s; letter-spacing: 0.05em; }
+  .lvl-dash-tab:hover { color: var(--gold-dim); }
+  .lvl-dash-tab.active { color: var(--gold-light); border-bottom-color: var(--gold); }
   .lvl-dash-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 6px; }
   @media (max-width: 600px) { .lvl-dash-grid { grid-template-columns: 1fr; } }
   .lvl-dash-card { background: rgba(0,0,0,0.25); border: 1px solid var(--border-subtle); border-radius: var(--r-sm); padding: 6px; display: flex; flex-direction: column; gap: 4px; }

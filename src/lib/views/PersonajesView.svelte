@@ -1,4 +1,5 @@
 <script lang="ts">
+  import '../../css/personajes.css'
   import { personajesStore, dataStore } from '../stores/data'
   import { uiStore } from '../stores/ui'
   import { CLASS_MAP, PERS_RACE_INFO, PERS_CLASS_ICONS, PERS_CLASS_COLORS, PERS_RACES_BY_COLUMN } from '../constants'

@@ -41,6 +41,7 @@
       rx="2"
       class="lvl-bar"
       fill={PERS_CLASS_COLORS[CLASS_MAP[r.clase] ?? 'warrior']}
+      style="animation-delay:{i * 0.04}s"
     ><title>{r.nombre}: {r.dungeonsTo90} mazmorras</title></rect>
     {#if barW >= 18}
       <text
@@ -70,6 +71,7 @@
     height: auto;
   }
   :global(.lvl-bar) {
+    animation: lvl-bar-in 0.35s ease both;
     opacity: var(--chart-bar-opacity, 0.85);
     stroke: var(--chart-bar-stroke, none);
     stroke-width: 0.5;
@@ -95,5 +97,9 @@
   :global(.lvl-chart-label) {
     fill: var(--chart-label, var(--text-muted));
     font-size: 5px;
+  }
+  @keyframes lvl-bar-in {
+    from { opacity: 0; }
+    to { opacity: var(--chart-bar-opacity, 0.85); }
   }
 </style>

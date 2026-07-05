@@ -17,11 +17,13 @@
   ]
 </script>
 
-<div class="warband-tabs" id="viewTabs">
+<div class="warband-tabs" id="viewTabs" role="tablist">
   {#each views as v}
     <button
       class="warband-tab"
       class:active={$uiStore.currentView === v.key}
+      role="tab"
+      aria-selected={$uiStore.currentView === v.key}
       onclick={() => uiStore.setView(v.key)}
     >
       {v.icon} {v.label}

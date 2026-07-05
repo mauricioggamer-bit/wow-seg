@@ -17,7 +17,7 @@ function createDataStore() {
   const store = {
     subscribe,
     save() {
-      update(d => { saveData(d); return d })
+      update(d => { saveData(d); return { ...d } })
     },
     getData(): WowData {
       return get({ subscribe })
@@ -37,7 +37,7 @@ function createDataStore() {
           d._meta.total_activos = d.personajes.filter(p => p.planeado_usar).length
           saveData(d)
         }
-        return d
+        return { ...d }
       })
     },
     updateObjetivoNivel(nombre: string, nivel: number) {
@@ -46,7 +46,7 @@ function createDataStore() {
         if (!p) return d
         p.objetivoNivel = nivel
         saveData(d)
-        return d
+        return { ...d }
       })
     },
     updateTimewaysPct(nombre: string, pct: number) {
@@ -55,7 +55,7 @@ function createDataStore() {
         if (!p) return d
         p.timewaysPct = Math.max(0, Math.min(30, pct))
         saveData(d)
-        return d
+        return { ...d }
       })
     },
     toggleTarea(nombrePersonaje: string, tareaId: string) {
@@ -67,7 +67,7 @@ function createDataStore() {
         t.hecho = !t.hecho
         t.ultimo_completado = t.hecho ? new Date().toISOString() : null
         saveData(d)
-        return d
+        return { ...d }
       })
     },
     updateTarea(nombrePersonaje: string, tareaId: string, updates: Partial<Personaje['tareas'][0]>) {
@@ -78,7 +78,7 @@ function createDataStore() {
         if (!t) return d
         Object.assign(t, updates)
         saveData(d)
-        return d
+        return { ...d }
       })
     },
     deleteTarea(nombrePersonaje: string, tareaId: string) {
@@ -87,7 +87,7 @@ function createDataStore() {
         if (!p) return d
         p.tareas = p.tareas.filter(t => t.id !== tareaId)
         saveData(d)
-        return d
+        return { ...d }
       })
     },
     moveTarea(nombrePersonaje: string, tareaId: string, direction: -1 | 1) {
@@ -105,7 +105,7 @@ function createDataStore() {
         a.orden = b.orden ?? swapIdx
         b.orden = tmp
         saveData(d)
-        return d
+        return { ...d }
       })
     },
 addTarea(nombrePersonaje: string, tarea: { nombre: string; tipoContenido?: TipoContenido; contenidoExpansion?: string; contenidoDificultad?: string; tipo?: string; cooldown?: string; prioridad?: number; tiempo_min?: number; expansion?: string; recompensa?: string }) {
@@ -132,14 +132,14 @@ addTarea(nombrePersonaje: string, tarea: { nombre: string; tipoContenido?: TipoC
           recompensa: tarea.recompensa || '',
         })
         saveData(d)
-        return d
+        return { ...d }
       })
     },
     resetDailyTasks() {
       update(d => {
         resetDailyTasks(d)
         saveData(d)
-        return d
+        return { ...d }
       })
     },
     getMisiones(): Mision[] {
@@ -151,7 +151,7 @@ addTarea(nombrePersonaje: string, tarea: { nombre: string; tipoContenido?: TipoC
         const id = 'm' + Date.now()
         d.misiones.push({ id, ...m, creada: new Date().toISOString() })
         saveData(d)
-        return d
+        return { ...d }
       })
     },
     updateMision(id: string, updates: Partial<Mision>) {
@@ -162,7 +162,7 @@ addTarea(nombrePersonaje: string, tarea: { nombre: string; tipoContenido?: TipoC
           d.misiones[idx] = { ...d.misiones[idx], ...updates }
           saveData(d)
         }
-        return d
+        return { ...d }
       })
     },
     deleteMision(id: string) {
@@ -170,7 +170,7 @@ addTarea(nombrePersonaje: string, tarea: { nombre: string; tipoContenido?: TipoC
         if (!d.misiones) return d
         d.misiones = d.misiones.filter(m => m.id !== id)
         saveData(d)
-        return d
+        return { ...d }
       })
     },
     toggleMision(id: string) {
@@ -180,7 +180,7 @@ addTarea(nombrePersonaje: string, tarea: { nombre: string; tipoContenido?: TipoC
         if (!m) return d
         m.estado = m.estado === 'completada' ? 'pendiente' : 'completada'
         saveData(d)
-        return d
+        return { ...d }
       })
     },
     getKeybind(className: string, specId: number): string {
@@ -191,7 +191,7 @@ addTarea(nombrePersonaje: string, tarea: { nombre: string; tipoContenido?: TipoC
         if (!d.keybinds) d.keybinds = {}
         d.keybinds[keybindKey(className, specId)] = base64
         saveData(d)
-        return d
+        return { ...d }
       })
     },
     resetKeybind(className: string, specId: number) {
@@ -199,7 +199,7 @@ addTarea(nombrePersonaje: string, tarea: { nombre: string; tipoContenido?: TipoC
         if (!d.keybinds) return d
         delete d.keybinds[keybindKey(className, specId)]
         saveData(d)
-        return d
+        return { ...d }
       })
     },
     isKeybindEdited(className: string, specId: number): boolean {
@@ -240,7 +240,7 @@ addTarea(nombrePersonaje: string, tarea: { nombre: string; tipoContenido?: TipoC
         d._meta.total_personajes = d.personajes.length
         d._meta.total_activos = d.personajes.filter(c => c.planeado_usar).length
         saveData(d)
-        return d
+        return { ...d }
       })
     },
     moveCharToExpansion(charName: string, newExp: string) {
@@ -256,7 +256,7 @@ addTarea(nombrePersonaje: string, tarea: { nombre: string; tipoContenido?: TipoC
           if (m.personaje === charName && m.expansion === oldExp) m.expansion = newExp
         }
         saveData(d)
-        return d
+        return { ...d }
       })
     },
     moveCharToWarband(charName: string, newWarband: string) {
@@ -276,7 +276,7 @@ addTarea(nombrePersonaje: string, tarea: { nombre: string; tipoContenido?: TipoC
         d._meta.total_personajes = d.personajes.length
         d._meta.total_activos = d.personajes.filter(p => p.planeado_usar).length
         saveData(d)
-        return d
+        return { ...d }
       })
     },
     addWarband(name: string) {
@@ -284,7 +284,7 @@ addTarea(nombrePersonaje: string, tarea: { nombre: string; tipoContenido?: TipoC
         if (d.warbands.find(w => w.nombre === name)) return d
         d.warbands.push({ nombre: name, personajes: [], tareas_disponibles: [] })
         saveData(d)
-        return d
+        return { ...d }
       })
     },
     renameWarband(oldName: string, newName: string) {
@@ -296,7 +296,7 @@ addTarea(nombrePersonaje: string, tarea: { nombre: string; tipoContenido?: TipoC
           if (p.warband === oldName) p.warband = newName
         }
         saveData(d)
-        return d
+        return { ...d }
       })
     },
     deleteWarband(name: string) {
@@ -314,7 +314,7 @@ addTarea(nombrePersonaje: string, tarea: { nombre: string; tipoContenido?: TipoC
         d._meta.total_personajes = d.personajes.length
         d._meta.total_activos = d.personajes.filter(p => p.planeado_usar).length
         saveData(d)
-        return d
+        return { ...d }
       })
     },
     importJSON(jsonStr: string) {
@@ -377,7 +377,7 @@ addTarea(nombrePersonaje: string, tarea: { nombre: string; tipoContenido?: TipoC
         d._meta.total_personajes = d.personajes.length
         d._meta.total_activos = d.personajes.filter(p => p.planeado_usar).length
         saveData(d)
-        return d
+        return { ...d }
       })
     },
   }

@@ -26,3 +26,15 @@ export function createState(character: CharacterSnapshot): SimulationState {
     breakpointsUnlocked: [],
   }
 }
+
+export function createLevelState(level: number, _context: SimulationContext): SimulationState {
+  return {
+    level,
+    xp: 0,
+    totalTime: 0,
+    totalDungeons: 0,
+    totalXP: 0,
+    activeBuffs: [],
+    breakpointsUnlocked: [],
+  }
+}

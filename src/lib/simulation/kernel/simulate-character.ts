@@ -82,7 +82,7 @@ export function simulateCharacter(
       totalXP: breakdown.totalXP,
       modifiers: [...breakdown.rewardModifiers, ...breakdown.monsterModifiers],
       activeBuffs: [...state.activeBuffs],
-      cumulativeTime: state.totalTime,
+      cumulativeTime: state.totalTime / 60,
       cumulativeDungeons: state.totalDungeons,
       cumulativeXP: state.totalXP,
       breakpointsUnlocked: [...state.breakpointsUnlocked],

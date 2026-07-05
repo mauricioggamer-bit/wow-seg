@@ -36,7 +36,9 @@ export {
 export type { GameModel, LevelUpEffects } from './game-model'
 export { WoWRetailModel } from './game-model/wow-retail'
 
-export { createContext, createState } from './context'
+export { createContext, createState, createLevelState } from './context'
+
+export { buildBreakdown } from './breakdown'
 
 export { defaultHooks } from './hooks'
 

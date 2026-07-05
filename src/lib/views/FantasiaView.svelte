@@ -149,7 +149,6 @@
 <style>
   .fantasia-panel { display:flex; gap:10px; height:calc(100vh - 100px); margin-top:6px; border:1px solid var(--border-subtle); border-radius:var(--r-md); overflow:hidden; background:var(--bg-base); }
   .fantasia-counters { width:220px; flex-shrink:0; display:flex; flex-direction:column; gap:8px; padding:10px; background:var(--bg-soft); border-right:1px solid var(--border-subtle); overflow-y:auto; }
-  .fantasia-counter-col { }
   .fantasia-counter-title { font-size:0.6rem; font-weight:700; color:var(--gold-light); text-transform:uppercase; letter-spacing:1px; margin-bottom:4px; padding-bottom:3px; border-bottom:1px solid var(--border-subtle); }
   .fantasia-counter-list { display:flex; flex-direction:column; gap:1px; }
   .fantasia-counter-row { display:flex; align-items:center; gap:4px; padding:2px 4px; font-size:0.5rem; color:var(--text-secondary); }

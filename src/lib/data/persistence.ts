@@ -1,4 +1,4 @@
-import type { WowData, Stats, BackupData, ProfesionSlot } from '../types'
+import type { WowData, Stats, BackupData, ProfesionSlot, Personaje } from '../types'
 import { SEED_DATA } from './seed'
 import { checkWeeklyReset } from './weekly-reset'
 import { PROFESIONES } from '../constants/profesiones'

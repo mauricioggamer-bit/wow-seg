@@ -42,7 +42,7 @@
         </span>
         <button class="wow-btn wow-btn-sm wow-btn-primary" onclick={() => uiStore.openModal('MissionNew')}
           style="font-size:0.6rem;padding:2px 6px">+ Misión</button>
-        <button onclick={() => openCharEdit(selected.nombre)} title="Editar personaje"
+        <button onclick={() => openCharEdit?.(selected.nombre)} title="Editar personaje"
           style="background:none;border:none;cursor:pointer;font-size:0.7rem;padding:0 2px">✏️</button>
         <button class="wow-btn wow-btn-icon" onclick={() => uiStore.selectCharacter(null)}>✕</button>
       </div>
@@ -85,7 +85,7 @@
                     style="background:none;border:none;cursor:pointer;font-size:0.65rem;padding:0 2px">↑</button>
                   <button onclick={() => dataStore.moveTarea(selected.nombre, t.id, 1)} title="Bajar"
                     style="background:none;border:none;cursor:pointer;font-size:0.65rem;padding:0 2px">↓</button>
-                  <button onclick={() => openTaskEdit(selected.nombre, t.id)} title="Editar"
+                  <button onclick={() => openTaskEdit?.(selected.nombre, t.id)} title="Editar"
                     style="background:none;border:none;cursor:pointer;font-size:0.65rem;padding:0 2px">✏️</button>
                   <button onclick={() => { if (confirm('¿Eliminar tarea?')) dataStore.deleteTarea(selected.nombre, t.id) }} title="Eliminar"
                     style="background:none;border:none;cursor:pointer;font-size:0.65rem;padding:0 2px">🗑️</button>
@@ -125,7 +125,7 @@
                   </div>
                 </div>
                 <div style="display:flex;gap:2px;align-items:center;flex-shrink:0">
-                  <button onclick={() => openMissionEdit(m)} title="Editar"
+                  <button onclick={() => openMissionEdit?.(m)} title="Editar"
                     style="background:none;border:none;cursor:pointer;font-size:0.65rem;padding:0 2px">✏️</button>
                   <button onclick={() => { if (confirm('¿Eliminar misión?')) dataStore.deleteMision(m.id) }} title="Eliminar"
                     style="background:none;border:none;cursor:pointer;font-size:0.65rem;padding:0 2px">🗑️</button>

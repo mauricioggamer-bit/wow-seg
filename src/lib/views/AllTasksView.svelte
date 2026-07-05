@@ -60,7 +60,7 @@
                   </div>
                 </div>
                 <div style="display:flex;gap:2px;align-items:center;flex-shrink:0">
-                  <button onclick={() => openTaskEdit(t.personaje, t.id)} title="Editar"
+                  <button onclick={() => openTaskEdit?.(t.personaje, t.id)} title="Editar"
                     style="background:none;border:none;cursor:pointer;font-size:0.65rem;padding:0 2px">✏️</button>
                   <button onclick={() => { if (confirm('¿Eliminar tarea?')) dataStore.deleteTarea(t.personaje, t.id) }} title="Eliminar"
                     style="background:none;border:none;cursor:pointer;font-size:0.65rem;padding:0 2px">🗑️</button>

@@ -387,7 +387,7 @@
   .pers-card-faction-tag { font-size:0.35rem; position:absolute; top:4px; right:5px; letter-spacing:1px; }
   .pers-card-faction-tag.a { color:var(--alliance); }
   .pers-card-faction-tag.h { color:var(--horde); }
-  .pers-card-desc { color:var(--text-dim); font-size:0.4rem; margin-top:2px; line-height:1.3; overflow:hidden; text-overflow:ellipsis; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; }
+  .pers-card-desc { color:var(--text-dim); font-size:0.4rem; margin-top:2px; line-height:1.3; overflow:hidden; text-overflow:ellipsis; display:-webkit-box; -webkit-line-clamp:2; line-clamp:2; -webkit-box-orient:vertical; }
   .pers-card-tipo { font-size:0.5rem; position:absolute; top:4px; left:22px; }
   .pers-card-tipo.iconico { color:#ffd700; text-shadow:0 0 4px rgba(255,215,0,0.5); }
   .pers-card-planned { position:absolute; top:4px; left:5px; cursor:pointer; display:flex; align-items:center; justify-content:center; width:12px; height:12px; border:1px solid var(--border-main); border-radius:1px; background:rgba(0,0,0,0.5); transition:all 0.12s; padding:0; }

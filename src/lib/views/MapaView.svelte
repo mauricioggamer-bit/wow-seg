@@ -158,7 +158,7 @@
         dragging = null
         el.classList.remove('dragging')
         const expandEls = document.elementsFromPoint(ev.clientX, ev.clientY)
-        const dropBtn = expandEls.find((el): el is HTMLElement => el instanceof HTMLElement && el.closest?.('.mapa-exp-btn'))
+        const dropBtn = expandEls.find((el): el is HTMLElement => !!(el instanceof HTMLElement && el.closest?.('.mapa-exp-btn')))
         if (dropBtn) {
           const expBtn = dropBtn.closest('.mapa-exp-btn') as HTMLElement
           const newExp = expBtn.getAttribute('data-drop-exp')
@@ -176,7 +176,7 @@
     window.addEventListener('pointerup', onUp)
   }
 
-  function handleCardClick(e: PointerEvent, charName: string) {
+  function handleCardClick(charName: string) {
     if (wasDragged) return
     highlight = 'char_' + charName
   }
@@ -266,7 +266,7 @@
             style="left:{px}px;top:{py}px"
             data-char-name={c.nombre}
             onpointerdown={(e) => handlePointerDown(e, pid)}
-            onclick={(e) => handleCardClick(e, c.nombre)}
+            onclick={() => handleCardClick(c.nombre)}
           >
             <div class="mapa-card-header">
               <div class="mapa-card-name" style="color:{clsColor}">{c.nombre}</div>
@@ -276,8 +276,8 @@
             {#if items.length > 0}
               <div class="mapa-card-items">
                 {#each items.slice(0, 3) as item (item.id)}
-                  <div class="mapa-card-item" class:done={item.hecho}>
-                    <input type="checkbox" checked={item.hecho}
+                  <div class="mapa-card-item" class:done={item._type === 'task' ? item.hecho : item.estado === 'completada'}>
+                    <input type="checkbox" checked={item._type === 'task' ? item.hecho : item.estado === 'completada'}
                       onchange={() => {
                         if (item._type === 'task') dataStore.toggleTarea(c.nombre, item.id)
                         else dataStore.toggleMision(item.id)

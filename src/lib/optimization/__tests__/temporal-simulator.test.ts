@@ -35,6 +35,7 @@ const defaultWeights = {
   tiempoAhorradoFuturo: 20,
   coberturaProfesiones: 15,
   tiempoTotal: 20,
+  usoVentanaEvento: 10,
 }
 
 describe('runTemporalSimulation', () => {

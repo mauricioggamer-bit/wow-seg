@@ -36,6 +36,7 @@ const weights: ObjectiveWeights = {
   tiempoAhorradoFuturo: 20,
   coberturaProfesiones: 15,
   tiempoTotal: 20,
+  usoVentanaEvento: 10,
 }
 
 describe('Fase 2 — End to End', () => {

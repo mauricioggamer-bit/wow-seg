@@ -39,6 +39,7 @@ const weights: ObjectiveWeights = {
   tiempoAhorradoFuturo: 20,
   coberturaProfesiones: 15,
   tiempoTotal: 20,
+  usoVentanaEvento: 10,
 }
 
 const fechaInicio = new Date('2026-07-05T00:00:00Z')

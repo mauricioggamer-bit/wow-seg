@@ -1,12 +1,24 @@
 import { describe, it, expect } from 'vitest'
 import type { Personaje, LevelingConfig } from '../../types'
 import type { ObjectiveWeights } from '../objective-function'
+import type { PatronSemanal } from '../temporal-simulator'
 import { SEED_DATA } from '../../data/seed'
 import { generateNaiveStrategies } from '../strategy'
 import { compareStrategies } from '../strategy-comparator'
 import { optimizeStrategy } from '../strategy-optimizer'
 import { runTemporalSimulation } from '../temporal-simulator'
 import { computeObjectiveScore } from '../objective-function'
+
+const patronSemanal: PatronSemanal = {
+  lunes: 1.5,
+  martes: 1.5,
+  miercoles: 1.5,
+  jueves: 1.5,
+  viernes: 1.5,
+  sabado: 5,
+  domingo: 5,
+}
+const TOTAL_SEMANAL_REAL = 1.5 * 5 + 5 * 2 // 17.5h
 
 const config: LevelingConfig = {
   xpMonstruos: 20000,
@@ -23,11 +35,12 @@ const weights: ObjectiveWeights = {
   tiempoAhorradoFuturo: 20,
   coberturaProfesiones: 15,
   tiempoTotal: 20,
+  usoVentanaEvento: 10,
 }
 
 const fechaInicio = new Date()
 const fechaLimite = new Date('2026-08-11T00:00:00Z')
-const HORAS_SEMANA = 20 // default realista; ajustable
+const HORAS_SEMANA = TOTAL_SEMANAL_REAL
 
 function normalizeRealRoster(raw: typeof SEED_DATA.personajes): Personaje[] {
   return raw.map(p => ({
@@ -61,6 +74,7 @@ describe('Roster real — Fase 4', () => {
     console.log(`  Pendientes (< 90):       ${pending.length}`)
     console.log(`  planeado_usar = false:   ${nonPlaneado.length}`)
     console.log(`  Rango niveles pendientes: ${Math.min(...pending.map(p => p.nivel))}–${Math.max(...pending.map(p => p.nivel))}`)
+    console.log(`  Patrón semanal: ${patronSemanal.lunes}/${patronSemanal.martes}/${patronSemanal.miercoles}/${patronSemanal.jueves}/${patronSemanal.viernes}/${patronSemanal.sabado}/${patronSemanal.domingo}h/día (total ${TOTAL_SEMANAL_REAL}h/sem)`)
 
     if (pending.length === 0) {
       console.log('\n  ¡Todos los personajes ya están en 90! No hay nada que optimizar.')
@@ -68,7 +82,7 @@ describe('Roster real — Fase 4', () => {
     }
 
     const naive = generateNaiveStrategies(roster, config)
-    const ranked = compareStrategies(naive, roster, config, weights, HORAS_SEMANA, fechaInicio, fechaLimite)
+    const ranked = compareStrategies(naive, roster, config, weights, HORAS_SEMANA, fechaInicio, fechaLimite, patronSemanal)
     const seedResult = ranked[0]
 
     const ordenNaive = seedResult.strategy.decisiones.slice(0, 10).map((d, i) =>
@@ -93,8 +107,9 @@ describe('Roster real — Fase 4', () => {
     swappedDecisions[0] = swappedDecisions[7]
     swappedDecisions[7] = tmp
     const swappedStrategy = { nombre: 'Swap0-7', decisiones: swappedDecisions.map((d, i) => ({ ...d, ordenPrioridad: i + 1 })) }
-    const resSwap = runTemporalSimulation(swappedStrategy, roster, config, HORAS_SEMANA, fechaInicio, fechaLimite)
+    const resSwap = runTemporalSimulation(swappedStrategy, roster, config, HORAS_SEMANA, fechaInicio, fechaLimite, 1.0, patronSemanal)
     const totalPend = roster.filter(p => p.planeado_usar && p.nivel < 90).length
+    // Usa auto-cálculo de caps (no pasar explícitos)
     const scoreSwap = computeObjectiveScore(resSwap.outcome, weights, totalPend)
     console.log(`\n  Diagnóstico swap [1]Mawgul(84) ↔ [8]Pogara(59):`)
     console.log(`    Score original:  ${seedResult.score.toFixed(4)}`)
@@ -123,7 +138,7 @@ describe('Roster real — Fase 4', () => {
     const startTime = performance.now()
     const optResult = optimizeStrategy(
       roster, config, weights, HORAS_SEMANA, fechaInicio, fechaLimite,
-      { maxIterations: 200, neighborsPerIteration: 10, seed: 42, noImprovementLimit: 30 },
+      { maxIterations: 200, neighborsPerIteration: 10, seed: 42, noImprovementLimit: 30, patronSemanal },
     )
     const elapsed = performance.now() - startTime
 

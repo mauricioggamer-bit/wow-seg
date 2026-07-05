@@ -1,11 +1,11 @@
 import type { Personaje, LevelingConfig } from '../types'
 import type { Strategy } from './strategy'
 import type { ObjectiveWeights } from './objective-function'
-import type { TemporalSimulationResult } from './temporal-simulator'
+import type { TemporalSimulationResult, PatronSemanal } from './temporal-simulator'
 import { generateNaiveStrategies } from './strategy'
 import { compareStrategies } from './strategy-comparator'
 import { runTemporalSimulation } from './temporal-simulator'
-import { computeObjectiveScore } from './objective-function'
+import { computeObjectiveScore, computeNormalizationCaps } from './objective-function'
 import { generateNeighbors } from './neighbor-moves'
 import { createSeededRng } from './seeded-rng'
 
@@ -20,6 +20,7 @@ export interface OptimizeOptions {
   neighborsPerIteration?: number
   noImprovementLimit?: number
   seed?: number
+  patronSemanal?: PatronSemanal
 }
 
 export interface OptimizeResult {
@@ -45,18 +46,21 @@ export function optimizeStrategy(
   const seed = options?.seed ?? DEFAULT_SEED
   const rng = createSeededRng(seed)
 
+  const totalPendientes = roster.filter(p => p.planeado_usar && p.nivel < 90).length
+  const patronSemanal = options?.patronSemanal
+  const caps = computeNormalizationCaps(roster, config, horasDisponiblesSemana, fechaInicio, fechaLimite, patronSemanal)
+
   let currentStrategy: Strategy
   if (options?.seedStrategy) {
     currentStrategy = options.seedStrategy
   } else {
     const naive = generateNaiveStrategies(roster, config)
     if (naive.length === 0) {
-      const totalPendientes = roster.filter(p => p.planeado_usar && p.nivel < 90).length
       const emptyStrategy: Strategy = { nombre: 'Vacio', decisiones: [] }
       const emptyResult = runTemporalSimulation(
-        emptyStrategy, roster, config, horasDisponiblesSemana, fechaInicio, fechaLimite,
+        emptyStrategy, roster, config, horasDisponiblesSemana, fechaInicio, fechaLimite, 1.0, patronSemanal,
       )
-      const emptyScore = computeObjectiveScore(emptyResult.outcome, weights, totalPendientes)
+      const emptyScore = computeObjectiveScore(emptyResult.outcome, weights, totalPendientes, caps)
       return {
         bestStrategy: emptyStrategy,
         bestScore: emptyScore,
@@ -66,17 +70,15 @@ export function optimizeStrategy(
       }
     }
     const ranked = compareStrategies(
-      naive, roster, config, weights, horasDisponiblesSemana, fechaInicio, fechaLimite,
+      naive, roster, config, weights, horasDisponiblesSemana, fechaInicio, fechaLimite, patronSemanal,
     )
     currentStrategy = ranked[0].strategy
   }
 
-  const totalPendientes = roster.filter(p => p.planeado_usar && p.nivel < 90).length
-
   let currentResult = runTemporalSimulation(
-    currentStrategy, roster, config, horasDisponiblesSemana, fechaInicio, fechaLimite,
+    currentStrategy, roster, config, horasDisponiblesSemana, fechaInicio, fechaLimite, 1.0, patronSemanal,
   )
-  let currentScore = computeObjectiveScore(currentResult.outcome, weights, totalPendientes)
+  let currentScore = computeObjectiveScore(currentResult.outcome, weights, totalPendientes, caps)
 
   let bestStrategy = currentStrategy
   let bestScore = currentScore
@@ -104,9 +106,9 @@ export function optimizeStrategy(
 
     for (const neighbor of neighbors) {
       const result = runTemporalSimulation(
-        neighbor, roster, config, horasDisponiblesSemana, fechaInicio, fechaLimite,
+        neighbor, roster, config, horasDisponiblesSemana, fechaInicio, fechaLimite, 1.0, patronSemanal,
       )
-      const score = computeObjectiveScore(result.outcome, weights, totalPendientes)
+      const score = computeObjectiveScore(result.outcome, weights, totalPendientes, caps)
 
       if (score > bestNeighborScore) {
         bestNeighborScore = score

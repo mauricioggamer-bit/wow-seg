@@ -35,6 +35,7 @@ describe('computeObjectiveScore', () => {
     tiempoAhorradoFuturo: 20,
     coberturaProfesiones: 15,
     tiempoTotal: 20,
+    usoVentanaEvento: 10,
   }
   const totalPendientes = 10
 
@@ -71,8 +72,9 @@ describe('computeObjectiveScore', () => {
       tiempoAhorradoFuturo: 200,
       rosterStateFinal: roster({ count90: totalPendientes, warbandMentorBuff: 25, diasRestantesEvento: 0 }),
     }
-    // max possible with defaultWeights = 20+25+20+15 = 80 (tiempoTotal=0)
-    expect(computeObjectiveScore(outcome, defaultWeights, totalPendientes)).toBe(80)
+    // max possible with defaultWeights: 20+25+16+15+0+10 = 86
+    // (maxTiempoAhorradoFuturo fallback = 250 → normFutureSaved = 200/250 = 0.8 → term = 16)
+    expect(computeObjectiveScore(outcome, defaultWeights, totalPendientes)).toBe(86)
   })
 
   it('handles worst-case time (edge case)', () => {
@@ -95,8 +97,8 @@ describe('computeObjectiveScore', () => {
       profesionesCubiertas: new Set(['herreria', 'mineria']),
       rosterStateFinal: roster({ count90: 2, warbandMentorBuff: 10, diasRestantesEvento: 20 }),
     }
-    const highXPWeight: ObjectiveWeights = { xpTotal: 100, personajesA90: 0, tiempoAhorradoFuturo: 0, coberturaProfesiones: 0, tiempoTotal: 0 }
-    const highA90Weight: ObjectiveWeights = { xpTotal: 0, personajesA90: 100, tiempoAhorradoFuturo: 0, coberturaProfesiones: 0, tiempoTotal: 0 }
+    const highXPWeight: ObjectiveWeights = { xpTotal: 100, personajesA90: 0, tiempoAhorradoFuturo: 0, coberturaProfesiones: 0, tiempoTotal: 0, usoVentanaEvento: 0 }
+    const highA90Weight: ObjectiveWeights = { xpTotal: 0, personajesA90: 100, tiempoAhorradoFuturo: 0, coberturaProfesiones: 0, tiempoTotal: 0, usoVentanaEvento: 0 }
 
     const xpScore = computeObjectiveScore(outcome, highXPWeight, totalPendientes)
     const a90Score = computeObjectiveScore(outcome, highA90Weight, totalPendientes)

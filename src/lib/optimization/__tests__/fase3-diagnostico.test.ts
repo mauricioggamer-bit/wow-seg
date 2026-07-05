@@ -3,7 +3,7 @@ import type { Personaje, LevelingConfig } from '../../types'
 import type { ObjectiveWeights } from '../objective-function'
 import type { Strategy } from '../strategy'
 import { runTemporalSimulation } from '../temporal-simulator'
-import { computeObjectiveScore } from '../objective-function'
+import { computeObjectiveScore, computeNormalizationCaps } from '../objective-function'
 import { generateNaiveStrategies } from '../strategy'
 import { compareStrategies } from '../strategy-comparator'
 import { swapPositions, generateNeighbors } from '../neighbor-moves'
@@ -25,6 +25,7 @@ const weights: ObjectiveWeights = {
   tiempoAhorradoFuturo: 20,
   coberturaProfesiones: 15,
   tiempoTotal: 20,
+  usoVentanaEvento: 10,
 }
 
 const fechaInicio = new Date('2026-07-05T00:00:00Z')
@@ -50,7 +51,8 @@ function makePersonaje(overrides: Partial<Personaje> = {}): Personaje {
 function evaluateStrategy(roster: Personaje[], s: Strategy): number {
   const r = runTemporalSimulation(s, roster, config, 168, fechaInicio, fechaLimite)
   const totalPendientes = roster.filter(p => p.planeado_usar && p.nivel < 90).length
-  return computeObjectiveScore(r.outcome, weights, totalPendientes)
+  const caps = computeNormalizationCaps(roster, config, 168, fechaInicio, fechaLimite)
+  return computeObjectiveScore(r.outcome, weights, totalPendientes, caps)
 }
 
 function generateSyntheticRoster(size: number, seed: number): Personaje[] {
@@ -170,9 +172,10 @@ describe('Fase 3 — Diagnóstico', () => {
     }
 
     const totalPend = roster.filter(p => p.planeado_usar && p.nivel < 90).length
+    const caps = computeNormalizationCaps(roster, config, 168, fechaInicio, fechaLimite)
 
     const resGJSTV = runTemporalSimulation(ordenGJSTV, roster, config, 168, fechaInicio, fechaLimite)
-    const scoreGJSTV = computeObjectiveScore(resGJSTV.outcome, weights, totalPend)
+    const scoreGJSTV = computeObjectiveScore(resGJSTV.outcome, weights, totalPend, caps)
 
     const ordenProf: Strategy = {
       nombre: 'Prof',
@@ -186,7 +189,7 @@ describe('Fase 3 — Diagnóstico', () => {
     }
 
     const resProf = runTemporalSimulation(ordenProf, roster, config, 168, fechaInicio, fechaLimite)
-    const scoreProf = computeObjectiveScore(resProf.outcome, weights, totalPend)
+    const scoreProf = computeObjectiveScore(resProf.outcome, weights, totalPend, caps)
 
     console.log(`  Score [Garrosh,Jaina,Sylvanas,Thrall,Valeera]: ${scoreGJSTV.toFixed(4)}`)
     console.log(`    XP=${resGJSTV.outcome.xpTotal}, A90=${resGJSTV.outcome.personajesA90}, tiempo=${resGJSTV.outcome.tiempoTotalHoras.toFixed(1)}h`)

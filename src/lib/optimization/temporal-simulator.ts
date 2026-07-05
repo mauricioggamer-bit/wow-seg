@@ -8,6 +8,16 @@ import { getXpForLevel } from '../constants/experience'
 import { PROFESIONES } from '../constants/profesiones'
 import { tieneMainCrafter } from './professions'
 
+export type PatronSemanal = {
+  lunes: number
+  martes: number
+  miercoles: number
+  jueves: number
+  viernes: number
+  sabado: number
+  domingo: number
+}
+
 export interface TemporalSimulationResult {
   dias: SimulationDay[]
   outcome: SimulationOutcome
@@ -21,6 +31,16 @@ export interface SimulationDay {
   nivelesGanados: Record<string, number>
 }
 
+const DAY_HOUR_MAP: Record<number, keyof PatronSemanal> = {
+  0: 'domingo',
+  1: 'lunes',
+  2: 'martes',
+  3: 'miercoles',
+  4: 'jueves',
+  5: 'viernes',
+  6: 'sabado',
+}
+
 export function runTemporalSimulation(
   strategy: Strategy,
   roster: Personaje[],
@@ -29,8 +49,9 @@ export function runTemporalSimulation(
   fechaInicio: Date,
   fechaLimite: Date,
   throughputEfectivo: number = 1.0,
+  patronSemanal?: PatronSemanal,
 ): TemporalSimulationResult {
-  const horasPorDia = (horasDisponiblesSemana / 7) * throughputEfectivo
+  const horasPorDiaDefault = patronSemanal ? undefined : (horasDisponiblesSemana / 7) * throughputEfectivo
   const dias: SimulationDay[] = []
   let xpTotal = 0
   let personajesA90 = 0
@@ -54,7 +75,10 @@ export function runTemporalSimulation(
       nivelesGanados: {},
     }
 
-    let remaining = horasPorDia
+    const horasHoy = patronSemanal
+      ? patronSemanal[DAY_HOUR_MAP[currentDate.getDay()]] * throughputEfectivo
+      : horasPorDiaDefault!
+    let remaining = horasHoy
     let targetDecision: Decision | null = null
 
     for (const dec of strategy.decisiones) {

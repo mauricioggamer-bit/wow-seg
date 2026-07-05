@@ -76,7 +76,7 @@
       </div>
     </div>
     <div class="drawer-body">
-      <DetailView {personaje} {config} {roster} {count90} />
+      <DetailView {personaje} {config} {roster} {count90} {onEditChar} />
     </div>
   </aside>
 {/if}

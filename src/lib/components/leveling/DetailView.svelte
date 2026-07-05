@@ -8,11 +8,13 @@
     config,
     roster,
     count90,
+    onEditChar,
   }: {
     personaje: Personaje
     config: LevelingConfig
     roster: Personaje[]
     count90: number
+    onEditChar?: (name: string) => void
   } = $props()
 
   let dual = $derived(calculateBoth(personaje, config, count90))
@@ -34,6 +36,12 @@
 </script>
 
 <div class="lvl-detail-view">
+  <div class="lvl-dv-header">
+    <h4 class="lvl-bd-title">Detalle de nivel</h4>
+    {#if onEditChar}
+      <button class="lvl-edit-btn" onclick={() => onEditChar(personaje.nombre)} title="Editar personaje">✏️ Editar</button>
+    {/if}
+  </div>
   {#if dual.done90}
     <p class="lvl-done-msg">Nivel 90 alcanzado ✓</p>
   {:else}
@@ -165,6 +173,9 @@
     flex-direction: column;
     gap: 8px;
   }
+  .lvl-dv-header { display: flex; align-items: center; justify-content: space-between; }
+  .lvl-edit-btn { background: none; border: 1px solid var(--gold-dim); border-radius: var(--r-sm); color: var(--gold-light); cursor: pointer; font-size: 0.5rem; padding: 2px 6px; font-family: var(--font-heading); transition: all var(--t-fast); }
+  .lvl-edit-btn:hover { background: rgba(201,168,76,0.15); border-color: var(--gold); }
   .lvl-range-summary {
     background: rgba(0,0,0,0.2);
     border: 1px solid var(--border-subtle);

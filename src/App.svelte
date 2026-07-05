@@ -673,7 +673,7 @@
   </Dialog>
 
   <!-- Modal: Editar / Nuevo Personaje -->
-  <Dialog show={$uiStore.activeModal === 'CharEdit'} title={isNewChar ? 'Nuevo Personaje' : 'Editar Personaje'} onclose={() => { isNewChar = false; uiStore.closeModal() }}>
+  <Dialog show={$uiStore.activeModal === 'CharEdit'} title={isNewChar ? 'Nuevo Personaje' : 'Editar Personaje'} side={true} onclose={() => { isNewChar = false; uiStore.closeModal() }}>
     {#snippet children()}
       <div class="form-group">
         <label>Nombre</label>

@@ -3,18 +3,12 @@
   import { currentWarband } from '../stores/ui'
   import { levelingStore } from '../stores/leveling'
   import type { LevelingResult, Personaje } from '../types'
-  import {
-    calculateBoth,
-    getWarbandMentor8090FromRoster,
-    getTotalTimeHours,
-    getTotalDungeons,
-    getTotalTimeTo80,
-    getTotalDungeonsTo80,
-    formatHours,
-    formatNumber,
-  } from '../leveling/calculator'
+  import { formatHours, formatNumber } from '../format'
+  import { getWarbandMentor8090FromRoster } from '../leveling/calculator'
   import { calculateStrategicValue } from '../leveling/strategicValue'
   import { optimize } from '../leveling/optimizer'
+  import { WoWRetailModel, simulateRoster } from '../simulation'
+  import type { CharacterSnapshot, SimulationScenario } from '../simulation'
   import Modal from '../components/leveling/Modal.svelte'
   import DetailDrawer from '../components/leveling/DetailDrawer.svelte'
   import DungeonXpModal from '../components/leveling/DungeonXpModal.svelte'
@@ -41,36 +35,72 @@
   let count90 = $derived(personajes.filter(p => p.nivel >= 90).length)
   let warbandMentor8090 = $derived(getWarbandMentor8090FromRoster($personajesStore))
 
-  let totalTime = $derived(getTotalTimeHours(personajes, config, count90))
-  let totalDungeons = $derived(getTotalDungeons(personajes, config, count90))
-  let totalTime80 = $derived(getTotalTimeTo80(personajes, config, count90))
-  let totalDungeons80 = $derived(getTotalDungeonsTo80(personajes, config, count90))
+  const gameModel = new WoWRetailModel()
+
+  let rosterSnapshots = $derived<CharacterSnapshot[]>(
+    personajes.map(p => ({
+      nombre: p.nombre,
+      clase: p.clase,
+      nivel: p.nivel,
+      xp: 0,
+      objetivo: 90,
+      timewaysPct: p.timewaysPct ?? 0,
+    }))
+  )
+
+  let scenario = $derived<SimulationScenario>({
+    expansion: 'retail',
+    version: '11.0.2',
+    activeEvent: null,
+    dungeonDuration: config.duracionDungeon,
+    globalBuffs: [],
+  })
+
+  let optimizationPlan = $derived(optimize(personajes, config, count90))
+
+  let rosterResult = $derived(
+    simulateRoster(rosterSnapshots, scenario, config, gameModel, optimizationPlan.order)
+  )
+
   let pendingCount = $derived(personajes.filter(p => p.nivel < 90).length)
   let pending80Count = $derived(personajes.filter(p => p.nivel < 80).length)
 
-  let optimizationPlan = $derived(optimize(personajes, config, count90))
+  function getTo80Values(nivelInicial: number, history: import('../simulation').SimulationStep[]) {
+    if (nivelInicial >= 80) return { xp: 0, dungeons: 0, time: 0 }
+    for (const step of history) {
+      if (step.levelAfter >= 80) return { xp: step.cumulativeXP, dungeons: step.cumulativeDungeons, time: step.cumulativeTime }
+    }
+    return { xp: 0, dungeons: 0, time: 0 }
+  }
+
+  let totalTime = $derived(rosterResult.results.reduce((s, r) => s + r.result.metrics.totalTime, 0))
+  let totalDungeons = $derived(rosterResult.results.reduce((s, r) => s + r.result.metrics.totalDungeons, 0))
+  let totalTime80 = $derived(rosterResult.results.reduce((s, r) => s + getTo80Values(r.result.context.character.nivel, r.result.history).time, 0))
+  let totalDungeons80 = $derived(rosterResult.results.reduce((s, r) => s + getTo80Values(r.result.context.character.nivel, r.result.history).dungeons, 0))
 
   let roiMap = $derived(new Map(optimizationPlan.entries.map(e => [e.nombre, e.roi])))
 
   let results = $derived<LevelingResult[]>(
-    personajes
-      .map(p => {
-        const dual = calculateBoth(p, config, count90)
+    rosterResult.results
+      .map(cr => {
+        const r = cr.result
+        const p = personajes.find(p => p.nombre === cr.nombre)!
         const sv = calculateStrategicValue(p, config, personajes, count90)
+        const to80 = getTo80Values(r.context.character.nivel, r.history)
         return {
-          nombre: p.nombre,
-          clase: p.clase,
-          nivel: p.nivel,
-          xpTo80: dual.xpTo80,
-          dungeonsTo80: dual.dungeonsTo80,
-          timeTo80: dual.timeTo80,
-          xpTo90: dual.xpTo90,
-          dungeonsTo90: dual.dungeonsTo90,
-          timeTo90: dual.timeTo90,
-          xpPerHour: dual.xpPerHour,
-          done80: dual.done80,
-          done90: dual.done90,
-          roi: roiMap.get(p.nombre) ?? 0,
+          nombre: cr.nombre,
+          clase: r.context.character.clase,
+          nivel: r.context.character.nivel,
+          xpTo80: to80.xp,
+          dungeonsTo80: to80.dungeons,
+          timeTo80: to80.time,
+          xpTo90: r.metrics.totalXP,
+          dungeonsTo90: r.metrics.totalDungeons,
+          timeTo90: r.metrics.totalTime,
+          xpPerHour: r.metrics.xpPerHour,
+          done80: r.finalState.level >= 80,
+          done90: r.finalState.level >= 90,
+          roi: roiMap.get(cr.nombre) ?? 0,
           strategicStars: sv.stars,
           strategicText: sv.reasons.join(' '),
           strategicScore: sv.totalScore,

@@ -1,7 +1,11 @@
 <script lang="ts">
   import type { Personaje, LevelingConfig, LevelBreakdownEntry } from '../../types'
-  import { getLevelBreakdown, formatNumber, formatHours, calculateBoth, getXpRemaining, getDungeonsNeeded, getEffectiveXpPerDungeon, getTimeHours } from '../../leveling/calculator'
+  import { formatNumber, formatHours } from '../../format'
   import { calculateStrategicValue } from '../../leveling/strategicValue'
+  import { WoWRetailModel, simulateCharacter, createContext, createState } from '../../simulation'
+  import type { SimulationResult, SimulationStep } from '../../simulation'
+
+  const gameModel = new WoWRetailModel()
 
   let {
     personaje,
@@ -17,22 +21,119 @@
     onEditChar?: (name: string) => void
   } = $props()
 
-  let dual = $derived(calculateBoth(personaje, config, count90))
-  let breakdown80 = $derived(getLevelBreakdown(personaje, config, count90, 80))
-  let breakdown90 = $derived(getLevelBreakdown(personaje, config, count90, 90))
+  let simChar = $derived({
+    nombre: personaje.nombre,
+    clase: personaje.clase,
+    nivel: personaje.nivel,
+    xp: 0,
+    objetivo: 90,
+    timewaysPct: personaje.timewaysPct ?? 0,
+  })
+
+  let simScenario = $derived({
+    expansion: 'retail',
+    version: '11.0.2',
+    activeEvent: null as string | null,
+    dungeonDuration: config.duracionDungeon,
+    globalBuffs: [] as { id: string; name: string; pct: number }[],
+  })
+
+  let simContext = $derived(createContext(simChar, simScenario, config, count90))
+  let simState = $derived(createState(simChar))
+  let simResult = $derived(simulateCharacter(simContext, simState, gameModel))
   let strategic = $derived(calculateStrategicValue(personaje, config, roster, count90))
 
-  let ranges = $derived((() => {
-    const nivel = personaje.nivel
-    const xpPerDungeon = getEffectiveXpPerDungeon(config, nivel, count90, personaje.timewaysPct ?? 0)
-    const targets = [60, 70, 80, 90].filter(t => t > nivel)
-    return targets.map(t => {
-      const xp = getXpRemaining(nivel, t)
-      const dungs = getDungeonsNeeded(xp, xpPerDungeon)
-      const time = getTimeHours(dungs, config.duracionDungeon)
-      return { target: t, xp, dungs, time, done: nivel >= t }
-    })
-  })())
+  function getTo80(result: SimulationResult) {
+    if (result.context.character.nivel >= 80) return { dungeons: 0, time: 0 }
+    for (const step of result.history) {
+      if (step.levelAfter >= 80) return { dungeons: step.cumulativeDungeons, time: step.cumulativeTime }
+    }
+    return { dungeons: result.metrics.totalDungeons, time: result.metrics.totalTime }
+  }
+
+  function buildBreakdown(result: SimulationResult, objetivo: number): LevelBreakdownEntry[] {
+    const startLevel = result.context.character.nivel
+    if (startLevel >= objetivo) return []
+    const maxLevel = Math.min(objetivo, gameModel.getMaxLevel())
+    const entries: LevelBreakdownEntry[] = []
+    const xpPerLevel: Record<number, number> = {}
+    const dungeonsPerLevel: Record<number, number> = {}
+
+    for (let l = startLevel; l < maxLevel; l++) {
+      xpPerLevel[l] = 0
+      dungeonsPerLevel[l] = 0
+    }
+
+    for (const step of result.history) {
+      dungeonsPerLevel[step.levelBefore]++
+
+      if (step.levelAfter === step.levelBefore) {
+        xpPerLevel[step.levelBefore] += step.totalXP
+      } else {
+        const xpNeeded = gameModel.getXpRequired(step.levelBefore)
+        const xpToComplete = xpNeeded - step.xpBefore
+        xpPerLevel[step.levelBefore] += xpToComplete
+        let remaining = step.totalXP - xpToComplete
+        let level = step.levelBefore
+        while (remaining > 0 && level < step.levelAfter) {
+          level++
+          if (level < step.levelAfter) {
+            const need = gameModel.getXpRequired(level)
+            xpPerLevel[level] += need
+            remaining -= need
+          }
+        }
+        xpPerLevel[step.levelAfter] += remaining
+      }
+    }
+
+    let cumDungeons = 0
+    let cumTime = 0
+    for (let l = startLevel; l < maxLevel; l++) {
+      const dungs = dungeonsPerLevel[l] || 0
+      const xpGained = xpPerLevel[l] || 0
+      const xpNeeded = gameModel.getXpRequired(l)
+      const xpPerDung = dungs > 0 ? Math.round(xpGained / dungs) : xpNeeded
+      cumDungeons += dungs
+      cumTime += dungs * result.context.scenario.dungeonDuration
+      entries.push({
+        level: l,
+        xpNeeded,
+        xpPerDungeon: xpPerDung,
+        dungeons: dungs,
+        cumulativeDungeons: cumDungeons,
+        cumulativeTime: cumTime,
+      })
+    }
+    return entries
+  }
+
+  function getRangeValues(result: SimulationResult, target: number, nivel: number) {
+    if (nivel >= target) return { xp: 0, dungs: 0, time: 0, done: true }
+    for (const step of result.history) {
+      if (step.levelAfter >= target) return { xp: step.cumulativeXP, dungs: step.cumulativeDungeons, time: step.cumulativeTime, done: false }
+    }
+    return { xp: result.metrics.totalXP, dungs: result.metrics.totalDungeons, time: result.metrics.totalTime, done: false }
+  }
+
+  let dual = $derived({
+    done80: simResult.finalState.level >= 80,
+    done90: simResult.finalState.level >= 90,
+    dungeonsTo80: getTo80(simResult).dungeons,
+    timeTo80: getTo80(simResult).time,
+    dungeonsTo90: simResult.metrics.totalDungeons,
+    timeTo90: simResult.metrics.totalTime,
+    xpPerHour: simResult.metrics.xpPerHour,
+  })
+
+  let breakdown80 = $derived(buildBreakdown(simResult, 80))
+  let breakdown90 = $derived(buildBreakdown(simResult, 90))
+
+  let ranges = $derived(
+    [60, 70, 80, 90]
+      .filter(t => t > personaje.nivel)
+      .map(t => ({ target: t, ...getRangeValues(simResult, t, personaje.nivel) }))
+  )
 </script>
 
 <div class="lvl-detail-view">

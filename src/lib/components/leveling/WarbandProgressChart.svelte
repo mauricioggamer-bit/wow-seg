@@ -1,6 +1,6 @@
 <script lang="ts">
   import type { OptimizationPlan } from '../../types'
-  import { formatHours } from '../../leveling/calculator'
+  import { formatHours } from '../../format'
 
   let { plan }: { plan: OptimizationPlan } = $props()
 

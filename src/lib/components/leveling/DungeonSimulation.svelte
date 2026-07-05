@@ -1,7 +1,7 @@
 <script lang="ts">
   import type { Personaje, LevelingConfig, SimulationResult } from '../../types'
   import { simulateByDungeons } from '../../leveling/simulator'
-  import { formatHours, formatNumber } from '../../leveling/calculator'
+  import { formatHours, formatNumber } from '../../format'
   import { clsClass } from '../../constants'
 
   let {

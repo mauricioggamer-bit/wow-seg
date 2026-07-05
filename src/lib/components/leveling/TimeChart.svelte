@@ -1,6 +1,6 @@
 <script lang="ts">
   import type { LevelingResult } from '../../types'
-  import { formatHours } from '../../leveling/calculator'
+  import { formatHours } from '../../format'
   import { CLASS_MAP, PERS_CLASS_COLORS } from '../../constants'
 
   let { results }: { results: LevelingResult[] } = $props()

@@ -1,7 +1,7 @@
 <script lang="ts">
   import type { LevelingResult, Personaje } from '../../types'
   import { dataStore } from '../../stores/data'
-  import { formatNumber, formatHours } from '../../leveling/calculator'
+  import { formatNumber, formatHours } from '../../format'
   import { clsClass } from '../../constants'
 
   let {

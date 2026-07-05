@@ -1,6 +1,7 @@
 <script lang="ts">
   import type { Personaje, LevelingConfig, LevelingResult, OptimizationPlan, SimulationResult, TimeRecommendation } from '../../types'
-  import { formatHours, getTotalTimeHours, getTotalDungeons, getTotalXpRemaining, getAvgTimePerLevel } from '../../leveling/calculator'
+  import { formatHours } from '../../format'
+import { getTotalTimeHours, getTotalDungeons, getTotalXpRemaining, getAvgTimePerLevel } from '../../leveling/calculator'
   import { simulateByTime } from '../../leveling/simulator'
   import { getTimeRecommendations } from '../../leveling/simulator'
   import TimeChart from './TimeChart.svelte'

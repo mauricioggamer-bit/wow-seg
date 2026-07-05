@@ -1,7 +1,7 @@
 <script lang="ts">
   import { slide, fade } from 'svelte/transition'
   import type { Personaje, LevelingConfig, LevelingResult } from '../../types'
-  import { formatNumber, formatHours } from '../../leveling/calculator'
+  import { formatNumber, formatHours } from '../../format'
   import DetailView from './DetailView.svelte'
 
   let {

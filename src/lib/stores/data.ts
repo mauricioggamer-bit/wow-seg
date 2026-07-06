@@ -31,29 +31,29 @@ function createDataStore() {
     updatePersonaje(nombre: string, updates: Partial<Personaje>) {
       update(d => {
         const idx = d.personajes.findIndex(p => p.nombre === nombre)
-        if (idx !== -1) {
-          d.personajes[idx] = { ...d.personajes[idx], ...updates }
-          d._meta.total_personajes = d.personajes.length
-          d._meta.total_activos = d.personajes.filter(p => p.planeado_usar).length
-          saveData(d)
-        }
+        if (idx === -1) return d
+        d.personajes = d.personajes.map((p, i) => i === idx ? { ...p, ...updates } : p)
+        d._meta.total_personajes = d.personajes.length
+        d._meta.total_activos = d.personajes.filter(p => p.planeado_usar).length
+        saveData(d)
         return { ...d }
       })
     },
     updateObjetivoNivel(nombre: string, nivel: number) {
       update(d => {
-        const p = d.personajes.find(pj => pj.nombre === nombre)
-        if (!p) return d
-        p.objetivoNivel = nivel
+        const exists = d.personajes.some(pj => pj.nombre === nombre)
+        if (!exists) return d
+        d.personajes = d.personajes.map(p => p.nombre === nombre ? { ...p, objetivoNivel: nivel } : p)
         saveData(d)
         return { ...d }
       })
     },
     updateTimewaysPct(nombre: string, pct: number) {
       update(d => {
-        const p = d.personajes.find(pj => pj.nombre === nombre)
-        if (!p) return d
-        p.timewaysPct = Math.max(0, Math.min(30, pct))
+        const exists = d.personajes.some(pj => pj.nombre === nombre)
+        if (!exists) return d
+        const clamped = Math.max(0, Math.min(30, pct))
+        d.personajes = d.personajes.map(p => p.nombre === nombre ? { ...p, timewaysPct: clamped } : p)
         saveData(d)
         return { ...d }
       })
@@ -64,8 +64,11 @@ function createDataStore() {
         if (!p) return d
         const t = p.tareas.find(tk => tk.id === tareaId)
         if (!t) return d
-        t.hecho = !t.hecho
-        t.ultimo_completado = t.hecho ? new Date().toISOString() : null
+        d.personajes = d.personajes.map(pj => pj.nombre === nombrePersonaje
+          ? { ...pj, tareas: pj.tareas.map(tk => tk.id === tareaId
+              ? { ...tk, hecho: !tk.hecho, ultimo_completado: !tk.hecho ? new Date().toISOString() : null }
+              : tk) }
+          : pj)
         saveData(d)
         return { ...d }
       })
@@ -76,7 +79,9 @@ function createDataStore() {
         if (!p) return d
         const t = p.tareas.find(tk => tk.id === tareaId)
         if (!t) return d
-        Object.assign(t, updates)
+        d.personajes = d.personajes.map(pj => pj.nombre === nombrePersonaje
+          ? { ...pj, tareas: pj.tareas.map(tk => tk.id === tareaId ? { ...tk, ...updates } : tk) }
+          : pj)
         saveData(d)
         return { ...d }
       })
@@ -85,7 +90,9 @@ function createDataStore() {
       update(d => {
         const p = d.personajes.find(pj => pj.nombre === nombrePersonaje)
         if (!p) return d
-        p.tareas = p.tareas.filter(t => t.id !== tareaId)
+        d.personajes = d.personajes.map(pj => pj.nombre === nombrePersonaje
+          ? { ...pj, tareas: pj.tareas.filter(t => t.id !== tareaId) }
+          : pj)
         saveData(d)
         return { ...d }
       })
@@ -101,9 +108,15 @@ function createDataStore() {
         if (swapIdx < 0 || swapIdx >= sorted.length) return d
         const a = sorted[idx]
         const b = sorted[swapIdx]
-        const tmp = a.orden ?? idx
-        a.orden = b.orden ?? swapIdx
-        b.orden = tmp
+        const aOrden = a.orden ?? idx
+        const bOrden = b.orden ?? swapIdx
+        d.personajes = d.personajes.map(pj => pj.nombre === nombrePersonaje
+          ? { ...pj, tareas: pj.tareas.map(tk => {
+              if (tk.id === a.id) return { ...tk, orden: bOrden }
+              if (tk.id === b.id) return { ...tk, orden: aOrden }
+              return tk
+            }) }
+          : pj)
         saveData(d)
         return { ...d }
       })
@@ -114,7 +127,7 @@ addTarea(nombrePersonaje: string, tarea: { nombre: string; tipoContenido?: TipoC
         if (!p) return d
         const id = 'ts' + Date.now()
         const maxOrden = p.tareas.reduce((m, t) => Math.max(m, t.orden ?? 0), -1)
-        p.tareas.push({
+        const nuevaTarea = {
           id,
           nombre: tarea.nombre,
           tipoContenido: tarea.tipoContenido ?? 'descripcion',
@@ -130,16 +143,20 @@ addTarea(nombrePersonaje: string, tarea: { nombre: string; tipoContenido?: TipoC
           tags: [],
           orden: maxOrden + 1,
           recompensa: tarea.recompensa || '',
-        })
+        }
+        d.personajes = d.personajes.map(pj => pj.nombre === nombrePersonaje
+          ? { ...pj, tareas: [...pj.tareas, nuevaTarea] }
+          : pj)
         saveData(d)
         return { ...d }
       })
     },
     resetDailyTasks() {
       update(d => {
-        resetDailyTasks(d)
-        saveData(d)
-        return { ...d }
+        const dCopy = structuredClone(d)
+        resetDailyTasks(dCopy)
+        saveData(dCopy)
+        return dCopy
       })
     },
     getMisiones(): Mision[] {
@@ -147,9 +164,9 @@ addTarea(nombrePersonaje: string, tarea: { nombre: string; tipoContenido?: TipoC
     },
     addMision(m: Omit<Mision, 'id' | 'creada'>) {
       update(d => {
-        if (!d.misiones) d.misiones = []
+        const misiones = d.misiones || []
         const id = 'm' + Date.now()
-        d.misiones.push({ id, ...m, creada: new Date().toISOString() })
+        d.misiones = [...misiones, { id, ...m, creada: new Date().toISOString() }]
         saveData(d)
         return { ...d }
       })
@@ -157,11 +174,10 @@ addTarea(nombrePersonaje: string, tarea: { nombre: string; tipoContenido?: TipoC
     updateMision(id: string, updates: Partial<Mision>) {
       update(d => {
         if (!d.misiones) return d
-        const idx = d.misiones.findIndex(m => m.id === id)
-        if (idx !== -1) {
-          d.misiones[idx] = { ...d.misiones[idx], ...updates }
-          saveData(d)
-        }
+        const exists = d.misiones.some(m => m.id === id)
+        if (!exists) return d
+        d.misiones = d.misiones.map(m => m.id === id ? { ...m, ...updates } : m)
+        saveData(d)
         return { ...d }
       })
     },
@@ -178,7 +194,8 @@ addTarea(nombrePersonaje: string, tarea: { nombre: string; tipoContenido?: TipoC
         if (!d.misiones) return d
         const m = d.misiones.find(mx => mx.id === id)
         if (!m) return d
-        m.estado = m.estado === 'completada' ? 'pendiente' : 'completada'
+        const newEstado = m.estado === 'completada' ? 'pendiente' : 'completada'
+        d.misiones = d.misiones.map(mx => mx.id === id ? { ...mx, estado: newEstado } : mx)
         saveData(d)
         return { ...d }
       })
@@ -212,9 +229,7 @@ addTarea(nombrePersonaje: string, tarea: { nombre: string; tipoContenido?: TipoC
     deletePersonaje(nombre: string) {
       update(d => {
         d.personajes = d.personajes.filter(p => p.nombre !== nombre)
-        for (const wb of d.warbands) {
-          wb.personajes = wb.personajes.filter(n => n !== nombre)
-        }
+        d.warbands = d.warbands.map(wb => ({ ...wb, personajes: wb.personajes.filter(n => n !== nombre) }))
         d._meta.total_personajes = d.personajes.length
         d._meta.total_activos = d.personajes.filter(p => p.planeado_usar).length
         saveData(d)
@@ -242,12 +257,14 @@ addTarea(nombrePersonaje: string, tarea: { nombre: string; tipoContenido?: TipoC
           timewaysPct: 0,
           tareas: [],
         }
-        d.personajes.push(nuevo)
-        let wb = d.warbands.find(w => w.nombre === p.warband)
-        if (!wb) {
-          d.warbands.push({ nombre: p.warband, personajes: [p.nombre], tareas_disponibles: [] })
+        d.personajes = [...d.personajes, nuevo]
+        const wbExists = d.warbands.some(w => w.nombre === p.warband)
+        if (!wbExists) {
+          d.warbands = [...d.warbands, { nombre: p.warband, personajes: [p.nombre], tareas_disponibles: [] }]
         } else {
-          if (!wb.personajes.includes(p.nombre)) wb.personajes.push(p.nombre)
+          d.warbands = d.warbands.map(w => w.nombre === p.warband && !w.personajes.includes(p.nombre)
+            ? { ...w, personajes: [...w.personajes, p.nombre] }
+            : w)
         }
         d._meta.total_personajes = d.personajes.length
         d._meta.total_activos = d.personajes.filter(c => c.planeado_usar).length
@@ -261,12 +278,11 @@ addTarea(nombrePersonaje: string, tarea: { nombre: string; tipoContenido?: TipoC
         const char = d.personajes.find(p => p.nombre === charName)
         if (!char || char.expansion_por_defecto === newExp) return d
         const oldExp = char.expansion_por_defecto
-        char.expansion_por_defecto = newExp
-        for (const t of char.tareas) {
-          if (t.expansion === oldExp) t.expansion = newExp
-        }
-        for (const m of (d.misiones || [])) {
-          if (m.personaje === charName && m.expansion === oldExp) m.expansion = newExp
+        d.personajes = d.personajes.map(p => p.nombre === charName
+          ? { ...p, expansion_por_defecto: newExp, tareas: p.tareas.map(t => t.expansion === oldExp ? { ...t, expansion: newExp } : t) }
+          : p)
+        if (d.misiones) {
+          d.misiones = d.misiones.map(m => m.personaje === charName && m.expansion === oldExp ? { ...m, expansion: newExp } : m)
         }
         saveData(d)
         return { ...d }
@@ -277,14 +293,17 @@ addTarea(nombrePersonaje: string, tarea: { nombre: string; tipoContenido?: TipoC
         const char = d.personajes.find(p => p.nombre === charName)
         if (!char || char.warband === newWarband) return d
         const oldWarband = char.warband
-        char.warband = newWarband
-        const oldWb = d.warbands.find(w => w.nombre === oldWarband)
-        if (oldWb) oldWb.personajes = oldWb.personajes.filter(n => n !== charName)
-        let newWb = d.warbands.find(w => w.nombre === newWarband)
-        if (!newWb) {
-          d.warbands.push({ nombre: newWarband, personajes: [charName], tareas_disponibles: [] })
-        } else {
-          if (!newWb.personajes.includes(charName)) newWb.personajes.push(charName)
+        d.personajes = d.personajes.map(p => p.nombre === charName ? { ...p, warband: newWarband } : p)
+        d.warbands = d.warbands
+          .map(w => w.nombre === oldWarband
+            ? { ...w, personajes: w.personajes.filter(n => n !== charName) }
+            : w)
+          .map(w => w.nombre === newWarband && !w.personajes.includes(charName)
+            ? { ...w, personajes: [...w.personajes, charName] }
+            : w)
+        const hasNewWb = d.warbands.some(w => w.nombre === newWarband)
+        if (!hasNewWb) {
+          d.warbands = [...d.warbands, { nombre: newWarband, personajes: [charName], tareas_disponibles: [] }]
         }
         d._meta.total_personajes = d.personajes.length
         d._meta.total_activos = d.personajes.filter(p => p.planeado_usar).length
@@ -295,7 +314,7 @@ addTarea(nombrePersonaje: string, tarea: { nombre: string; tipoContenido?: TipoC
     addWarband(name: string) {
       update(d => {
         if (d.warbands.find(w => w.nombre === name)) return d
-        d.warbands.push({ nombre: name, personajes: [], tareas_disponibles: [] })
+        d.warbands = [...d.warbands, { nombre: name, personajes: [], tareas_disponibles: [] }]
         saveData(d)
         return { ...d }
       })
@@ -304,25 +323,25 @@ addTarea(nombrePersonaje: string, tarea: { nombre: string; tipoContenido?: TipoC
       update(d => {
         const wb = d.warbands.find(w => w.nombre === oldName)
         if (!wb || d.warbands.find(w => w.nombre === newName)) return d
-        wb.nombre = newName
-        for (const p of d.personajes) {
-          if (p.warband === oldName) p.warband = newName
-        }
+        d.warbands = d.warbands.map(w => w.nombre === oldName ? { ...w, nombre: newName } : w)
+        d.personajes = d.personajes.map(p => p.warband === oldName ? { ...p, warband: newName } : p)
         saveData(d)
         return { ...d }
       })
     },
     deleteWarband(name: string) {
       update(d => {
-        const idx = d.warbands.findIndex(w => w.nombre === name)
-        if (idx === -1) return d
-        d.warbands.splice(idx, 1)
-        for (const p of d.personajes) {
-          if (p.warband === name) p.warband = 'nada'
-        }
-        const nadaWb = d.warbands.find(w => w.nombre === 'nada')
-        if (nadaWb) {
-          nadaWb.personajes = d.personajes.filter(p => p.warband === 'nada').map(p => p.nombre)
+        const exists = d.warbands.some(w => w.nombre === name)
+        if (!exists) return d
+        d.warbands = d.warbands
+          .filter(w => w.nombre !== name)
+          .map(w => w.nombre === 'nada'
+            ? { ...w, personajes: d.personajes.filter(p => p.warband === 'nada').map(p => p.nombre) }
+            : w)
+        d.personajes = d.personajes.map(p => p.warband === name ? { ...p, warband: 'nada' } : p)
+        const hasNada = d.warbands.some(w => w.nombre === 'nada')
+        if (!hasNada && d.personajes.some(p => p.warband === 'nada')) {
+          d.warbands = [...d.warbands, { nombre: 'nada', personajes: d.personajes.filter(p => p.warband === 'nada').map(p => p.nombre), tareas_disponibles: [] }]
         }
         d._meta.total_personajes = d.personajes.length
         d._meta.total_activos = d.personajes.filter(p => p.planeado_usar).length

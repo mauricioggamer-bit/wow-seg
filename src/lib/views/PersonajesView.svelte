@@ -217,6 +217,11 @@
               class="pers-char-card {sel ? 'selected-' + (c.faccion === 'Alianza' ? 'a' : 'h') : ''}"
               onclick={() => selectPersChar(c.nombre)}
             >
+              <button
+                class="pers-card-delete"
+                title="Eliminar personaje"
+                onclick={(e) => { e.stopPropagation(); if (confirm(`¿Eliminar a ${c.nombre}?`)) dataStore.deletePersonaje(c.nombre) }}
+              >✕</button>
               <span class="pers-card-faction-tag {c.faccion === 'Alianza' ? 'a' : 'h'}">
                 {c.faccion === 'Alianza' ? 'A' : 'H'}
               </span>
@@ -229,7 +234,16 @@
               ></button>
               <div class="pers-card-icon">{icon}</div>
               <div class="pers-card-name" style="color:{color}">{c.nombre}</div>
-              <div class="pers-card-meta">Nv.{c.nivel} · {c.clase} · {c.raza}{#if c.parecidos && c.parecidos.length} · {#each c.parecidos as p, i}{#if i > 0}, {/if}<span class="pers-card-parecido" style="color:{color}">{p}</span>{/each}{/if}</div>
+              <div class="pers-card-meta">
+                <div class="pers-card-line">Nv.{c.nivel}</div>
+                <div class="pers-card-line">{c.clase}</div>
+                <div class="pers-card-line">{c.raza}</div>
+                {#if c.parecidos && c.parecidos.length}
+                  {#each c.parecidos as p}
+                    <div class="pers-card-parecido" style="color:{color}">{p}</div>
+                  {/each}
+                {/if}
+              </div>
               {#if c.descripcion}
                 <div class="pers-card-desc" title={c.descripcion}>{c.descripcion}</div>
               {/if}
@@ -375,15 +389,19 @@
   .pers-level-input { width:48px; background:rgba(10,5,0,0.8); border:1px solid var(--border-main); color:var(--gold); font-size:0.45rem; padding:2px 4px; border-radius:2px; font-family:inherit; text-align:center; }
   .pers-level-input:focus { outline:none; border-color:var(--gold); }
   .pers-level-input::placeholder { color:var(--text-dim); }
-  #pers-char-grid { position:relative; z-index:2; flex:1; padding:10px; display:grid; grid-template-columns:repeat(5,1fr); gap:8px; align-content:start; }
-  .pers-char-card { border:1px solid var(--border-subtle); background:linear-gradient(180deg,rgba(22,10,0,0.53),rgba(10,5,0,0.53)); border-radius:2px; padding:8px; cursor:pointer; transition:all 0.15s; text-align:center; position:relative; }
+  #pers-char-grid { position:relative; z-index:2; flex:1; padding:10px; display:grid; grid-template-columns:repeat(auto-fill, minmax(130px, 1fr)); gap:8px; align-content:start; min-width:0; overflow-y:auto; overflow-x:hidden; }
+  .pers-char-card { border:1px solid var(--border-subtle); background:linear-gradient(180deg,rgba(22,10,0,0.53),rgba(10,5,0,0.53)); border-radius:2px; padding:8px; cursor:pointer; transition:all 0.15s; text-align:center; position:relative; min-width:0; }
+  .pers-card-delete { position:absolute; top:3px; right:3px; width:14px; height:14px; padding:0; border:none; background:none; color:var(--text-dim); font-size:10px; line-height:1; cursor:pointer; z-index:3; display:flex; align-items:center; justify-content:center; border-radius:1px; opacity:0; transition:opacity 0.12s,color 0.12s; }
+  .pers-char-card:hover .pers-card-delete { opacity:1; }
+  .pers-card-delete:hover { color:#ff4444; background:rgba(0,0,0,0.5); }
   .pers-char-card:hover { border-color:var(--border-main); background:rgba(31,14,0,0.53); }
   .pers-char-card.selected-a { border-color:var(--alliance); background:rgba(10,32,80,0.5); box-shadow:0 0 12px rgba(26,74,153,0.5); }
   .pers-char-card.selected-h { border-color:var(--horde); background:rgba(58,8,0,0.5); box-shadow:0 0 12px rgba(136,21,0,0.5); }
   .pers-card-icon { font-size:28px; line-height:1.2; margin-bottom:4px; }
   .pers-card-name { font-size:0.5rem; font-weight:bold; letter-spacing:1px; color:var(--gold-light); }
-  .pers-card-meta { color:var(--text-muted); font-size:0.45rem; margin-top:1px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
-  .pers-card-parecido { font-weight:600; }
+  .pers-card-meta { color:var(--text-muted); font-size:0.45rem; margin-top:1px; display:flex; flex-direction:column; gap:1px; }
+  .pers-card-line { white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .pers-card-parecido { font-weight:600; font-size:0.4rem; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
   .pers-card-faction-tag { font-size:0.35rem; position:absolute; top:4px; right:5px; letter-spacing:1px; }
   .pers-card-faction-tag.a { color:var(--alliance); }
   .pers-card-faction-tag.h { color:var(--horde); }

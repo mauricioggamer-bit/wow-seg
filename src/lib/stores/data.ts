@@ -209,6 +209,18 @@ addTarea(nombrePersonaje: string, tarea: { nombre: string; tipoContenido?: TipoC
     getWarbands(): Warband[] {
       return get({ subscribe }).warbands
     },
+    deletePersonaje(nombre: string) {
+      update(d => {
+        d.personajes = d.personajes.filter(p => p.nombre !== nombre)
+        for (const wb of d.warbands) {
+          wb.personajes = wb.personajes.filter(n => n !== nombre)
+        }
+        d._meta.total_personajes = d.personajes.length
+        d._meta.total_activos = d.personajes.filter(p => p.planeado_usar).length
+        saveData(d)
+        return { ...d }
+      })
+    },
     addPersonaje(p: { nombre: string; clase: string; raza: string; nivel: number; faccion: string; reino: string; warband: string; mision_principal?: string; expansion_por_defecto?: string | null; parecidos?: string[]; profesiones?: ProfesionSlot[]; planeado_usar?: boolean; descripcion?: string; tipo?: 'iconico' | 'funcional' }) {
       update(d => {
         if (d.personajes.find(x => x.nombre === p.nombre)) return d

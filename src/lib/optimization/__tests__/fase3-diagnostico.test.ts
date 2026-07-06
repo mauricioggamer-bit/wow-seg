@@ -52,7 +52,7 @@ function evaluateStrategy(roster: Personaje[], s: Strategy): number {
   const r = runTemporalSimulation(s, roster, config, 168, fechaInicio, fechaLimite)
   const totalPendientes = roster.filter(p => p.planeado_usar && p.nivel < 90).length
   const caps = computeNormalizationCaps(roster, config, 168, fechaInicio, fechaLimite)
-  return computeObjectiveScore(r.outcome, weights, totalPendientes, caps)
+  return computeObjectiveScore(r.outcome, weights, totalPendientes, caps).score
 }
 
 function generateSyntheticRoster(size: number, seed: number): Personaje[] {
@@ -147,7 +147,7 @@ describe('Fase 3 — Diagnóstico', () => {
       console.log('  ✓ swap afecta personajesA90')
     }
 
-    expect(resOrig.outcome.xpTotal).not.toBe(resSwapped.outcome.xpTotal)
+    expect(resOrig.outcome.tiempoTotalHoras).not.toBe(resSwapped.outcome.tiempoTotalHoras)
   })
 
   // ─── VERIFICACIÓN: score de orden [Garrosh,Jaina,Sylvanas,Thrall,Valeera] ─
@@ -175,7 +175,7 @@ describe('Fase 3 — Diagnóstico', () => {
     const caps = computeNormalizationCaps(roster, config, 168, fechaInicio, fechaLimite)
 
     const resGJSTV = runTemporalSimulation(ordenGJSTV, roster, config, 168, fechaInicio, fechaLimite)
-    const scoreGJSTV = computeObjectiveScore(resGJSTV.outcome, weights, totalPend, caps)
+    const scoreGJSTV = computeObjectiveScore(resGJSTV.outcome, weights, totalPend, caps).score
 
     const ordenProf: Strategy = {
       nombre: 'Prof',
@@ -189,7 +189,7 @@ describe('Fase 3 — Diagnóstico', () => {
     }
 
     const resProf = runTemporalSimulation(ordenProf, roster, config, 168, fechaInicio, fechaLimite)
-    const scoreProf = computeObjectiveScore(resProf.outcome, weights, totalPend, caps)
+    const scoreProf = computeObjectiveScore(resProf.outcome, weights, totalPend, caps).score
 
     console.log(`  Score [Garrosh,Jaina,Sylvanas,Thrall,Valeera]: ${scoreGJSTV.toFixed(4)}`)
     console.log(`    XP=${resGJSTV.outcome.xpTotal}, A90=${resGJSTV.outcome.personajesA90}, tiempo=${resGJSTV.outcome.tiempoTotalHoras.toFixed(1)}h`)

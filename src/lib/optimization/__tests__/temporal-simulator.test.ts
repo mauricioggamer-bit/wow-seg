@@ -101,7 +101,7 @@ describe('runTemporalSimulation', () => {
     expect(result.dias.length).toBeGreaterThan(0)
     expect(result.outcome.xpTotal).toBeGreaterThan(0)
     expect(result.outcome.tiempoTotalHoras).toBeGreaterThan(0)
-    expect(result.outcome.personajesA90).toBe(0)
+    expect(result.outcome.personajesA90).toBe(1)
   })
 
   it('is deterministic: same inputs produce same output', () => {

@@ -110,7 +110,7 @@ describe('Roster real — Fase 4', () => {
     const resSwap = runTemporalSimulation(swappedStrategy, roster, config, HORAS_SEMANA, fechaInicio, fechaLimite, 1.0, patronSemanal)
     const totalPend = roster.filter(p => p.planeado_usar && p.nivel < 90).length
     // Usa auto-cálculo de caps (no pasar explícitos)
-    const scoreSwap = computeObjectiveScore(resSwap.outcome, weights, totalPend)
+    const scoreSwap = computeObjectiveScore(resSwap.outcome, weights, totalPend).score
     console.log(`\n  Diagnóstico swap [1]Mawgul(84) ↔ [8]Pogara(59):`)
     console.log(`    Score original:  ${seedResult.score.toFixed(4)}`)
     console.log(`    Score swapped:   ${scoreSwap.toFixed(4)}`)

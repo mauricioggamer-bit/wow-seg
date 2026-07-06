@@ -45,7 +45,7 @@ describe('computeObjectiveScore', () => {
       xpTotal: 0,
       tiempoTotalHoras: 500,
     }
-    const score = computeObjectiveScore(outcome, defaultWeights, totalPendientes)
+    const { score } = computeObjectiveScore(outcome, defaultWeights, totalPendientes)
     expect(score).toBeCloseTo(0, 0)
   })
 
@@ -58,7 +58,7 @@ describe('computeObjectiveScore', () => {
       profesionesCubiertas: new Set(['herreria', 'mineria', 'alquimia', 'sastreria', 'peleteria', 'joyeria', 'ingenieria', 'inscripcion', 'encantamiento', 'herboristeria', 'desuello']),
       rosterStateFinal: roster({ count90: 10, warbandMentorBuff: 25, diasRestantesEvento: 0 }),
     }
-    const score = computeObjectiveScore(outcome, defaultWeights, totalPendientes)
+    const { score } = computeObjectiveScore(outcome, defaultWeights, totalPendientes)
     expect(score).toBeGreaterThanOrEqual(35)
   })
 
@@ -74,7 +74,7 @@ describe('computeObjectiveScore', () => {
     }
     // max possible with defaultWeights: 20+25+16+15+0+10 = 86
     // (maxTiempoAhorradoFuturo fallback = 250 → normFutureSaved = 200/250 = 0.8 → term = 16)
-    expect(computeObjectiveScore(outcome, defaultWeights, totalPendientes)).toBe(86)
+    expect(computeObjectiveScore(outcome, defaultWeights, totalPendientes).score).toBe(86)
   })
 
   it('handles worst-case time (edge case)', () => {
@@ -84,7 +84,7 @@ describe('computeObjectiveScore', () => {
       tiempoTotalHoras: -100,
       rosterStateFinal: roster({ diasRestantesEvento: 37 }),
     }
-    const score = computeObjectiveScore(outcome, defaultWeights, totalPendientes)
+    const { score } = computeObjectiveScore(outcome, defaultWeights, totalPendientes)
     expect(score).toBeGreaterThanOrEqual(0)
   })
 
@@ -100,8 +100,8 @@ describe('computeObjectiveScore', () => {
     const highXPWeight: ObjectiveWeights = { xpTotal: 100, personajesA90: 0, tiempoAhorradoFuturo: 0, coberturaProfesiones: 0, tiempoTotal: 0, usoVentanaEvento: 0 }
     const highA90Weight: ObjectiveWeights = { xpTotal: 0, personajesA90: 100, tiempoAhorradoFuturo: 0, coberturaProfesiones: 0, tiempoTotal: 0, usoVentanaEvento: 0 }
 
-    const xpScore = computeObjectiveScore(outcome, highXPWeight, totalPendientes)
-    const a90Score = computeObjectiveScore(outcome, highA90Weight, totalPendientes)
+    const xpScore = computeObjectiveScore(outcome, highXPWeight, totalPendientes).score
+    const a90Score = computeObjectiveScore(outcome, highA90Weight, totalPendientes).score
 
     expect(xpScore).toBeGreaterThan(0)
     expect(a90Score).toBeGreaterThan(0)

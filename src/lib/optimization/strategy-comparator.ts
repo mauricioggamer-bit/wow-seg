@@ -4,12 +4,13 @@ import type { ObjectiveWeights } from './objective-function'
 import type { TemporalSimulationResult } from './temporal-simulator'
 import type { PatronSemanal } from '../types'
 import { runTemporalSimulation } from './temporal-simulator'
-import { computeObjectiveScore, computeNormalizationCaps } from './objective-function'
+import { computeObjectiveScore, computeNormalizationCaps, type ScoreBreakdown } from './objective-function'
 
 export interface StrategyResult {
   strategy: Strategy
   result: TemporalSimulationResult
   score: number
+  breakdown: ScoreBreakdown
 }
 
 export function compareStrategies(
@@ -36,8 +37,8 @@ export function compareStrategies(
       1.0,
       patronSemanal,
     )
-    const score = computeObjectiveScore(result.outcome, weights, totalPendientes, caps)
-    return { strategy, result, score }
+    const { score, breakdown } = computeObjectiveScore(result.outcome, weights, totalPendientes, caps)
+    return { strategy, result, score, breakdown }
   })
 
   results.sort((a, b) => b.score - a.score)

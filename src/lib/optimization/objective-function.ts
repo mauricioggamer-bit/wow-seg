@@ -66,7 +66,7 @@ function computeAchievableXp(
     const xpPerDungeon = getEffectiveXpPerDungeon(config, p.nivel, count90, maxTimewaysPct)
     const hoursPerDungeon = config.duracionDungeon / 60
     const xpPerHour = hoursPerDungeon > 0 ? xpPerDungeon / hoursPerDungeon : 0
-    const xpTo90 = getXpRemaining(p.nivel, maxLevel) + getXpForLevel(maxLevel)
+    const xpTo90 = getXpRemaining(p.nivel, maxLevel)
     const hoursTo90 = xpPerHour > 0 ? xpTo90 / xpPerHour : Infinity
     return { xpPerHour, hoursTo90 }
   })
@@ -136,12 +136,29 @@ export function computeNormalizationCaps(
   }
 }
 
+export interface ScoreBreakdown {
+  xpTotalNorm: number
+  personajesA90Norm: number
+  tiempoAhorradoFuturoNorm: number
+  coberturaProfesionesNorm: number
+  tiempoTotalNorm: number
+  usoVentanaEventoNorm: number
+  contribucionPonderada: {
+    xpTotal: number
+    personajesA90: number
+    tiempoAhorradoFuturo: number
+    coberturaProfesiones: number
+    tiempoTotal: number
+    usoVentanaEvento: number
+  }
+}
+
 export function computeObjectiveScore(
   outcome: SimulationOutcome,
   weights: ObjectiveWeights,
   totalPendientes: number,
   caps?: NormalizationCaps,
-): number {
+): { score: number; breakdown: ScoreBreakdown } {
   const c = caps ?? {
     maxXpTotal: 500_000_000,
     maxTiempoTotal: 500,
@@ -164,5 +181,23 @@ export function computeObjectiveScore(
     weights.tiempoTotal * normTimeRaw +
     weights.usoVentanaEvento * normRemaining
 
-  return Math.min(Math.max(total, 0), 100)
+  return {
+    score: Math.min(Math.max(total, 0), 100),
+    breakdown: {
+      xpTotalNorm: normXP,
+      personajesA90Norm: normA90,
+      tiempoAhorradoFuturoNorm: normFutureSaved,
+      coberturaProfesionesNorm: normProfession,
+      tiempoTotalNorm: normTimeRaw,
+      usoVentanaEventoNorm: normRemaining,
+      contribucionPonderada: {
+        xpTotal: weights.xpTotal * normXP,
+        personajesA90: weights.personajesA90 * normA90,
+        tiempoAhorradoFuturo: weights.tiempoAhorradoFuturo * normFutureSaved,
+        coberturaProfesiones: weights.coberturaProfesiones * normProfession,
+        tiempoTotal: -(weights.tiempoTotal * normTimeRaw),
+        usoVentanaEvento: weights.usoVentanaEvento * normRemaining,
+      },
+    },
+  }
 }

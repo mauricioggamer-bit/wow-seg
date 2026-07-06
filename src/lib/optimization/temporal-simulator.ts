@@ -97,7 +97,7 @@ export function runTemporalSimulation(
       const hoursPerDungeon = config.duracionDungeon / 60
       const xpPerHour = xpPerDungeon / hoursPerDungeon
 
-      const xpNeededForLevel = getXpForLevel(st.nivel + 1) - st.xp
+      const xpNeededForLevel = getXpForLevel(st.nivel) - st.xp
       const hoursToLevel = xpNeededForLevel / xpPerHour
 
       if (remaining >= hoursToLevel) {

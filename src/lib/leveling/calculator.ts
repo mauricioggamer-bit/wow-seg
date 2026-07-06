@@ -7,7 +7,7 @@ export { formatNumber, formatHours }
 export function getXpRemaining(nivel: number, objetivo: number): number {
   if (nivel >= objetivo) return 0
   let total = 0
-  for (let l = nivel + 1; l < objetivo; l++) {
+  for (let l = nivel; l < objetivo; l++) {
     total += getXpRequired(l)
   }
   return total
@@ -185,9 +185,9 @@ export function getLevelBreakdown(
   const entries: LevelBreakdownEntry[] = []
   let cumDungeons = 0
   let cumTime = 0
-  for (let l = nivel + 1; l < objetivo; l++) {
+  for (let l = nivel; l < objetivo; l++) {
     const xpNeeded = getXpRequired(l)
-    const xpPerDungeon = getEffectiveXpPerDungeon(config, l - 1, count90, personaje.timewaysPct ?? 0)
+    const xpPerDungeon = getEffectiveXpPerDungeon(config, l, count90, personaje.timewaysPct ?? 0)
     const dungeons = getDungeonsNeeded(xpNeeded, xpPerDungeon)
     cumDungeons += dungeons
     cumTime += getTimeHours(dungeons, config.duracionDungeon)

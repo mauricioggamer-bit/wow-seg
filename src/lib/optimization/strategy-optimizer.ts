@@ -7,7 +7,7 @@ import type { PatronSemanal } from '../types'
 import { generateNaiveStrategies } from './strategy'
 import { compareStrategies } from './strategy-comparator'
 import { runTemporalSimulation } from './temporal-simulator'
-import { computeObjectiveScore, computeNormalizationCaps } from './objective-function'
+import { computeObjectiveScore, computeNormalizationCaps, type ScoreBreakdown } from './objective-function'
 import { generateNeighbors } from './neighbor-moves'
 import { createSeededRng } from './seeded-rng'
 
@@ -28,6 +28,7 @@ export interface OptimizeOptions {
 export interface OptimizeResult {
   bestStrategy: Strategy
   bestScore: number
+  bestBreakdown: ScoreBreakdown
   bestResult: TemporalSimulationResult
   iteracionesRealizadas: number
   historialScores: number[]
@@ -62,10 +63,11 @@ export function optimizeStrategy(
       const emptyResult = runTemporalSimulation(
         emptyStrategy, roster, config, horasDisponiblesSemana, fechaInicio, fechaLimite, 1.0, patronSemanal,
       )
-      const emptyScore = computeObjectiveScore(emptyResult.outcome, weights, totalPendientes, caps)
+      const { score: emptyScore, breakdown: emptyBreakdown } = computeObjectiveScore(emptyResult.outcome, weights, totalPendientes, caps)
       return {
         bestStrategy: emptyStrategy,
         bestScore: emptyScore,
+        bestBreakdown: emptyBreakdown,
         bestResult: emptyResult,
         iteracionesRealizadas: 0,
         historialScores: [emptyScore],
@@ -80,10 +82,11 @@ export function optimizeStrategy(
   let currentResult = runTemporalSimulation(
     currentStrategy, roster, config, horasDisponiblesSemana, fechaInicio, fechaLimite, 1.0, patronSemanal,
   )
-  let currentScore = computeObjectiveScore(currentResult.outcome, weights, totalPendientes, caps)
+  let { score: currentScore, breakdown: currentBreakdown } = computeObjectiveScore(currentResult.outcome, weights, totalPendientes, caps)
 
   let bestStrategy = currentStrategy
   let bestScore = currentScore
+  let bestBreakdown = currentBreakdown
   let bestResult = currentResult
   const historialScores: number[] = [bestScore]
 
@@ -110,7 +113,7 @@ export function optimizeStrategy(
       const result = runTemporalSimulation(
         neighbor, roster, config, horasDisponiblesSemana, fechaInicio, fechaLimite, 1.0, patronSemanal,
       )
-      const score = computeObjectiveScore(result.outcome, weights, totalPendientes, caps)
+      const { score, breakdown: neighborBreakdown } = computeObjectiveScore(result.outcome, weights, totalPendientes, caps)
 
       if (score > bestNeighborScore) {
         bestNeighborScore = score
@@ -127,6 +130,7 @@ export function optimizeStrategy(
 
       if (currentScore > bestScore) {
         bestScore = currentScore
+        bestBreakdown = currentBreakdown
         bestStrategy = currentStrategy
         bestResult = currentResult
       }
@@ -142,6 +146,7 @@ export function optimizeStrategy(
   return {
     bestStrategy,
     bestScore,
+    bestBreakdown,
     bestResult,
     iteracionesRealizadas: Math.min(historialScores.length - 1, maxIterations),
     historialScores,
@@ -167,6 +172,7 @@ export interface MultiStartResult {
   bestOverall: {
     strategy: Strategy
     score: number
+    breakdown: ScoreBreakdown
     result: TemporalSimulationResult
   }
   runsPorSemilla: MultiStartRun[]
@@ -225,7 +231,7 @@ export function optimizeStrategyMultiStart(
   }
 
   const runs: MultiStartRun[] = []
-  let bestOverall: { strategy: Strategy; score: number; result: TemporalSimulationResult } | null = null
+  let bestOverall: { strategy: Strategy; score: number; breakdown: ScoreBreakdown; result: TemporalSimulationResult } | null = null
 
   for (let i = 0; i < seeds.length; i++) {
     const seedNum = seeds[i]
@@ -253,6 +259,7 @@ export function optimizeStrategyMultiStart(
       bestOverall = {
         strategy: result.bestStrategy,
         score: result.bestScore,
+        breakdown: result.bestBreakdown,
         result: result.bestResult,
       }
     }

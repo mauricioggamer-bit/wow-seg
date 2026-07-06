@@ -42,6 +42,8 @@ const XP_REQUIRED_PER_LEVEL: Record<number, number> = {
  * El usuario puede sobreescribir valores exactos via DungeonXpModal.
  */
 const DUNGEON_REWARD_XP_TABLE: Record<number, number> = {
+  1: 2541, 2: 3739, 3: 4937, 4: 6135, 5: 7333,
+  6: 8531, 7: 9729, 8: 10927, 9: 12125,
   10: 13323, 11: 14521, 12: 15718, 13: 16916, 14: 18113,
   15: 19311, 16: 20509, 17: 21706, 18: 22904, 19: 24101,
   20: 25299, 21: 26497, 22: 27694, 23: 28892, 24: 30089,
@@ -172,7 +174,7 @@ export function getDungeonXpForLevel(level: number): number {
 
 export const DUNGEON_XP_TABLE: { level: number; xp: number }[] = (() => {
   const table: { level: number; xp: number }[] = []
-  for (let l = 10; l <= 90; l++) {
+  for (let l = 1; l <= 90; l++) {
     table.push({ level: l, xp: getDungeonXpForLevel(l) })
   }
   return table

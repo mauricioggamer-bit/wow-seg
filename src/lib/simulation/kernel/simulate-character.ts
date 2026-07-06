@@ -36,6 +36,7 @@ export function simulateCharacter(
     const xpBefore = state.xp
 
     const breakdown = gameModel.calculateDungeonXp(state, context)
+    if (breakdown.totalXP <= 0) break
     state.xp += breakdown.totalXP
     state.totalDungeons++
     state.totalTime += context.scenario.dungeonDuration

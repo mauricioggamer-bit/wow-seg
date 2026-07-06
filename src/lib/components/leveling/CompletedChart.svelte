@@ -1,23 +1,19 @@
 <script lang="ts">
-  import type { SimulationResult } from '../../types'
-
-  let { sim, totalPending }: { sim: SimulationResult; totalPending: number } = $props()
+  let { completed, totalPending }: { completed: number; totalPending: number } = $props()
 
   const W = 300, H = 80, PAD_L = 30, PAD_R = 4, PAD_T = 8, PAD_B = 14
   const innerW = W - PAD_L - PAD_R, innerH = H - PAD_T - PAD_B
 
-  let completedPct = $derived(totalPending > 0 ? (sim.charactersCompleted / totalPending) * 100 : 0)
-  let remainingPct = $derived(100 - completedPct)
+  let completedPct = $derived(totalPending > 0 ? (completed / totalPending) * 100 : 0)
 
   let barW = $derived(innerW * (completedPct / 100))
-  let barX2 = $derived(PAD_L + barW)
 </script>
 
 <svg viewBox="0 0 {W} {H}" class="lvl-chart" preserveAspectRatio="xMidYMid meet">
   <rect x={PAD_L} y={PAD_T} width={innerW} height={innerH} class="lvl-chart-bg" rx="3" />
-  <rect x={PAD_L} y={PAD_T} width={Math.max(0, barW)} height={innerH} class="lvl-chart-fill" rx="3" style="animation: lvl-bar-in 0.4s ease both"><title>{sim.charactersCompleted}/{totalPending} ({completedPct.toFixed(0)}%)</title></rect>
+  <rect x={PAD_L} y={PAD_T} width={Math.max(0, barW)} height={innerH} class="lvl-chart-fill" rx="3" style="animation: lvl-bar-in 0.4s ease both"><title>{completed}/{totalPending} ({completedPct.toFixed(0)}%)</title></rect>
   <text x={PAD_L + 2} y={PAD_T + innerH / 2 + 2} class="lvl-chart-bar-text">
-    {sim.charactersCompleted}/{totalPending} completados
+    {completed}/{totalPending} completados
   </text>
   <text x={W - PAD_R - 2} y={PAD_T + innerH / 2 + 2} text-anchor="end" class="lvl-chart-bar-text">
     {completedPct.toFixed(0)}%

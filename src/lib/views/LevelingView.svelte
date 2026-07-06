@@ -143,8 +143,6 @@
   let totalTime80 = $derived(rosterResult.results.reduce((s, r) => s + getTo80Values(r.result.context.character.nivel, r.result.history).time, 0))
   let totalDungeons80 = $derived(rosterResult.results.reduce((s, r) => s + getTo80Values(r.result.context.character.nivel, r.result.history).dungeons, 0))
 
-  let roiMap = $derived(new Map<string, number>())
-
   function buildDashboardPlan(
     result: MultiStartResult | null,
     roster: Personaje[],
@@ -193,7 +191,7 @@
         count90: count90SoFar, warbandMentorBuff: 0, horasConsumidas: 0,
         horasDisponiblesSemana: 0, fechaActual: new Date(), fechaLimiteEvento: new Date(), diasRestantesEvento: 0,
       }
-      const timeSaved = d.personaje.nivel < 90 && d.personaje.nivel >= 80 && !reaches90
+      const timeSavedForOthers = d.personaje.nivel < 90
         ? computeFutureTimeSaved(d.personaje, rs, roster.filter(p => p.planeado_usar), config)
         : 0
       if (reaches90) count90SoFar++
@@ -211,8 +209,8 @@
         timeToObjective: hours,
         buffBefore,
         buffAfter,
-        timeSavedForOthers: timeSaved,
-        roi: 0,
+        timeSavedForOthers,
+        roi: timeSavedForOthers - hours,
         reason: reaches90 ? 'Sube a 90' : `Nv${d.personaje.nivel}`,
       }
     })
@@ -226,6 +224,8 @@
   }
 
   let dashboardPlan = $derived(buildDashboardPlan(optimizationResult, $personajesStore, config, rosterOrder))
+
+  let roiMap = $derived(new Map(dashboardPlan.entries.map(e => [e.nombre, e.roi])))
 
   let results = $derived<LevelingResult[]>(
     rosterResult.results

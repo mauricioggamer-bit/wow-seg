@@ -1,6 +1,5 @@
 <script lang="ts">
-  import type { Personaje, LevelingConfig, SimulationResult } from '../../types'
-  import { simulateByDungeons } from '../../leveling/simulator'
+  import type { Personaje, LevelingConfig, OptimizationPlan } from '../../types'
   import { formatHours, formatNumber } from '../../format'
   import { clsClass } from '../../constants'
 
@@ -8,26 +7,38 @@
     personajes,
     config,
     count90,
+    plan,
   }: {
     personajes: Personaje[]
     config: LevelingConfig
     count90: number
+    plan: OptimizationPlan
   } = $props()
 
   let dungeonCount = $state(20)
 
-  let sim = $derived(simulateByDungeons(personajes, config, count90, dungeonCount))
-
   let dungeonRanges = $derived((() => {
     let cumDungeon = 0
-    return sim.steps
-      .filter(s => s.dungeonsUsed > 0)
-      .map(s => {
-        const start = cumDungeon + 1
-        const end = cumDungeon + s.dungeonsUsed
-        cumDungeon = end
-        return { nombre: s.nombre, clase: s.clase, start, end, nivelInicial: s.nivelInicial, nivelFinal: s.nivelFinal, completed: s.completed }
+    const maxDungs = dungeonCount
+    const result: { nombre: string; clase: string; start: number; end: number; nivelInicial: number; nivelFinal: number; completed: boolean }[] = []
+    for (const e of plan.entries) {
+      if (maxDungs <= 0) break
+      const dungsForChar = Math.min(e.dungeonsTo90, maxDungs)
+      if (dungsForChar <= 0) continue
+      const start = cumDungeon + 1
+      const end = cumDungeon + dungsForChar
+      cumDungeon = end
+      result.push({
+        nombre: e.nombre,
+        clase: e.clase,
+        start,
+        end,
+        nivelInicial: e.nivel,
+        nivelFinal: e.reason === 'Sube a 90' && dungsForChar >= e.dungeonsTo90 ? 90 : e.nivel,
+        completed: e.reason === 'Sube a 90' && dungsForChar >= e.dungeonsTo90,
       })
+    }
+    return result
   })())
 </script>
 
@@ -41,19 +52,19 @@
   <div class="lvl-dung-stats">
     <div class="lvl-ds-stat">
       <span>Dungeons usados</span>
-      <strong>{sim.totalDungeonsUsed}</strong>
+      <strong>{dungeonRanges.reduce((s, r) => s + (r.end - r.start + 1), 0)}</strong>
     </div>
     <div class="lvl-ds-stat">
       <span>Tiempo total</span>
-      <strong>{formatHours(sim.totalTimeUsed)}</strong>
+      <strong>{formatHours(dungeonRanges.reduce((s, r) => s + (r.end - r.start + 1), 0) * config.duracionDungeon / 60)}</strong>
     </div>
     <div class="lvl-ds-stat">
       <span>Completados</span>
-      <strong>{sim.charactersCompleted}</strong>
+      <strong>{dungeonRanges.filter(r => r.completed).length}</strong>
     </div>
     <div class="lvl-ds-stat">
       <span>Llegan a 90</span>
-      <strong>{sim.count90Reached}</strong>
+      <strong>{dungeonRanges.filter(r => r.completed).length}</strong>
     </div>
   </div>
 

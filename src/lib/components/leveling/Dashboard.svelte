@@ -1,9 +1,6 @@
 <script lang="ts">
-  import type { Personaje, LevelingConfig, LevelingResult, OptimizationPlan, SimulationResult, TimeRecommendation } from '../../types'
+  import type { Personaje, LevelingConfig, LevelingResult, OptimizationPlan, TimeRecommendation } from '../../types'
   import { formatHours } from '../../format'
-import { getTotalTimeHours, getTotalDungeons, getTotalXpRemaining, getAvgTimePerLevel } from '../../leveling/calculator'
-  import { simulateByTime } from '../../leveling/simulator'
-  import { getTimeRecommendations } from '../../leveling/simulator'
   import TimeChart from './TimeChart.svelte'
   import DungeonChart from './DungeonChart.svelte'
   import XpPerHourChart from './XpPerHourChart.svelte'
@@ -28,20 +25,87 @@ import { getTotalTimeHours, getTotalDungeons, getTotalXpRemaining, getAvgTimePer
   } = $props()
 
   let dashTab = $state('charts')
-  let hoursPerWeek = $state(10)
 
-  let totalTime = $derived(getTotalTimeHours(personajes, config, count90))
-  let totalDungeons = $derived(getTotalDungeons(personajes, config, count90))
-  let totalXp = $derived(getTotalXpRemaining(personajes, config, count90))
-  let avgTimePerLevel = $derived(getAvgTimePerLevel(personajes, config, count90))
+  // --- Metrics from new engine results ---
+  let totalTime = $derived(results.reduce((s, r) => s + r.timeTo90, 0))
+  let totalDungeons = $derived(results.reduce((s, r) => s + r.dungeonsTo90, 0))
+  let totalXp = $derived(results.reduce((s, r) => s + r.xpTo90, 0))
   let pendingCount = $derived(personajes.filter(p => p.nivel < 90).length)
-
-  let sim = $derived(simulateByTime(personajes, config, count90, hoursPerWeek))
-  let weeksNeeded = $derived(totalTime > 0 ? Math.ceil(totalTime / hoursPerWeek) : 0)
-  let recs = $derived(getTimeRecommendations(personajes, config, count90, hoursPerWeek))
+  let totalLevelsToGain = $derived(results.reduce((s, r) => s + Math.max(0, 90 - r.nivel), 0))
+  let avgTimePerLevel = $derived(totalTime > 0 && totalLevelsToGain > 0 ? totalTime / totalLevelsToGain : 0)
 
   let hoursSaved = $derived(plan.timeSaved)
   let nextBreakpoint = $derived(count90 < 5 ? Math.min((count90 + 1) * 5, 25) : null)
+
+  // --- "What if" slider defaulting to real patronSemanal ---
+  function getPatronTotal(cfg: LevelingConfig): number {
+    return cfg.patronSemanal
+      ? cfg.patronSemanal.lunes + cfg.patronSemanal.martes + cfg.patronSemanal.miercoles
+        + cfg.patronSemanal.jueves + cfg.patronSemanal.viernes + cfg.patronSemanal.sabado + cfg.patronSemanal.domingo
+      : 40
+  }
+  let patronTotal = $derived(getPatronTotal(config))
+  let hoursPerWeek = $state(getPatronTotal(config))
+  let simMatchesActual = $derived.by(() => Math.abs(hoursPerWeek - patronTotal) < 0.01)
+
+  // --- Sim stats from plan ---
+  let reached90Count = $derived(plan.entries.filter(e => e.reason === 'Sube a 90').length)
+  let charactersWithTime = $derived(plan.entries.filter(e => e.dungeonsTo90 > 0).length)
+
+  let weeksNeeded = $derived(plan.optimizedTime > 0 ? Math.ceil(plan.optimizedTime / hoursPerWeek) : 0)
+  let totalDungeonsUsed = $derived(plan.entries.reduce((s, e) => s + e.dungeonsTo90, 0))
+  let simTimeUsed = $derived(plan.optimizedTime)
+
+  // --- Progress steps from plan entries ---
+  let progressSteps = $derived(
+    plan.entries.map(e => ({
+      nombre: e.nombre,
+      nivelFinal: e.reason === 'Sube a 90' ? 90 : e.nivel,
+      dungeonsUsed: e.dungeonsTo90,
+      completed: e.reason === 'Sube a 90',
+      reached90: e.reason === 'Sube a 90',
+    }))
+  )
+
+  // --- Recommendations from plan ---
+  let recs = $derived<TimeRecommendation[]>(buildRecs(plan, patronTotal))
+
+  function buildRecs(plan: OptimizationPlan, totalSemanal: number): TimeRecommendation[] {
+    const result: TimeRecommendation[] = []
+    for (const e of plan.entries) {
+      if (e.reason === 'Sube a 90') {
+        if (e.timeSavedForOthers > 0) {
+          result.push({
+            option: `Subir ${e.nombre} a 90`,
+            description: `Ahorra ${formatHours(e.timeSavedForOthers)} al resto del roster (ROI neto: ${e.roi > 0 ? '+' : ''}${formatHours(e.roi)})`,
+            timeUsed: e.timeTo90,
+            benefit: e.timeSavedForOthers,
+            charactersInvolved: [{ nombre: e.nombre, nivelFinal: 90, dungeons: e.dungeonsTo90 }],
+          })
+        } else {
+          result.push({
+            option: `Subir ${e.nombre} a 90`,
+            description: `Desbloquea Warband Mentor 80-90 +${e.buffAfter}% para toda la cuenta`,
+            timeUsed: e.timeTo90,
+            benefit: e.timeSavedForOthers,
+            charactersInvolved: [{ nombre: e.nombre, nivelFinal: 90, dungeons: e.dungeonsTo90 }],
+          })
+        }
+      }
+    }
+    if (result.length === 0 && plan.entries.length > 0) {
+      result.push({
+        option: 'Tiempo insuficiente',
+        description: simMatchesActual
+          ? `Con tu ritmo actual (${totalSemanal}h/sem), ningún personaje alcanza nivel 90 antes del fin del evento. Ajusta las horas en ConfigPanel.`
+          : `Con ${hoursPerWeek}h/sem ninguno llega a 90. Tu configuración real es ${totalSemanal}h/sem.`,
+        timeUsed: 0,
+        benefit: 0,
+        charactersInvolved: [],
+      })
+    }
+    return result
+  }
 </script>
 
 <div class="lvl-dashboard">
@@ -78,7 +142,7 @@ import { getTotalTimeHours, getTotalDungeons, getTotalXpRemaining, getAvgTimePer
       </div>
       <div class="lvl-dash-card">
         <div class="lvl-dash-card-title">Personajes completados</div>
-        <CompletedChart {sim} totalPending={pendingCount} />
+        <CompletedChart completed={reached90Count} totalPending={pendingCount} />
       </div>
     </div>
   {:else}
@@ -87,7 +151,13 @@ import { getTotalTimeHours, getTotalDungeons, getTotalXpRemaining, getAvgTimePer
       <div class="lvl-dm-item"><span>Dungeons totales</span><strong>{totalDungeons}</strong></div>
       <div class="lvl-dm-item"><span>Tiempo total</span><strong>{formatHours(totalTime)}</strong></div>
       <div class="lvl-dm-item"><span>Tiempo/nivel prom.</span><strong>{avgTimePerLevel > 0 ? formatHours(avgTimePerLevel) : '—'}</strong></div>
-      <div class="lvl-dm-item"><span>Horas ahorradas</span><strong class="saved">{formatHours(hoursSaved)}</strong></div>
+      <div class="lvl-dm-item"><span>Horas ahorradas</span>
+        {#if hoursSaved > 0}
+          <strong class="saved">{formatHours(hoursSaved)}</strong>
+        {:else}
+          <strong class="zero">0h — nadie llega a 90 en este horizonte</strong>
+        {/if}
+      </div>
       <div class="lvl-dm-item">
         <span>Próximo breakpoint</span>
         <strong>{nextBreakpoint !== null ? `+${nextBreakpoint}%` : 'Máximo (25%)'}</strong>
@@ -96,17 +166,27 @@ import { getTotalTimeHours, getTotalDungeons, getTotalXpRemaining, getAvgTimePer
 
     <div class="lvl-whatif">
       <div class="lvl-whatif-header">
-        <span>Simulación: ¿Cuánto logro con</span>
+        <span class="lvl-whatif-label">{simMatchesActual ? '📊 Simulación (tu configuración real)' : '🔮 Simulación hipotética'}:</span>
+        <span>¿Cuánto logro con</span>
         <input type="range" min="1" max="40" bind:value={hoursPerWeek} />
         <strong>{hoursPerWeek}h/semana?</strong>
+        {#if !simMatchesActual}
+          <span class="lvl-whatif-note">(tu real: {patronTotal}h/sem — ajusta en ConfigPanel)</span>
+        {/if}
       </div>
       <div class="lvl-whatif-stats">
         <div class="lvl-wf-stat"><span>Semanas para completar</span><strong>{weeksNeeded}</strong></div>
-        <div class="lvl-wf-stat"><span>Completados</span><strong>{sim.charactersCompleted}/{pendingCount}</strong></div>
-        <div class="lvl-wf-stat"><span>Dungeons</span><strong>{sim.totalDungeonsUsed}</strong></div>
-        <div class="lvl-wf-stat"><span>Tiempo usado</span><strong>{formatHours(sim.totalTimeUsed)}</strong></div>
-        <div class="lvl-wf-stat"><span>Llegan a 90</span><strong>{sim.count90Reached} pjs</strong></div>
+        <div class="lvl-wf-stat"><span>Completados</span><strong>{reached90Count}/{pendingCount}</strong></div>
+        <div class="lvl-wf-stat"><span>Dungeons</span><strong>{totalDungeonsUsed}</strong></div>
+        <div class="lvl-wf-stat"><span>Tiempo usado</span><strong>{formatHours(simTimeUsed)}</strong></div>
+        <div class="lvl-wf-stat"><span>Llegan a 90</span><strong>{reached90Count} pjs</strong></div>
       </div>
+
+      {#if hoursSaved === 0 && reached90Count === 0}
+        <div class="lvl-whatif-note-box">
+          Con tu ritmo actual ({patronTotal}h/sem), ningún personaje alcanza nivel 90 antes del fin del evento (Turbulent Timeways V). Para mejorar resultados, aumentá las horas semanales en ConfigPanel o priorizá personajes de nivel alto.
+        </div>
+      {/if}
 
       {#if recs.length > 0}
         <div class="lvl-recs">
@@ -123,16 +203,16 @@ import { getTotalTimeHours, getTotalDungeons, getTotalXpRemaining, getAvgTimePer
         </div>
       {/if}
 
-      {#if sim.steps.length > 0 && sim.charactersCompleted < pendingCount}
+      {#if progressSteps.length > 0}
         <div class="lvl-whatif-progress">
           <div class="lvl-wf-progress-title">Progreso (orden óptimo):</div>
-          {#each sim.steps as step (step.nombre)}
+          {#each progressSteps as step (step.nombre)}
             <div class="lvl-wf-step" class:done={step.completed}>
               <span class="lvl-wf-step-name">{step.nombre}</span>
               {#if step.completed}
                 <span class="lvl-wf-step-status">✓ Nivel {step.nivelFinal} {step.reached90 ? '(★90)' : ''}</span>
               {:else if step.dungeonsUsed > 0}
-                <span class="lvl-wf-step-status">→ Nivel {step.nivelFinal} ({step.dungeonsUsed} dungs)</span>
+                <span class="lvl-wf-step-status">→ +{step.dungeonsUsed} dungs</span>
               {:else}
                 <span class="lvl-wf-step-status">— Sin tiempo</span>
               {/if}
@@ -142,7 +222,7 @@ import { getTotalTimeHours, getTotalDungeons, getTotalXpRemaining, getAvgTimePer
       {/if}
     </div>
 
-    <DungeonSimulation {personajes} {config} {count90} />
+    <DungeonSimulation {personajes} {config} {count90} {plan} />
   {/if}
 </div>
 
@@ -161,8 +241,12 @@ import { getTotalTimeHours, getTotalDungeons, getTotalXpRemaining, getAvgTimePer
   .lvl-dm-item span { font-size: 0.4rem; color: var(--text-muted); text-transform: uppercase; }
   .lvl-dm-item strong { font-size: 0.65rem; color: var(--gold-light, #d4af37); font-family: var(--font-heading); }
   .lvl-dm-item strong.saved { color: var(--green, #38a169); }
+  .lvl-dm-item strong.zero { color: var(--text-dim); font-size: 0.5rem; }
   .lvl-whatif { background: rgba(0,0,0,0.25); border: 1px solid var(--border-subtle); border-radius: var(--r-sm); padding: 8px; display: flex; flex-direction: column; gap: 6px; }
   .lvl-whatif-header { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; font-size: 0.6rem; color: var(--text-secondary); }
+  .lvl-whatif-label { font-family: var(--font-heading); font-size: 0.55rem; letter-spacing: 0.03em; }
+  .lvl-whatif-note { font-size: 0.45rem; color: var(--gold-dim); font-style: italic; }
+  .lvl-whatif-note-box { padding: 6px 8px; font-size: 0.48rem; color: var(--text-secondary); background: rgba(255,215,0,0.06); border: 1px dashed var(--gold-dim); border-radius: var(--r-sm); }
   .lvl-whatif-header input[type="range"] { width: 120px; }
   .lvl-whatif-header strong { color: var(--gold-light, #d4af37); font-size: 0.7rem; }
   .lvl-whatif-stats { display: flex; gap: 12px; flex-wrap: wrap; }

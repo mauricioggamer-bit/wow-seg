@@ -122,6 +122,16 @@ export interface CustomBuff {
   target: 'monsters' | 'reward' | 'both'
 }
 
+export type PatronSemanal = {
+  lunes: number
+  martes: number
+  miercoles: number
+  jueves: number
+  viernes: number
+  sabado: number
+  domingo: number
+}
+
 export interface LevelingConfig {
   xpMonstruos: number
   duracionDungeon: number
@@ -129,6 +139,7 @@ export interface LevelingConfig {
   warMode: boolean
   warModeTarget: 'monsters' | 'reward' | 'both'
   customBuffs: CustomBuff[]
+  patronSemanal?: PatronSemanal
 }
 
 export interface LevelingResult {

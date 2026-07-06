@@ -2,13 +2,15 @@
   import { personajesStore, dataStore } from '../stores/data'
   import { currentWarband } from '../stores/ui'
   import { levelingStore } from '../stores/leveling'
-  import type { LevelingResult, Personaje } from '../types'
+  import type { LevelingResult, Personaje, OptimizationPlan } from '../types'
   import { formatHours, formatNumber } from '../format'
   import { getWarbandMentor8090FromRoster } from '../leveling/calculator'
   import { calculateStrategicValue } from '../leveling/strategicValue'
-  import { optimize } from '../leveling/optimizer'
   import { WoWRetailModel, simulateRoster } from '../simulation'
   import type { CharacterSnapshot, SimulationScenario } from '../simulation'
+  import { optimizeStrategyMultiStart } from '../optimization/strategy-optimizer'
+  import type { MultiStartResult } from '../optimization/strategy-optimizer'
+  import type { ObjectiveWeights } from '../optimization/objective-function'
   import Modal from '../components/leveling/Modal.svelte'
   import DetailDrawer from '../components/leveling/DetailDrawer.svelte'
   import DungeonXpModal from '../components/leveling/DungeonXpModal.svelte'
@@ -36,6 +38,14 @@
   let warbandMentor8090 = $derived(getWarbandMentor8090FromRoster($personajesStore))
 
   const gameModel = new WoWRetailModel()
+  const defaultWeights: ObjectiveWeights = {
+    xpTotal: 20,
+    personajesA90: 25,
+    tiempoAhorradoFuturo: 20,
+    coberturaProfesiones: 15,
+    tiempoTotal: 20,
+    usoVentanaEvento: 10,
+  }
 
   let rosterSnapshots = $derived<CharacterSnapshot[]>(
     personajes.map(p => ({
@@ -56,10 +66,59 @@
     globalBuffs: [],
   })
 
-  let optimizationPlan = $derived(optimize(personajes, config, count90))
+  // Quick sync fallback for the main table order (before async optimization finishes)
+  let fallbackOrder = $derived(personajes.filter(p => p.planeado_usar && p.nivel < 90).map(p => p.nombre))
+
+  let optimizationResult = $state<MultiStartResult | null>(null)
+  let isOptimizing = $state(false)
+  let optimizationError = $state<string | null>(null)
+
+  let horasDisponiblesSemana = $derived(
+    config.patronSemanal
+      ? config.patronSemanal.lunes + config.patronSemanal.martes + config.patronSemanal.miercoles
+        + config.patronSemanal.jueves + config.patronSemanal.viernes + config.patronSemanal.sabado + config.patronSemanal.domingo
+      : 40
+  )
+
+  let rosterOrder = $derived(
+    optimizationResult
+      ? optimizationResult.bestOverall.strategy.decisiones.map(d => d.personaje.nombre)
+      : fallbackOrder
+  )
+
+  async function runOptimization() {
+    if (isOptimizing) return
+    isOptimizing = true
+    optimizationError = null
+    // Allow Svelte to flush loading state before blocking the main thread
+    await new Promise(r => requestAnimationFrame(r))
+    try {
+      const result = optimizeStrategyMultiStart(
+        $personajesStore,
+        config,
+        defaultWeights,
+        horasDisponiblesSemana,
+        new Date(),
+        new Date('2026-08-11T23:59:59Z'),
+        { patronSemanal: config.patronSemanal },
+      )
+      optimizationResult = result
+    } catch (e) {
+      optimizationError = e instanceof Error ? e.message : 'Error desconocido'
+    } finally {
+      isOptimizing = false
+    }
+  }
+
+  async function toggleOptimization() {
+    showOptimization = !showOptimization
+    if (showOptimization && !optimizationResult && !isOptimizing) {
+      await runOptimization()
+    }
+  }
 
   let rosterResult = $derived(
-    simulateRoster(rosterSnapshots, scenario, config, gameModel, optimizationPlan.order)
+    simulateRoster(rosterSnapshots, scenario, config, gameModel, rosterOrder)
   )
 
   let pendingCount = $derived(personajes.filter(p => p.nivel < 90).length)
@@ -78,7 +137,33 @@
   let totalTime80 = $derived(rosterResult.results.reduce((s, r) => s + getTo80Values(r.result.context.character.nivel, r.result.history).time, 0))
   let totalDungeons80 = $derived(rosterResult.results.reduce((s, r) => s + getTo80Values(r.result.context.character.nivel, r.result.history).dungeons, 0))
 
-  let roiMap = $derived(new Map(optimizationPlan.entries.map(e => [e.nombre, e.roi])))
+  let roiMap = $derived(new Map<string, number>())
+
+  let dashboardPlan = $derived<OptimizationPlan>({
+    entries: rosterOrder.map((nombre, i) => {
+      const p = personajes.find(pp => pp.nombre === nombre)
+      return {
+        nombre,
+        clase: p?.clase ?? '',
+        nivel: p?.nivel ?? 0,
+        objetivoNivel: 90,
+        orden: i + 1,
+        dungeonsTo90: 0,
+        timeTo90: 0,
+        dungeonsToObjective: 0,
+        timeToObjective: 0,
+        buffBefore: 0,
+        buffAfter: 0,
+        timeSavedForOthers: 0,
+        roi: 0,
+        reason: '',
+      }
+    }),
+    optimizedTime: optimizationResult?.bestOverall.result.outcome.tiempoTotalHoras ?? 0,
+    baselineTime: 0,
+    timeSaved: optimizationResult?.bestOverall.result.outcome.tiempoAhorradoFuturo ?? 0,
+    order: rosterOrder,
+  })
 
   let results = $derived<LevelingResult[]>(
     rosterResult.results
@@ -120,7 +205,6 @@
   let drawerOpen = $derived(!!selectedChar && !!selectedResult && !!selectedPersonaje)
 
   function toggleConfig() { showConfig = !showConfig }
-  function toggleOptimization() { showOptimization = !showOptimization }
   function toggleDashboard() { showDashboard = !showDashboard }
   function toggleDungeonXp() { showDungeonXp = !showDungeonXp }
   function selectChar(nombre: string) { selectedChar = selectedChar === nombre ? null : nombre }
@@ -139,7 +223,8 @@
 
   function exportPlanJSON() {
     const planData = JSON.stringify({
-      plan: optimizationPlan,
+      multiStart: optimizationResult,
+      order: rosterOrder,
       config,
       results,
       exportedAt: new Date().toISOString(),
@@ -218,11 +303,19 @@
 </div>
 
 <Modal bind:open={showDashboard} title="Dashboard">
-  <Dashboard {personajes} {config} {count90} {results} plan={optimizationPlan} />
+  <Dashboard {personajes} {config} {count90} {results} plan={dashboardPlan} />
 </Modal>
 
 <Modal bind:open={showOptimization} title="Optimización">
-  <OptimizationResult plan={optimizationPlan} />
+  {#if isOptimizing}
+    <div class="lvl-opt-loading">Calculando estrategia óptima…</div>
+  {:else if optimizationError}
+    <div class="lvl-opt-error">Error: {optimizationError}</div>
+  {:else if optimizationResult}
+    <OptimizationResult result={optimizationResult} roster={$personajesStore} config={config} />
+  {:else}
+    <div class="lvl-opt-loading">Presiona "⚡ Optimizar" para iniciar</div>
+  {/if}
 </Modal>
 
 <Modal bind:open={showConfig} title="Configuración">
@@ -303,5 +396,17 @@
     display: flex;
     gap: 4px;
     flex-wrap: wrap;
+  }
+  .lvl-opt-loading {
+    text-align: center;
+    padding: 20px;
+    color: var(--text-muted);
+    font-size: 0.6rem;
+  }
+  .lvl-opt-error {
+    text-align: center;
+    padding: 20px;
+    color: var(--horde, #c5365a);
+    font-size: 0.6rem;
   }
 </style>

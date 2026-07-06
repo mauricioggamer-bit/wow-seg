@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest'
 import type { Personaje, LevelingConfig } from '../../types'
 import type { ObjectiveWeights } from '../objective-function'
-import type { PatronSemanal } from '../temporal-simulator'
+import type { PatronSemanal } from '../../types'
 import { SEED_DATA } from '../../data/seed'
 import { generateNaiveStrategies } from '../strategy'
 import { compareStrategies } from '../strategy-comparator'

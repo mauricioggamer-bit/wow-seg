@@ -1,7 +1,9 @@
 import type { Personaje, LevelingConfig } from '../types'
 import type { Strategy } from './strategy'
+import type { Decision } from './strategy'
 import type { ObjectiveWeights } from './objective-function'
-import type { TemporalSimulationResult, PatronSemanal } from './temporal-simulator'
+import type { TemporalSimulationResult } from './temporal-simulator'
+import type { PatronSemanal } from '../types'
 import { generateNaiveStrategies } from './strategy'
 import { compareStrategies } from './strategy-comparator'
 import { runTemporalSimulation } from './temporal-simulator'
@@ -143,5 +145,130 @@ export function optimizeStrategy(
     bestResult,
     iteracionesRealizadas: Math.min(historialScores.length - 1, maxIterations),
     historialScores,
+  }
+}
+
+export interface MultiStartOptions {
+  seeds?: number[]
+  patronSemanal?: PatronSemanal
+  maxIterations?: number
+  neighborsPerIteration?: number
+  noImprovementLimit?: number
+}
+
+export interface MultiStartRun {
+  seedNumerico: number
+  estrategiaBase: string
+  bestScore: number
+  iteraciones: number
+}
+
+export interface MultiStartResult {
+  bestOverall: {
+    strategy: Strategy
+    score: number
+    result: TemporalSimulationResult
+  }
+  runsPorSemilla: MultiStartRun[]
+  mejoraSobreSingleStart: number
+}
+
+const DEFAULT_MULTI_START_SEEDS = [42, 123, 7, 999, 2024]
+const DEFAULT_MULTI_MAX_ITERATIONS = 50
+const DEFAULT_MULTI_NEIGHBORS = 5
+const DEFAULT_MULTI_NO_IMPROVEMENT = 15
+
+export function optimizeStrategyMultiStart(
+  roster: Personaje[],
+  config: LevelingConfig,
+  weights: ObjectiveWeights,
+  horasDisponiblesSemana: number,
+  fechaInicio: Date,
+  fechaLimite: Date,
+  options?: MultiStartOptions,
+): MultiStartResult {
+  const seeds = options?.seeds ?? DEFAULT_MULTI_START_SEEDS
+  const patronSemanal = options?.patronSemanal
+  const maxIterations = options?.maxIterations ?? DEFAULT_MULTI_MAX_ITERATIONS
+  const neighborsPerIteration = options?.neighborsPerIteration ?? DEFAULT_MULTI_NEIGHBORS
+  const noImprovementLimit = options?.noImprovementLimit ?? DEFAULT_MULTI_NO_IMPROVEMENT
+
+  const naiveStrategies = generateNaiveStrategies(roster, config)
+
+  // Pick a starting strategy per seed by cycling through available strategies + random permutations
+  function pickSeedStrategy(seed: number, index: number): Strategy {
+    if (naiveStrategies.length === 0) {
+      const empty: Decision[] = []
+      return { nombre: 'Vacio', decisiones: empty }
+    }
+    if (index < naiveStrategies.length) {
+      return naiveStrategies[index]
+    }
+    // Generate random permutation for extras beyond naive strategies
+    const rng = createSeededRng(seed)
+    const pendientes = roster.filter(p => p.planeado_usar && p.nivel < 90)
+    const shuffled = [...pendientes]
+    for (let i = shuffled.length - 1; i > 0; i--) {
+      const j = Math.floor(rng() * (i + 1))
+      const tmp = shuffled[i]
+      shuffled[i] = shuffled[j]
+      shuffled[j] = tmp
+    }
+    return {
+      nombre: `Aleatorio_${seed}`,
+      decisiones: shuffled.map((p, i) => ({
+        personaje: p,
+        accion: 'subir-a-90',
+        ordenPrioridad: i + 1,
+      })),
+    }
+  }
+
+  const runs: MultiStartRun[] = []
+  let bestOverall: { strategy: Strategy; score: number; result: TemporalSimulationResult } | null = null
+
+  for (let i = 0; i < seeds.length; i++) {
+    const seedNum = seeds[i]
+    const seedStrategy = pickSeedStrategy(seedNum, i)
+
+    const opts: OptimizeOptions = {
+      seedStrategy: seedStrategy.nombre !== 'Vacio' ? seedStrategy : undefined,
+      seed: seedNum,
+      maxIterations,
+      neighborsPerIteration,
+      noImprovementLimit,
+      patronSemanal,
+    }
+
+    const result = optimizeStrategy(roster, config, weights, horasDisponiblesSemana, fechaInicio, fechaLimite, opts)
+
+    runs.push({
+      seedNumerico: seedNum,
+      estrategiaBase: seedStrategy.nombre,
+      bestScore: result.bestScore,
+      iteraciones: result.iteracionesRealizadas,
+    })
+
+    if (!bestOverall || result.bestScore > bestOverall.score) {
+      bestOverall = {
+        strategy: result.bestStrategy,
+        score: result.bestScore,
+        result: result.bestResult,
+      }
+    }
+  }
+
+  // Single-start score using defaults (seed=42, best naive)
+  const singleStart = optimizeStrategy(roster, config, weights, horasDisponiblesSemana, fechaInicio, fechaLimite, {
+    patronSemanal,
+    maxIterations,
+    neighborsPerIteration,
+    noImprovementLimit,
+  })
+
+  return {
+    bestOverall: bestOverall!,
+    runsPorSemilla: runs,
+    mejoraSobreSingleStart: bestOverall!.score - singleStart.bestScore,
   }
 }

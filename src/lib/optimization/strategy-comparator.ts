@@ -1,7 +1,8 @@
 import type { Personaje, LevelingConfig } from '../types'
 import type { Strategy } from './strategy'
 import type { ObjectiveWeights } from './objective-function'
-import type { TemporalSimulationResult, PatronSemanal } from './temporal-simulator'
+import type { TemporalSimulationResult } from './temporal-simulator'
+import type { PatronSemanal } from '../types'
 import { runTemporalSimulation } from './temporal-simulator'
 import { computeObjectiveScore, computeNormalizationCaps } from './objective-function'
 

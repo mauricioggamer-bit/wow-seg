@@ -1,4 +1,4 @@
-import type { Personaje, LevelingConfig } from '../types'
+import type { Personaje, LevelingConfig, PatronSemanal } from '../types'
 import type { SimulationOutcome } from './objective-function'
 import type { Strategy, Decision } from './strategy'
 import { computeRosterState } from './roster-state'
@@ -7,16 +7,6 @@ import { getEffectiveXpPerDungeon } from '../leveling/calculator'
 import { getXpForLevel } from '../constants/experience'
 import { PROFESIONES } from '../constants/profesiones'
 import { tieneMainCrafter } from './professions'
-
-export type PatronSemanal = {
-  lunes: number
-  martes: number
-  miercoles: number
-  jueves: number
-  viernes: number
-  sabado: number
-  domingo: number
-}
 
 export interface TemporalSimulationResult {
   dias: SimulationDay[]

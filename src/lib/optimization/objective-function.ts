@@ -9,7 +9,7 @@ export interface ObjectiveWeights {
 
 import type { RosterState } from './roster-state'
 import type { Personaje, LevelingConfig } from '../types'
-import type { PatronSemanal } from './temporal-simulator'
+import type { PatronSemanal } from '../types'
 import { getXpRemaining, getEffectiveXpPerDungeon } from '../leveling/calculator'
 import { getXpForLevel } from '../constants/experience'
 

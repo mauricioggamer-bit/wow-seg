@@ -88,6 +88,36 @@
   </div>
 
   <div class="lvl-config-section">
+    <div class="lvl-config-title">Horas por día</div>
+    <div class="lvl-config-row">
+      <label>
+        <span>Día de semana (lun-vie)</span>
+        <input type="range" min="0" max="8" step="0.5"
+          value={config.patronSemanal?.lunes ?? 1.5}
+          oninput={(e) => {
+            const h = parseFloat(e.currentTarget.value)
+            levelingStore.updateConfig({
+              patronSemanal: { lunes: h, martes: h, miercoles: h, jueves: h, viernes: h, sabado: config.patronSemanal?.sabado ?? 5, domingo: config.patronSemanal?.domingo ?? 5 },
+            })
+          }} />
+        <span class="lvl-pct">{config.patronSemanal?.lunes ?? 1.5}h</span>
+      </label>
+      <label>
+        <span>Fin de semana (sáb-dom)</span>
+        <input type="range" min="0" max="16" step="0.5"
+          value={config.patronSemanal?.sabado ?? 5}
+          oninput={(e) => {
+            const h = parseFloat(e.currentTarget.value)
+            levelingStore.updateConfig({
+              patronSemanal: { lunes: config.patronSemanal?.lunes ?? 1.5, martes: config.patronSemanal?.martes ?? 1.5, miercoles: config.patronSemanal?.miercoles ?? 1.5, jueves: config.patronSemanal?.jueves ?? 1.5, viernes: config.patronSemanal?.viernes ?? 1.5, sabado: h, domingo: h },
+            })
+          }} />
+        <span class="lvl-pct">{config.patronSemanal?.sabado ?? 5}h</span>
+      </label>
+    </div>
+  </div>
+
+  <div class="lvl-config-section">
     <div class="lvl-config-title">Warband Mentor 0-80</div>
     <select onchange={(e) => updateField('warbandMentor080', parseInt(e.currentTarget.value))}>
       {#each buffOptions as opt}

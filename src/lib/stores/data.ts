@@ -31,39 +31,31 @@ function createDataStore() {
     updatePersonaje(nombre: string, updates: Partial<Personaje>) {
       update(d => {
         const idx = d.personajes.findIndex(p => p.nombre === nombre)
-        if (idx === -1) return d
-        const personajes = d.personajes.map((p, i) => i === idx ? { ...p, ...updates } : p)
-        const newData = {
-          ...d,
-          personajes,
-          _meta: {
-            ...d._meta,
-            total_personajes: personajes.length,
-            total_activos: personajes.filter(p => p.planeado_usar).length,
-          }
+        if (idx !== -1) {
+          d.personajes[idx] = { ...d.personajes[idx], ...updates }
+          d._meta.total_personajes = d.personajes.length
+          d._meta.total_activos = d.personajes.filter(p => p.planeado_usar).length
+          saveData(d)
         }
-        saveData(newData)
-        return newData
+        return { ...d }
       })
     },
     updateObjetivoNivel(nombre: string, nivel: number) {
       update(d => {
-        const idx = d.personajes.findIndex(pj => pj.nombre === nombre)
-        if (idx === -1) return d
-        const personajes = d.personajes.map((p, i) => i === idx ? { ...p, objetivoNivel: nivel } : p)
-        const newData = { ...d, personajes }
-        saveData(newData)
-        return newData
+        const p = d.personajes.find(pj => pj.nombre === nombre)
+        if (!p) return d
+        p.objetivoNivel = nivel
+        saveData(d)
+        return { ...d }
       })
     },
     updateTimewaysPct(nombre: string, pct: number) {
       update(d => {
-        const idx = d.personajes.findIndex(pj => pj.nombre === nombre)
-        if (idx === -1) return d
-        const personajes = d.personajes.map((p, i) => i === idx ? { ...p, timewaysPct: Math.max(0, Math.min(30, pct)) } : p)
-        const newData = { ...d, personajes }
-        saveData(newData)
-        return newData
+        const p = d.personajes.find(pj => pj.nombre === nombre)
+        if (!p) return d
+        p.timewaysPct = Math.max(0, Math.min(30, pct))
+        saveData(d)
+        return { ...d }
       })
     },
     toggleTarea(nombrePersonaje: string, tareaId: string) {
@@ -219,28 +211,19 @@ addTarea(nombrePersonaje: string, tarea: { nombre: string; tipoContenido?: TipoC
     },
     deletePersonaje(nombre: string) {
       update(d => {
-        const personajes = d.personajes.filter(p => p.nombre !== nombre)
-        const warbands = d.warbands.map(wb => ({
-          ...wb,
-          personajes: wb.personajes.filter(n => n !== nombre)
-        }))
-        const newData = {
-          ...d,
-          personajes,
-          warbands,
-          _meta: {
-            ...d._meta,
-            total_personajes: personajes.length,
-            total_activos: personajes.filter(p => p.planeado_usar).length,
-          }
+        d.personajes = d.personajes.filter(p => p.nombre !== nombre)
+        for (const wb of d.warbands) {
+          wb.personajes = wb.personajes.filter(n => n !== nombre)
         }
-        saveData(newData)
-        return newData
+        d._meta.total_personajes = d.personajes.length
+        d._meta.total_activos = d.personajes.filter(p => p.planeado_usar).length
+        saveData(d)
+        return { ...d }
       })
     },
-    addPersonaje(p: { nombre: string; clase: string; raza: string; nivel: number; faccion: string; reino: string; warband: string; mision_principal?: string; expansion_por_defecto?: string | null; parecidos?: string[]; profesiones?: ProfesionSlot[]; planeado_usar?: boolean; descripcion?: string; tipo?: 'iconico' | 'funcional' }) {
+    addPersonaje(p: { nombre: string; clase: string; raza: string; nivel: number; faccion: string; reino: string; warband: string; mision_principal?: string; expansion_por_defecto?: string | null; parecidos?: string[]; profesiones?: ProfesionSlot[]; planeado_usar?: boolean; descripcion?: string; tipo?: 'iconico' | 'funcional' }): boolean {
+      if (get({ subscribe }).personajes.find(x => x.nombre === p.nombre)) return false
       update(d => {
-        if (d.personajes.find(x => x.nombre === p.nombre)) return d
         const nuevo: Personaje = {
           nombre: p.nombre,
           clase: p.clase,
@@ -259,27 +242,19 @@ addTarea(nombrePersonaje: string, tarea: { nombre: string; tipoContenido?: TipoC
           timewaysPct: 0,
           tareas: [],
         }
-        const personajes = [...d.personajes, nuevo]
-        const warbands = d.warbands.map(wb => ({ ...wb }))
-        let wb = warbands.find(w => w.nombre === p.warband)
+        d.personajes.push(nuevo)
+        let wb = d.warbands.find(w => w.nombre === p.warband)
         if (!wb) {
-          warbands.push({ nombre: p.warband, personajes: [p.nombre], tareas_disponibles: [] })
+          d.warbands.push({ nombre: p.warband, personajes: [p.nombre], tareas_disponibles: [] })
         } else {
-          if (!wb.personajes.includes(p.nombre)) wb.personajes = [...wb.personajes, p.nombre]
+          if (!wb.personajes.includes(p.nombre)) wb.personajes.push(p.nombre)
         }
-        const newData = {
-          ...d,
-          personajes,
-          warbands,
-          _meta: {
-            ...d._meta,
-            total_personajes: personajes.length,
-            total_activos: personajes.filter(c => c.planeado_usar).length,
-          }
-        }
-        saveData(newData)
-        return newData
+        d._meta.total_personajes = d.personajes.length
+        d._meta.total_activos = d.personajes.filter(c => c.planeado_usar).length
+        saveData(d)
+        return { ...d }
       })
+      return true
     },
     moveCharToExpansion(charName: string, newExp: string) {
       update(d => {

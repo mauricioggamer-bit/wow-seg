@@ -23,7 +23,7 @@
   import { uiStore } from './lib/stores/ui'
   import { dataStore, personajesStore, misionesStore, warbandsStore } from './lib/stores/data'
   import { gistStore } from './lib/stores/gist'
-  import { EXPANSIONS, PERS_RACE_INFO } from './lib/constants'
+  import { EXPANSIONS, PERS_RACE_INFO, CLASS_MAP } from './lib/constants'
   import { DUNGEON_EXPANSION_IDS, RAID_EXPANSION_IDS, WORLDBOSS_EXPANSION_IDS, dungeonsForExpansion, raidsForExpansion, worldBossesForExpansion, expNombre } from './lib/constants/wowContent'
   import { PROFESIONES } from './lib/constants/profesiones'
   import type { TipoContenido, DungeonDifficulty, RaidDifficulty } from './lib/constants/wowContent'
@@ -127,10 +127,10 @@
   let editMissionTags = $state('')
   let isNewChar = $state(false)
 
-  let charClasses = $derived([...new Set($personajesStore.map(c => c.clase))].sort())
+  let charClasses = $derived(Object.keys(CLASS_MAP).sort())
   let charRaces = $derived(Object.keys(PERS_RACE_INFO).sort())
-  let charFactions = $derived([...new Set($personajesStore.map(c => c.faccion))].sort())
-  let charRealms = $derived([...new Set($personajesStore.map(c => c.reino))].sort())
+  let charFactions = $derived(['Alianza', 'Horda'])
+  let charRealms = $derived([...new Set($personajesStore.map(c => c.reino).filter(r => r))].sort())
 
   function resetMissionForm() {
     misionNombre = ''
@@ -145,6 +145,7 @@
   function openCharEdit(name: string) {
     const c = $personajesStore.find(p => p.nombre === name)
     if (!c) return
+    charEditError = null
     editCharName = c.nombre
     editCharClase = c.clase
     editCharRaza = c.raza
@@ -169,12 +170,13 @@
 
   function openNewChar() {
     isNewChar = true
+    charEditError = null
     editCharName = ''
-    editCharClase = charClasses[0] || ''
+    editCharClase = charClasses[0] || 'Guerrero'
     editCharRaza = charRaces[0] || ''
     editCharNivel = 1
-    editCharFaccion = charFactions[0] || ''
-    editCharReino = charRealms[0] || ''
+    editCharFaccion = 'Horda'
+    editCharReino = charRealms[0] || 'Raganaros'
     editCharPlaneado = true
     editCharWarband = ($warbandsStore.filter(w => w.nombre !== 'nada')[0]?.nombre) || ''
     editCharMisionPrincipal = ''
@@ -377,10 +379,12 @@
     editCharProfesiones = arr
   }
 
+  let charEditError = $state<string | null>(null)
+
   function saveCharEdit() {
     if (!editCharName.trim()) return
     if (isNewChar) {
-      dataStore.addPersonaje({
+      const ok = dataStore.addPersonaje({
         nombre: editCharName.trim(),
         clase: editCharClase,
         raza: editCharRaza,
@@ -396,6 +400,10 @@
         descripcion: editCharDescripcion,
         tipo: editCharTipo,
       })
+      if (!ok) {
+        charEditError = `Ya existe un personaje llamado "${editCharName.trim()}"`
+        return
+      }
       isNewChar = false
     } else {
       dataStore.updatePersonaje(editCharName, {
@@ -414,6 +422,7 @@
         tipo: editCharTipo,
       })
     }
+    charEditError = null
     uiStore.closeModal()
   }
 </script>
@@ -792,8 +801,11 @@
         <input type="checkbox" bind:checked={editCharPlaneado} />
         Activo
       </label>
+      {#if charEditError}
+        <div class="char-edit-error">{charEditError}</div>
+      {/if}
       <div class="modal-footer">
-        <button class="wow-btn" onclick={() => uiStore.closeModal()}>Cancelar</button>
+        <button class="wow-btn" onclick={() => { charEditError = null; uiStore.closeModal() }}>Cancelar</button>
         <button class="wow-btn wow-btn-primary" onclick={saveCharEdit}>Guardar</button>
       </div>
     {/snippet}
@@ -1053,4 +1065,14 @@
   }
   .detail-sidebar:empty { display: none; }
   .warband-main { min-width: 0; }
+  .char-edit-error {
+    color: #ff4444;
+    font-size: 0.5rem;
+    padding: 4px 8px;
+    margin-bottom: 4px;
+    background: rgba(255,68,68,0.1);
+    border: 1px solid rgba(255,68,68,0.3);
+    border-radius: 2px;
+    text-align: center;
+  }
 </style>

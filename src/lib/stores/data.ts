@@ -31,31 +31,39 @@ function createDataStore() {
     updatePersonaje(nombre: string, updates: Partial<Personaje>) {
       update(d => {
         const idx = d.personajes.findIndex(p => p.nombre === nombre)
-        if (idx !== -1) {
-          d.personajes[idx] = { ...d.personajes[idx], ...updates }
-          d._meta.total_personajes = d.personajes.length
-          d._meta.total_activos = d.personajes.filter(p => p.planeado_usar).length
-          saveData(d)
+        if (idx === -1) return d
+        const personajes = d.personajes.map((p, i) => i === idx ? { ...p, ...updates } : p)
+        const newData = {
+          ...d,
+          personajes,
+          _meta: {
+            ...d._meta,
+            total_personajes: personajes.length,
+            total_activos: personajes.filter(p => p.planeado_usar).length,
+          }
         }
-        return { ...d }
+        saveData(newData)
+        return newData
       })
     },
     updateObjetivoNivel(nombre: string, nivel: number) {
       update(d => {
-        const p = d.personajes.find(pj => pj.nombre === nombre)
-        if (!p) return d
-        p.objetivoNivel = nivel
-        saveData(d)
-        return { ...d }
+        const idx = d.personajes.findIndex(pj => pj.nombre === nombre)
+        if (idx === -1) return d
+        const personajes = d.personajes.map((p, i) => i === idx ? { ...p, objetivoNivel: nivel } : p)
+        const newData = { ...d, personajes }
+        saveData(newData)
+        return newData
       })
     },
     updateTimewaysPct(nombre: string, pct: number) {
       update(d => {
-        const p = d.personajes.find(pj => pj.nombre === nombre)
-        if (!p) return d
-        p.timewaysPct = Math.max(0, Math.min(30, pct))
-        saveData(d)
-        return { ...d }
+        const idx = d.personajes.findIndex(pj => pj.nombre === nombre)
+        if (idx === -1) return d
+        const personajes = d.personajes.map((p, i) => i === idx ? { ...p, timewaysPct: Math.max(0, Math.min(30, pct)) } : p)
+        const newData = { ...d, personajes }
+        saveData(newData)
+        return newData
       })
     },
     toggleTarea(nombrePersonaje: string, tareaId: string) {
@@ -211,14 +219,23 @@ addTarea(nombrePersonaje: string, tarea: { nombre: string; tipoContenido?: TipoC
     },
     deletePersonaje(nombre: string) {
       update(d => {
-        d.personajes = d.personajes.filter(p => p.nombre !== nombre)
-        for (const wb of d.warbands) {
-          wb.personajes = wb.personajes.filter(n => n !== nombre)
+        const personajes = d.personajes.filter(p => p.nombre !== nombre)
+        const warbands = d.warbands.map(wb => ({
+          ...wb,
+          personajes: wb.personajes.filter(n => n !== nombre)
+        }))
+        const newData = {
+          ...d,
+          personajes,
+          warbands,
+          _meta: {
+            ...d._meta,
+            total_personajes: personajes.length,
+            total_activos: personajes.filter(p => p.planeado_usar).length,
+          }
         }
-        d._meta.total_personajes = d.personajes.length
-        d._meta.total_activos = d.personajes.filter(p => p.planeado_usar).length
-        saveData(d)
-        return { ...d }
+        saveData(newData)
+        return newData
       })
     },
     addPersonaje(p: { nombre: string; clase: string; raza: string; nivel: number; faccion: string; reino: string; warband: string; mision_principal?: string; expansion_por_defecto?: string | null; parecidos?: string[]; profesiones?: ProfesionSlot[]; planeado_usar?: boolean; descripcion?: string; tipo?: 'iconico' | 'funcional' }) {
@@ -242,17 +259,26 @@ addTarea(nombrePersonaje: string, tarea: { nombre: string; tipoContenido?: TipoC
           timewaysPct: 0,
           tareas: [],
         }
-        d.personajes.push(nuevo)
-        let wb = d.warbands.find(w => w.nombre === p.warband)
+        const personajes = [...d.personajes, nuevo]
+        const warbands = d.warbands.map(wb => ({ ...wb }))
+        let wb = warbands.find(w => w.nombre === p.warband)
         if (!wb) {
-          d.warbands.push({ nombre: p.warband, personajes: [p.nombre], tareas_disponibles: [] })
+          warbands.push({ nombre: p.warband, personajes: [p.nombre], tareas_disponibles: [] })
         } else {
-          if (!wb.personajes.includes(p.nombre)) wb.personajes.push(p.nombre)
+          if (!wb.personajes.includes(p.nombre)) wb.personajes = [...wb.personajes, p.nombre]
         }
-        d._meta.total_personajes = d.personajes.length
-        d._meta.total_activos = d.personajes.filter(c => c.planeado_usar).length
-        saveData(d)
-        return { ...d }
+        const newData = {
+          ...d,
+          personajes,
+          warbands,
+          _meta: {
+            ...d._meta,
+            total_personajes: personajes.length,
+            total_activos: personajes.filter(c => c.planeado_usar).length,
+          }
+        }
+        saveData(newData)
+        return newData
       })
     },
     moveCharToExpansion(charName: string, newExp: string) {

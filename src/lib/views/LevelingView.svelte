@@ -2,10 +2,12 @@
   import { personajesStore, dataStore } from '../stores/data'
   import { currentWarband } from '../stores/ui'
   import { levelingStore } from '../stores/leveling'
-  import type { LevelingResult, Personaje, OptimizationPlan } from '../types'
+  import type { LevelingResult, Personaje, LevelingConfig, OptimizationPlan, OptimizationEntry } from '../types'
   import { formatHours, formatNumber } from '../format'
   import { getWarbandMentor8090FromRoster } from '../leveling/calculator'
   import { calculateStrategicValue } from '../leveling/strategicValue'
+  import { computeFutureTimeSaved } from '../optimization/future-time-saved'
+  import type { RosterState } from '../optimization/roster-state'
   import { WoWRetailModel, simulateRoster } from '../simulation'
   import type { CharacterSnapshot, SimulationScenario } from '../simulation'
   import { optimizeStrategyMultiStart } from '../optimization/strategy-optimizer'
@@ -92,6 +94,8 @@
     optimizationError = null
     // Allow Svelte to flush loading state before blocking the main thread
     await new Promise(r => requestAnimationFrame(r))
+    const t0 = performance.now()
+    console.time('optimizeStrategyMultiStart')
     try {
       const result = optimizeStrategyMultiStart(
         $personajesStore,
@@ -106,6 +110,8 @@
     } catch (e) {
       optimizationError = e instanceof Error ? e.message : 'Error desconocido'
     } finally {
+      console.timeEnd('optimizeStrategyMultiStart')
+      console.log(`optimizeStrategyMultiStart — wall time ${(performance.now() - t0).toFixed(1)}ms`)
       isOptimizing = false
     }
   }
@@ -139,31 +145,87 @@
 
   let roiMap = $derived(new Map<string, number>())
 
-  let dashboardPlan = $derived<OptimizationPlan>({
-    entries: rosterOrder.map((nombre, i) => {
-      const p = personajes.find(pp => pp.nombre === nombre)
+  function buildDashboardPlan(
+    result: MultiStartResult | null,
+    roster: Personaje[],
+    config: LevelingConfig,
+    order: string[],
+  ): OptimizationPlan {
+    if (!result) {
+      // Fallback: no optimization run yet — show initial Warband buff, no progression
+      const initialCount90 = roster.filter(p => p.planeado_usar && p.nivel >= 90).length
+      const initialBuff = Math.min(initialCount90 * 5, 25)
       return {
-        nombre,
-        clase: p?.clase ?? '',
-        nivel: p?.nivel ?? 0,
+        entries: order.map((nombre, i) => {
+          const p = roster.find(pp => pp.nombre === nombre)
+          return {
+            nombre, clase: p?.clase ?? '', nivel: p?.nivel ?? 0,
+            objetivoNivel: 90, orden: i + 1,
+            dungeonsTo90: 0, timeTo90: 0,
+            dungeonsToObjective: 0, timeToObjective: 0,
+            buffBefore: initialBuff, buffAfter: initialBuff,
+            timeSavedForOthers: 0, roi: 0, reason: '',
+          }
+        }),
+        optimizedTime: 0, baselineTime: 0, timeSaved: 0,
+        order,
+      }
+    }
+
+    const strategy = result.bestOverall.strategy
+    const outcome = result.bestOverall.result.outcome
+    const dias = result.bestOverall.result.dias
+    const initialCount90 = roster.filter(p => p.planeado_usar && p.nivel >= 90).length
+    const a90Achieved = new Set(outcome.personajesNombreA90)
+
+    const charTime: Record<string, number> = {}
+    for (const day of dias) {
+      if (day.personajeActivo) {
+        charTime[day.personajeActivo] = (charTime[day.personajeActivo] ?? 0) + day.horasUsadas
+      }
+    }
+
+    let count90SoFar = initialCount90
+    const entries: OptimizationEntry[] = strategy.decisiones.map((d, i) => {
+      const buffBefore = Math.min(count90SoFar * 5, 25)
+      const reaches90 = a90Achieved.has(d.personaje.nombre)
+      const rs: RosterState = {
+        count90: count90SoFar, warbandMentorBuff: 0, horasConsumidas: 0,
+        horasDisponiblesSemana: 0, fechaActual: new Date(), fechaLimiteEvento: new Date(), diasRestantesEvento: 0,
+      }
+      const timeSaved = d.personaje.nivel < 90 && d.personaje.nivel >= 80 && !reaches90
+        ? computeFutureTimeSaved(d.personaje, rs, roster.filter(p => p.planeado_usar), config)
+        : 0
+      if (reaches90) count90SoFar++
+      const buffAfter = Math.min(count90SoFar * 5, 25)
+      const hours = charTime[d.personaje.nombre] ?? 0
+      return {
+        nombre: d.personaje.nombre,
+        clase: d.personaje.clase,
+        nivel: d.personaje.nivel,
         objetivoNivel: 90,
         orden: i + 1,
-        dungeonsTo90: 0,
-        timeTo90: 0,
-        dungeonsToObjective: 0,
-        timeToObjective: 0,
-        buffBefore: 0,
-        buffAfter: 0,
-        timeSavedForOthers: 0,
+        dungeonsTo90: Math.round(hours * 60 / config.duracionDungeon),
+        timeTo90: hours,
+        dungeonsToObjective: Math.round(hours * 60 / config.duracionDungeon),
+        timeToObjective: hours,
+        buffBefore,
+        buffAfter,
+        timeSavedForOthers: timeSaved,
         roi: 0,
-        reason: '',
+        reason: reaches90 ? 'Sube a 90' : `Nv${d.personaje.nivel}`,
       }
-    }),
-    optimizedTime: optimizationResult?.bestOverall.result.outcome.tiempoTotalHoras ?? 0,
-    baselineTime: 0,
-    timeSaved: optimizationResult?.bestOverall.result.outcome.tiempoAhorradoFuturo ?? 0,
-    order: rosterOrder,
-  })
+    })
+    return {
+      entries,
+      optimizedTime: outcome.tiempoTotalHoras,
+      baselineTime: 0,
+      timeSaved: outcome.tiempoAhorradoFuturo,
+      order: strategy.decisiones.map(d => d.personaje.nombre),
+    }
+  }
+
+  let dashboardPlan = $derived(buildDashboardPlan(optimizationResult, $personajesStore, config, rosterOrder))
 
   let results = $derived<LevelingResult[]>(
     rosterResult.results

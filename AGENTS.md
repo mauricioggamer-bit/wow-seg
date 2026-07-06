@@ -39,6 +39,9 @@
 - **Time-unit bug fixed** — `cumulativeTime` and `metrics.totalTime` now in hours (not minutes); `xpPerHour` formula simplified
 - **XP/dung column bug fixed** — `buildBreakdown()` now groups history steps by `levelBefore` instead of apportioning XP across level boundaries
 
+### In Progress
+- (none)
+
 ### Blocked
 - (none)
 

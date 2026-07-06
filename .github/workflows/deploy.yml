@@ -39,6 +39,15 @@ jobs:
       - name: Build
         run: npm run build
 
+      - name: Delete stale github-pages artifacts
+        run: |
+          for id in $(gh api /repos/${{ github.repository }}/actions/artifacts \
+            --paginate --jq '.artifacts[] | select(.name == "github-pages") | .id'); do
+            gh api -X DELETE /repos/${{ github.repository }}/actions/artifacts/$id || true
+          done
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+
       - name: Setup Pages
         uses: actions/configure-pages@v5
         with:

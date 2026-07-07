@@ -1,4 +1,4 @@
-import type { WowData, Stats, BackupData, ProfesionSlot, Personaje } from '../types'
+import type { WowData, Stats, BackupData, ProfesionSlot, Personaje, TagEstrategico } from '../types'
 import { SEED_DATA } from './seed'
 import { checkWeeklyReset } from './weekly-reset'
 import { PROFESIONES } from '../constants/profesiones'
@@ -30,6 +30,20 @@ function normalizeProfesiones(raw: any): ProfesionSlot[] {
   }
   while (arr.length < 2) arr.push({ id: '', nivel: 0 })
   return arr.slice(0, 2)
+}
+
+function normalizeTagsEstrategicos(raw: any): TagEstrategico[] {
+  if (!Array.isArray(raw)) return []
+  const arr: TagEstrategico[] = []
+  for (const tag of raw) {
+    if (tag && typeof tag === 'object') {
+      const id = typeof tag.id === 'string' ? tag.id : typeof tag.id === 'number' ? String(tag.id) : ''
+      const texto = typeof tag.texto === 'string' ? tag.texto : ''
+      const puntos = typeof tag.puntos === 'number' && !isNaN(tag.puntos) ? tag.puntos : 0
+      if (id && texto) arr.push({ id, texto, puntos })
+    }
+  }
+  return arr
 }
 
 const CHAR_EXPANSION: Record<string, string> = {
@@ -67,7 +81,7 @@ export function initSeed(): WowData {
 const VALID_PERSONAJE_KEYS = new Set([
   'nombre', 'clase', 'nivel', 'faccion', 'raza', 'reino', 'warband',
   'mision_principal', 'expansion_por_defecto', 'parecidos', 'profesiones',
-  'planeado_usar', 'descripcion', 'tipo', 'objetivoNivel', 'timewaysPct', 'tareas',
+  'planeado_usar', 'descripcion', 'tipo', 'objetivoNivel', 'timewaysPct', 'tagsEstrategicos', 'tareas',
 ])
 
 const VALID_TAREA_KEYS = new Set([
@@ -119,6 +133,9 @@ export function normalizeData(data: WowData): WowData {
     }
     if (!Array.isArray(p.parecidos)) p.parecidos = []
     p.profesiones = normalizeProfesiones((p as any).profesiones)
+    if (p.tagsEstrategicos === undefined) p.tagsEstrategicos = []
+    if (!Array.isArray(p.tagsEstrategicos)) p.tagsEstrategicos = []
+    p.tagsEstrategicos = normalizeTagsEstrategicos((p as any).tagsEstrategicos)
     if (!Array.isArray(p.tareas)) p.tareas = []
 
     for (const t of p.tareas) {
@@ -224,13 +241,30 @@ export function computeStats(data: WowData): Stats {
 }
 
 export function importJSON(jsonStr: string): WowData {
-  const data = JSON.parse(jsonStr) as WowData
-  if (!data.personajes || !data.warbands || !data._meta) {
-    throw new Error('Estructura inválida')
+  const parsed = JSON.parse(jsonStr)
+  const data: Partial<WowData> = Array.isArray(parsed)
+    ? { personajes: parsed as Personaje[], warbands: [], misiones: [] }
+    : (parsed as WowData)
+  if (!Array.isArray(data.personajes)) {
+    throw new Error('Estructura inválida: falta el array de personajes')
   }
-  normalizeData(data)
-  checkWeeklyReset(data)
-  return data
+  normalizeData(data as WowData)
+  if (!data.warbands || data.warbands.length === 0) {
+    const grouped = new Map<string, string[]>()
+    for (const p of data.personajes) {
+      const wb = p.warband || ''
+      if (!wb) continue
+      if (!grouped.has(wb)) grouped.set(wb, [])
+      grouped.get(wb)!.push(p.nombre)
+    }
+    data.warbands = [...grouped.entries()].map(([nombre, personajes]) => ({
+      nombre,
+      personajes,
+      tareas_disponibles: [],
+    }))
+  }
+  checkWeeklyReset(data as WowData)
+  return data as WowData
 }
 
 export function exportJSON(data: WowData): string {

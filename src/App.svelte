@@ -23,6 +23,7 @@
   import { uiStore } from './lib/stores/ui'
   import { dataStore, personajesStore, misionesStore, warbandsStore } from './lib/stores/data'
   import { gistStore } from './lib/stores/gist'
+  import { supabaseStore } from './lib/stores/supabaseSync'
   import { EXPANSIONS, PERS_RACE_INFO, CLASS_MAP } from './lib/constants'
   import { DUNGEON_EXPANSION_IDS, RAID_EXPANSION_IDS, WORLDBOSS_EXPANSION_IDS, dungeonsForExpansion, raidsForExpansion, worldBossesForExpansion, expNombre } from './lib/constants/wowContent'
   import { PROFESIONES } from './lib/constants/profesiones'
@@ -77,6 +78,8 @@
   let importText = $state('')
   let gistToken = $state('')
   let gistId = $state('')
+  let sbInterval = $state(60)
+  let sbConflict = $state<'local-wins' | 'remote-wins' | 'newest'>('newest')
 
   let editCharName = $state('')
   let editCharClase = $state('')
@@ -577,6 +580,39 @@
           }
           uiStore.closeModal()
         }}>Conectar</button>
+      </div>
+    {/snippet}
+  </Dialog>
+
+  <!-- Modal: Supabase Config -->
+  <Dialog show={$uiStore.activeModal === 'SupabaseConfig'} title="Sincronizar Supabase" onclose={() => uiStore.closeModal()}>
+    {#snippet children()}
+      <div class="form-group">
+        <label> Estado</label>
+        <div class="wowseg-supabase-state">
+          <span class:ok={$supabaseStore.status.tone === 'ok'} class:error={$supabaseStore.status.tone === 'error'} class:syncing={$supabaseStore.status.tone === 'syncing'}>
+            {$supabaseStore.status.text || 'desconectado'}
+          </span>
+          <button class="wow-btn wow-btn-sm" onclick={() => { if ($supabaseStore.config.enabled) supabaseStore.disable(); else { supabaseStore.setConfigUpdate({ intervalMinutes: sbInterval, conflictStrategy: sbConflict }); supabaseStore.enable() } }}>
+            {$supabaseStore.config.enabled ? 'Desconectar' : 'Conectar'}
+          </button>
+        </div>
+      </div>
+      <div class="form-group">
+        <label for="sbInterval">Intervalo de sincronización (minutos)</label>
+        <input id="sbInterval" type="number" min="5" max="1440" bind:value={sbInterval} disabled={$supabaseStore.config.enabled} />
+      </div>
+      <div class="form-group">
+        <label for="sbConflict">Resolución de conflictos</label>
+        <select id="sbConflict" bind:value={sbConflict} disabled={$supabaseStore.config.enabled}>
+          <option value="newest">El remoto más nuevo (por updated_at)</option>
+          <option value="local-wins">Local gana</option>
+          <option value="remote-wins">Remoto gana</option>
+        </select>
+      </div>
+      <div class="modal-footer">
+        <button class="wow-btn" onclick={() => uiStore.closeModal()}>Cerrar</button>
+        <button class="wow-btn wow-btn-arcane" onclick={() => { supabaseStore.doSync(true); uiStore.closeModal() }}>Sincronizar ahora</button>
       </div>
     {/snippet}
   </Dialog>

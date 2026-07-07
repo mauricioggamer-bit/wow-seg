@@ -3,6 +3,7 @@
   import { preferencesStore } from '../stores/preferences'
   import { authStore } from '../stores/auth'
   import { gistStore } from '../stores/gist'
+  import { supabaseStore } from '../stores/supabaseSync'
   import { uiStore } from '../stores/ui'
 
   const fontSizes = [
@@ -46,6 +47,12 @@
   </button>
   <span class="header-gist-status" class:ok={$gistStore.status.tone === 'ok'} class:error={$gistStore.status.tone === 'error'} class:syncing={$gistStore.status.tone === 'syncing'}>
     {$gistStore.status.text || ''}
+  </span>
+  <button class="wow-btn wow-btn-sm" onclick={() => uiStore.openModal('SupabaseConfig')} title="Sincronizar Supabase">
+    🗄
+  </button>
+  <span class="header-gist-status" class:ok={$supabaseStore.status.tone === 'ok'} class:error={$supabaseStore.status.tone === 'error'} class:syncing={$supabaseStore.status.tone === 'syncing'}>
+    SB: {$supabaseStore.status.text || 'desconectado'}
   </span>
   <button class="wow-btn wow-btn-sm" onclick={() => uiStore.openModal('WarbandManage')} title="Gestionar Warbands">
     📁

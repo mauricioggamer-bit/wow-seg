@@ -29,7 +29,7 @@
   import { PROFESIONES } from './lib/constants/profesiones'
   import type { TipoContenido, DungeonDifficulty, RaidDifficulty } from './lib/constants/wowContent'
   import { fade } from 'svelte/transition'
-  import type { Tarea, Mision, ProfesionSlot, ViewType } from './lib/types'
+  import type { Tarea, Mision, ProfesionSlot, TagEstrategico, ViewType } from './lib/types'
 
   let charOpts = $derived($personajesStore.map(p => p.nombre))
 
@@ -82,6 +82,7 @@
   let sbConflict = $state<'local-wins' | 'remote-wins' | 'newest'>('newest')
 
   let editCharName = $state('')
+  let editCharOriginalName = $state('')
   let editCharClase = $state('')
   let editCharRaza = $state('')
   let editCharNivel = $state(1)
@@ -95,6 +96,9 @@
   let editCharDescripcion = $state('')
   let editCharTipo = $state<'iconico' | 'funcional'>('funcional')
   let editCharProfesiones = $state<ProfesionSlot[]>([{ id: '', nivel: 0 }, { id: '', nivel: 0 }])
+  let editCharTags = $state<TagEstrategico[]>([])
+  let newTagText = $state('')
+  let newTagPuntos = $state(0)
 
   let editTaskChar = $state('')
   let editTaskId = $state('')
@@ -150,6 +154,7 @@
     if (!c) return
     charEditError = null
     editCharName = c.nombre
+    editCharOriginalName = c.nombre
     editCharClase = c.clase
     editCharRaza = c.raza
     editCharNivel = c.nivel
@@ -168,6 +173,9 @@
       { id: rawProf[0]?.id ?? '', nivel: rawProf[0]?.nivel ?? 0 },
       { id: rawProf[1]?.id ?? '', nivel: rawProf[1]?.nivel ?? 0 },
     ]
+    editCharTags = c.tagsEstrategicos ? c.tagsEstrategicos.map(t => ({ ...t })) : []
+    newTagText = ''
+    newTagPuntos = 0
     uiStore.openModal('CharEdit')
   }
 
@@ -175,6 +183,7 @@
     isNewChar = true
     charEditError = null
     editCharName = ''
+    editCharOriginalName = ''
     editCharClase = charClasses[0] || 'Guerrero'
     editCharRaza = charRaces[0] || ''
     editCharNivel = 1
@@ -188,6 +197,9 @@
     editCharDescripcion = ''
     editCharTipo = 'funcional'
     editCharProfesiones = [{ id: '', nivel: 0 }, { id: '', nivel: 0 }]
+    editCharTags = []
+    newTagText = ''
+    newTagPuntos = 0
     uiStore.openModal('CharEdit')
   }
 
@@ -382,10 +394,27 @@
     editCharProfesiones = arr
   }
 
+  function addEditTag() {
+    const text = newTagText.trim()
+    if (!text) return
+    editCharTags = [...editCharTags, {
+      id: crypto.randomUUID ? crypto.randomUUID() : 'tag-' + Date.now() + '-' + Math.random().toString(36).slice(2, 8),
+      texto: text,
+      puntos: newTagPuntos,
+    }]
+    newTagText = ''
+    newTagPuntos = 0
+  }
+
+  function removeEditTag(id: string) {
+    editCharTags = editCharTags.filter(t => t.id !== id)
+  }
+
   let charEditError = $state<string | null>(null)
 
   function saveCharEdit() {
     if (!editCharName.trim()) return
+    const newName = editCharName.trim()
     if (isNewChar) {
       const ok = dataStore.addPersonaje({
         nombre: editCharName.trim(),
@@ -402,6 +431,7 @@
         profesiones: editCharProfesiones,
         descripcion: editCharDescripcion,
         tipo: editCharTipo,
+        tagsEstrategicos: editCharTags,
       })
       if (!ok) {
         charEditError = `Ya existe un personaje llamado "${editCharName.trim()}"`
@@ -409,7 +439,17 @@
       }
       isNewChar = false
     } else {
-      dataStore.updatePersonaje(editCharName, {
+      if (newName !== editCharOriginalName) {
+        const ok = dataStore.renamePersonaje(editCharOriginalName, newName)
+        if (!ok) {
+          charEditError = `Ya existe un personaje llamado "${newName}"`
+          return
+        }
+        if ($uiStore.selectedCharacter === editCharOriginalName) {
+          uiStore.selectCharacter(newName)
+        }
+      }
+      dataStore.updatePersonaje(newName, {
         clase: editCharClase,
         raza: editCharRaza,
         nivel: editCharNivel,
@@ -423,6 +463,7 @@
         profesiones: editCharProfesiones,
         descripcion: editCharDescripcion,
         tipo: editCharTipo,
+        tagsEstrategicos: editCharTags,
       })
     }
     charEditError = null
@@ -722,7 +763,7 @@
     {#snippet children()}
       <div class="form-group">
         <label>Nombre</label>
-        <input type="text" bind:value={editCharName} disabled={!isNewChar} style={isNewChar ? '' : 'opacity:0.6'} />
+        <input type="text" bind:value={editCharName} />
       </div>
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px">
         <div class="form-group">
@@ -825,6 +866,35 @@
             </div>
           {/each}
         </div>
+      </div>
+      <div class="form-group">
+        <label>Tags estratégicos <span style="font-size:0.55rem;color:var(--text-muted)">— suman pts al valor estratégico</span></label>
+        <div style="display:flex;gap:4px;align-items:flex-end;margin-bottom:6px">
+          <div style="flex:1">
+            <input type="text" bind:value={newTagText} placeholder="Ej: Tank principal, Líder de raid..."
+              onkeydown={(e) => { if (e.key === 'Enter') { e.preventDefault(); addEditTag() } }}
+              style="width:100%;background:var(--input-bg);border:1px solid var(--border-subtle);border-radius:var(--r-sm);padding:4px 6px;color:var(--text-primary);font-size:0.75rem" />
+          </div>
+          <input type="number" bind:value={newTagPuntos} min="0" max="20" step="1"
+            style="width:56px;background:var(--input-bg);border:1px solid var(--border-subtle);border-radius:var(--r-sm);padding:4px 6px;color:var(--text-primary);font-size:0.75rem;text-align:center" />
+          <button onclick={addEditTag}
+            style="background:var(--gold);color:var(--bg,#1a1a1a);border:none;border-radius:var(--r-sm);padding:4px 8px;cursor:pointer;font-size:0.7rem;font-weight:bold">+</button>
+        </div>
+        {#if editCharTags.length > 0}
+          <div style="display:flex;flex-direction:column;gap:4px">
+            {#each editCharTags as tag (tag.id)}
+              <div style="display:flex;align-items:center;gap:6px;padding:3px 6px;background:var(--input-bg);border:1px solid var(--border-subtle);border-radius:var(--r-sm);font-size:0.7rem">
+                <span style="flex:1;color:var(--text-primary)">{tag.texto}</span>
+                <span style="color:var(--gold);font-weight:bold;min-width:36px;text-align:right">+{tag.puntos}p</span>
+                <button onclick={() => removeEditTag(tag.id)}
+                  style="background:none;border:none;color:var(--horde,#c5365a);cursor:pointer;font-size:0.7rem;padding:0 2px">✕</button>
+              </div>
+            {/each}
+            <div style="font-size:0.6rem;color:var(--gold-light,#d4af37);text-align:right">
+              Subtotal: +{editCharTags.reduce((s, t) => s + t.puntos, 0)} pts
+            </div>
+          </div>
+        {/if}
       </div>
       <div class="form-group">
         <label>Tipo de personaje</label>

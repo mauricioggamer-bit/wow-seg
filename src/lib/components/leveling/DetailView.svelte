@@ -4,8 +4,10 @@
   import { calculateStrategicValue } from '../../leveling/strategicValue'
   import { WoWRetailModel, simulateCharacter, createContext, createState, buildBreakdown } from '../../simulation'
   import type { SimulationResult } from '../../simulation'
+  import StrategicValueModal from './StrategicValueModal.svelte'
 
   const gameModel = new WoWRetailModel()
+  let stratModalOpen = $state(false)
 
   let {
     personaje,
@@ -178,7 +180,12 @@
     </div>
 
     <div class="lvl-strategic-detail">
-      <h4>Valor estratégico</h4>
+      <div style="display:flex;justify-content:space-between;align-items:center">
+        <h4 style="margin:0">Valor estratégico</h4>
+        <button onclick={() => { stratModalOpen = true }}
+          title="Ver fórmula y desglose"
+          style="background:var(--input-bg,#2a2a2a);border:1px solid var(--gold,#d4af37);border-radius:50%;width:18px;height:18px;line-height:16px;color:var(--gold,#d4af37);cursor:pointer;font-size:0.55rem;padding:0">?</button>
+      </div>
       <div class="lvl-stars-display">{'★'.repeat(strategic.stars)}{'☆'.repeat(5 - strategic.stars)}</div>
       <div class="lvl-score-bar">
         <div class="lvl-score-fill" style="width: {strategic.totalScore}%"></div>
@@ -206,8 +213,21 @@
           <span>Cercanía obj.</span>
           <strong>{(strategic.closenessToObjective * 100).toFixed(0)}%</strong>
         </div>
+        <div class="lvl-sv-stat">
+          <span>Clase</span>
+          <strong>{strategic.classValue > 0 ? `+${strategic.classValue}` : '—'}</strong>
+        </div>
+        <div class="lvl-sv-stat">
+          <span>Raza</span>
+          <strong>{strategic.raceValue > 0 ? `+${strategic.raceValue}` : '—'}</strong>
+        </div>
+        <div class="lvl-sv-stat">
+          <span>Tags</span>
+          <strong>{strategic.tagsValue > 0 ? `+${strategic.tagsValue}` : '—'}</strong>
+        </div>
       </div>
     </div>
+    <StrategicValueModal bind:open={stratModalOpen} strategic={strategic} />
   {/if}
 </div>
 

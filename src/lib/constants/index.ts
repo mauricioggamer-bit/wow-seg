@@ -50,6 +50,50 @@ export const PERS_CLASS_COLORS: Record<string, string> = {
   warlock: '#8788ee', monk: '#00ff96', druid: '#ff7c0a', dh: '#a330c9', evoker: '#33937f',
 }
 
+export const CLASS_STRATEGIC_VALUE: Record<string, number> = {
+  'Guerrero': 8, 'Paladín': 10, 'Cazador': 6, 'Pícaro': 5,
+  'Sacerdote': 9, 'DK': 9, 'Chamán': 8, 'Mago': 7,
+  'Brujo': 7, 'Monje': 8, 'Druida': 10, 'DH': 6, 'Evocadora': 8,
+}
+
+export const RACE_STRATEGIC_VALUE: Record<string, number> = {
+  'Orco': 5, 'Blood Elf': 4, 'Tauren': 6, 'Troll': 4, 'Goblin': 3,
+  "Mag'har": 5, 'Nightborne': 4, 'Highmountain': 6, 'Zandalari': 5,
+  'Vulpera': 3, 'Undead': 4, 'Earthen': 5, 'Pandaren': 4,
+  'Human': 5, 'Night Elf': 4, 'Draenei': 5, 'Gnome': 3, 'Dwarf': 5,
+  'Void Elf': 4, 'Light Draenei': 5, 'Dark Iron Dwarf': 5, 'Kul Tiran': 6,
+  'Mechagnome': 3, 'Haranir': 4, 'Dracthyr': 7, 'Worgen': 4,
+}
+
+export interface StrategicComponentInfo {
+  key: string
+  label: string
+  weight: number | 'fixed' | 'bonus'
+  description: string
+}
+
+export const STRATEGIC_COMPONENTS: StrategicComponentInfo[] = [
+  { key: 'warbandImpact', label: 'Warband Impact', weight: 10, description: 'Personajes 80-89 que reciben +5% XP al llegar este a 90. Cada beneficiario suma 5 puntos.' },
+  { key: 'professionValue', label: 'Profesiones', weight: 15, description: '1 si tiene al menos una profesión con ID, 0 si no.' },
+  { key: 'closenessTo90', label: 'Cercanía a 90', weight: 25, description: 'max(0, (nivel - 10) / 80). Lineal de nivel 10 a 90.' },
+  { key: 'closenessToObjective', label: 'Cercanía obj.', weight: 25, description: 'max(0, 1 - dungeonsTo90 / 200). Menos dungeons para 90 = más puntaje.' },
+  { key: 'futureXpIncrease', label: 'XP futura', weight: 8, description: 'Incremento de Warband Mentor al subir a 90 (delta del buff entre count90 actual y +1).' },
+  { key: 'remainingWeight', label: 'Peso restante', weight: 10, description: 'min(1, pendientes/10). Más personajes pendientes = más valor de Warband.' },
+  { key: 'bonusSub90', label: 'Bonus <90', weight: 'bonus', description: '+10 fijo si el personaje está por debajo de nivel 90.' },
+  { key: 'bonus8089', label: 'Bonus 80-89', weight: 'bonus', description: '+15 fijo si el personaje está en el rango 80-89 (barato para Warband Mentor 80-90).' },
+  { key: 'classValue', label: 'Clase', weight: 'fixed', description: 'Valor estratégico fijo según la clase del personaje.' },
+  { key: 'raceValue', label: 'Raza', weight: 'fixed', description: 'Valor estratégico fijo según la raza del personaje.' },
+  { key: 'tagsValue', label: 'Tags', weight: 'fixed', description: 'Suma de puntos de tags estratégicos definidos por el usuario.' },
+]
+
+export const STAR_THRESHOLDS = [
+  { min: 85, stars: 5 },
+  { min: 65, stars: 4 },
+  { min: 45, stars: 3 },
+  { min: 25, stars: 2 },
+  { min: 0, stars: 1 },
+] as const
+
 export const PERS_RACES_BY_COLUMN: Record<string, string[]> = {
   'alliance-trad': ['Human', 'Night Elf', 'Gnome', 'Dwarf', 'Draenei', 'Worgen', 'Pandaren', 'Dracthyr'],
   'alliance-allied': ['Void Elf', 'Light Draenei', 'Dark Iron Dwarf', 'Kul Tiran', 'Mechagnome', 'Earthen'],

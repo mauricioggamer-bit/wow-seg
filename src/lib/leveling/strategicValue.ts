@@ -1,5 +1,6 @@
 import type { Personaje, LevelingConfig, StrategicValueResult } from '../types'
 import { calculateForCharacter, getEffectiveXpPerDungeon, getXpRemaining } from './calculator'
+import { CLASS_STRATEGIC_VALUE, RACE_STRATEGIC_VALUE, STAR_THRESHOLDS } from '../constants'
 
 export function calculateStrategicValue(
   personaje: Personaje,
@@ -19,6 +20,11 @@ export function calculateStrategicValue(
       closenessToObjective: 0,
       futureXpIncrease: 0,
       remainingWeight: 0,
+      bonusSub90: 0,
+      bonus8089: 0,
+      classValue: 0,
+      raceValue: 0,
+      tagsValue: 0,
       totalScore: 0,
       reasons: ['Nivel 90 alcanzado'],
     }
@@ -93,6 +99,24 @@ export function calculateStrategicValue(
     reasons.push(`Solo ${dungeonsTo90} dungeons para llegar a 90 (victoria rápida)`)
   }
 
+  const bonusSub90 = personaje.nivel < 90 ? 1 : 0
+  const bonus8089 = (personaje.nivel >= 80 && personaje.nivel < 90) ? 1 : 0
+
+  const classValue = CLASS_STRATEGIC_VALUE[personaje.clase] ?? 0
+  if (classValue > 0) {
+    reasons.push(`Clase ${personaje.clase}: +${classValue} pts`)
+  }
+
+  const raceValue = RACE_STRATEGIC_VALUE[personaje.raza] ?? 0
+  if (raceValue > 0) {
+    reasons.push(`Raza ${personaje.raza}: +${raceValue} pts`)
+  }
+
+  const tagsValue = (personaje.tagsEstrategicos ?? []).reduce((sum, t) => sum + t.puntos, 0)
+  for (const tag of (personaje.tagsEstrategicos ?? [])) {
+    reasons.push(`Tag "${tag.texto}": +${tag.puntos} pts`)
+  }
+
   let totalScore = 0
   totalScore += warbandImpact * 10
   totalScore += professionValue * 15
@@ -100,15 +124,17 @@ export function calculateStrategicValue(
   totalScore += closenessToObjective * 25
   totalScore += futureXpIncrease * 8
   totalScore += remainingWeight * 10
-  if (personaje.nivel < 90) totalScore += 10
-  if (personaje.nivel >= 80 && personaje.nivel < 90) totalScore += 15
+  totalScore += bonusSub90 * 10
+  totalScore += bonus8089 * 15
+  totalScore += classValue
+  totalScore += raceValue
+  totalScore += tagsValue
   totalScore = Math.min(100, totalScore)
 
   let stars = 1
-  if (totalScore >= 85) stars = 5
-  else if (totalScore >= 65) stars = 4
-  else if (totalScore >= 45) stars = 3
-  else if (totalScore >= 25) stars = 2
+  for (const t of STAR_THRESHOLDS) {
+    if (totalScore >= t.min) { stars = t.stars; break }
+  }
 
   if (reasons.length === 0) {
     reasons.push(`${dungeonsTo90} dungeons restantes para llegar a 90`)
@@ -122,6 +148,11 @@ export function calculateStrategicValue(
     closenessToObjective,
     futureXpIncrease,
     remainingWeight,
+    bonusSub90,
+    bonus8089,
+    classValue,
+    raceValue,
+    tagsValue,
     totalScore,
     reasons,
   }

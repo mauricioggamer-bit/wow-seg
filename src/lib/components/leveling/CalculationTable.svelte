@@ -87,16 +87,17 @@
           </td>
           <td class="lvl-num">{r.nivel}</td>
           <td class="lvl-tw-cell" onclick={(e) => e.stopPropagation()}>
-            <input
-              type="range"
-              min="0"
-              max="30"
-              step="5"
-              value={getTimewaysPct(r.nombre)}
-              oninput={(e) => setTimewaysPct(r.nombre, parseInt(e.currentTarget.value))}
-              class="lvl-tw-slider"
-            />
+            <button
+              class="lvl-tw-btn"
+              onclick={() => setTimewaysPct(r.nombre, Math.max(0, getTimewaysPct(r.nombre) - 5))}
+              disabled={getTimewaysPct(r.nombre) <= 0}
+            >−</button>
             <span class="lvl-tw-val">+{getTimewaysPct(r.nombre)}%</span>
+            <button
+              class="lvl-tw-btn"
+              onclick={() => setTimewaysPct(r.nombre, Math.min(30, getTimewaysPct(r.nombre) + 5))}
+              disabled={getTimewaysPct(r.nombre) >= 30}
+            >+</button>
           </td>
           {#if viewMode !== 'to90'}
             <td class="lvl-num lvl-col-80">{r.done80 ? '✓' : r.dungeonsTo80 || '✓'}</td>
@@ -232,11 +233,28 @@
     gap: 4px;
     cursor: default;
   }
-  .lvl-tw-slider {
-    width: 60px;
-    height: 4px;
+  .lvl-tw-btn {
+    width: 18px;
+    height: 18px;
+    border: 1px solid var(--gold);
+    background: transparent;
+    color: var(--gold);
+    border-radius: 3px;
     cursor: pointer;
-    accent-color: var(--gold);
+    font-size: 0.7rem;
+    line-height: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
+  }
+  .lvl-tw-btn:hover:not(:disabled) {
+    background: var(--gold);
+    color: var(--bg, #000);
+  }
+  .lvl-tw-btn:disabled {
+    opacity: 0.3;
+    cursor: default;
   }
   .lvl-tw-val {
     font-size: 0.5rem;

@@ -24,6 +24,12 @@ export interface ProfesionSlot {
   esMainCrafter?: boolean
 }
 
+export interface TagEstrategico {
+  id: string
+  texto: string
+  puntos: number
+}
+
 export interface Personaje {
   nombre: string
   clase: string
@@ -41,6 +47,7 @@ export interface Personaje {
   tipo?: 'iconico' | 'funcional'
   objetivoNivel?: number
   timewaysPct?: number
+  tagsEstrategicos?: TagEstrategico[]
   tareas: Tarea[]
 }
 
@@ -179,6 +186,11 @@ export interface StrategicValueResult {
   closenessToObjective: number
   futureXpIncrease: number
   remainingWeight: number
+  bonusSub90: number
+  bonus8089: number
+  classValue: number
+  raceValue: number
+  tagsValue: number
   totalScore: number
   reasons: string[]
 }

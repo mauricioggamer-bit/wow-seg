@@ -13,6 +13,7 @@
   let persLevelMax = $state<number | null>(null)
   let persSelectedChar = $state<string | null>(null)
   let persHideNotPlanned = $state(true)
+  let persSearchText = $state('')
 
   let classEntries = $derived.by(() => {
     const deduped: Array<{ label: string; key: string }> = []
@@ -25,6 +26,16 @@
 
   let filteredChars = $derived.by(() => {
     let chars = $personajesStore
+    if (persSearchText.trim()) {
+      const q = persSearchText.trim().toLowerCase()
+      chars = chars.filter(c =>
+        c.nombre.toLowerCase().includes(q) ||
+        c.clase.toLowerCase().includes(q) ||
+        c.raza.toLowerCase().includes(q) ||
+        (c.parecidos?.some(p => p.toLowerCase().includes(q)) ?? false) ||
+        (c.descripcion?.toLowerCase().includes(q) ?? false)
+      )
+    }
     if (persFactionFilter === 'alliance') chars = chars.filter(c => c.faccion === 'Alianza')
     else if (persFactionFilter === 'horde') chars = chars.filter(c => c.faccion === 'Horda')
     if (persSelectedRace) chars = chars.filter(c => c.raza === persSelectedRace)
@@ -100,6 +111,7 @@
     persLevelMin = null
     persLevelMax = null
     persSelectedChar = null
+    persSearchText = ''
   }
 
   function closePersonajes() {
@@ -171,6 +183,14 @@
 
     <div id="pers-panel-center">
       <div id="pers-filter-bar">
+        <input
+          type="text"
+          class="pers-search-input"
+          placeholder="🔍 Buscar personaje..."
+          aria-label="Buscar personaje por nombre, clase, raza o parecido"
+          bind:value={persSearchText}
+        />
+        <span class="pers-filter-sep">|</span>
         <span class="pers-filter-label">FACCIÓN:</span>
         <button
           class="pers-filter-chip"
@@ -204,8 +224,8 @@
       <div id="pers-char-grid">
         {#if filteredChars.length === 0}
           <div class="pers-empty-state">
-            <span class="big">⚠</span>No hay personajes que coincidan.<br>
-            <span style="color:var(--text-muted)">Intenta cambiar los filtros.</span>
+            <span class="big">⚠</span>No hay personajes que coincidan{persSearchText.trim() ? ` con "${persSearchText.trim()}"` : ''}.<br>
+            <span style="color:var(--text-muted)">Intenta cambiar los filtros o el término de búsqueda.</span>
           </div>
         {:else}
           {#each filteredChars as c (c.nombre)}
@@ -389,6 +409,9 @@
   .pers-level-input { width:48px; background:rgba(10,5,0,0.8); border:1px solid var(--border-main); color:var(--gold); font-size:0.45rem; padding:2px 4px; border-radius:2px; font-family:inherit; text-align:center; }
   .pers-level-input:focus { outline:none; border-color:var(--gold); }
   .pers-level-input::placeholder { color:var(--text-dim); }
+  .pers-search-input { width:170px; background:rgba(10,5,0,0.8); border:1px solid var(--border-main); color:var(--gold-light); font-size:0.45rem; padding:3px 7px; border-radius:2px; font-family:inherit; transition:border-color 0.12s, box-shadow 0.12s; }
+  .pers-search-input:focus { outline:none; border-color:var(--gold); box-shadow:0 0 6px rgba(200,168,75,0.4); }
+  .pers-search-input::placeholder { color:var(--text-dim); }
   #pers-char-grid { position:relative; z-index:2; flex:1; padding:10px; display:grid; grid-template-columns:repeat(auto-fill, minmax(130px, 1fr)); gap:8px; align-content:start; min-width:0; overflow-y:auto; overflow-x:hidden; max-height:480px; }
   .pers-char-card { border:1px solid var(--border-subtle); background:linear-gradient(180deg,rgba(22,10,0,0.53),rgba(10,5,0,0.53)); border-radius:2px; padding:8px; cursor:pointer; transition:all 0.15s; text-align:center; position:relative; min-width:0; }
   .pers-card-delete { position:absolute; top:3px; right:3px; width:14px; height:14px; padding:0; border:none; background:none; color:var(--text-dim); font-size:10px; line-height:1; cursor:pointer; z-index:3; display:flex; align-items:center; justify-content:center; border-radius:1px; opacity:0; transition:opacity 0.12s,color 0.12s; }

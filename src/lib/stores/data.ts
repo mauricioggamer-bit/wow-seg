@@ -34,9 +34,20 @@ function createDataStore() {
         const idx = d.personajes.findIndex(p => p.nombre === nombre)
         if (idx === -1) { ok = false; return d }
         const current = d.personajes[idx]
-        if (updates.warband && updates.warband !== current.warband && updates.warband !== 'nada') {
-          const targetWb = d.warbands.find(w => w.nombre === updates.warband)
-          if (targetWb && targetWb.personajes.length >= 4) { ok = false; return d }
+        const oldWb = current.warband
+        const newWb = updates.warband
+        if (newWb && newWb !== oldWb) {
+          if (newWb !== 'nada') {
+            const targetWb = d.warbands.find(w => w.nombre === newWb)
+            if (targetWb && targetWb.personajes.length >= 4) { ok = false; return d }
+          }
+          d.warbands = d.warbands
+            .map(w => w.nombre === oldWb ? { ...w, personajes: w.personajes.filter(n => n !== nombre) } : w)
+            .map(w => w.nombre === newWb && !w.personajes.includes(nombre) ? { ...w, personajes: [...w.personajes, nombre] } : w)
+          const hasNewWb = d.warbands.some(w => w.nombre === newWb)
+          if (!hasNewWb) {
+            d.warbands = [...d.warbands, { nombre: newWb, personajes: [nombre], tareas_disponibles: [] }]
+          }
         }
         d.personajes = d.personajes.map((p, i) => i === idx ? { ...p, ...updates } : p)
         d._meta.total_personajes = d.personajes.length
@@ -443,6 +454,18 @@ addTarea(nombrePersonaje: string, tarea: { nombre: string; tipoContenido?: TipoC
       if (newPersonajes.length === 0) throw new Error('CSV sin personajes válidos')
       update(d => {
         d.personajes = [...d.personajes, ...newPersonajes]
+        for (const p of newPersonajes) {
+          const wb = p.warband || 'nada'
+          if (wb === 'nada') continue
+          const wbExists = d.warbands.some(w => w.nombre === wb)
+          if (!wbExists) {
+            d.warbands = [...d.warbands, { nombre: wb, personajes: [p.nombre], tareas_disponibles: [] }]
+          } else {
+            d.warbands = d.warbands.map(w => w.nombre === wb && !w.personajes.includes(p.nombre)
+              ? { ...w, personajes: [...w.personajes, p.nombre] }
+              : w)
+          }
+        }
         d._meta.total_personajes = d.personajes.length
         d._meta.total_activos = d.personajes.filter(p => p.planeado_usar).length
         saveData(d)

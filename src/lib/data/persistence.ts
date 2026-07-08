@@ -172,6 +172,21 @@ export function normalizeData(data: WowData): WowData {
     }
   }
 
+  const wbMap = new Map<string, string[]>()
+  for (const p of data.personajes) {
+    const wbName = p.warband || 'nada'
+    if (!wbMap.has(wbName)) wbMap.set(wbName, [])
+    wbMap.get(wbName)!.push(p.nombre)
+  }
+  data.warbands = [...wbMap.entries()].map(([nombre, personajes]) => {
+    const existing = data.warbands.find(w => w.nombre === nombre)
+    return {
+      nombre,
+      personajes,
+      tareas_disponibles: existing?.tareas_disponibles ?? [],
+    }
+  })
+
   data._meta.total_personajes = data.personajes.length
   data._meta.total_activos = data.personajes.filter(p => p.planeado_usar).length
 

@@ -5,6 +5,7 @@
   let { openCharEdit }: { openCharEdit: (name: string) => void } = $props()
 
   let dragOverWb = $state<string | null>(null)
+  let dragOverNada = $state(false)
   let editingWb = $state<string | null>(null)
   let editingWbName = $state('')
   let newWbName = $state('')
@@ -81,7 +82,13 @@
 </script>
 
 <div class="wm-layout">
-  <div class="wm-pool">
+  <div
+    class="wm-pool"
+    class:drag-over={dragOverNada}
+    ondragover={(e) => { e.preventDefault(); if (e.dataTransfer) e.dataTransfer.dropEffect = 'move'; dragOverNada = true }}
+    ondragleave={() => { dragOverNada = false }}
+    ondrop={(e) => { e.preventDefault(); dragOverNada = false; const n = e.dataTransfer?.getData('text/plain'); if (n) dataStore.moveCharToWarband(n, 'nada') }}
+  >
     <div class="wm-pool-header">
       <h3>Sin Warband</h3>
       <span class="text-sm text-muted">{nadaChars.length}</span>
@@ -272,6 +279,10 @@
     border-radius: var(--r-md, 6px);
     transition: border-color 0.15s, box-shadow 0.15s;
     min-width: 0;
+  }
+  .wm-pool.drag-over {
+    border-color: var(--gold, #d4af37);
+    box-shadow: 0 0 12px rgba(212, 175, 55, 0.25);
   }
   .wm-wb.drag-over {
     border-color: var(--gold, #d4af37);

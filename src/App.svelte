@@ -417,10 +417,12 @@
     if (!editCharName.trim()) return
     const newName = editCharName.trim()
     if (isNewChar) {
-      const wbFull = $warbandsStore.some(w => w.nombre === editCharWarband && w.personajes.length >= 4)
-      if (wbFull) {
-        charEditError = 'Ese warband está lleno (máx. 4 personajes)'
-        return
+      if (editCharWarband !== 'nada') {
+        const wbFull = $warbandsStore.some(w => w.nombre === editCharWarband && w.personajes.length >= 4)
+        if (wbFull) {
+          charEditError = 'Ese warband está lleno (máx. 4 personajes)'
+          return
+        }
       }
       const ok = dataStore.addPersonaje({
         nombre: editCharName.trim(),
@@ -817,6 +819,7 @@
         <div class="form-group">
           <label>Warband</label>
           <select bind:value={editCharWarband}>
+            <option value="nada">Sin Warband</option>
             {#each $warbandsStore.filter(w => w.nombre !== 'nada') as wb}
               <option value={wb.nombre} disabled={wb.personajes.length >= 4 && wb.nombre !== editCharWarband}>
                 {wb.nombre}{wb.personajes.length >= 4 ? ' (lleno)' : ''}

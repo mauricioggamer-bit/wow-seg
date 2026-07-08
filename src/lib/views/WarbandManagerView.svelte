@@ -7,6 +7,7 @@
   let dragOverWb = $state<string | null>(null)
   let editingWb = $state<string | null>(null)
   let editingWbName = $state('')
+  let newWbName = $state('')
 
   let allChars = $derived(
     [...$personajesStore].sort((a, b) => a.nombre.localeCompare(b.nombre))
@@ -46,6 +47,19 @@
     }
   }
 
+  function addWarband() {
+    if (newWbName.trim()) {
+      dataStore.addWarband(newWbName.trim())
+      newWbName = ''
+    }
+  }
+
+  function deleteWb(name: string) {
+    if (confirm(`¿Eliminar warband "${name}"? Los personajes se moverán a "Sin Warband".`)) {
+      dataStore.deleteWarband(name)
+    }
+  }
+
   function startRename(wb: string) {
     editingWb = wb
     editingWbName = wb
@@ -67,28 +81,14 @@
 <div class="wm-layout">
   <div class="wm-pool">
     <div class="wm-pool-header">
-      <h3>Personajes</h3>
-      <span class="text-sm text-muted">{allChars.length}</span>
+      <h3>Sin Warband</h3>
+      <span class="text-sm text-muted">{nadaChars.length}</span>
     </div>
     <div class="wm-pool-body">
-      {#each nadaChars as c (c.nombre)}
-        <div
-          class="wm-chip"
-          draggable="true"
-          ondragstart={(e) => handleDragStart(e, c.nombre)}
-          role="button"
-          tabindex="0"
-        >
-          <span class="wm-chip-name {clsClass(c.clase)}">{c.nombre}</span>
-          <button
-            class="wow-btn wow-btn-icon wm-chip-edit"
-            onclick={() => openCharEdit(c.nombre)}
-            title="Editar personaje"
-          >✏️</button>
-        </div>
-      {/each}
-      {#each wbList as wb}
-        {#each getCharsInWb(wb.nombre) as c (c.nombre)}
+      {#if nadaChars.length === 0}
+        <div class="text-xs text-muted wm-pool-empty">Todos con warband</div>
+      {:else}
+        {#each nadaChars as c (c.nombre)}
           <div
             class="wm-chip"
             draggable="true"
@@ -104,71 +104,87 @@
             >✏️</button>
           </div>
         {/each}
-      {/each}
-      {#if allChars.length === 0}
-        <div class="empty-state"><p>No hay personajes disponibles</p></div>
       {/if}
     </div>
   </div>
 
-  <div class="wm-wbs">
-    <div class="wm-pool-header">
-      <h3>Warbands</h3>
-      <span class="text-sm text-muted">{wbList.length}</span>
+  <div class="wm-wbs-col">
+    <div class="wm-create-wb">
+      <input
+        type="text"
+        bind:value={newWbName}
+        placeholder="Nuevo warband..."
+        onkeydown={(e) => { if (e.key === 'Enter') addWarband() }}
+        class="wm-create-input"
+      />
+      <button class="wow-btn wow-btn-sm wow-btn-primary" onclick={addWarband}>Crear</button>
     </div>
-    {#each wbList as wb (wb.nombre)}
-      <div
-        class="wm-wb"
-        class:drag-over={dragOverWb === wb.nombre}
-        ondragover={(e) => handleDragOver(e, wb.nombre)}
-        ondragleave={() => handleDragLeave(wb.nombre)}
-        ondrop={(e) => handleDrop(e, wb.nombre)}
-      >
-        <div class="wm-wb-header">
-          {#if editingWb === wb.nombre}
-            <input
-              class="wm-rename-input"
-              type="text"
-              bind:value={editingWbName}
-              onkeydown={(e) => { if (e.key === 'Enter') commitRename(); if (e.key === 'Escape') editingWb = null }}
-              onblur={commitRename}
-              onclick={(e) => e.stopPropagation()}
-              autofocus
-            />
-          {:else}
-            <span class="wm-wb-name">{wb.nombre}</span>
-            <button
-              class="wow-btn wow-btn-icon wm-wb-edit"
-              onclick={() => startRename(wb.nombre)}
-              title="Renombrar warband"
-            >✏️</button>
-          {/if}
-          <span class="text-sm text-muted">{wb.personajes.length}</span>
-        </div>
-        <div class="wm-wb-body">
-          {#each getCharsInWb(wb.nombre) as c (c.nombre)}
-            <div
-              class="wm-chip wm-chip-inline"
-              draggable="true"
-              ondragstart={(e) => handleDragStart(e, c.nombre)}
-              role="button"
-              tabindex="0"
-            >
-              <span class="wm-chip-name {clsClass(c.clase)}">{c.nombre}</span>
-              <button
-                class="wow-btn wow-btn-icon wm-chip-edit"
-                onclick={() => openCharEdit(c.nombre)}
-                title="Editar personaje"
-              >✏️</button>
-            </div>
-          {:else}
-            <div class="text-xs text-muted wm-wb-empty">Arrastra personajes aquí</div>
-          {/each}
-        </div>
-      </div>
-    {/each}
+
     {#if wbList.length === 0}
       <div class="empty-state"><p>No hay warbands creados</p></div>
+    {:else}
+      <div class="wm-wbs">
+        {#each wbList as wb (wb.nombre)}
+          <div
+            class="wm-wb"
+            class:drag-over={dragOverWb === wb.nombre}
+            ondragover={(e) => handleDragOver(e, wb.nombre)}
+            ondragleave={() => handleDragLeave(wb.nombre)}
+            ondrop={(e) => handleDrop(e, wb.nombre)}
+          >
+            <div class="wm-wb-header">
+              {#if editingWb === wb.nombre}
+                <input
+                  class="wm-rename-input"
+                  type="text"
+                  bind:value={editingWbName}
+                  onkeydown={(e) => { if (e.key === 'Enter') commitRename(); if (e.key === 'Escape') editingWb = null }}
+                  onblur={commitRename}
+                  onclick={(e) => e.stopPropagation()}
+                  autofocus
+                />
+              {:else}
+                <span class="wm-wb-name">{wb.nombre}</span>
+                <span class="text-sm text-muted">{wb.personajes.length}</span>
+              {/if}
+              <div class="wm-wb-actions">
+                {#if editingWb !== wb.nombre}
+                  <button
+                    class="wow-btn wow-btn-icon wm-icon-btn"
+                    onclick={() => startRename(wb.nombre)}
+                    title="Renombrar"
+                  >✏️</button>
+                {/if}
+                <button
+                  class="wow-btn wow-btn-icon wm-icon-btn wm-icon-btn-danger"
+                  onclick={() => deleteWb(wb.nombre)}
+                  title="Eliminar warband"
+                >🗑️</button>
+              </div>
+            </div>
+            <div class="wm-wb-body">
+              {#each getCharsInWb(wb.nombre) as c (c.nombre)}
+                <div
+                  class="wm-chip wm-chip-inline"
+                  draggable="true"
+                  ondragstart={(e) => handleDragStart(e, c.nombre)}
+                  role="button"
+                  tabindex="0"
+                >
+                  <span class="wm-chip-name {clsClass(c.clase)}">{c.nombre}</span>
+                  <button
+                    class="wow-btn wow-btn-icon wm-chip-edit"
+                    onclick={() => openCharEdit(c.nombre)}
+                    title="Editar personaje"
+                  >✏️</button>
+                </div>
+              {:else}
+                <div class="text-xs text-muted wm-wb-empty">Arrastra personajes aquí</div>
+              {/each}
+            </div>
+          </div>
+        {/each}
+      </div>
     {/if}
   </div>
 </div>
@@ -176,9 +192,9 @@
 <style>
   .wm-layout {
     display: grid;
-    grid-template-columns: 200px 1fr;
+    grid-template-columns: 180px 1fr;
     gap: 8px;
-    height: calc(100vh - 130px);
+    align-items: start;
   }
   .wm-pool {
     background: var(--bg-elevated, #1e1e1e);
@@ -186,7 +202,7 @@
     border-radius: var(--r-md, 6px);
     display: flex;
     flex-direction: column;
-    overflow: hidden;
+    max-height: calc(100vh - 130px);
   }
   .wm-pool-header {
     display: flex;
@@ -209,18 +225,45 @@
     flex-direction: column;
     gap: 4px;
   }
-  .wm-wbs {
+  .wm-pool-empty {
+    font-style: italic;
+    padding: 12px 0;
+    text-align: center;
+    opacity: 0.5;
+  }
+  .wm-wbs-col {
     display: flex;
     flex-direction: column;
+    gap: 8px;
+  }
+  .wm-create-wb {
+    display: flex;
+    gap: 4px;
+  }
+  .wm-create-input {
+    flex: 1;
+    font-size: 0.7rem;
+    background: var(--input-bg, #2a2a2a);
+    border: 1px solid var(--border, #333);
+    border-radius: var(--r-sm, 4px);
+    padding: 4px 8px;
+    color: var(--text-primary, #e0e0e0);
+    outline: none;
+  }
+  .wm-create-input:focus {
+    border-color: var(--gold, #d4af37);
+  }
+  .wm-wbs {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
     gap: 6px;
-    overflow-y: auto;
-    padding-right: 4px;
   }
   .wm-wb {
     background: var(--bg-elevated, #1e1e1e);
     border: 1px solid var(--border, #333);
     border-radius: var(--r-md, 6px);
     transition: border-color 0.15s, box-shadow 0.15s;
+    min-width: 0;
   }
   .wm-wb.drag-over {
     border-color: var(--gold, #d4af37);
@@ -237,15 +280,30 @@
     font-size: 0.75rem;
     font-weight: 600;
     flex: 1;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
   }
-  .wm-wb-edit {
-    font-size: 0.65rem !important;
-    width: 22px !important;
-    height: 22px !important;
-    opacity: 0.6;
-    transition: opacity 0.15s;
+  .wm-wb-actions {
+    display: flex;
+    gap: 2px;
+    flex-shrink: 0;
   }
-  .wm-wb-header:hover .wm-wb-edit {
+  .wm-icon-btn {
+    font-size: 0.6rem !important;
+    width: 20px !important;
+    height: 20px !important;
+    opacity: 0.4;
+    transition: opacity 0.12s;
+  }
+  .wm-icon-btn-danger {
+    filter: saturate(0.5);
+  }
+  .wm-icon-btn-danger:hover {
+    filter: saturate(1);
+  }
+  .wm-wb-header:hover .wm-icon-btn {
     opacity: 1;
   }
   .wm-rename-input {
@@ -298,11 +356,12 @@
   .wm-chip-name {
     flex: 1;
     font-weight: 500;
+    min-width: 0;
   }
   .wm-chip-edit {
-    font-size: 0.6rem !important;
-    width: 20px !important;
-    height: 20px !important;
+    font-size: 0.55rem !important;
+    width: 18px !important;
+    height: 18px !important;
     opacity: 0.4;
     transition: opacity 0.12s;
   }

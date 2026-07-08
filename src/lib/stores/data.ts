@@ -484,6 +484,63 @@ addTarea(nombrePersonaje: string, tarea: { nombre: string; tipoContenido?: TipoC
         return { ...d }
       })
     },
+    updateProfesionRol(nombre: string, profId: string, newRol: 'main' | 'cd' | undefined) {
+      update(d => {
+        const idx = d.personajes.findIndex(p => p.nombre === nombre)
+        if (idx === -1) return d
+        const slots = d.personajes[idx].profesiones ?? []
+        const slotIdx = slots.findIndex(s => s.id === profId)
+        if (slotIdx === -1) return d
+
+        let newPersonajes = [...d.personajes]
+
+        if (newRol === 'main') {
+          newPersonajes = newPersonajes.map(c => ({
+            ...c,
+            profesiones: (c.profesiones ?? []).map(s =>
+              s.id === profId && s.rol === 'main' ? { ...s, rol: undefined } : s
+            )
+          }))
+        } else if (newRol === 'cd') {
+          const cdCount = newPersonajes.filter(c =>
+            (c.profesiones ?? []).some(s => s.id === profId && s.rol === 'cd')
+          ).length
+          if (cdCount >= 3) {
+            for (let i = 0; i < newPersonajes.length; i++) {
+              const cdSlot = (newPersonajes[i].profesiones ?? []).find(s => s.id === profId && s.rol === 'cd')
+              if (cdSlot) {
+                newPersonajes[i] = {
+                  ...newPersonajes[i],
+                  profesiones: (newPersonajes[i].profesiones ?? []).map(s =>
+                    s.id === profId ? { ...s, rol: undefined } : s
+                  )
+                }
+                break
+              }
+            }
+          }
+        }
+
+        const targetIdx = newPersonajes.findIndex(c => c.nombre === nombre)
+        newPersonajes[targetIdx] = {
+          ...newPersonajes[targetIdx],
+          profesiones: newPersonajes[targetIdx].profesiones?.map(s =>
+            s.id === profId ? { ...s, rol: newRol } : s
+          )
+        }
+
+        d = { ...d, personajes: newPersonajes }
+        saveData(d)
+        return d
+      })
+    },
+    reorderProfesiones(orderedIds: string[]) {
+      update(d => {
+        d = { ...d, profesionOrden: orderedIds }
+        saveData(d)
+        return d
+      })
+    },
   }
 
   return store

@@ -22,6 +22,7 @@ export interface ProfesionSlot {
   id: string
   completadas: string[]
   esMainCrafter?: boolean
+  rol?: 'main' | 'cd'
 }
 
 export interface TagEstrategico {
@@ -97,6 +98,7 @@ export interface WowData {
   warbands: Warband[]
   misiones: Mision[]
   keybinds?: Record<string, string>
+  profesionOrden?: string[]
 }
 
 export interface Stats {

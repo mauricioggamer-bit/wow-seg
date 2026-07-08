@@ -20,7 +20,9 @@ function normalizeProfesiones(raw: any): ProfesionSlot[] {
       if (slot && typeof slot === 'object') {
         const id = typeof slot.id === 'string' ? (PROFESION_IDS.has(slot.id) ? slot.id : '') : ''
         const completadas = Array.isArray(slot.completadas) ? slot.completadas.filter((x: any) => typeof x === 'string') : []
-        arr.push({ id, completadas })
+        let rol: 'main' | 'cd' | undefined = slot.rol === 'main' || slot.rol === 'cd' ? slot.rol : undefined
+        if (!rol && slot.esMainCrafter === true) rol = 'main'
+        arr.push({ id, completadas, rol })
       } else if (typeof slot === 'string' && slot) {
         arr.push({ id: PROFESION_IDS.has(slot) ? slot : '', completadas: [] })
       } else {
@@ -74,6 +76,7 @@ function propagateExpansion(data: WowData): WowData {
 export function initSeed(): WowData {
   const data = JSON.parse(JSON.stringify(SEED_DATA)) as WowData
   data._meta.schema_version = 3
+  data.profesionOrden = PROFESIONES.map(p => p.id)
   propagateExpansion(data)
   return data
 }
@@ -104,6 +107,9 @@ export function normalizeData(data: WowData): WowData {
     schema_version: 3,
   }
   data._meta.schema_version = data._meta.schema_version ?? 3
+  if (!data.profesionOrden || data.profesionOrden.length === 0) {
+    data.profesionOrden = PROFESIONES.map(p => p.id)
+  }
 
   const needsMigration = data.personajes.length > 0 && !Array.isArray(data.personajes[0]?.tareas)
   if (needsMigration) {

@@ -1,16 +1,36 @@
 <script lang="ts">
   import { personajesStore, dataStore } from '../stores/data'
+  import { currentWarband } from '../stores/ui'
   import { clsClass } from '../constants'
   import { PROFESIONES, profesionIcon } from '../constants/profesiones'
   import { EXPANSIONS } from '../constants'
   import type { ProfesionSlot } from '../types'
+  import Dialog from '../components/Dialog.svelte'
 
   let { openCharEdit }: { openCharEdit: (name: string) => void } = $props()
 
   let dragOverProf = $state<string | null>(null)
+  let showReorder = $state(false)
+  let reorderList = $state<string[]>([])
+
+  let activeWarband = $derived(
+    $currentWarband && $currentWarband !== '' ? $currentWarband : null
+  )
+
+  let scopedChars = $derived(
+    activeWarband
+      ? $personajesStore.filter(c => c.warband === activeWarband)
+      : [...$personajesStore]
+  )
 
   let allChars = $derived(
-    [...$personajesStore].sort((a, b) => a.nombre.localeCompare(b.nombre))
+    scopedChars.sort((a, b) => a.nombre.localeCompare(b.nombre))
+  )
+
+  let profOrden = $derived($dataStore.profesionOrden ?? PROFESIONES.map(p => p.id))
+
+  let sortedProfesiones = $derived(
+    [...PROFESIONES].sort((a, b) => profOrden.indexOf(a.id) - profOrden.indexOf(b.id))
   )
 
   function getCharsInProf(profId: string) {
@@ -81,6 +101,21 @@
     dataStore.updatePersonaje(charName, { profesiones: base })
   }
 
+  function setRol(charName: string, profId: string, newRol: 'main' | 'cd' | 'none') {
+    dataStore.updateProfesionRol(charName, profId, newRol === 'none' ? undefined : newRol)
+  }
+
+  function profRol(c: { profesiones?: ProfesionSlot[] }, profId: string): 'main' | 'cd' | 'none' {
+    const slot = (c.profesiones ?? []).find(s => s.id === profId)
+    return slot?.rol ?? 'none'
+  }
+
+  function rolCount(profId: string, rol: 'main' | 'cd'): number {
+    return allChars.filter(c =>
+      (c.profesiones ?? []).some(s => s.id === profId && s.rol === rol)
+    ).length
+  }
+
   function expAbbr(id: string): string {
     const map: Record<string, string> = {
       classic: 'C', tww: 'T', dragonflight: 'D', shadowlands: 'S',
@@ -88,6 +123,24 @@
       cata: 'Ct', wotlk: 'Wr', midnight: 'Md', outland: 'O',
     }
     return map[id] || '?'
+  }
+
+  function openReorder() {
+    reorderList = [...profOrden]
+    showReorder = true
+  }
+
+  function saveReorder() {
+    dataStore.reorderProfesiones(reorderList)
+    showReorder = false
+  }
+
+  function moveReorderItem(idx: number, dir: -1 | 1) {
+    const swap = idx + dir
+    if (swap < 0 || swap >= reorderList.length) return
+    const tmp = reorderList[idx]
+    reorderList[idx] = reorderList[swap]
+    reorderList[swap] = tmp
   }
 </script>
 
@@ -122,52 +175,112 @@
     </div>
   </div>
 
-  <div class="prof-grid">
-    {#each PROFESIONES as prof}
-      {@const chars = getCharsInProf(prof.id)}
-      <div
-        class="prof-card"
-        class:drag-over={dragOverProf === prof.id}
-        ondragover={(e) => handleDragOver(e, prof.id)}
-        ondragleave={handleDragLeave}
-        ondrop={(e) => handleDrop(e, prof.id)}
-      >
-        <div class="prof-card-header">
-          <span class="prof-card-icon">{profesionIcon(prof.id)}</span>
-          <span class="prof-card-name">{prof.nombre}</span>
-          <span class="text-sm text-muted">{chars.length}</span>
-        </div>
-        <div class="prof-card-body">
-          {#each chars as c (c.nombre + prof.id)}
-            {@const slot = (c.profesiones ?? []).find(s => s.id === prof.id)}
-            <div
-              class="prof-chip prof-chip-mini"
-              draggable="true"
-              ondragstart={(e) => handleDragStart(e, c.nombre)}
-              role="button"
-              tabindex="0"
-            >
-              <span class="prof-chip-name {clsClass(c.clase)}">{c.nombre}</span>
-              <div class="prof-exp-row">
-                {#each EXPANSIONS as exp}
-                  {@const done = slot?.completadas?.includes(exp.id)}
-                  <button
-                    class="prof-exp-dot"
-                    class:done={done}
-                    title={exp.nombre}
-                    onclick={() => toggleExp(c.nombre, prof.id, exp.id)}
-                  >{expAbbr(exp.id)}</button>
-                {/each}
+  <div class="prof-grid-wrap">
+    <div class="prof-grid-header">
+      <span class="text-xs text-muted">
+        {#if activeWarband}
+          Filtrado por: <strong>{activeWarband}</strong>
+        {:else}
+          Todos los personajes
+        {/if}
+      </span>
+      <button class="wow-btn wow-btn-sm" onclick={openReorder}>⚙️ Orden</button>
+    </div>
+
+    <div class="prof-grid">
+      {#each sortedProfesiones as prof}
+        {@const chars = getCharsInProf(prof.id)}
+        {@const mainCount = rolCount(prof.id, 'main')}
+        {@const cdCount = rolCount(prof.id, 'cd')}
+        <div
+          class="prof-card"
+          class:drag-over={dragOverProf === prof.id}
+          ondragover={(e) => handleDragOver(e, prof.id)}
+          ondragleave={handleDragLeave}
+          ondrop={(e) => handleDrop(e, prof.id)}
+        >
+          <div class="prof-card-header">
+            <span class="prof-card-icon">{profesionIcon(prof.id)}</span>
+            <span class="prof-card-name">{prof.nombre}</span>
+            <span class="prof-card-counts">
+              {#if mainCount > 0}<span class="rol-badge rol-badge-main" title="Main">{mainCount}⭐</span>{/if}
+              {#if cdCount > 0}<span class="rol-badge rol-badge-cd" title="Cooldown">{cdCount}⏱️</span>{/if}
+              <span class="text-xs text-muted">{chars.length}</span>
+            </span>
+          </div>
+          <div class="prof-card-body">
+            {#each chars as c (c.nombre + prof.id)}
+              {@const slot = (c.profesiones ?? []).find(s => s.id === prof.id)}
+              <div
+                class="prof-chip prof-chip-mini"
+                draggable="true"
+                ondragstart={(e) => handleDragStart(e, c.nombre)}
+                role="button"
+                tabindex="0"
+              >
+                {#if slot?.rol === 'main'}
+                  <span class="rol-indicator rol-indicator-main" title="Main">⭐</span>
+                {:else if slot?.rol === 'cd'}
+                  <span class="rol-indicator rol-indicator-cd" title="Cooldown">⏱️</span>
+                {/if}
+                <span class="prof-chip-name {clsClass(c.clase)}">{c.nombre}</span>
+                <select
+                  class="prof-rol-select"
+                  value={profRol(c, prof.id)}
+                  onchange={(e) => setRol(c.nombre, prof.id, (e.target as HTMLSelectElement).value as 'main' | 'cd' | 'none')}
+                  onclick={(e) => e.stopPropagation()}
+                >
+                  <option value="none">—</option>
+                  <option value="main">Main</option>
+                  <option value="cd">CD</option>
+                </select>
+                <button
+                  class="wow-btn wow-btn-icon prof-chip-edit"
+                  onclick={() => openCharEdit(c.nombre)}
+                  title="Editar personaje"
+                >✏️</button>
+                <div class="prof-exp-row">
+                  {#each EXPANSIONS as exp}
+                    {@const done = slot?.completadas?.includes(exp.id)}
+                    <button
+                      class="prof-exp-dot"
+                      class:done={done}
+                      title={exp.nombre}
+                      onclick={() => toggleExp(c.nombre, prof.id, exp.id)}
+                    >{expAbbr(exp.id)}</button>
+                  {/each}
+                </div>
               </div>
-            </div>
-          {:else}
-            <div class="text-xs text-muted prof-empty">Arrastra personajes aquí</div>
-          {/each}
+            {:else}
+              <div class="text-xs text-muted prof-empty">Arrastra personajes aquí</div>
+            {/each}
+          </div>
         </div>
-      </div>
-    {/each}
+      {/each}
+    </div>
   </div>
 </div>
+
+{#if showReorder}
+  <Dialog title="Orden de profesiones" onclose={() => showReorder = false}>
+    <div class="reorder-list">
+      {#each reorderList as id, i}
+        {@const info = PROFESIONES.find(p => p.id === id)}
+        <div class="reorder-item">
+          <span class="reorder-item-info">{profesionIcon(id)} {info?.nombre ?? id}</span>
+          <div class="reorder-item-arrows">
+            <button class="wow-btn wow-btn-icon" disabled={i === 0} onclick={() => moveReorderItem(i, -1)}>↑</button>
+            <button class="wow-btn wow-btn-icon" disabled={i === reorderList.length - 1} onclick={() => moveReorderItem(i, 1)}>↓</button>
+          </div>
+        </div>
+      {/each}
+    </div>
+    <div class="reorder-actions">
+      <button class="wow-btn" onclick={saveReorder}>Guardar orden</button>
+      <button class="wow-btn wow-btn-ghost" onclick={() => showReorder = false}>Cancelar</button>
+    </div>
+  </Dialog>
+{/if}
 
 <style>
   .prof-layout {
@@ -211,9 +324,20 @@
     text-align: center;
     opacity: 0.5;
   }
+  .prof-grid-wrap {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+  .prof-grid-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 2px;
+  }
   .prof-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
     gap: 6px;
   }
   .prof-card {
@@ -246,6 +370,27 @@
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
+  }
+  .prof-card-counts {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    flex-shrink: 0;
+  }
+  .rol-badge {
+    font-size: 0.5rem;
+    padding: 1px 4px;
+    border-radius: 3px;
+    font-weight: 700;
+    line-height: 1.2;
+  }
+  .rol-badge-main {
+    background: var(--gold, #d4af37);
+    color: #1a1a1a;
+  }
+  .rol-badge-cd {
+    background: #3a7bd5;
+    color: #fff;
   }
   .prof-card-body {
     display: flex;
@@ -305,6 +450,21 @@
   .prof-chip:hover .prof-chip-edit {
     opacity: 1;
   }
+  .rol-indicator {
+    font-size: 0.5rem;
+    flex-shrink: 0;
+  }
+  .prof-rol-select {
+    font-size: 0.55rem;
+    padding: 1px 2px;
+    border: 1px solid var(--border-subtle, #444);
+    border-radius: 3px;
+    background: var(--input-bg, #2a2a2a);
+    color: var(--text-primary, #e0e0e0);
+    cursor: pointer;
+    flex-shrink: 0;
+    max-width: 48px;
+  }
   .prof-exp-row {
     display: flex;
     gap: 2px;
@@ -335,5 +495,37 @@
   }
   .prof-exp-dot:hover {
     border-color: var(--text-primary, #e0e0e0);
+  }
+  .reorder-list {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    max-height: 60vh;
+    overflow-y: auto;
+  }
+  .reorder-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 6px 10px;
+    background: var(--input-bg, #2a2a2a);
+    border: 1px solid var(--border-subtle, #3a3a3a);
+    border-radius: var(--r-sm, 4px);
+    font-size: 0.7rem;
+  }
+  .reorder-item-info {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .reorder-item-arrows {
+    display: flex;
+    gap: 4px;
+  }
+  .reorder-actions {
+    display: flex;
+    gap: 6px;
+    justify-content: flex-end;
+    margin-top: 10px;
   }
 </style>

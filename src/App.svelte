@@ -77,34 +77,38 @@
   let moveCharTarget = $state('')
 
   let importText = $state('')
+  let importResult = $state<'idle' | 'success' | 'error'>('idle')
+  let importErrorMsg = $state('')
   let exportSectionsState = $state<ExportSection[]>(['personajes', 'nombres_fantasia', 'profesiones', 'tareas', 'misiones', 'warbands', 'keybinds', 'tags_estrategicos', 'config_leveling'])
   let exportSelectAll = $state(true)
+  let copied = $state(false)
 
   const ALL_EXPORT_SECTIONS: { key: ExportSection; label: string }[] = [
-    { key: 'personajes', label: 'Personajes (nivel, clase, facción, reino, warband, misiones_principales, objetivo)' },
-    { key: 'nombres_fantasia', label: 'Nombres y fantasía (clase, raza, facción, tipo, parecidos, descripción)' },
-    { key: 'profesiones', label: 'Profesiones (slots, expansiones completadas, roles)' },
-    { key: 'tareas', label: 'Tareas de cada personaje' },
+    { key: 'personajes', label: 'Personajes' },
+    { key: 'nombres_fantasia', label: 'Nombres y fantasía' },
+    { key: 'profesiones', label: 'Profesiones' },
+    { key: 'tareas', label: 'Tareas' },
     { key: 'misiones', label: 'Misiones' },
     { key: 'warbands', label: 'Warbands' },
     { key: 'keybinds', label: 'Keybinds' },
     { key: 'tags_estrategicos', label: 'Tags estratégicos' },
-    { key: 'config_leveling', label: 'Configuración de leveling' },
+    { key: 'config_leveling', label: 'Config leveling' },
   ]
 
-  function toggleExportAll() {
-    if (exportSelectAll) {
-      exportSectionsState = ALL_EXPORT_SECTIONS.map(s => s.key)
-    } else {
-      exportSectionsState = []
-    }
+  function handleExportCopy() {
+    navigator.clipboard.writeText(exportJson)
+    copied = true
+    setTimeout(() => copied = false, 2000)
   }
 
-  function toggleExportSection(key: ExportSection) {
-    if (exportSectionsState.includes(key)) {
-      exportSectionsState = exportSectionsState.filter(k => k !== key)
-    } else {
-      exportSectionsState = [...exportSectionsState, key]
+  function handleImport() {
+    importResult = 'idle'
+    try {
+      dataStore.importJSON(importText)
+      importResult = 'success'
+    } catch (e: any) {
+      importResult = 'error'
+      importErrorMsg = e.message
     }
   }
 
@@ -709,37 +713,53 @@
   </Dialog>
 
   <!-- Modal: Import/Export -->
-  <Dialog show={$uiStore.activeModal === 'ImportExport'} title="Importar / Exportar" onclose={() => uiStore.closeModal()}>
+  <Dialog show={$uiStore.activeModal === 'ImportExport'} title="Importar / Exportar" onclose={() => { importResult = 'idle'; importText = ''; uiStore.closeModal() }}>
     {#snippet children()}
-      <div class="form-group">
-        <label>Exportar — selecciona las secciones a incluir</label>
-        <div class="export-checkboxes">
-          <label class="export-checkbox export-checkbox-all">
-            <input type="checkbox" checked={exportSelectAll} onchange={() => { exportSelectAll = !exportSelectAll; toggleExportAll() }} />
-            <strong>{exportSelectAll ? '✓' : ''} Todo</strong>
-          </label>
-          {#each ALL_EXPORT_SECTIONS as sec}
-            <label class="export-checkbox" class:active={exportSectionsState.includes(sec.key)}>
-              <input type="checkbox" checked={exportSectionsState.includes(sec.key)} onchange={() => { exportSelectAll = false; toggleExportSection(sec.key) }} />
-              {sec.label}
+      <div class="export-grid">
+        <div class="export-panel">
+          <h4 class="export-panel-title">Exportar</h4>
+          <div class="export-checkboxes">
+            <label class="export-checkbox export-checkbox-all">
+              <input type="checkbox" checked={exportSelectAll} onchange={() => {
+                exportSelectAll = !exportSelectAll
+                exportSectionsState = exportSelectAll ? ALL_EXPORT_SECTIONS.map(s => s.key) : []
+              }} />
+              <span>Todo</span>
             </label>
-          {/each}
+            {#each ALL_EXPORT_SECTIONS as sec}
+              <label class="export-checkbox">
+                <input type="checkbox" checked={exportSectionsState.includes(sec.key)} onchange={() => {
+                  if (exportSectionsState.includes(sec.key)) {
+                    exportSectionsState = exportSectionsState.filter(k => k !== sec.key)
+                  } else {
+                    exportSectionsState = [...exportSectionsState, sec.key]
+                  }
+                  exportSelectAll = exportSectionsState.length === ALL_EXPORT_SECTIONS.length
+                }} />
+                <span>{sec.label}</span>
+              </label>
+            {/each}
+          </div>
+          <textarea class="export-textarea" readonly value={exportJson} placeholder="Selecciona secciones para generar el JSON"></textarea>
+          <div class="export-actions">
+            <button class="wow-btn wow-btn-sm wow-btn-primary" onclick={handleExportCopy} disabled={exportSectionsState.length === 0}>
+              {copied ? '✓ Copiado' : 'Copiar'}
+            </button>
+          </div>
         </div>
-        <textarea style="width:100%;min-height:120px;font-size:0.6rem;font-family:monospace" readonly value={exportJson}></textarea>
-        <button class="wow-btn wow-btn-sm" style="margin-top:4px" onclick={() => navigator.clipboard.writeText(exportJson)}>Copiar</button>
-      </div>
-      <hr style="border-color:var(--border-subtle,#333);margin:10px 0" />
-      <div class="form-group">
-        <label for="importText">Importar JSON</label>
-        <textarea id="importText" style="width:100%;min-height:80px;font-size:0.6rem;font-family:monospace" bind:value={importText}></textarea>
-        <button class="wow-btn wow-btn-sm wow-btn-danger" style="margin-top:4px" onclick={() => {
-          try {
-            dataStore.importJSON(importText)
-            uiStore.closeModal()
-          } catch (e: any) {
-            alert('Error: ' + e.message)
-          }
-        }}>Importar</button>
+        <div class="export-panel">
+          <h4 class="export-panel-title">Importar</h4>
+          <p class="export-hint">Pega el JSON exportado para restaurar datos. El import es aditivo por secciones.</p>
+          <textarea class="export-textarea" bind:value={importText} placeholder="Pega el JSON aquí..."></textarea>
+          <div class="export-actions">
+            <button class="wow-btn wow-btn-sm wow-btn-danger" onclick={handleImport} disabled={!importText.trim()}>Importar</button>
+          </div>
+          {#if importResult === 'success'}
+            <div class="import-status success">✓ Datos importados correctamente</div>
+          {:else if importResult === 'error'}
+            <div class="import-status error">✗ Error: {importErrorMsg}</div>
+          {/if}
+        </div>
       </div>
     {/snippet}
   </Dialog>
@@ -1234,12 +1254,39 @@
 {/if}
 
 <style>
-  .export-checkboxes {
+  .export-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+  }
+  .export-panel {
     display: flex;
     flex-direction: column;
-    gap: 3px;
-    margin-bottom: 6px;
-    font-size: 0.65rem;
+    gap: 8px;
+  }
+  .export-panel:first-child {
+    border-right: 1px solid var(--border-subtle, #333);
+    padding-right: 12px;
+  }
+  .export-panel-title {
+    margin: 0;
+    font-size: 0.7rem;
+    font-weight: 700;
+    color: var(--text-primary, #e0e0e0);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+  .export-hint {
+    margin: 0;
+    font-size: 0.55rem;
+    color: var(--text-muted, #888);
+    line-height: 1.4;
+  }
+  .export-checkboxes {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 2px 8px;
+    font-size: 0.6rem;
   }
   .export-checkbox {
     display: flex;
@@ -1247,15 +1294,60 @@
     gap: 4px;
     cursor: pointer;
     color: var(--text-muted, #888);
-    transition: color 0.1s;
   }
-  .export-checkbox.active {
+  .export-checkbox input {
+    accent-color: var(--gold, #d4af37);
+  }
+  .export-checkbox:hover {
     color: var(--text-primary, #e0e0e0);
   }
   .export-checkbox-all {
+    grid-column: 1 / -1;
     font-weight: 600;
     padding-bottom: 3px;
     border-bottom: 1px solid var(--border-subtle, #333);
+    margin-bottom: 2px;
+  }
+  .export-checkbox-all span {
+    color: var(--text-primary, #e0e0e0);
+  }
+  .export-textarea {
+    width: 100%;
+    min-height: 100px;
+    font-size: 0.55rem;
+    font-family: monospace;
+    background: var(--input-bg, #1e1e1e);
+    color: var(--text-primary, #e0e0e0);
+    border: 1px solid var(--border-subtle, #333);
+    border-radius: 3px;
+    padding: 6px;
+    resize: vertical;
+    box-sizing: border-box;
+  }
+  .export-textarea:focus {
+    outline: none;
+    border-color: var(--gold, #d4af37);
+  }
+  .export-actions {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .import-status {
+    font-size: 0.55rem;
+    padding: 4px 8px;
+    border-radius: 3px;
+    text-align: center;
+  }
+  .import-status.success {
+    color: #4caf50;
+    background: rgba(76,175,80,0.1);
+    border: 1px solid rgba(76,175,80,0.3);
+  }
+  .import-status.error {
+    color: #ff4444;
+    background: rgba(255,68,68,0.1);
+    border: 1px solid rgba(255,68,68,0.3);
   }
   .warband-layout {
     display: grid;

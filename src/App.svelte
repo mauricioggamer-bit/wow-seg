@@ -58,7 +58,7 @@
 
   $effect(() => {
     if ($authStore.authenticated && !$uiStore.warbandInitialized) {
-      const wbs = $warbandsStore
+      const wbs = [...$warbandsStore].sort((a, b) => (a.orden ?? 0) - (b.orden ?? 0))
       if (wbs.length > 0) uiStore.selectWarband(wbs[0].nombre)
     }
   })
@@ -191,7 +191,7 @@
     editCharFaccion = 'Horda'
     editCharReino = charRealms[0] || 'Raganaros'
     editCharPlaneado = true
-    editCharWarband = ($warbandsStore.filter(w => w.nombre !== 'nada')[0]?.nombre) || ''
+    editCharWarband = ([...$warbandsStore].filter(w => w.nombre !== 'nada').sort((a, b) => (a.orden ?? 0) - (b.orden ?? 0))[0]?.nombre) || ''
     editCharMisionPrincipal = ''
     editCharExpansion = ''
     editCharParecidos = ['', '']
@@ -720,7 +720,7 @@
         </div>
       </div>
       <div style="max-height:300px;overflow-y:auto">
-        {#each $warbandsStore.filter(w => w.nombre !== 'nada') as wb}
+        {#each [...$warbandsStore].filter(w => w.nombre !== 'nada').sort((a, b) => (a.orden ?? 0) - (b.orden ?? 0)) as wb}
           <div style="display:flex;align-items:center;gap:4px;padding:4px 0;border-bottom:1px solid var(--border)">
             <span style="flex:1;font-size:0.7rem">{wb.nombre} ({wb.personajes.length})</span>
             <input type="text" placeholder="Renombrar" bind:value={warbandRenameNew} style="width:100px;font-size:0.55rem;padding:1px 4px" />
@@ -755,7 +755,7 @@
       <div class="form-group">
         <label>Mover a</label>
         <select bind:value={moveCharTarget}>
-          {#each $warbandsStore as wb}
+          {#each [...$warbandsStore].sort((a, b) => (a.orden ?? 0) - (b.orden ?? 0)) as wb}
             <option value={wb.nombre}>{wb.nombre}</option>
           {/each}
         </select>
@@ -820,7 +820,7 @@
           <label>Warband</label>
           <select bind:value={editCharWarband}>
             <option value="nada">Sin Warband</option>
-            {#each $warbandsStore.filter(w => w.nombre !== 'nada') as wb}
+            {#each [...$warbandsStore].filter(w => w.nombre !== 'nada').sort((a, b) => (a.orden ?? 0) - (b.orden ?? 0)) as wb}
               <option value={wb.nombre} disabled={wb.personajes.length >= 4 && wb.nombre !== editCharWarband}>
                 {wb.nombre}{wb.personajes.length >= 4 ? ' (lleno)' : ''}
               </option>

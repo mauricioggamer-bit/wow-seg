@@ -184,8 +184,15 @@ export function normalizeData(data: WowData): WowData {
       nombre,
       personajes,
       tareas_disponibles: existing?.tareas_disponibles ?? [],
+      orden: existing?.orden,
     }
   })
+  let maxOrden = Math.max(0, ...data.warbands.map(w => w.orden ?? -1))
+  for (const wb of data.warbands) {
+    if (wb.orden === undefined) {
+      wb.orden = wb.nombre === 'nada' ? 999 : maxOrden++
+    }
+  }
 
   data._meta.total_personajes = data.personajes.length
   data._meta.total_activos = data.personajes.filter(p => p.planeado_usar).length

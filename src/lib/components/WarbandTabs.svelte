@@ -23,7 +23,7 @@
   >
     Todos ({totalPjs})
   </button>
-  {#each $warbandsStore as wb}
+  {#each [...$warbandsStore].sort((a, b) => (a.orden ?? 0) - (b.orden ?? 0)) as wb}
     <button
       class="warband-tab"
       class:active={$currentWarband === wb.nombre}

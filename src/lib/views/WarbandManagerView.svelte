@@ -1,6 +1,7 @@
 <script lang="ts">
   import { personajesStore, warbandsStore, dataStore } from '../stores/data'
   import { clsClass } from '../constants'
+  import Dialog from '../components/Dialog.svelte'
 
   let { openCharEdit }: { openCharEdit: (name: string) => void } = $props()
 
@@ -9,13 +10,15 @@
   let editingWb = $state<string | null>(null)
   let editingWbName = $state('')
   let newWbName = $state('')
+  let showReorder = $state(false)
+  let reorderList = $state<string[]>([])
 
   let allChars = $derived(
     [...$personajesStore].sort((a, b) => a.nombre.localeCompare(b.nombre))
   )
 
   let wbList = $derived(
-    $warbandsStore.filter(w => w.nombre !== 'nada')
+    $warbandsStore.filter(w => w.nombre !== 'nada').sort((a, b) => (a.orden ?? 0) - (b.orden ?? 0))
   )
 
   let nadaChars = $derived(
@@ -79,6 +82,30 @@
   function getCharsInWb(wbName: string) {
     return allChars.filter(c => c.warband === wbName)
   }
+
+  function openReorder() {
+    reorderList = wbList.map(w => w.nombre)
+    showReorder = true
+  }
+
+  function moveUp(i: number) {
+    if (i <= 0) return
+    const arr = [...reorderList]
+    ;[arr[i - 1], arr[i]] = [arr[i], arr[i - 1]]
+    reorderList = arr
+  }
+
+  function moveDown(i: number) {
+    if (i >= reorderList.length - 1) return
+    const arr = [...reorderList]
+    ;[arr[i], arr[i + 1]] = [arr[i + 1], arr[i]]
+    reorderList = arr
+  }
+
+  function saveReorder() {
+    dataStore.reorderWarbands(reorderList)
+    showReorder = false
+  }
 </script>
 
 <div class="wm-layout">
@@ -127,6 +154,7 @@
         class="wm-create-input"
       />
       <button class="wow-btn wow-btn-sm wow-btn-primary" onclick={addWarband}>Crear</button>
+      <button class="wow-btn wow-btn-sm" onclick={openReorder} title="Ordenar warbands">⚙️</button>
     </div>
 
     {#if wbList.length === 0}
@@ -203,6 +231,24 @@
     {/if}
   </div>
 </div>
+
+<Dialog show={showReorder} title="Ordenar Warbands" onclose={() => showReorder = false}>
+  {#snippet children()}
+    <div style="display:flex;flex-direction:column;gap:4px;min-width:260px">
+      {#each reorderList as name, i (name)}
+        <div style="display:flex;align-items:center;gap:6px;padding:6px 8px;background:var(--input-bg,#2a2a2a);border:1px solid var(--border-subtle,#3a3a3a);border-radius:var(--r-sm,4px)">
+          <span style="flex:1;font-size:0.75rem">{name}</span>
+          <button class="wow-btn wow-btn-icon" onclick={() => moveUp(i)} disabled={i === 0} style="font-size:0.65rem;width:24px;height:24px">⬆</button>
+          <button class="wow-btn wow-btn-icon" onclick={() => moveDown(i)} disabled={i === reorderList.length - 1} style="font-size:0.65rem;width:24px;height:24px">⬇</button>
+        </div>
+      {/each}
+    </div>
+    <div class="modal-footer" style="margin-top:8px">
+      <button class="wow-btn" onclick={() => showReorder = false}>Cancelar</button>
+      <button class="wow-btn wow-btn-primary" onclick={saveReorder}>Guardar orden</button>
+    </div>
+  {/snippet}
+</Dialog>
 
 <style>
   .wm-layout {
@@ -350,8 +396,8 @@
   }
   .wm-wb-body {
     display: flex;
-    flex-wrap: wrap;
-    gap: 4px;
+    flex-direction: column;
+    gap: 3px;
     padding: 6px 10px;
     min-height: 36px;
   }
@@ -381,8 +427,10 @@
     background: var(--bg-hover, #333);
   }
   .wm-chip-inline {
-    padding: 2px 6px;
-    font-size: 0.65rem;
+    padding: 3px 8px;
+    font-size: 0.7rem;
+    width: 100%;
+    box-sizing: border-box;
   }
   .wm-chip-name {
     flex: 1;

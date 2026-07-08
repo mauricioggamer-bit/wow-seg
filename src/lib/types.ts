@@ -65,6 +65,7 @@ export interface Warband {
   nombre: string
   personajes: string[]
   tareas_disponibles: WarbandTareaDisponible[]
+  orden?: number
 }
 
 export interface Mision {

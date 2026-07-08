@@ -362,7 +362,19 @@ addTarea(nombrePersonaje: string, tarea: { nombre: string; tipoContenido?: TipoC
     addWarband(name: string) {
       update(d => {
         if (d.warbands.find(w => w.nombre === name)) return d
-        d.warbands = [...d.warbands, { nombre: name, personajes: [], tareas_disponibles: [] }]
+        const orden = d.warbands.filter(w => w.nombre !== 'nada').length
+        d.warbands = [...d.warbands, { nombre: name, personajes: [], tareas_disponibles: [], orden }]
+        saveData(d)
+        return { ...d }
+      })
+    },
+    reorderWarbands(orderedNames: string[]) {
+      update(d => {
+        const max = orderedNames.length
+        d.warbands = d.warbands.map(w => {
+          const idx = orderedNames.indexOf(w.nombre)
+          return { ...w, orden: idx >= 0 ? idx : (w.nombre === 'nada' ? max : (w.orden ?? 0)) }
+        })
         saveData(d)
         return { ...d }
       })

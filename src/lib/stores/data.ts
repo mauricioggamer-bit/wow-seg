@@ -291,7 +291,7 @@ addTarea(nombrePersonaje: string, tarea: { nombre: string; tipoContenido?: TipoC
           mision_principal: p.mision_principal || null,
           expansion_por_defecto: p.expansion_por_defecto || null,
           parecidos: p.parecidos || [],
-          profesiones: p.profesiones ?? [{ id: '', nivel: 0 }, { id: '', nivel: 0 }],
+          profesiones: p.profesiones ?? [{ id: '', completadas: [] }, { id: '', completadas: [] }],
           planeado_usar: p.planeado_usar ?? true,
           descripcion: p.descripcion ?? '',
           tipo: p.tipo ?? 'funcional',

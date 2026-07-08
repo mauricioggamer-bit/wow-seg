@@ -227,19 +227,19 @@ describe('optimizeStrategy', () => {
         nombre: 'Thrall',
         clase: 'Chamán',
         nivel: 89,
-        profesiones: [{ id: 'herreria', nivel: 100, esMainCrafter: true }],
+        profesiones: [{ id: 'herreria', completadas: [], esMainCrafter: true }],
       }),
       makePersonaje({
         nombre: 'Sylvanas',
         clase: 'Cazadora',
         nivel: 82,
-        profesiones: [{ id: 'alquimia', nivel: 75 }],
+        profesiones: [{ id: 'alquimia', completadas: [] }],
       }),
       makePersonaje({
         nombre: 'Jaina',
         clase: 'Maga',
         nivel: 70,
-        profesiones: [{ id: 'sastreria', nivel: 100, esMainCrafter: true }],
+        profesiones: [{ id: 'sastreria', completadas: [], esMainCrafter: true }],
       }),
       makePersonaje({
         nombre: 'Garrosh',
@@ -250,7 +250,7 @@ describe('optimizeStrategy', () => {
         nombre: 'Valeera',
         clase: 'Pícara',
         nivel: 60,
-        profesiones: [{ id: 'desuello', nivel: 60 }],
+        profesiones: [{ id: 'desuello', completadas: [] }],
       }),
     ]
 

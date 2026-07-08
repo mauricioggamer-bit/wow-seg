@@ -20,7 +20,7 @@ export interface Tarea {
 
 export interface ProfesionSlot {
   id: string
-  nivel: number
+  completadas: string[]
   esMainCrafter?: boolean
 }
 

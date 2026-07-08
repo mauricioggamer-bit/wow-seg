@@ -9,7 +9,7 @@ const RESET_KEY = 'wowseg_last_reset'
 const PROFESION_IDS = new Set(PROFESIONES.map(p => p.id))
 
 function emptyProfesiones(): ProfesionSlot[] {
-  return [{ id: '', nivel: 0 }, { id: '', nivel: 0 }]
+  return [{ id: '', completadas: [] }, { id: '', completadas: [] }]
 }
 
 function normalizeProfesiones(raw: any): ProfesionSlot[] {
@@ -19,16 +19,16 @@ function normalizeProfesiones(raw: any): ProfesionSlot[] {
       const slot = raw[i]
       if (slot && typeof slot === 'object') {
         const id = typeof slot.id === 'string' ? (PROFESION_IDS.has(slot.id) ? slot.id : '') : ''
-        const nivel = typeof slot.nivel === 'number' && !isNaN(slot.nivel) && slot.nivel >= 0 ? slot.nivel : 0
-        arr.push({ id, nivel })
+        const completadas = Array.isArray(slot.completadas) ? slot.completadas.filter((x: any) => typeof x === 'string') : []
+        arr.push({ id, completadas })
       } else if (typeof slot === 'string' && slot) {
-        arr.push({ id: PROFESION_IDS.has(slot) ? slot : '', nivel: 0 })
+        arr.push({ id: PROFESION_IDS.has(slot) ? slot : '', completadas: [] })
       } else {
-        arr.push({ id: '', nivel: 0 })
+        arr.push({ id: '', completadas: [] })
       }
     }
   }
-  while (arr.length < 2) arr.push({ id: '', nivel: 0 })
+  while (arr.length < 2) arr.push({ id: '', completadas: [] })
   return arr.slice(0, 2)
 }
 
@@ -403,8 +403,8 @@ export function importCSV(csv: string): Personaje[] {
       planeado_usar: get('planeado_usar') === 'true' || get('planeado_usar') === '1',
       objetivoNivel: parseInt(get('objetivoNivel')) || 90,
       profesiones: [
-        { id: get('profesion1') || '', nivel: 0 },
-        { id: get('profesion2') || '', nivel: 0 },
+        { id: get('profesion1') || '', completadas: [] },
+        { id: get('profesion2') || '', completadas: [] },
       ],
       tareas: [],
       descripcion: '',

@@ -78,7 +78,7 @@ describe('generateNaiveStrategies', () => {
 
   it('generates distinct orderings across strategies', () => {
     const roster = [
-      makePersonaje({ nombre: 'A', nivel: 70, profesiones: [{ id: 'herreria', nivel: 100, esMainCrafter: true }] }),
+      makePersonaje({ nombre: 'A', nivel: 70, profesiones: [{ id: 'herreria', completadas: [], esMainCrafter: true }] }),
       makePersonaje({ nombre: 'B', nivel: 85 }),
       makePersonaje({ nombre: 'C', nivel: 88 }),
     ]
@@ -91,7 +91,7 @@ describe('generateNaiveStrategies', () => {
   it('places main crafter first in Profesiones strategy', () => {
     const roster = [
       makePersonaje({ nombre: 'A', nivel: 70 }),
-      makePersonaje({ nombre: 'B', nivel: 85, profesiones: [{ id: 'herreria', nivel: 100, esMainCrafter: true }] }),
+      makePersonaje({ nombre: 'B', nivel: 85, profesiones: [{ id: 'herreria', completadas: [], esMainCrafter: true }] }),
       makePersonaje({ nombre: 'C', nivel: 88 }),
     ]
     const strategies = generateNaiveStrategies(roster, defaultConfig)

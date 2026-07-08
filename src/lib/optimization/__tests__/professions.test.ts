@@ -1,7 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import type { Personaje } from '../../types'
 import {
-  getMainCrafterThreshold,
   tieneMainCrafter,
   computeCoberturaProfesiones,
 } from '../professions'
@@ -23,48 +22,38 @@ function makePersonaje(overrides: Partial<Personaje> = {}): Personaje {
   }
 }
 
-describe('getMainCrafterThreshold', () => {
-  it('returns 100 by default', () => {
-    expect(getMainCrafterThreshold()).toBe(100)
-  })
-
-  it('returns custom value when config provided', () => {
-    expect(getMainCrafterThreshold({ maxLevel: 100, mainCrafterLevel: 50 })).toBe(50)
-  })
-})
-
 describe('tieneMainCrafter', () => {
   it('returns false for empty roster', () => {
     expect(tieneMainCrafter([], 'herreria')).toBe(false)
   })
 
   it('returns false when no one has the profession', () => {
-    const roster = [makePersonaje({ profesiones: [{ id: 'mineria', nivel: 100 }] })]
+    const roster = [makePersonaje({ profesiones: [{ id: 'mineria', completadas: ['tww'] }] })]
     expect(tieneMainCrafter(roster, 'herreria')).toBe(false)
   })
 
   it('returns true when a character has esMainCrafter=true', () => {
     const roster = [
       makePersonaje({
-        profesiones: [{ id: 'herreria', nivel: 50, esMainCrafter: true }],
+        profesiones: [{ id: 'herreria', completadas: [], esMainCrafter: true }],
       }),
     ]
     expect(tieneMainCrafter(roster, 'herreria')).toBe(true)
   })
 
-  it('returns true when a character has nivel >= threshold (100)', () => {
+  it('returns true when a character has completadas expansions', () => {
     const roster = [
       makePersonaje({
-        profesiones: [{ id: 'alquimia', nivel: 100 }],
+        profesiones: [{ id: 'alquimia', completadas: ['tww'] }],
       }),
     ]
     expect(tieneMainCrafter(roster, 'alquimia')).toBe(true)
   })
 
-  it('returns false when nivel < threshold and no esMainCrafter', () => {
+  it('returns false when completadas empty and no esMainCrafter', () => {
     const roster = [
       makePersonaje({
-        profesiones: [{ id: 'sastreria', nivel: 50 }],
+        profesiones: [{ id: 'sastreria', completadas: [] }],
       }),
     ]
     expect(tieneMainCrafter(roster, 'sastreria')).toBe(false)
@@ -81,13 +70,13 @@ describe('computeCoberturaProfesiones', () => {
       makePersonaje({
         nombre: 'CharA',
         profesiones: [
-          { id: 'herreria', nivel: 100, esMainCrafter: true },
-          { id: 'mineria', nivel: 100 },
+          { id: 'herreria', completadas: [], esMainCrafter: true },
+          { id: 'mineria', completadas: ['tww'] },
         ],
       }),
       makePersonaje({
         nombre: 'CharB',
-        profesiones: [{ id: 'alquimia', nivel: 100 }],
+        profesiones: [{ id: 'alquimia', completadas: ['tww'] }],
       }),
     ]
     const all = ['herreria', 'mineria', 'alquimia', 'sastreria']

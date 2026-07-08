@@ -96,7 +96,7 @@
   let editCharParecidos = $state<string[]>([])
   let editCharDescripcion = $state('')
   let editCharTipo = $state<'iconico' | 'funcional'>('funcional')
-  let editCharProfesiones = $state<ProfesionSlot[]>([{ id: '', nivel: 0 }, { id: '', nivel: 0 }])
+  let editCharProfesiones = $state<ProfesionSlot[]>([{ id: '', completadas: [] }, { id: '', completadas: [] }])
   let editCharTags = $state<TagEstrategico[]>([])
   let newTagText = $state('')
   let newTagPuntos = $state(0)
@@ -171,8 +171,8 @@
     editCharTipo = c.tipo || 'funcional'
     const rawProf = c.profesiones ?? []
     editCharProfesiones = [
-      { id: rawProf[0]?.id ?? '', nivel: rawProf[0]?.nivel ?? 0 },
-      { id: rawProf[1]?.id ?? '', nivel: rawProf[1]?.nivel ?? 0 },
+      { id: rawProf[0]?.id ?? '', completadas: Array.isArray(rawProf[0]?.completadas) ? [...rawProf[0].completadas] : [] },
+      { id: rawProf[1]?.id ?? '', completadas: Array.isArray(rawProf[1]?.completadas) ? [...rawProf[1].completadas] : [] },
     ]
     editCharTags = c.tagsEstrategicos ? c.tagsEstrategicos.map(t => ({ ...t })) : []
     newTagText = ''
@@ -197,7 +197,7 @@
     editCharParecidos = ['', '']
     editCharDescripcion = ''
     editCharTipo = 'funcional'
-    editCharProfesiones = [{ id: '', nivel: 0 }, { id: '', nivel: 0 }]
+    editCharProfesiones = [{ id: '', completadas: [] }, { id: '', completadas: [] }]
     editCharTags = []
     newTagText = ''
     newTagPuntos = 0
@@ -390,7 +390,7 @@
       { ...editCharProfesiones[1] },
     ]
     const other = idx === 0 ? 1 : 0
-    if (id && arr[other].id === id) arr[other] = { id: '', nivel: 0 }
+    if (id && arr[other].id === id) arr[other] = { id: '', completadas: [] }
     arr[idx] = { ...arr[idx], id }
     editCharProfesiones = arr
   }
@@ -518,7 +518,7 @@
             {:else if $uiStore.currentView === 'fantasia'}
               <FantasiaView />
             {:else if $uiStore.currentView === 'profesion'}
-              <ProfesionView />
+              <ProfesionView {openCharEdit} />
             {:else if $uiStore.currentView === 'keybinds'}
               <KeybindView />
             {:else if $uiStore.currentView === 'leveling'}
@@ -869,17 +869,27 @@
                   >{p.icon} {p.nombre}</option>
                 {/each}
               </select>
-              <input
-                type="number"
-                min="0"
-                placeholder="Nivel"
-                value={editCharProfesiones[idx]?.nivel ?? 0}
-                disabled={!editCharProfesiones[idx]?.id}
-                oninput={(e) => {
-                  const v = parseInt((e.target as HTMLInputElement).value) || 0
-                  editCharProfesiones = editCharProfesiones.map((s, i) => i === idx ? { ...s, nivel: v } : s)
-                }}
-              />
+              <div class="prof-exp-badges">
+                {#each EXPANSIONS as exp}
+                  {@const checked = editCharProfesiones[idx]?.completadas?.includes(exp.id)}
+                  <button
+                    class="prof-exp-badge"
+                    class:done={checked}
+                    disabled={!editCharProfesiones[idx]?.id}
+                    title={exp.nombre}
+                    onclick={() => {
+                      const slot = editCharProfesiones[idx]
+                      if (!slot?.id) return
+                      const next = checked
+                        ? slot.completadas.filter(x => x !== exp.id)
+                        : [...slot.completadas, exp.id]
+                      editCharProfesiones = editCharProfesiones.map((s, i) =>
+                        i === idx ? { ...s, completadas: next } : s
+                      )
+                    }}
+                  >{exp.id === 'classic' ? 'C' : exp.id === 'tww' ? 'T' : exp.id === 'dragonflight' ? 'D' : exp.id === 'shadowlands' ? 'S' : exp.id === 'legion' ? 'L' : exp.id === 'bfa' ? 'B' : exp.id === 'draenor' ? 'W' : exp.id === 'mop' ? 'M' : exp.id === 'cata' ? 'Ct' : exp.id === 'wotlk' ? 'Wr' : exp.id === 'midnight' ? 'Md' : exp.id === 'outland' ? 'O' : '?'}</button>
+                {/each}
+              </div>
             </div>
           {/each}
         </div>
@@ -1199,6 +1209,40 @@
   }
   .detail-sidebar:empty { display: none; }
   .warband-main { min-width: 0; }
+  .prof-exp-badges {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 3px;
+    margin-top: 2px;
+  }
+  .prof-exp-badge {
+    width: 22px;
+    height: 22px;
+    font-size: 0.5rem;
+    font-weight: 700;
+    border: 1px solid var(--border-subtle, #444);
+    border-radius: 3px;
+    background: var(--input-bg, #2a2a2a);
+    color: var(--text-muted, #666);
+    cursor: pointer;
+    padding: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background 0.12s, color 0.12s, border-color 0.12s;
+  }
+  .prof-exp-badge.done {
+    background: var(--gold, #d4af37);
+    color: #1a1a1a;
+    border-color: var(--gold, #d4af37);
+  }
+  .prof-exp-badge:disabled {
+    opacity: 0.3;
+    cursor: default;
+  }
+  .prof-exp-badge:not(:disabled):hover {
+    border-color: var(--text-primary, #e0e0e0);
+  }
   .char-edit-error {
     color: #ff4444;
     font-size: 0.5rem;

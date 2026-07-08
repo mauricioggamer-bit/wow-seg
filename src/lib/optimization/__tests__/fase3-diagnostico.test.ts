@@ -77,7 +77,7 @@ function generateSyntheticRoster(size: number, seed: number): Personaje[] {
     const profIds = ['herreria', 'alquimia', 'sastreria', 'desuello', 'mineria',
       'herboristeria', 'joyeria', 'inscripcion', 'ingenieria', 'encantamiento', 'peleteria']
     const profesiones = i < Math.floor(profIds.length / 2)
-      ? [{ id: profIds[i], nivel: Math.floor(rng() * 100), esMainCrafter: rng() > 0.7 }]
+      ? [{ id: profIds[i], completadas: rng() > 0.5 ? ['tww'] : [], esMainCrafter: rng() > 0.7 }]
       : []
 
     return {
@@ -153,11 +153,11 @@ describe('Fase 3 — Diagnóstico', () => {
   // ─── VERIFICACIÓN: score de orden [Garrosh,Jaina,Sylvanas,Thrall,Valeera] ─
   it('verifica score del orden Garrosh→Jaina→Sylvanas→Thrall→Valeera', () => {
     const roster: Personaje[] = [
-      makePersonaje({ nombre: 'Thrall', clase: 'Chamán', nivel: 89, profesiones: [{ id: 'herreria', nivel: 100, esMainCrafter: true }] }),
-      makePersonaje({ nombre: 'Sylvanas', clase: 'Cazadora', nivel: 82, profesiones: [{ id: 'alquimia', nivel: 75 }] }),
-      makePersonaje({ nombre: 'Jaina', clase: 'Maga', nivel: 70, profesiones: [{ id: 'sastreria', nivel: 100, esMainCrafter: true }] }),
+      makePersonaje({ nombre: 'Thrall', clase: 'Chamán', nivel: 89, profesiones: [{ id: 'herreria', completadas: [], esMainCrafter: true }] }),
+      makePersonaje({ nombre: 'Sylvanas', clase: 'Cazadora', nivel: 82, profesiones: [{ id: 'alquimia', completadas: [] }] }),
+      makePersonaje({ nombre: 'Jaina', clase: 'Maga', nivel: 70, profesiones: [{ id: 'sastreria', completadas: [], esMainCrafter: true }] }),
       makePersonaje({ nombre: 'Garrosh', clase: 'Guerrero', nivel: 55 }),
-      makePersonaje({ nombre: 'Valeera', clase: 'Pícara', nivel: 60, profesiones: [{ id: 'desuello', nivel: 60 }] }),
+      makePersonaje({ nombre: 'Valeera', clase: 'Pícara', nivel: 60, profesiones: [{ id: 'desuello', completadas: [] }] }),
     ]
 
     const ordenGJSTV: Strategy = {
@@ -320,19 +320,19 @@ describe('Fase 3 — Diagnóstico', () => {
         nombre: 'Thrall',
         clase: 'Chamán',
         nivel: 89,
-        profesiones: [{ id: 'herreria', nivel: 100, esMainCrafter: true }],
+        profesiones: [{ id: 'herreria', completadas: [], esMainCrafter: true }],
       }),
       makePersonaje({
         nombre: 'Sylvanas',
         clase: 'Cazadora',
         nivel: 82,
-        profesiones: [{ id: 'alquimia', nivel: 75 }],
+        profesiones: [{ id: 'alquimia', completadas: [] }],
       }),
       makePersonaje({
         nombre: 'Jaina',
         clase: 'Maga',
         nivel: 70,
-        profesiones: [{ id: 'sastreria', nivel: 100, esMainCrafter: true }],
+        profesiones: [{ id: 'sastreria', completadas: [], esMainCrafter: true }],
       }),
       makePersonaje({
         nombre: 'Garrosh',
@@ -343,7 +343,7 @@ describe('Fase 3 — Diagnóstico', () => {
         nombre: 'Valeera',
         clase: 'Pícara',
         nivel: 45,
-        profesiones: [{ id: 'desuello', nivel: 60 }],
+        profesiones: [{ id: 'desuello', completadas: [] }],
       }),
     ]
 

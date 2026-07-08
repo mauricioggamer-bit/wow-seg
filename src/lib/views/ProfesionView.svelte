@@ -34,7 +34,7 @@
       : [...$personajesStore]
   )
 
-  let allChars = $derived(
+  let poolChars = $derived(
     scopedChars
       .filter(c => {
         const filled = (c.profesiones ?? []).filter(s => s.id).length
@@ -46,6 +46,10 @@
         if (aFilled !== bFilled) return aFilled - bFilled
         return a.nombre.localeCompare(b.nombre)
       })
+  )
+
+  let allChars = $derived(
+    scopedChars.sort((a, b) => a.nombre.localeCompare(b.nombre))
   )
 
   let profOrden = $derived($dataStore.profesionOrden ?? PROFESIONES.map(p => p.id))
@@ -195,10 +199,10 @@
   <div class="prof-pool">
     <div class="prof-pool-header">
       <h3>Personajes</h3>
-      <span class="text-sm text-muted">{allChars.length}</span>
+      <span class="text-sm text-muted">{poolChars.length}</span>
     </div>
     <div class="prof-pool-body">
-      {#each allChars as c (c.nombre)}
+      {#each poolChars as c (c.nombre)}
         <div
           class="prof-chip"
           draggable="true"

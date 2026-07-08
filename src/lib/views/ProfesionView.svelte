@@ -35,7 +35,17 @@
   )
 
   let allChars = $derived(
-    scopedChars.sort((a, b) => a.nombre.localeCompare(b.nombre))
+    scopedChars
+      .filter(c => {
+        const filled = (c.profesiones ?? []).filter(s => s.id).length
+        return filled < 2
+      })
+      .sort((a, b) => {
+        const aFilled = (a.profesiones ?? []).filter(s => s.id).length
+        const bFilled = (b.profesiones ?? []).filter(s => s.id).length
+        if (aFilled !== bFilled) return aFilled - bFilled
+        return a.nombre.localeCompare(b.nombre)
+      })
   )
 
   let profOrden = $derived($dataStore.profesionOrden ?? PROFESIONES.map(p => p.id))

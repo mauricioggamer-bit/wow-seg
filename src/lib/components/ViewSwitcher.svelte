@@ -14,6 +14,7 @@
     { key: 'profesion', label: 'Profesiones', icon: '⚒' },
     { key: 'keybinds', label: 'Keybinds', icon: '⌨' },
     { key: 'leveling', label: 'Leveling', icon: '📈' },
+    { key: 'warband-manager', label: 'Gestor WB', icon: '📋' },
   ]
 </script>
 

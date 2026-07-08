@@ -19,6 +19,7 @@
   import ProfesionView from './lib/views/ProfesionView.svelte'
   import KeybindView from './lib/views/KeybindView.svelte'
   import LevelingView from './lib/views/LevelingView.svelte'
+  import WarbandManagerView from './lib/views/WarbandManagerView.svelte'
   import { authStore } from './lib/stores/auth'
   import { uiStore } from './lib/stores/ui'
   import { dataStore, personajesStore, misionesStore, warbandsStore } from './lib/stores/data'
@@ -511,6 +512,8 @@
               <KeybindView />
             {:else if $uiStore.currentView === 'leveling'}
               <LevelingView {openCharEdit} />
+            {:else if $uiStore.currentView === 'warband-manager'}
+              <WarbandManagerView {openCharEdit} />
             {/if}
           </div>
         {/key}

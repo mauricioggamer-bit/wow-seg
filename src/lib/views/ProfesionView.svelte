@@ -29,9 +29,10 @@
   )
 
   let scopedChars = $derived(
-    activeWarband
+    (activeWarband
       ? $personajesStore.filter(c => c.warband === activeWarband)
       : [...$personajesStore]
+    ).filter(c => c.planeado_usar)
   )
 
   let poolChars = $derived(

@@ -103,17 +103,17 @@ export const PERS_RACES_BY_COLUMN: Record<string, string[]> = {
 
 export const EXPANSIONS = [
   { id: 'classic', nombre: 'Classic', color: '#c9a84c', region: 'Azeroth' },
-  { id: 'tww', nombre: 'The War Within', color: '#3FC7EB', region: 'Khaz Algar' },
-  { id: 'dragonflight', nombre: 'Dragonflight', color: '#33937F', region: 'Dragon Isles' },
-  { id: 'shadowlands', nombre: 'Shadowlands', color: '#8788EE', region: 'Shadowlands' },
+  { id: 'outland', nombre: 'The Burning Crusade', color: '#7A4C8F', region: 'Outland' },
+  { id: 'wotlk', nombre: 'Wrath of the Lich King', color: '#3A8BFF', region: 'Northrend' },
+  { id: 'cata', nombre: 'Cataclysm', color: '#E84545', region: 'Azeroth' },
+  { id: 'mop', nombre: 'Mists of Pandaria', color: '#00FF96', region: 'Pandaria' },
+  { id: 'draenor', nombre: 'Warlords of Draenor', color: '#FF7C0A', region: 'Draenor' },
   { id: 'legion', nombre: 'Legion', color: '#A330C9', region: 'Broken Isles' },
   { id: 'bfa', nombre: 'Battle for Azeroth', color: '#C69B3A', region: 'Zandalar / Kul Tiras' },
-  { id: 'draenor', nombre: 'Warlords of Draenor', color: '#FF7C0A', region: 'Draenor' },
-  { id: 'mop', nombre: 'Mists of Pandaria', color: '#00FF96', region: 'Pandaria' },
-  { id: 'cata', nombre: 'Cataclysm', color: '#E84545', region: 'Azeroth' },
-  { id: 'wotlk', nombre: 'Wrath of the Lich King', color: '#3A8BFF', region: 'Northrend' },
+  { id: 'shadowlands', nombre: 'Shadowlands', color: '#8788EE', region: 'Shadowlands' },
+  { id: 'dragonflight', nombre: 'Dragonflight', color: '#33937F', region: 'Dragon Isles' },
+  { id: 'tww', nombre: 'The War Within', color: '#3FC7EB', region: 'Khaz Algar' },
   { id: 'midnight', nombre: 'Midnight', color: '#7B2FBE', region: 'TBD' },
-  { id: 'outland', nombre: 'The Burning Crusade', color: '#7A4C8F', region: 'Outland' },
 ]
 
 export const LABELS: Record<string, string> = { all: 'Todas', weekly: 'Semanal', daily: 'Diaria', farm_libre: 'Farm' }

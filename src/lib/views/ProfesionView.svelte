@@ -10,8 +10,19 @@
   let { openCharEdit }: { openCharEdit: (name: string) => void } = $props()
 
   let dragOverProf = $state<string | null>(null)
+
+  // reorder
   let showReorder = $state(false)
   let reorderList = $state<string[]>([])
+
+  // filters
+  let filterMain = $state(false)
+  let filterCD = $state(false)
+  let filterNone = $state(false)
+  let profType = $state<'todas' | 'recoleccion' | 'artesania'>('todas')
+  let profSlot = $state<'ambas' | 'primera' | 'segunda'>('ambas')
+
+  const RECOLECCION_IDS = new Set(['mineria', 'herboristeria', 'desuello'])
 
   let activeWarband = $derived(
     $currentWarband && $currentWarband !== '' ? $currentWarband : null
@@ -33,8 +44,34 @@
     [...PROFESIONES].sort((a, b) => profOrden.indexOf(a.id) - profOrden.indexOf(b.id))
   )
 
+  let filteredProfesiones = $derived(
+    profType === 'todas'
+      ? sortedProfesiones
+      : sortedProfesiones.filter(p =>
+          profType === 'recoleccion'
+            ? RECOLECCION_IDS.has(p.id)
+            : !RECOLECCION_IDS.has(p.id)
+        )
+  )
+
   function getCharsInProf(profId: string) {
-    return allChars.filter(c => (c.profesiones ?? []).some(s => s.id === profId))
+    let chars = allChars.filter(c => (c.profesiones ?? []).some(s => s.id === profId))
+    if (profSlot !== 'ambas') {
+      const slotIdx = profSlot === 'primera' ? 0 : 1
+      chars = chars.filter(c => (c.profesiones ?? [])[slotIdx]?.id === profId)
+    }
+    const anyRoleFilter = filterMain || filterCD || filterNone
+    if (anyRoleFilter) {
+      chars = chars.filter(c => {
+        const slot = (c.profesiones ?? []).find(s => s.id === profId)
+        const rol = slot?.rol ?? 'none'
+        if (filterMain && rol === 'main') return true
+        if (filterCD && rol === 'cd') return true
+        if (filterNone && rol === 'none') return true
+        return false
+      })
+    }
+    return chars
   }
 
   function getSlotForProf(charName: string, profId: string): number | null {
@@ -111,7 +148,7 @@
   }
 
   function rolCount(profId: string, rol: 'main' | 'cd'): number {
-    return allChars.filter(c =>
+    return getCharsInProf(profId).filter(c =>
       (c.profesiones ?? []).some(s => s.id === profId && s.rol === rol)
     ).length
   }
@@ -187,8 +224,29 @@
       <button class="wow-btn wow-btn-sm" onclick={openReorder}>⚙️ Orden</button>
     </div>
 
+    <div class="prof-filters">
+      <div class="prof-filter-group">
+        <span class="filter-label">Tipo:</span>
+        <label class="filter-radio"><input type="radio" name="profType" bind:group={profType} value="todas" /> Todas</label>
+        <label class="filter-radio"><input type="radio" name="profType" bind:group={profType} value="recoleccion" /> Recolección</label>
+        <label class="filter-radio"><input type="radio" name="profType" bind:group={profType} value="artesania" /> Artesanía</label>
+      </div>
+      <div class="prof-filter-group">
+        <span class="filter-label">Slot:</span>
+        <label class="filter-radio"><input type="radio" name="profSlot" bind:group={profSlot} value="ambas" /> Ambas</label>
+        <label class="filter-radio"><input type="radio" name="profSlot" bind:group={profSlot} value="primera" /> 1ª</label>
+        <label class="filter-radio"><input type="radio" name="profSlot" bind:group={profSlot} value="segunda" /> 2ª</label>
+      </div>
+      <div class="prof-filter-group">
+        <span class="filter-label">Rol:</span>
+        <label class="filter-check"><input type="checkbox" bind:checked={filterMain} /> Main</label>
+        <label class="filter-check"><input type="checkbox" bind:checked={filterCD} /> CD</label>
+        <label class="filter-check"><input type="checkbox" bind:checked={filterNone} /> None</label>
+      </div>
+    </div>
+
     <div class="prof-grid">
-      {#each sortedProfesiones as prof}
+      {#each filteredProfesiones as prof}
         {@const chars = getCharsInProf(prof.id)}
         {@const mainCount = rolCount(prof.id, 'main')}
         {@const cdCount = rolCount(prof.id, 'cd')}
@@ -261,26 +319,24 @@
   </div>
 </div>
 
-{#if showReorder}
-  <Dialog title="Orden de profesiones" onclose={() => showReorder = false}>
-    <div class="reorder-list">
-      {#each reorderList as id, i}
-        {@const info = PROFESIONES.find(p => p.id === id)}
-        <div class="reorder-item">
-          <span class="reorder-item-info">{profesionIcon(id)} {info?.nombre ?? id}</span>
-          <div class="reorder-item-arrows">
-            <button class="wow-btn wow-btn-icon" disabled={i === 0} onclick={() => moveReorderItem(i, -1)}>↑</button>
-            <button class="wow-btn wow-btn-icon" disabled={i === reorderList.length - 1} onclick={() => moveReorderItem(i, 1)}>↓</button>
-          </div>
+<Dialog show={showReorder} title="Orden de profesiones" onclose={() => showReorder = false}>
+  <div class="reorder-list">
+    {#each reorderList as id, i}
+      {@const info = PROFESIONES.find(p => p.id === id)}
+      <div class="reorder-item">
+        <span class="reorder-item-info">{profesionIcon(id)} {info?.nombre ?? id}</span>
+        <div class="reorder-item-arrows">
+          <button class="wow-btn wow-btn-icon" disabled={i === 0} onclick={() => moveReorderItem(i, -1)}>↑</button>
+          <button class="wow-btn wow-btn-icon" disabled={i === reorderList.length - 1} onclick={() => moveReorderItem(i, 1)}>↓</button>
         </div>
-      {/each}
-    </div>
-    <div class="reorder-actions">
-      <button class="wow-btn" onclick={saveReorder}>Guardar orden</button>
-      <button class="wow-btn wow-btn-ghost" onclick={() => showReorder = false}>Cancelar</button>
-    </div>
-  </Dialog>
-{/if}
+      </div>
+    {/each}
+  </div>
+  <div class="reorder-actions">
+    <button class="wow-btn" onclick={saveReorder}>Guardar orden</button>
+    <button class="wow-btn wow-btn-ghost" onclick={() => showReorder = false}>Cancelar</button>
+  </div>
+</Dialog>
 
 <style>
   .prof-layout {
@@ -334,6 +390,39 @@
     align-items: center;
     justify-content: space-between;
     padding: 0 2px;
+  }
+  .prof-filters {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    padding: 6px 8px;
+    background: var(--bg-elevated, #1e1e1e);
+    border: 1px solid var(--border, #333);
+    border-radius: var(--r-md, 6px);
+    font-size: 0.65rem;
+  }
+  .prof-filter-group {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+  }
+  .filter-label {
+    font-weight: 600;
+    color: var(--text-muted, #888);
+    margin-right: 2px;
+  }
+  .filter-radio,
+  .filter-check {
+    display: flex;
+    align-items: center;
+    gap: 2px;
+    cursor: pointer;
+    color: var(--text-primary, #e0e0e0);
+    white-space: nowrap;
+  }
+  .filter-radio input,
+  .filter-check input {
+    margin: 0;
   }
   .prof-grid {
     display: grid;

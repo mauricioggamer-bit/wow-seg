@@ -417,6 +417,11 @@
     if (!editCharName.trim()) return
     const newName = editCharName.trim()
     if (isNewChar) {
+      const wbFull = $warbandsStore.some(w => w.nombre === editCharWarband && w.personajes.length >= 4)
+      if (wbFull) {
+        charEditError = 'Ese warband está lleno (máx. 4 personajes)'
+        return
+      }
       const ok = dataStore.addPersonaje({
         nombre: editCharName.trim(),
         clase: editCharClase,
@@ -450,7 +455,7 @@
           uiStore.selectCharacter(newName)
         }
       }
-      dataStore.updatePersonaje(newName, {
+      const updateOk = dataStore.updatePersonaje(newName, {
         clase: editCharClase,
         raza: editCharRaza,
         nivel: editCharNivel,
@@ -466,6 +471,10 @@
         tipo: editCharTipo,
         tagsEstrategicos: editCharTags,
       })
+      if (!updateOk) {
+        charEditError = 'Ese warband está lleno (máx. 4 personajes)'
+        return
+      }
     }
     charEditError = null
     uiStore.closeModal()
@@ -809,7 +818,9 @@
           <label>Warband</label>
           <select bind:value={editCharWarband}>
             {#each $warbandsStore.filter(w => w.nombre !== 'nada') as wb}
-              <option value={wb.nombre}>{wb.nombre}</option>
+              <option value={wb.nombre} disabled={wb.personajes.length >= 4 && wb.nombre !== editCharWarband}>
+                {wb.nombre}{wb.personajes.length >= 4 ? ' (lleno)' : ''}
+              </option>
             {/each}
           </select>
         </div>
@@ -914,7 +925,18 @@
         <div class="char-edit-error">{charEditError}</div>
       {/if}
       <div class="modal-footer">
-        <button class="wow-btn" onclick={() => { charEditError = null; uiStore.closeModal() }}>Cancelar</button>
+        {#if !isNewChar}
+          <button class="wow-btn wow-btn-danger" onclick={() => {
+            if (confirm(`¿Eliminar definitivamente a "${editCharName}"?`)) {
+              dataStore.deletePersonaje(editCharOriginalName)
+              if ($uiStore.selectedCharacter === editCharOriginalName) uiStore.selectCharacter(null)
+              isNewChar = false
+              uiStore.closeModal()
+            }
+          }}>Eliminar personaje</button>
+        {/if}
+        <div style="flex:1"></div>
+        <button class="wow-btn" onclick={() => { charEditError = null; isNewChar = false; uiStore.closeModal() }}>Cancelar</button>
         <button class="wow-btn wow-btn-primary" onclick={saveCharEdit}>Guardar</button>
       </div>
     {/snippet}

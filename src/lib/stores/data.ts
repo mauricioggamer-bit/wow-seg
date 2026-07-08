@@ -28,16 +28,23 @@ function createDataStore() {
     getPersonaje(nombre: string): Personaje | undefined {
       return get({ subscribe }).personajes.find(p => p.nombre === nombre)
     },
-    updatePersonaje(nombre: string, updates: Partial<Personaje>) {
+    updatePersonaje(nombre: string, updates: Partial<Personaje>): boolean {
+      let ok = true
       update(d => {
         const idx = d.personajes.findIndex(p => p.nombre === nombre)
-        if (idx === -1) return d
+        if (idx === -1) { ok = false; return d }
+        const current = d.personajes[idx]
+        if (updates.warband && updates.warband !== current.warband && updates.warband !== 'nada') {
+          const targetWb = d.warbands.find(w => w.nombre === updates.warband)
+          if (targetWb && targetWb.personajes.length >= 4) { ok = false; return d }
+        }
         d.personajes = d.personajes.map((p, i) => i === idx ? { ...p, ...updates } : p)
         d._meta.total_personajes = d.personajes.length
         d._meta.total_activos = d.personajes.filter(p => p.planeado_usar).length
         saveData(d)
         return { ...d }
       })
+      return ok
     },
     renamePersonaje(oldName: string, newName: string): boolean {
       const trimmed = newName.trim()
@@ -257,6 +264,10 @@ addTarea(nombrePersonaje: string, tarea: { nombre: string; tipoContenido?: TipoC
     },
     addPersonaje(p: { nombre: string; clase: string; raza: string; nivel: number; faccion: string; reino: string; warband: string; mision_principal?: string; expansion_por_defecto?: string | null; parecidos?: string[]; profesiones?: ProfesionSlot[]; planeado_usar?: boolean; descripcion?: string; tipo?: 'iconico' | 'funcional'; tagsEstrategicos?: TagEstrategico[] }): boolean {
       if (get({ subscribe }).personajes.find(x => x.nombre === p.nombre)) return false
+      if (p.warband !== 'nada') {
+        const targetWb = get({ subscribe }).warbands.find(w => w.nombre === p.warband)
+        if (targetWb && targetWb.personajes.length >= 4) return false
+      }
       update(d => {
         const nuevo: Personaje = {
           nombre: p.nombre,
@@ -308,10 +319,15 @@ addTarea(nombrePersonaje: string, tarea: { nombre: string; tipoContenido?: TipoC
         return { ...d }
       })
     },
-    moveCharToWarband(charName: string, newWarband: string) {
+    moveCharToWarband(charName: string, newWarband: string): boolean {
+      let ok = true
       update(d => {
         const char = d.personajes.find(p => p.nombre === charName)
-        if (!char || char.warband === newWarband) return d
+        if (!char || char.warband === newWarband) { ok = false; return d }
+        if (newWarband !== 'nada') {
+          const targetWb = d.warbands.find(w => w.nombre === newWarband)
+          if (targetWb && targetWb.personajes.length >= 4) { ok = false; return d }
+        }
         const oldWarband = char.warband
         d.personajes = d.personajes.map(p => p.nombre === charName ? { ...p, warband: newWarband } : p)
         d.warbands = d.warbands
@@ -330,6 +346,7 @@ addTarea(nombrePersonaje: string, tarea: { nombre: string; tipoContenido?: TipoC
         saveData(d)
         return { ...d }
       })
+      return ok
     },
     addWarband(name: string) {
       update(d => {

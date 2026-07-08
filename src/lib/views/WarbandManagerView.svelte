@@ -29,6 +29,8 @@
   }
 
   function handleDragOver(e: DragEvent, wbName: string) {
+    const wb = wbList.find(w => w.nombre === wbName)
+    if (wb && wb.personajes.length >= 4) return
     e.preventDefault()
     if (e.dataTransfer) e.dataTransfer.dropEffect = 'move'
     dragOverWb = wbName
@@ -128,6 +130,8 @@
           <div
             class="wm-wb"
             class:drag-over={dragOverWb === wb.nombre}
+            class:wm-wb-full={wb.personajes.length >= 4}
+            class:wm-wb-over={wb.personajes.length > 4}
             ondragover={(e) => handleDragOver(e, wb.nombre)}
             ondragleave={() => handleDragLeave(wb.nombre)}
             ondrop={(e) => handleDrop(e, wb.nombre)}
@@ -145,7 +149,7 @@
                 />
               {:else}
                 <span class="wm-wb-name">{wb.nombre}</span>
-                <span class="text-sm text-muted">{wb.personajes.length}</span>
+                <span class="text-sm wm-wb-count" class:over={wb.personajes.length > 4}>{wb.personajes.length}/4</span>
               {/if}
               <div class="wm-wb-actions">
                 {#if editingWb !== wb.nombre}
@@ -179,7 +183,11 @@
                   >✏️</button>
                 </div>
               {:else}
+              {#if wb.personajes.length >= 4}
+                <div class="text-xs text-muted wm-wb-empty">Lleno</div>
+              {:else}
                 <div class="text-xs text-muted wm-wb-empty">Arrastra personajes aquí</div>
+              {/if}
               {/each}
             </div>
           </div>
@@ -268,6 +276,18 @@
   .wm-wb.drag-over {
     border-color: var(--gold, #d4af37);
     box-shadow: 0 0 12px rgba(212, 175, 55, 0.25);
+  }
+  .wm-wb-full {
+    border-color: var(--border-subtle, #2a2a2a);
+    opacity: 0.75;
+  }
+  .wm-wb-over {
+    border-color: var(--horde, #c5365a) !important;
+    opacity: 1;
+  }
+  .wm-wb-count.over {
+    color: var(--horde, #c5365a) !important;
+    font-weight: 700;
   }
   .wm-wb-header {
     display: flex;

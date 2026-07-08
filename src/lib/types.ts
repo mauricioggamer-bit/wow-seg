@@ -274,3 +274,22 @@ export interface BackupData {
     reset_last: string | null
   }
 }
+
+export type ExportSection =
+  | 'personajes'
+  | 'nombres_fantasia'
+  | 'profesiones'
+  | 'tareas'
+  | 'misiones'
+  | 'warbands'
+  | 'keybinds'
+  | 'tags_estrategicos'
+  | 'config_leveling'
+
+export interface ExportPayload {
+  _exportType: 'wowseg_export'
+  version: number
+  exportedAt: string
+  sections: ExportSection[]
+  data: Partial<WowData>
+}

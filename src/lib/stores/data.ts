@@ -1,7 +1,8 @@
 import { writable, derived, get } from 'svelte/store'
 import type { WowData, Personaje, Warband, Mision, Stats, ProfesionSlot, TagEstrategico } from '../types'
 import type { TipoContenido } from '../constants/wowContent'
-import { loadData, saveData, normalizeData, computeStats as computeStatsFn, exportJSON as exportJSONFn, exportPersonajesJSON as exportPersonajesJSONFn, exportFullBackup as exportFullBackupFn, initSeed as initSeedFn, exportCSV as exportCSVFn, importCSV as importCSVFn } from '../data/persistence'
+import type { ExportSection } from '../types'
+import { loadData, saveData, normalizeData, computeStats as computeStatsFn, exportJSON as exportJSONFn, exportPersonajesJSON as exportPersonajesJSONFn, exportFullBackup as exportFullBackupFn, initSeed as initSeedFn, exportCSV as exportCSVFn, importCSV as importCSVFn, exportSections as exportSectionsFn, importSections as importSectionsFn } from '../data/persistence'
 import { checkWeeklyReset, resetDailyTasks } from '../data/weekly-reset'
 import { getKeybindString as getKeybindStringFn, keybindKey } from '../data/keybindDefaults'
 
@@ -410,14 +411,15 @@ addTarea(nombrePersonaje: string, tarea: { nombre: string; tipoContenido?: TipoC
       })
     },
     importJSON(jsonStr: string) {
-      const parsed = JSON.parse(jsonStr) as WowData
-      if (!parsed.personajes || !parsed.warbands || !parsed._meta) {
-        throw new Error('Estructura inválida')
-      }
-      normalizeData(parsed)
-      checkWeeklyReset(parsed)
-      set(parsed)
-      saveData(parsed)
+      update(d => {
+        const result = importSectionsFn(jsonStr, d)
+        set(result)
+        saveData(result)
+        return result
+      })
+    },
+    exportSections(sections: ExportSection[]): string {
+      return exportSectionsFn(get({ subscribe }), sections)
     },
     importFullBackup(jsonStr: string) {
       const pkg = JSON.parse(jsonStr)

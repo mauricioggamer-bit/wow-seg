@@ -30,7 +30,7 @@
   import { PROFESIONES } from './lib/constants/profesiones'
   import type { TipoContenido, DungeonDifficulty, RaidDifficulty } from './lib/constants/wowContent'
   import { fade } from 'svelte/transition'
-  import type { Tarea, Mision, ProfesionSlot, TagEstrategico, ViewType } from './lib/types'
+  import type { Tarea, Mision, ProfesionSlot, TagEstrategico, ViewType, ExportSection } from './lib/types'
 
   let charOpts = $derived($personajesStore.map(p => p.nombre))
 
@@ -77,6 +77,42 @@
   let moveCharTarget = $state('')
 
   let importText = $state('')
+  let exportSectionsState = $state<ExportSection[]>(['personajes', 'nombres_fantasia', 'profesiones', 'tareas', 'misiones', 'warbands', 'keybinds', 'tags_estrategicos', 'config_leveling'])
+  let exportSelectAll = $state(true)
+
+  const ALL_EXPORT_SECTIONS: { key: ExportSection; label: string }[] = [
+    { key: 'personajes', label: 'Personajes (nivel, clase, facción, reino, warband, misiones_principales, objetivo)' },
+    { key: 'nombres_fantasia', label: 'Nombres y fantasía (clase, raza, facción, tipo, parecidos, descripción)' },
+    { key: 'profesiones', label: 'Profesiones (slots, expansiones completadas, roles)' },
+    { key: 'tareas', label: 'Tareas de cada personaje' },
+    { key: 'misiones', label: 'Misiones' },
+    { key: 'warbands', label: 'Warbands' },
+    { key: 'keybinds', label: 'Keybinds' },
+    { key: 'tags_estrategicos', label: 'Tags estratégicos' },
+    { key: 'config_leveling', label: 'Configuración de leveling' },
+  ]
+
+  function toggleExportAll() {
+    if (exportSelectAll) {
+      exportSectionsState = ALL_EXPORT_SECTIONS.map(s => s.key)
+    } else {
+      exportSectionsState = []
+    }
+  }
+
+  function toggleExportSection(key: ExportSection) {
+    if (exportSectionsState.includes(key)) {
+      exportSectionsState = exportSectionsState.filter(k => k !== key)
+    } else {
+      exportSectionsState = [...exportSectionsState, key]
+    }
+  }
+
+  let exportJson = $derived(
+    exportSectionsState.length > 0
+      ? dataStore.exportSections(exportSectionsState)
+      : '// Selecciona al menos una sección para exportar'
+  )
   let gistToken = $state('')
   let gistId = $state('')
   let sbInterval = $state(60)
@@ -676,19 +712,23 @@
   <Dialog show={$uiStore.activeModal === 'ImportExport'} title="Importar / Exportar" onclose={() => uiStore.closeModal()}>
     {#snippet children()}
       <div class="form-group">
-        <label>Exportar datos completos</label>
-        <textarea style="width:100%;min-height:120px;font-size:0.6rem;font-family:monospace" readonly value={dataStore.exportJSON()}></textarea>
-        <button class="wow-btn wow-btn-sm" style="margin-top:4px" onclick={() => {
-          navigator.clipboard.writeText(dataStore.exportJSON())
-        }}>Copiar</button>
+        <label>Exportar — selecciona las secciones a incluir</label>
+        <div class="export-checkboxes">
+          <label class="export-checkbox export-checkbox-all">
+            <input type="checkbox" checked={exportSelectAll} onchange={() => { exportSelectAll = !exportSelectAll; toggleExportAll() }} />
+            <strong>{exportSelectAll ? '✓' : ''} Todo</strong>
+          </label>
+          {#each ALL_EXPORT_SECTIONS as sec}
+            <label class="export-checkbox" class:active={exportSectionsState.includes(sec.key)}>
+              <input type="checkbox" checked={exportSectionsState.includes(sec.key)} onchange={() => { exportSelectAll = false; toggleExportSection(sec.key) }} />
+              {sec.label}
+            </label>
+          {/each}
+        </div>
+        <textarea style="width:100%;min-height:120px;font-size:0.6rem;font-family:monospace" readonly value={exportJson}></textarea>
+        <button class="wow-btn wow-btn-sm" style="margin-top:4px" onclick={() => navigator.clipboard.writeText(exportJson)}>Copiar</button>
       </div>
-      <div class="form-group">
-        <label>Exportar solo personajes (sin misiones)</label>
-        <textarea style="width:100%;min-height:120px;font-size:0.6rem;font-family:monospace" readonly value={dataStore.exportPersonajesJSON()}></textarea>
-        <button class="wow-btn wow-btn-sm" style="margin-top:4px" onclick={() => {
-          navigator.clipboard.writeText(dataStore.exportPersonajesJSON())
-        }}>Copiar</button>
-      </div>
+      <hr style="border-color:var(--border-subtle,#333);margin:10px 0" />
       <div class="form-group">
         <label for="importText">Importar JSON</label>
         <textarea id="importText" style="width:100%;min-height:80px;font-size:0.6rem;font-family:monospace" bind:value={importText}></textarea>
@@ -1194,6 +1234,29 @@
 {/if}
 
 <style>
+  .export-checkboxes {
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+    margin-bottom: 6px;
+    font-size: 0.65rem;
+  }
+  .export-checkbox {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    cursor: pointer;
+    color: var(--text-muted, #888);
+    transition: color 0.1s;
+  }
+  .export-checkbox.active {
+    color: var(--text-primary, #e0e0e0);
+  }
+  .export-checkbox-all {
+    font-weight: 600;
+    padding-bottom: 3px;
+    border-bottom: 1px solid var(--border-subtle, #333);
+  }
   .warband-layout {
     display: grid;
     grid-template-columns: 1fr;

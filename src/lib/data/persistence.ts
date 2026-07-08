@@ -1,4 +1,4 @@
-import type { WowData, Stats, BackupData, ProfesionSlot, Personaje, TagEstrategico } from '../types'
+import type { WowData, Stats, BackupData, ProfesionSlot, Personaje, TagEstrategico, ExportSection, ExportPayload } from '../types'
 import { SEED_DATA } from './seed'
 import { checkWeeklyReset } from './weekly-reset'
 import { PROFESIONES } from '../constants/profesiones'
@@ -301,6 +301,152 @@ export function exportJSON(data: WowData): string {
 
 export function exportPersonajesJSON(data: WowData): string {
   return JSON.stringify(data.personajes, null, 2)
+}
+
+function pickPersonajeFields(p: Personaje, sections: ExportSection[]): any {
+  const out: any = {}
+  if (sections.includes('personajes') || sections.includes('nombres_fantasia') || sections.includes('profesiones') || sections.includes('tareas') || sections.includes('tags_estrategicos')) {
+    out.nombre = p.nombre
+  }
+  if (sections.includes('personajes')) {
+    out.clase = p.clase
+    out.nivel = p.nivel
+    out.faccion = p.faccion
+    out.raza = p.raza
+    out.reino = p.reino
+    out.warband = p.warband
+    out.mision_principal = p.mision_principal
+    out.expansion_por_defecto = p.expansion_por_defecto
+    out.planeado_usar = p.planeado_usar
+    out.descripcion = p.descripcion
+    out.tipo = p.tipo
+    out.objetivoNivel = p.objetivoNivel
+    out.timewaysPct = p.timewaysPct
+  }
+  if (sections.includes('nombres_fantasia')) {
+    out.clase = p.clase
+    out.raza = p.raza
+    out.faccion = p.faccion
+    out.tipo = p.tipo
+    out.parecidos = p.parecidos
+    out.descripcion = p.descripcion
+  }
+  if (sections.includes('profesiones')) {
+    out.profesiones = p.profesiones
+  }
+  if (sections.includes('tareas')) {
+    out.tareas = p.tareas
+  }
+  if (sections.includes('tags_estrategicos')) {
+    out.tagsEstrategicos = p.tagsEstrategicos
+  }
+  return out
+}
+
+export function exportSections(data: WowData, sections: ExportSection[]): string {
+  const payload: ExportPayload = {
+    _exportType: 'wowseg_export',
+    version: 1,
+    exportedAt: new Date().toISOString(),
+    sections,
+    data: {},
+  }
+
+  const needsPersonajes = sections.some(s =>
+    ['personajes', 'nombres_fantasia', 'profesiones', 'tareas', 'tags_estrategicos'].includes(s)
+  )
+  if (needsPersonajes) {
+    payload.data.personajes = data.personajes.map(p => pickPersonajeFields(p, sections)) as Personaje[]
+  }
+
+  if (sections.includes('personajes') || sections.includes('warbands')) {
+    payload.data.warbands = data.warbands
+  }
+  if (sections.includes('misiones')) {
+    payload.data.misiones = data.misiones
+  }
+  if (sections.includes('keybinds')) {
+    payload.data.keybinds = data.keybinds
+  }
+  if (sections.includes('config_leveling')) {
+    payload.data._meta = data._meta
+  }
+
+  return JSON.stringify(payload, null, 2)
+}
+
+export function importSections(jsonStr: string, current: WowData): WowData {
+  const parsed = JSON.parse(jsonStr)
+
+  if (parsed._exportType === 'wowseg_export') {
+    const p = parsed as ExportPayload
+    const sections = p.sections
+    const incoming = p.data
+    const result = { ...current }
+
+    if (sections.includes('personajes')) {
+      result.personajes = (incoming.personajes ?? []) as Personaje[]
+    } else {
+      const incomingChars = (incoming.personajes ?? []) as Personaje[]
+      const charMap = new Map(incomingChars.map(c => [c.nombre, c]))
+      if (incomingChars.length > 0) {
+        result.personajes = result.personajes.map(existing => {
+          const matching = charMap.get(existing.nombre)
+          if (!matching) return existing
+          const out: any = { ...existing }
+          if (sections.includes('nombres_fantasia')) {
+            out.clase = matching.clase; out.raza = matching.raza; out.faccion = matching.faccion
+            out.tipo = matching.tipo; out.parecidos = matching.parecidos; out.descripcion = matching.descripcion
+          }
+          if (sections.includes('profesiones')) out.profesiones = matching.profesiones
+          if (sections.includes('tareas')) out.tareas = matching.tareas
+          if (sections.includes('tags_estrategicos')) out.tagsEstrategicos = matching.tagsEstrategicos
+          return out as Personaje
+        })
+      }
+    }
+
+    if (sections.includes('misiones')) {
+      result.misiones = incoming.misiones ?? []
+    }
+    if (sections.includes('warbands')) {
+      result.warbands = incoming.warbands ?? []
+      if (sections.includes('personajes')) {
+        for (const p of result.personajes) {
+          const inWb = (incoming.personajes as Personaje[])?.find(x => x.nombre === p.nombre)
+          if (inWb?.warband) p.warband = inWb.warband
+        }
+      }
+    }
+    if (sections.includes('keybinds')) {
+      result.keybinds = { ...result.keybinds, ...(incoming.keybinds ?? {}) }
+    }
+    if (sections.includes('config_leveling')) {
+      result._meta = { ...result._meta, ...incoming._meta }
+    }
+
+    return normalizeData(result)
+  }
+
+  const data: Partial<WowData> = Array.isArray(parsed)
+    ? { personajes: parsed as Personaje[], warbands: [], misiones: [] }
+    : (parsed as WowData)
+  if (!Array.isArray(data.personajes)) {
+    throw new Error('Estructura inválida: falta el array de personajes')
+  }
+  normalizeData(data as WowData)
+  if (!data.warbands || data.warbands.length === 0) {
+    const grouped = new Map<string, string[]>()
+    for (const p of data.personajes) {
+      const wb = p.warband || ''
+      if (!wb) continue
+      if (!grouped.has(wb)) grouped.set(wb, [])
+      grouped.get(wb)!.push(p.nombre)
+    }
+    data.warbands = [...grouped.entries()].map(([nombre, personajes]) => ({ nombre, personajes, tareas_disponibles: [] }))
+  }
+  checkWeeklyReset(data as WowData)
+  return data as WowData
 }
 
 export function exportFullBackup(data: WowData): string {

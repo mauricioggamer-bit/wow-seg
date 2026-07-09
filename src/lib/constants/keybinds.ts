@@ -31,8 +31,8 @@ export interface KeybindCategory {
 }
 
 export const KEYBIND_CATEGORIES: KeybindCategory[] = [
-  { key: 'COMBAT', label: 'Combat', color: '#e53e3e', keybinds: ['1','2','3','4','Q','E','R','F'] },
-  { key: 'EXTRAS', label: 'Extra Keys', color: '#4a5568', keybinds: ['T','G','-','='] },
+  { key: 'COMBAT', label: 'Combat', color: '#e53e3e', keybinds: ['1','2','3','4','Q','E','R','F','T','G','-','='] },
+  { key: 'EXTRAS', label: 'Extra Keys', color: '#4a5568', keybinds: [] },
   { key: 'DEFENSIVE', label: 'Defensive', color: '#3182ce', keybinds: ['Z','SHIFT-Z','CTRL-Z'] },
   { key: 'MOVEMENT', label: 'Movement', color: '#38a169', keybinds: ['X','SHIFT-X','CTRL-X'] },
   { key: 'CC', label: 'CC / Interrupt', color: '#805ad5', keybinds: ['C','SHIFT-C','CTRL-C','V','SHIFT-V','CTRL-V'] },
@@ -60,8 +60,8 @@ export interface KeybindZone {
 }
 
 export const KEYBIND_LAYOUT: KeybindZone[] = [
-  { label: 'Combat', categoryKey: 'COMBAT', keybinds: ['1','2','3','4','Q','E','R','F'] },
-  { label: 'Extras', categoryKey: 'EXTRAS', keybinds: ['T','G','-','='] },
+  { label: 'Combat', categoryKey: 'COMBAT', keybinds: ['1','2','3','4','Q','E','R','F','T','G','-','='] },
+  { label: 'Extras', categoryKey: 'EXTRAS', keybinds: [] },
   { label: 'Z-Row', categoryKey: 'DEFENSIVE', keybinds: ['Z','SHIFT-Z','CTRL-Z','X','SHIFT-X','CTRL-X','C','SHIFT-C','CTRL-C','V','SHIFT-V','CTRL-V'] },
   { label: 'Shift Row', categoryKey: 'COMBAT_SHIFT', keybinds: ['SHIFT-1','SHIFT-2','SHIFT-3','SHIFT-4','SHIFT-Q','SHIFT-E','SHIFT-R','SHIFT-F','SHIFT-T','SHIFT-G','SHIFT-B'] },
   { label: 'Ctrl Row', categoryKey: 'SELF_HEAL', keybinds: ['CTRL-1','CTRL-2','CTRL-3','CTRL-4','CTRL-Q','CTRL-E','CTRL-R','CTRL-F','CTRL-T','CTRL-G','CTRL-B'] },

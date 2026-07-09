@@ -10,8 +10,7 @@
   import WarbandView from './lib/views/WarbandView.svelte'
   import AllTasksView from './lib/views/AllTasksView.svelte'
   import TareasView from './lib/views/TareasView.svelte'
-  import PriorityView from './lib/views/PriorityView.svelte'
-  import TimeView from './lib/views/TimeView.svelte'
+  import PrioridadTiempoView from './lib/views/PrioridadTiempoView.svelte'
   import PersonajesView from './lib/views/PersonajesView.svelte'
   import MapaView from './lib/views/MapaView.svelte'
   import FantasiaView from './lib/views/FantasiaView.svelte'
@@ -37,7 +36,7 @@
 
   const VIEW_KEYS: Record<string, string> = {
     '1': 'warband', '2': 'tareas',
-    '4': 'priority', '5': 'time', '6': 'personajes',
+    '4': 'tasks', '6': 'personajes',
     '7': 'mapa', '8': 'fantasia', '9': 'profesion',
     '0': 'leveling',
   }
@@ -481,10 +480,8 @@
               <WarbandView />
             {:else if $uiStore.currentView === 'tareas'}
               <TareasView {openTaskEdit} {openTaskNew} />
-            {:else if $uiStore.currentView === 'priority'}
-              <PriorityView {openTaskEdit} />
-            {:else if $uiStore.currentView === 'time'}
-              <TimeView {openTaskEdit} />
+            {:else if $uiStore.currentView === 'tasks'}
+              <PrioridadTiempoView {openTaskEdit} />
             {:else if $uiStore.currentView === 'personajes'}
               <PersonajesView {openCharEdit} {openNewChar} />
             {:else if $uiStore.currentView === 'mapa'}

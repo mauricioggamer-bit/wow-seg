@@ -6,7 +6,7 @@
     uiStore.selectWarband(nombre ?? '')
   }
 
-  let show = $derived($currentView === 'warband' || $currentView === 'fantasia' || $currentView === 'tareas' || $currentView === 'profesion' || $currentView === 'leveling')
+  let show = $derived($currentView === 'warband' || $currentView === 'fantasia' || $currentView === 'tareas' || $currentView === 'tasks' || $currentView === 'profesion' || $currentView === 'leveling')
 
   let totalPjs = $derived($personajesStore.filter(p => p.planeado_usar).length)
 

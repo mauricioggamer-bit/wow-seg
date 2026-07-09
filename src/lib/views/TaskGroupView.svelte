@@ -5,10 +5,12 @@
   let {
     filterType,
     filterOptions,
+    panel = false,
     openTaskEdit,
   }: {
     filterType: 'prioridad' | 'tiempo'
     filterOptions: { key: string; label: string }[]
+    panel?: boolean
     openTaskEdit?: (char: string, taskId: string) => void
   } = $props()
 
@@ -58,7 +60,7 @@
   let totalDone = $derived(items.filter(i => i.hecho).length)
 </script>
 
-<div class="dash-minimal">
+<div class="dash-minimal" class:panel-mode={panel} style={panel ? 'max-width:none;margin:0' : ''}>
   <div class="dash-controls" style="margin-bottom:4px">
     <span class="dash-label">{filterType === 'prioridad' ? 'Prioridad:' : 'Tiempo:'}</span>
     <button class="wow-btn wow-btn-sm" class:wow-btn-primary={!activeFilter} onclick={() => activeFilter = ''}>Todas</button>

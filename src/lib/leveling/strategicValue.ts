@@ -1,6 +1,24 @@
 import type { Personaje, LevelingConfig, StrategicValueResult } from '../types'
 import { calculateForCharacter, getEffectiveXpPerDungeon, getXpRemaining } from './calculator'
-import { CLASS_STRATEGIC_VALUE, RACE_STRATEGIC_VALUE, STAR_THRESHOLDS } from '../constants'
+import { CLASS_STRATEGIC_VALUE, RACE_STRATEGIC_VALUE, PROFESSION_STRATEGIC_VALUE, STAR_THRESHOLDS } from '../constants'
+import { dataStore } from '../stores/data'
+
+function getClassValue(className: string): number {
+  return dataStore.getStrategicClassValue(className) ?? CLASS_STRATEGIC_VALUE[className] ?? 0
+}
+function getRaceValue(race: string): number {
+  return dataStore.getStrategicRaceValue(race) ?? RACE_STRATEGIC_VALUE[race] ?? 0
+}
+function getProfessionValue(id: string): number {
+  return dataStore.getStrategicProfessionValue(id) ?? PROFESSION_STRATEGIC_VALUE[id] ?? 0
+}
+function getComponentWeight(key: string): number {
+  return dataStore.getStrategicComponentWeight(key) ?? 0
+}
+function getEffectiveWeight(key: string, defaultWeight: number): number {
+  const override = getComponentWeight(key)
+  return override > 0 ? override : defaultWeight
+}
 
 export function calculateStrategicValue(
   personaje: Personaje,
@@ -24,9 +42,10 @@ export function calculateStrategicValue(
       bonus8089: 0,
       classValue: 0,
       raceValue: 0,
-      tagsValue: 0,
-      totalScore: 0,
-      reasons: ['Nivel 90 alcanzado'],
+    tagsValue: 0,
+    taskValue: 0,
+    totalScore: 0,
+    reasons: ['Nivel 90 alcanzado'],
     }
   }
 
@@ -46,12 +65,12 @@ export function calculateStrategicValue(
     }
   }
 
-  const hasProfessions = (personaje.profesiones?.some(pr => pr.id) ?? false)
+  const profIds = personaje.profesiones?.map(pr => pr.id).filter(Boolean) ?? []
   let professionValue = 0
-  if (hasProfessions) {
-    professionValue = 1
-    const profNames = personaje.profesiones?.map(pr => pr.id).join(', ') ?? ''
-    reasons.push(`Tiene profesiones: ${profNames}`)
+  if (profIds.length > 0) {
+    professionValue = profIds.reduce((sum, id) => sum + getProfessionValue(id), 0)
+    const profNames = profIds.join(', ')
+    reasons.push(`Profesiones (${profNames}): +${professionValue} pts`)
   }
 
   const closenessTo90 = personaje.nivel >= 90 ? 1 : Math.max(0, (personaje.nivel - 10) / 80)
@@ -102,33 +121,48 @@ export function calculateStrategicValue(
   const bonusSub90 = personaje.nivel < 90 ? 1 : 0
   const bonus8089 = (personaje.nivel >= 80 && personaje.nivel < 90) ? 1 : 0
 
-  const classValue = CLASS_STRATEGIC_VALUE[personaje.clase] ?? 0
+  const classValue = getClassValue(personaje.clase)
   if (classValue > 0) {
     reasons.push(`Clase ${personaje.clase}: +${classValue} pts`)
   }
 
-  const raceValue = RACE_STRATEGIC_VALUE[personaje.raza] ?? 0
+  const raceValue = getRaceValue(personaje.raza)
   if (raceValue > 0) {
     reasons.push(`Raza ${personaje.raza}: +${raceValue} pts`)
   }
 
   const tagsValue = (personaje.tagsEstrategicos ?? []).reduce((sum, t) => sum + t.puntos, 0)
+
+  const taskValue = (personaje.tareas ?? []).reduce((sum, t) => sum + (t.puntos ?? 0), 0)
+  if (taskValue > 0) {
+    reasons.push(`Tareas: +${taskValue} pts`)
+  }
   for (const tag of (personaje.tagsEstrategicos ?? [])) {
     reasons.push(`Tag "${tag.texto}": +${tag.puntos} pts`)
   }
 
+  const wWarband = getEffectiveWeight('warbandImpact', 10)
+  const wProfession = getEffectiveWeight('professionValue', 15)
+  const wCloseness90 = getEffectiveWeight('closenessTo90', 25)
+  const wClosenessObj = getEffectiveWeight('closenessToObjective', 25)
+  const wFutureXp = getEffectiveWeight('futureXpIncrease', 8)
+  const wRemaining = getEffectiveWeight('remainingWeight', 10)
+  const wBonusSub90 = getEffectiveWeight('bonusSub90', 10)
+  const wBonus8089 = getEffectiveWeight('bonus8089', 15)
+
   let totalScore = 0
-  totalScore += warbandImpact * 10
-  totalScore += professionValue * 15
-  totalScore += closenessTo90 * 25
-  totalScore += closenessToObjective * 25
-  totalScore += futureXpIncrease * 8
-  totalScore += remainingWeight * 10
-  totalScore += bonusSub90 * 10
-  totalScore += bonus8089 * 15
+  totalScore += warbandImpact * wWarband
+  totalScore += professionValue * wProfession
+  totalScore += closenessTo90 * wCloseness90
+  totalScore += closenessToObjective * wClosenessObj
+  totalScore += futureXpIncrease * wFutureXp
+  totalScore += remainingWeight * wRemaining
+  totalScore += bonusSub90 * wBonusSub90
+  totalScore += bonus8089 * wBonus8089
   totalScore += classValue
   totalScore += raceValue
   totalScore += tagsValue
+  totalScore += taskValue
   totalScore = Math.min(100, totalScore)
 
   let stars = 1
@@ -153,6 +187,7 @@ export function calculateStrategicValue(
     classValue,
     raceValue,
     tagsValue,
+    taskValue,
     totalScore,
     reasons,
   }

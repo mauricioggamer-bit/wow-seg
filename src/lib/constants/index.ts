@@ -56,6 +56,13 @@ export const CLASS_STRATEGIC_VALUE: Record<string, number> = {
   'Brujo': 7, 'Monje': 8, 'Druida': 10, 'DH': 6, 'Evocadora': 8,
 }
 
+export const PROFESSION_STRATEGIC_VALUE: Record<string, number> = {
+  'mineria': 5, 'herboristeria': 3, 'desuello': 3,
+  'herreria': 8, 'peleteria': 6, 'sastreria': 6,
+  'alquimia': 7, 'encantamiento': 7, 'ingenieria': 8,
+  'joyeria': 6, 'inscripcion': 5,
+}
+
 export const RACE_STRATEGIC_VALUE: Record<string, number> = {
   'Orco': 5, 'Blood Elf': 4, 'Tauren': 6, 'Troll': 4, 'Goblin': 3,
   "Mag'har": 5, 'Nightborne': 4, 'Highmountain': 6, 'Zandalari': 5,
@@ -74,7 +81,7 @@ export interface StrategicComponentInfo {
 
 export const STRATEGIC_COMPONENTS: StrategicComponentInfo[] = [
   { key: 'warbandImpact', label: 'Warband Impact', weight: 10, description: 'Personajes 80-89 que reciben +5% XP al llegar este a 90. Cada beneficiario suma 5 puntos.' },
-  { key: 'professionValue', label: 'Profesiones', weight: 15, description: '1 si tiene al menos una profesión con ID, 0 si no.' },
+  { key: 'professionValue', label: 'Profesiones', weight: 15, description: 'Suma de valores estratégicos de las profesiones del personaje.' },
   { key: 'closenessTo90', label: 'Cercanía a 90', weight: 25, description: 'max(0, (nivel - 10) / 80). Lineal de nivel 10 a 90.' },
   { key: 'closenessToObjective', label: 'Cercanía obj.', weight: 25, description: 'max(0, 1 - dungeonsTo90 / 200). Menos dungeons para 90 = más puntaje.' },
   { key: 'futureXpIncrease', label: 'XP futura', weight: 8, description: 'Incremento de Warband Mentor al subir a 90 (delta del buff entre count90 actual y +1).' },
@@ -84,6 +91,7 @@ export const STRATEGIC_COMPONENTS: StrategicComponentInfo[] = [
   { key: 'classValue', label: 'Clase', weight: 'fixed', description: 'Valor estratégico fijo según la clase del personaje.' },
   { key: 'raceValue', label: 'Raza', weight: 'fixed', description: 'Valor estratégico fijo según la raza del personaje.' },
   { key: 'tagsValue', label: 'Tags', weight: 'fixed', description: 'Suma de puntos de tags estratégicos definidos por el usuario.' },
+  { key: 'taskValue', label: 'Tareas', weight: 'fixed', description: 'Suma de puntos estratégicos de las tareas del personaje.' },
 ]
 
 export const STAR_THRESHOLDS = [

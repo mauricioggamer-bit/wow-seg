@@ -18,6 +18,7 @@ export interface Tarea {
   expansion?: string
   tags?: string[]
   orden?: number
+  puntos?: number
 }
 
 export interface ProfesionSlot {
@@ -74,6 +75,12 @@ export interface WowData {
   warbands: Warband[]
   keybinds?: Record<string, string>
   profesionOrden?: string[]
+  strategicConfig?: {
+    classValues?: Record<string, number>
+    raceValues?: Record<string, number>
+    professionValues?: Record<string, number>
+    componentWeights?: Record<string, number>
+  }
 }
 
 export interface Stats {
@@ -87,7 +94,7 @@ export interface Stats {
   dailyDone: number
 }
 
-export type ViewType = 'warband' | 'tareas' | 'tasks' | 'personajes' | 'mapa' | 'fantasia' | 'profesion' | 'keybinds' | 'leveling' | 'warband-manager'
+export type ViewType = 'warband' | 'tareas' | 'tasks' | 'personajes' | 'mapa' | 'fantasia' | 'profesion' | 'keybinds' | 'leveling' | 'warband-manager' | 'estrategia'
 export type ThemeType = 'dark' | 'light'
 export type FontSizeType = 'small' | 'medium' | 'large' | 'xlarge'
 export type AuthDuration = '10min' | '1hora' | '8horas' | '1semana' | 'siempre'
@@ -169,6 +176,7 @@ export interface StrategicValueResult {
   classValue: number
   raceValue: number
   tagsValue: number
+  taskValue: number
   totalScore: number
   reasons: string[]
 }

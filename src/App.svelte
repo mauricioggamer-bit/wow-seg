@@ -18,6 +18,7 @@
   import KeybindView from './lib/views/KeybindView.svelte'
   import LevelingView from './lib/views/LevelingView.svelte'
   import WarbandManagerView from './lib/views/WarbandManagerView.svelte'
+  import StrategicView from './lib/views/StrategicView.svelte'
   import { authStore } from './lib/stores/auth'
   import { uiStore } from './lib/stores/ui'
   import { dataStore, personajesStore, warbandsStore } from './lib/stores/data'
@@ -140,6 +141,7 @@
   let editTaskCooldown = $state('none')
   let editTaskRecompensa = $state('')
   let editTaskOrden = $state(0)
+  let editTaskPuntos = $state(0)
 
   let newTaskChar = $state('')
   let newTaskNombre = $state('')
@@ -151,6 +153,7 @@
   let newTaskTiempo = $state(15)
   let newTaskCooldown = $state('none')
   let newTaskRecompensa = $state('')
+  let newTaskPuntos = $state(0)
 
   let isNewChar = $state(false)
 
@@ -231,6 +234,7 @@
     editTaskCooldown = t.cooldown
     editTaskRecompensa = t.recompensa || ''
     editTaskOrden = t.orden ?? 0
+    editTaskPuntos = t.puntos ?? 0
     uiStore.openModal('TaskEdit')
   }
 
@@ -249,6 +253,7 @@
       cooldown: editTaskCooldown as 'weekly' | 'daily' | 'none',
       recompensa: editTaskRecompensa || undefined,
       orden: editTaskOrden,
+      puntos: editTaskPuntos,
     })
     uiStore.closeModal()
   }
@@ -264,6 +269,7 @@
     newTaskTiempo = 15
     newTaskCooldown = 'none'
     newTaskRecompensa = ''
+    newTaskPuntos = 0
     uiStore.openModal('TaskNew')
   }
 
@@ -281,6 +287,7 @@
       tiempo_min: newTaskTiempo,
       cooldown: newTaskCooldown,
       recompensa: newTaskRecompensa || '',
+      puntos: newTaskPuntos,
     })
     uiStore.closeModal()
   }
@@ -496,6 +503,8 @@
               <LevelingView {openCharEdit} />
             {:else if $uiStore.currentView === 'warband-manager'}
               <WarbandManagerView {openCharEdit} />
+            {:else if $uiStore.currentView === 'estrategia'}
+              <StrategicView />
             {/if}
           </div>
         {/key}
@@ -938,6 +947,10 @@
           <input type="text" bind:value={editTaskRecompensa} placeholder="Ej: 500g" />
         </div>
         <div class="form-group">
+          <label>Puntos Estratégicos</label>
+          <input type="number" bind:value={editTaskPuntos} min="0" max="100" />
+        </div>
+        <div class="form-group">
           <label>Orden</label>
           <input type="number" bind:value={editTaskOrden} min="0" />
         </div>
@@ -1028,6 +1041,10 @@
         <div class="form-group">
           <label>Recompensa</label>
           <input type="text" bind:value={newTaskRecompensa} placeholder="Ej: 500g" />
+        </div>
+        <div class="form-group">
+          <label>Puntos Estratégicos</label>
+          <input type="number" bind:value={newTaskPuntos} min="0" max="100" />
         </div>
       </div>
       <div class="modal-footer">

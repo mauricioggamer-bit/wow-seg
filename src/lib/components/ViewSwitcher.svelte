@@ -13,6 +13,7 @@
     { key: 'keybinds', label: 'Keybinds', icon: '⌨' },
     { key: 'leveling', label: 'Leveling', icon: '📈' },
     { key: 'warband-manager', label: 'Gestor WB', icon: '📋' },
+    { key: 'estrategia', label: 'Estrategia', icon: '⚙' },
   ]
 </script>
 

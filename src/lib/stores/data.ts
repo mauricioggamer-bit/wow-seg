@@ -158,7 +158,7 @@ function createDataStore() {
         return { ...d }
       })
     },
-addTarea(nombrePersonaje: string, tarea: { nombre: string; tipoContenido?: TipoContenido; contenidoExpansion?: string; contenidoDificultad?: string; tipo?: string; cooldown?: string; prioridad?: number; tiempo_min?: number; expansion?: string; recompensa?: string }) {
+addTarea(nombrePersonaje: string, tarea: { nombre: string; tipoContenido?: TipoContenido; contenidoExpansion?: string; contenidoDificultad?: string; tipo?: string; cooldown?: string; prioridad?: number; tiempo_min?: number; expansion?: string; recompensa?: string; puntos?: number }) {
       update(d => {
         const p = d.personajes.find(pj => pj.nombre === nombrePersonaje)
         if (!p) return d
@@ -181,6 +181,7 @@ addTarea(nombrePersonaje: string, tarea: { nombre: string; tipoContenido?: TipoC
           tags: [],
           orden: maxOrden + 1,
           recompensa: tarea.recompensa || '',
+          puntos: tarea.puntos ?? 0,
         }
         d.personajes = d.personajes.map(pj => pj.nombre === nombrePersonaje
           ? { ...pj, tareas: [...pj.tareas, nuevaTarea] }
@@ -496,6 +497,94 @@ addTarea(nombrePersonaje: string, tarea: { nombre: string; tipoContenido?: TipoC
         d = { ...d, profesionOrden: orderedIds }
         saveData(d)
         return d
+      })
+    },
+
+    getStrategicConfig() {
+      return get({ subscribe }).strategicConfig ?? {}
+    },
+    getStrategicClassValue(name: string): number | undefined {
+      return get({ subscribe }).strategicConfig?.classValues?.[name]
+    },
+    setStrategicClassValue(name: string, value: number) {
+      update(d => {
+        if (!d.strategicConfig) d.strategicConfig = {}
+        if (!d.strategicConfig.classValues) d.strategicConfig.classValues = {}
+        d.strategicConfig.classValues[name] = value
+        saveData(d)
+        return { ...d }
+      })
+    },
+    resetStrategicClassValue(name: string) {
+      update(d => {
+        if (d.strategicConfig?.classValues) {
+          delete d.strategicConfig.classValues[name]
+          saveData(d)
+        }
+        return { ...d }
+      })
+    },
+    getStrategicRaceValue(name: string): number | undefined {
+      return get({ subscribe }).strategicConfig?.raceValues?.[name]
+    },
+    setStrategicRaceValue(name: string, value: number) {
+      update(d => {
+        if (!d.strategicConfig) d.strategicConfig = {}
+        if (!d.strategicConfig.raceValues) d.strategicConfig.raceValues = {}
+        d.strategicConfig.raceValues[name] = value
+        saveData(d)
+        return { ...d }
+      })
+    },
+    resetStrategicRaceValue(name: string) {
+      update(d => {
+        if (d.strategicConfig?.raceValues) {
+          delete d.strategicConfig.raceValues[name]
+          saveData(d)
+        }
+        return { ...d }
+      })
+    },
+    getStrategicProfessionValue(id: string): number | undefined {
+      return get({ subscribe }).strategicConfig?.professionValues?.[id]
+    },
+    setStrategicProfessionValue(id: string, value: number) {
+      update(d => {
+        if (!d.strategicConfig) d.strategicConfig = {}
+        if (!d.strategicConfig.professionValues) d.strategicConfig.professionValues = {}
+        d.strategicConfig.professionValues[id] = value
+        saveData(d)
+        return { ...d }
+      })
+    },
+    resetStrategicProfessionValue(id: string) {
+      update(d => {
+        if (d.strategicConfig?.professionValues) {
+          delete d.strategicConfig.professionValues[id]
+          saveData(d)
+        }
+        return { ...d }
+      })
+    },
+    getStrategicComponentWeight(key: string): number | undefined {
+      return get({ subscribe }).strategicConfig?.componentWeights?.[key]
+    },
+    setStrategicComponentWeight(key: string, value: number) {
+      update(d => {
+        if (!d.strategicConfig) d.strategicConfig = {}
+        if (!d.strategicConfig.componentWeights) d.strategicConfig.componentWeights = {}
+        d.strategicConfig.componentWeights[key] = value
+        saveData(d)
+        return { ...d }
+      })
+    },
+    resetStrategicComponentWeight(key: string) {
+      update(d => {
+        if (d.strategicConfig?.componentWeights) {
+          delete d.strategicConfig.componentWeights[key]
+          saveData(d)
+        }
+        return { ...d }
       })
     },
   }

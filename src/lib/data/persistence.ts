@@ -86,7 +86,7 @@ const VALID_PERSONAJE_KEYS = new Set([
 const VALID_TAREA_KEYS = new Set([
   'id', 'nombre', 'personaje', 'esPrincipal', 'tipoContenido', 'contenidoExpansion', 'contenidoDificultad',
   'tipo', 'cooldown', 'tiempo_min', 'prioridad', 'recompensa', 'hecho',
-  'ultimo_completado', 'expansion', 'tags', 'orden',
+  'ultimo_completado', 'expansion', 'tags', 'orden', 'puntos',
 ])
 
 export function normalizeData(data: WowData): WowData {
@@ -105,6 +105,11 @@ export function normalizeData(data: WowData): WowData {
   if (!data.profesionOrden || data.profesionOrden.length === 0) {
     data.profesionOrden = PROFESIONES.map(p => p.id)
   }
+  if (!data.strategicConfig) data.strategicConfig = {}
+  if (!data.strategicConfig.classValues) data.strategicConfig.classValues = {}
+  if (!data.strategicConfig.raceValues) data.strategicConfig.raceValues = {}
+  if (!data.strategicConfig.professionValues) data.strategicConfig.professionValues = {}
+  if (!data.strategicConfig.componentWeights) data.strategicConfig.componentWeights = {}
 
   const needsMigration = data.personajes.length > 0 && !Array.isArray(data.personajes[0]?.tareas)
   if (needsMigration) {
@@ -146,6 +151,7 @@ export function normalizeData(data: WowData): WowData {
       if (t.contenidoDificultad === undefined) t.contenidoDificultad = ''
       if (t.expansion === null || t.expansion === undefined) t.expansion = ''
       if (!t.tags) t.tags = []
+      if (t.puntos === undefined || typeof t.puntos !== 'number' || isNaN(t.puntos)) t.puntos = 0
     }
   }
 

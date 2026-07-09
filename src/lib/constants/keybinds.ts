@@ -64,7 +64,7 @@ export const KEYBIND_LAYOUT: KeybindZone[] = [
   { label: 'Ctrl Row',   categoryKey: 'SELF_HEAL',   group: 'Main',  keybinds: ['CTRL-1','CTRL-2','CTRL-3','CTRL-4','CTRL-Q','CTRL-E','CTRL-R','CTRL-F','CTRL-T','CTRL-G','CTRL-B',''] },
   { label: 'Shift Row',  categoryKey: 'COMBAT_SHIFT', group: 'Main', keybinds: ['SHIFT-1','SHIFT-2','SHIFT-3','SHIFT-4','SHIFT-Q','SHIFT-E','SHIFT-R','SHIFT-F','SHIFT-T','SHIFT-G','SHIFT-B',''] },
   { label: 'Combat',     categoryKey: 'COMBAT',       group: 'Main',  keybinds: ['1','2','3','4','Q','E','R','F','T','G','-','='] },
-  { label: 'Mouse',      categoryKey: 'MOUSE',       keybinds: ['BUTTON4','BUTTON5','MOUSEWHEELUP','MOUSEWHEELDOWN'] },
+  { label: 'Mouse',      categoryKey: 'MOUSE',       group: 'Assist', keybinds: ['BUTTON4','BUTTON5','MOUSEWHEELUP','MOUSEWHEELDOWN'] },
   { label: 'Z X C V',    categoryKey: 'DEFENSIVE',   group: 'Assist', keybinds: ['Z','X','C','V'] },
   { label: '\u21E7 Z X C V', categoryKey: 'DEFENSIVE', group: 'Assist', keybinds: ['SHIFT-Z','SHIFT-X','SHIFT-C','SHIFT-V'] },
   { label: '^ Z X C V',  categoryKey: 'DEFENSIVE',   group: 'Assist', keybinds: ['CTRL-Z','CTRL-X','CTRL-C','CTRL-V'] },

@@ -31,10 +31,6 @@
   function currentComponentWeight(key: string): number {
     return dataStore.getStrategicComponentWeight(key) ?? 0
   }
-  function defaultWeight(key: string): number | 'fixed' | 'bonus' {
-    return STRATEGIC_COMPONENTS.find(c => c.key === key)?.weight ?? 0
-  }
-
   function isOverridden(name: string, type: 'class' | 'race'): boolean {
     if (type === 'class') return dataStore.getStrategicClassValue(name) !== undefined
     return dataStore.getStrategicRaceValue(name) !== undefined
@@ -44,23 +40,6 @@
   }
   function isWeightOverridden(key: string): boolean {
     return dataStore.getStrategicComponentWeight(key) !== undefined
-  }
-
-  function effectiveClassValue(name: string): string {
-    const v = dataStore.getStrategicClassValue(name)
-    return v !== undefined ? String(v) : ''
-  }
-  function effectiveRaceValue(name: string): string {
-    const v = dataStore.getStrategicRaceValue(name)
-    return v !== undefined ? String(v) : ''
-  }
-  function effectiveProfValue(id: string): string {
-    const v = dataStore.getStrategicProfessionValue(id)
-    return v !== undefined ? String(v) : ''
-  }
-  function effectiveWeight(key: string): string {
-    const v = dataStore.getStrategicComponentWeight(key)
-    return v !== undefined ? String(v) : ''
   }
 
   function saveClassValue(name: string, el: EventTarget & HTMLInputElement) {
@@ -112,18 +91,17 @@
               <td>{name}</td>
               <td class="sv-default">{def}</td>
               <td>
-                {#if isOverridden(name, 'class')}
-                  <input type="number" min="0" max="100"
-                    value={cur}
-                    onchange={(e) => saveClassValue(name, e.currentTarget)}
-                    class="sv-input" />
-                {:else}
-                  <span class="sv-default-val">{cur}</span>
-                {/if}
+                <input type="number" min="0" max="100"
+                  value={cur}
+                  onchange={(e) => saveClassValue(name, e.currentTarget)}
+                  class="sv-input"
+                  class:sv-overridden={isOverridden(name, 'class')} />
               </td>
               <td>
                 {#if isOverridden(name, 'class')}
                   <button class="sv-btn-reset" onclick={() => dataStore.resetStrategicClassValue(name)}>Reset</button>
+                {:else}
+                  <span class="sv-default-label">Default</span>
                 {/if}
               </td>
             </tr>
@@ -146,18 +124,17 @@
               <td>{name}</td>
               <td class="sv-default">{def}</td>
               <td>
-                {#if isOverridden(name, 'race')}
-                  <input type="number" min="0" max="100"
-                    value={cur}
-                    onchange={(e) => saveRaceValue(name, e.currentTarget)}
-                    class="sv-input" />
-                {:else}
-                  <span class="sv-default-val">{cur}</span>
-                {/if}
+                <input type="number" min="0" max="100"
+                  value={cur}
+                  onchange={(e) => saveRaceValue(name, e.currentTarget)}
+                  class="sv-input"
+                  class:sv-overridden={isOverridden(name, 'race')} />
               </td>
               <td>
                 {#if isOverridden(name, 'race')}
                   <button class="sv-btn-reset" onclick={() => dataStore.resetStrategicRaceValue(name)}>Reset</button>
+                {:else}
+                  <span class="sv-default-label">Default</span>
                 {/if}
               </td>
             </tr>
@@ -180,18 +157,17 @@
               <td>{prof.icon} {prof.nombre}</td>
               <td class="sv-default">{def}</td>
               <td>
-                {#if isProfOverridden(prof.id)}
-                  <input type="number" min="0" max="100"
-                    value={cur}
-                    onchange={(e) => saveProfValue(prof.id, e.currentTarget)}
-                    class="sv-input" />
-                {:else}
-                  <span class="sv-default-val">{cur}</span>
-                {/if}
+                <input type="number" min="0" max="100"
+                  value={cur}
+                  onchange={(e) => saveProfValue(prof.id, e.currentTarget)}
+                  class="sv-input"
+                  class:sv-overridden={isProfOverridden(prof.id)} />
               </td>
               <td>
                 {#if isProfOverridden(prof.id)}
                   <button class="sv-btn-reset" onclick={() => dataStore.resetStrategicProfessionValue(prof.id)}>Reset</button>
+                {:else}
+                  <span class="sv-default-label">Default</span>
                 {/if}
               </td>
             </tr>
@@ -245,23 +221,24 @@
               <td class="sv-default">{def === 'fixed' || def === 'bonus' ? '—' : def}</td>
               <td>
                 {#if typeof def === 'number'}
-                  {@const cur = currentComponentWeight(comp.key)}
-                  {#if isWeightOverridden(comp.key)}
-                    <input type="number" min="1" max="100"
-                      value={cur}
-                      onchange={(e) => saveWeight(comp.key, e.currentTarget)}
-                      class="sv-input" />
-                  {:else}
-                    <span class="sv-default-val">{cur > 0 ? cur : def}</span>
-                  {/if}
+                  {@const cur = currentComponentWeight(comp.key) || def}
+                  <input type="number" min="1" max="100"
+                    value={cur}
+                    onchange={(e) => saveWeight(comp.key, e.currentTarget)}
+                    class="sv-input"
+                    class:sv-overridden={isWeightOverridden(comp.key)} />
                 {:else}
                   <span class="sv-muted">{def}</span>
                 {/if}
               </td>
               <td class="sv-desc">{comp.description}</td>
               <td>
-                {#if typeof def === 'number' && isWeightOverridden(comp.key)}
-                  <button class="sv-btn-reset" onclick={() => dataStore.resetStrategicComponentWeight(comp.key)}>Reset</button>
+                {#if typeof def === 'number'}
+                  {#if isWeightOverridden(comp.key)}
+                    <button class="sv-btn-reset" onclick={() => dataStore.resetStrategicComponentWeight(comp.key)}>Reset</button>
+                  {:else}
+                    <span class="sv-default-label">Default</span>
+                  {/if}
                 {/if}
               </td>
             </tr>
@@ -373,9 +350,6 @@
     color: var(--text-muted);
     font-size: 0.55rem;
   }
-  .sv-default-val {
-    color: var(--text-secondary);
-  }
   .sv-muted {
     color: var(--text-dim);
     font-style: italic;
@@ -411,6 +385,14 @@
   .sv-btn-reset:hover {
     border-color: var(--gold);
     color: var(--gold);
+  }
+  .sv-overridden {
+    border-color: var(--gold) !important;
+  }
+  .sv-default-label {
+    font-size: 0.5rem;
+    color: var(--text-dim);
+    font-style: italic;
   }
   .sv-hint {
     font-size: 0.55rem;

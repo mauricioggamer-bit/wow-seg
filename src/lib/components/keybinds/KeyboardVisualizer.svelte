@@ -44,8 +44,9 @@
   }
   .kb-zone {
     display: flex;
-    flex-direction: column;
-    gap: 2px;
+    flex-direction: row;
+    align-items: center;
+    gap: 6px;
   }
   .kb-zone-label {
     font-family: var(--font-heading);
@@ -53,7 +54,9 @@
     color: var(--text-muted);
     text-transform: uppercase;
     letter-spacing: 0.1em;
-    padding-left: 2px;
+    white-space: nowrap;
+    min-width: 56px;
+    text-align: right;
   }
   .kb-zone-keys {
     display: flex;

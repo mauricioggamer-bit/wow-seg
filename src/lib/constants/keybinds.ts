@@ -41,7 +41,6 @@ export const KEYBIND_CATEGORIES: KeybindCategory[] = [
   { key: 'ITEMS', label: 'Items / Alt', color: '#553c9a', keybinds: ['ALT-1','ALT-2','ALT-3','ALT-4','ALT-Q','ALT-E','ALT-R','ALT-F','ALT-T','ALT-G','ALT-B',''] },
   { key: 'PVP', label: 'PvP / Misc', color: '#702459', keybinds: ['ALT-Z','ALT-X','ALT-C','ALT-V'] },
   { key: 'MOUSE', label: 'Mouse', color: '#4a5568', keybinds: ['BUTTON4','BUTTON5','MOUSEWHEELUP','MOUSEWHEELDOWN'] },
-  { key: 'FKEYS', label: 'F-Keys / Stances', color: '#2d3748', keybinds: ['F1','F2','F3','F4','F5','F6'] },
 ]
 
 const categoryMap: Map<string, KeybindCategory> = new Map()
@@ -57,18 +56,19 @@ export interface KeybindZone {
   label: string
   categoryKey: string
   keybinds: string[]
+  group?: string
 }
 
 export const KEYBIND_LAYOUT: KeybindZone[] = [
-  { label: 'Alt Row', categoryKey: 'ITEMS', keybinds: ['ALT-1','ALT-2','ALT-3','ALT-4','ALT-Q','ALT-E','ALT-R','ALT-F','ALT-T','ALT-G','ALT-B',''] },
-  { label: 'Ctrl Row', categoryKey: 'SELF_HEAL', keybinds: ['CTRL-1','CTRL-2','CTRL-3','CTRL-4','CTRL-Q','CTRL-E','CTRL-R','CTRL-F','CTRL-T','CTRL-G','CTRL-B',''] },
-  { label: 'Shift Row', categoryKey: 'COMBAT_SHIFT', keybinds: ['SHIFT-1','SHIFT-2','SHIFT-3','SHIFT-4','SHIFT-Q','SHIFT-E','SHIFT-R','SHIFT-F','SHIFT-T','SHIFT-G','SHIFT-B',''] },
-  { label: 'Combat', categoryKey: 'COMBAT', keybinds: ['1','2','3','4','Q','E','R','F','T','G','-','='] },
-  { label: 'Z X C V', categoryKey: 'DEFENSIVE', keybinds: ['Z','X','C','V'] },
-  { label: '\u21E7 Z X C V', categoryKey: 'DEFENSIVE', keybinds: ['SHIFT-Z','SHIFT-X','SHIFT-C','SHIFT-V'] },
-  { label: '^ Z X C V', categoryKey: 'DEFENSIVE', keybinds: ['CTRL-Z','CTRL-X','CTRL-C','CTRL-V'] },
-  { label: '\u2325 Z X C V', categoryKey: 'PVP', keybinds: ['ALT-Z','ALT-X','ALT-C','ALT-V'] },
-  { label: 'Mouse & F-Keys', categoryKey: 'MOUSE', keybinds: ['BUTTON4','BUTTON5','MOUSEWHEELUP','MOUSEWHEELDOWN','F1','F2','F3','F4','F5','F6'] },
+  { label: 'Alt Row',    categoryKey: 'ITEMS',       group: 'Main',  keybinds: ['ALT-1','ALT-2','ALT-3','ALT-4','ALT-Q','ALT-E','ALT-R','ALT-F','ALT-T','ALT-G','ALT-B',''] },
+  { label: 'Ctrl Row',   categoryKey: 'SELF_HEAL',   group: 'Main',  keybinds: ['CTRL-1','CTRL-2','CTRL-3','CTRL-4','CTRL-Q','CTRL-E','CTRL-R','CTRL-F','CTRL-T','CTRL-G','CTRL-B',''] },
+  { label: 'Shift Row',  categoryKey: 'COMBAT_SHIFT', group: 'Main', keybinds: ['SHIFT-1','SHIFT-2','SHIFT-3','SHIFT-4','SHIFT-Q','SHIFT-E','SHIFT-R','SHIFT-F','SHIFT-T','SHIFT-G','SHIFT-B',''] },
+  { label: 'Combat',     categoryKey: 'COMBAT',       group: 'Main',  keybinds: ['1','2','3','4','Q','E','R','F','T','G','-','='] },
+  { label: 'Mouse',      categoryKey: 'MOUSE',       keybinds: ['BUTTON4','BUTTON5','MOUSEWHEELUP','MOUSEWHEELDOWN'] },
+  { label: 'Z X C V',    categoryKey: 'DEFENSIVE',   group: 'Assist', keybinds: ['Z','X','C','V'] },
+  { label: '\u21E7 Z X C V', categoryKey: 'DEFENSIVE', group: 'Assist', keybinds: ['SHIFT-Z','SHIFT-X','SHIFT-C','SHIFT-V'] },
+  { label: '^ Z X C V',  categoryKey: 'DEFENSIVE',   group: 'Assist', keybinds: ['CTRL-Z','CTRL-X','CTRL-C','CTRL-V'] },
+  { label: '\u2325 Z X C V', categoryKey: 'PVP',     group: 'Assist', keybinds: ['ALT-Z','ALT-X','ALT-C','ALT-V'] },
 ]
 
 export function formatKeybind(kb: string): string {

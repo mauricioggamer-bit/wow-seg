@@ -1,5 +1,5 @@
 import { writable, derived, get } from 'svelte/store'
-import type { WowData, Personaje, Warband, Mision, Stats, ProfesionSlot, TagEstrategico } from '../types'
+import type { WowData, Personaje, Warband, Stats, ProfesionSlot, TagEstrategico, Tarea } from '../types'
 import type { TipoContenido } from '../constants/wowContent'
 import type { ExportSection } from '../types'
 import { loadData, saveData, normalizeData, computeStats as computeStatsFn, exportJSON as exportJSONFn, exportPersonajesJSON as exportPersonajesJSONFn, exportFullBackup as exportFullBackupFn, initSeed as initSeedFn, exportCSV as exportCSVFn, importCSV as importCSVFn, exportSections as exportSectionsFn, importSections as importSectionsFn } from '../data/persistence'
@@ -47,7 +47,7 @@ function createDataStore() {
             .map(w => w.nombre === newWb && !w.personajes.includes(nombre) ? { ...w, personajes: [...w.personajes, nombre] } : w)
           const hasNewWb = d.warbands.some(w => w.nombre === newWb)
           if (!hasNewWb) {
-            d.warbands = [...d.warbands, { nombre: newWb, personajes: [nombre], tareas_disponibles: [] }]
+            d.warbands = [...d.warbands, { nombre: newWb, personajes: [nombre] }]
           }
         }
         d.personajes = d.personajes.map((p, i) => i === idx ? { ...p, ...updates } : p)
@@ -71,7 +71,6 @@ function createDataStore() {
           ...w,
           personajes: w.personajes.map(n => n === oldName ? trimmed : n),
         }))
-        d.misiones = d.misiones.map(m => m.personaje === oldName ? { ...m, personaje: trimmed } : m)
         saveData(d)
         return { ...d }
       })
@@ -168,6 +167,7 @@ addTarea(nombrePersonaje: string, tarea: { nombre: string; tipoContenido?: TipoC
         const nuevaTarea = {
           id,
           nombre: tarea.nombre,
+          esPrincipal: false,
           tipoContenido: tarea.tipoContenido ?? 'descripcion',
           contenidoExpansion: tarea.contenidoExpansion || '',
           contenidoDificultad: tarea.contenidoDificultad || '',
@@ -197,47 +197,7 @@ addTarea(nombrePersonaje: string, tarea: { nombre: string; tipoContenido?: TipoC
         return dCopy
       })
     },
-    getMisiones(): Mision[] {
-      return get({ subscribe }).misiones || []
-    },
-    addMision(m: Omit<Mision, 'id' | 'creada'>) {
-      update(d => {
-        const misiones = d.misiones || []
-        const id = 'm' + Date.now()
-        d.misiones = [...misiones, { id, ...m, creada: new Date().toISOString() }]
-        saveData(d)
-        return { ...d }
-      })
-    },
-    updateMision(id: string, updates: Partial<Mision>) {
-      update(d => {
-        if (!d.misiones) return d
-        const exists = d.misiones.some(m => m.id === id)
-        if (!exists) return d
-        d.misiones = d.misiones.map(m => m.id === id ? { ...m, ...updates } : m)
-        saveData(d)
-        return { ...d }
-      })
-    },
-    deleteMision(id: string) {
-      update(d => {
-        if (!d.misiones) return d
-        d.misiones = d.misiones.filter(m => m.id !== id)
-        saveData(d)
-        return { ...d }
-      })
-    },
-    toggleMision(id: string) {
-      update(d => {
-        if (!d.misiones) return d
-        const m = d.misiones.find(mx => mx.id === id)
-        if (!m) return d
-        const newEstado = m.estado === 'completada' ? 'pendiente' : 'completada'
-        d.misiones = d.misiones.map(mx => mx.id === id ? { ...mx, estado: newEstado } : mx)
-        saveData(d)
-        return { ...d }
-      })
-    },
+    
     getKeybind(className: string, specId: number): string {
       return getKeybindStringFn(className, specId, get({ subscribe }).keybinds)
     },
@@ -274,7 +234,7 @@ addTarea(nombrePersonaje: string, tarea: { nombre: string; tipoContenido?: TipoC
         return { ...d }
       })
     },
-    addPersonaje(p: { nombre: string; clase: string; raza: string; nivel: number; faccion: string; reino: string; warband: string; mision_principal?: string; expansion_por_defecto?: string | null; parecidos?: string[]; profesiones?: ProfesionSlot[]; planeado_usar?: boolean; descripcion?: string; tipo?: 'iconico' | 'funcional'; tagsEstrategicos?: TagEstrategico[] }): boolean {
+    addPersonaje(p: { nombre: string; clase: string; raza: string; nivel: number; faccion: string; reino: string; warband: string; expansion_por_defecto?: string | null; parecidos?: string[]; profesiones?: ProfesionSlot[]; planeado_usar?: boolean; descripcion?: string; tipo?: 'iconico' | 'funcional'; tagsEstrategicos?: TagEstrategico[] }): boolean {
       if (get({ subscribe }).personajes.find(x => x.nombre === p.nombre)) return false
       if (p.warband !== 'nada') {
         const targetWb = get({ subscribe }).warbands.find(w => w.nombre === p.warband)
@@ -289,7 +249,6 @@ addTarea(nombrePersonaje: string, tarea: { nombre: string; tipoContenido?: TipoC
           faccion: p.faccion as 'Horda' | 'Alianza',
           reino: p.reino,
           warband: p.warband,
-          mision_principal: p.mision_principal || null,
           expansion_por_defecto: p.expansion_por_defecto || null,
           parecidos: p.parecidos || [],
           profesiones: p.profesiones ?? [{ id: '', completadas: [] }, { id: '', completadas: [] }],
@@ -303,7 +262,7 @@ addTarea(nombrePersonaje: string, tarea: { nombre: string; tipoContenido?: TipoC
         d.personajes = [...d.personajes, nuevo]
         const wbExists = d.warbands.some(w => w.nombre === p.warband)
         if (!wbExists) {
-          d.warbands = [...d.warbands, { nombre: p.warband, personajes: [p.nombre], tareas_disponibles: [] }]
+          d.warbands = [...d.warbands, { nombre: p.warband, personajes: [p.nombre] }]
         } else {
           d.warbands = d.warbands.map(w => w.nombre === p.warband && !w.personajes.includes(p.nombre)
             ? { ...w, personajes: [...w.personajes, p.nombre] }
@@ -324,9 +283,6 @@ addTarea(nombrePersonaje: string, tarea: { nombre: string; tipoContenido?: TipoC
         d.personajes = d.personajes.map(p => p.nombre === charName
           ? { ...p, expansion_por_defecto: newExp, tareas: p.tareas.map(t => t.expansion === oldExp ? { ...t, expansion: newExp } : t) }
           : p)
-        if (d.misiones) {
-          d.misiones = d.misiones.map(m => m.personaje === charName && m.expansion === oldExp ? { ...m, expansion: newExp } : m)
-        }
         saveData(d)
         return { ...d }
       })
@@ -351,7 +307,7 @@ addTarea(nombrePersonaje: string, tarea: { nombre: string; tipoContenido?: TipoC
             : w)
         const hasNewWb = d.warbands.some(w => w.nombre === newWarband)
         if (!hasNewWb) {
-          d.warbands = [...d.warbands, { nombre: newWarband, personajes: [charName], tareas_disponibles: [] }]
+          d.warbands = [...d.warbands, { nombre: newWarband, personajes: [charName] }]
         }
         d._meta.total_personajes = d.personajes.length
         d._meta.total_activos = d.personajes.filter(p => p.planeado_usar).length
@@ -364,7 +320,7 @@ addTarea(nombrePersonaje: string, tarea: { nombre: string; tipoContenido?: TipoC
       update(d => {
         if (d.warbands.find(w => w.nombre === name)) return d
         const orden = d.warbands.filter(w => w.nombre !== 'nada').length
-        d.warbands = [...d.warbands, { nombre: name, personajes: [], tareas_disponibles: [], orden }]
+        d.warbands = [...d.warbands, { nombre: name, personajes: [], orden }]
         saveData(d)
         return { ...d }
       })
@@ -402,7 +358,7 @@ addTarea(nombrePersonaje: string, tarea: { nombre: string; tipoContenido?: TipoC
         d.personajes = d.personajes.map(p => p.warband === name ? { ...p, warband: 'nada' } : p)
         const hasNada = d.warbands.some(w => w.nombre === 'nada')
         if (!hasNada && d.personajes.some(p => p.warband === 'nada')) {
-          d.warbands = [...d.warbands, { nombre: 'nada', personajes: d.personajes.filter(p => p.warband === 'nada').map(p => p.nombre), tareas_disponibles: [] }]
+          d.warbands = [...d.warbands, { nombre: 'nada', personajes: d.personajes.filter(p => p.warband === 'nada').map(p => p.nombre) }]
         }
         d._meta.total_personajes = d.personajes.length
         d._meta.total_activos = d.personajes.filter(p => p.planeado_usar).length
@@ -473,7 +429,7 @@ addTarea(nombrePersonaje: string, tarea: { nombre: string; tipoContenido?: TipoC
           if (wb === 'nada') continue
           const wbExists = d.warbands.some(w => w.nombre === wb)
           if (!wbExists) {
-            d.warbands = [...d.warbands, { nombre: wb, personajes: [p.nombre], tareas_disponibles: [] }]
+            d.warbands = [...d.warbands, { nombre: wb, personajes: [p.nombre] }]
           } else {
             d.warbands = d.warbands.map(w => w.nombre === wb && !w.personajes.includes(p.nombre)
               ? { ...w, personajes: [...w.personajes, p.nombre] }
@@ -552,4 +508,4 @@ export const dataStore = createDataStore()
 export const statsStore = derived(dataStore, $data => computeStatsFn($data))
 export const personajesStore = derived(dataStore, $data => $data.personajes)
 export const warbandsStore = derived(dataStore, $data => $data.warbands)
-export const misionesStore = derived(dataStore, $data => $data.misiones || [])
+

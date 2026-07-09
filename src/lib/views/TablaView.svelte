@@ -1,6 +1,6 @@
 <script lang="ts">
   import { uiStore } from '../stores/ui'
-  import { dataStore, personajesStore, misionesStore } from '../stores/data'
+  import { dataStore, personajesStore } from '../stores/data'
 
   let { openTaskEdit, openMissionEdit }: { openTaskEdit?: (char: string, taskId: string) => void, openMissionEdit?: (m: any) => void } = $props()
 
@@ -24,12 +24,7 @@
         tareas.push({ ...t, _origen: 'tarea', _char: p.nombre, personaje: p.nombre, clase: p.clase, faccion: p.faccion, reino: p.reino, warband: p.warband, nivel: p.nivel, planeado_usar: p.planeado_usar, estado: t.hecho ? 'completada' : 'pendiente' })
       }
     }
-    const misiones = $misionesStore.map(m => ({
-      ...m, _origen: 'mision' as const, _char: m.personaje || '',
-      clase: '', faccion: '', reino: '', warband: '', nivel: 0, planeado_usar: true,
-      cooldown: m.tipo, recompensa: '', hecho: m.estado === 'completada',
-    }))
-    let all = [...tareas, ...misiones]
+    let all = [...tareas]
 
     if (tf.personaje) all = all.filter(i => i._char === tf.personaje)
     if (tf.warband) {
@@ -230,10 +225,7 @@
                 <td>
                   <input
                     type="checkbox" class="task-check" checked={item.hecho}
-                    onchange={() => {
-                      if (item._origen === 'tarea') dataStore.toggleTarea(item._char, item.id)
-                      else dataStore.toggleMision(item.id)
-                    }}
+                    onchange={() => dataStore.toggleTarea(item._char, item.id)}
                   />
                 </td>
                 <td class="tv-char" onclick={() => { uiStore.selectCharacter(item._char); uiStore.setView('warband') }}>
@@ -264,10 +256,7 @@
                       if (item._origen === 'tarea' && openTaskEdit) openTaskEdit(item._char, item.id)
                       else if (openMissionEdit) openMissionEdit(item)
                     }} title="Editar" class="tv-btn">✏️</button>
-                    <button onclick={() => {
-                      if (item._origen === 'tarea') { if (confirm('¿Eliminar tarea?')) dataStore.deleteTarea(item._char, item.id) }
-                      else { if (confirm('¿Eliminar misión?')) dataStore.deleteMision(item.id) }
-                    }} title="Eliminar" class="tv-btn">🗑️</button>
+                    <button onclick={() => { if (confirm('¿Eliminar tarea?')) dataStore.deleteTarea(item._char, item.id) }} title="Eliminar" class="tv-btn">🗑️</button>
                   </div>
                 </td>
               </tr>

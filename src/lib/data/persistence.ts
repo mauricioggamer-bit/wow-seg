@@ -66,10 +66,6 @@ function propagateExpansion(data: WowData): WowData {
       if (!t.tags) t.tags = []
     }
   }
-  for (const m of data.misiones) {
-    if (!m.expansion) m.expansion = (CHAR_EXPANSION as Record<string, string>)[m.id] || ''
-    if (!m.tags) m.tags = []
-  }
   return data
 }
 
@@ -83,18 +79,17 @@ export function initSeed(): WowData {
 
 const VALID_PERSONAJE_KEYS = new Set([
   'nombre', 'clase', 'nivel', 'faccion', 'raza', 'reino', 'warband',
-  'mision_principal', 'expansion_por_defecto', 'parecidos', 'profesiones',
+  'expansion_por_defecto', 'parecidos', 'profesiones',
   'planeado_usar', 'descripcion', 'tipo', 'objetivoNivel', 'timewaysPct', 'tagsEstrategicos', 'tareas',
 ])
 
 const VALID_TAREA_KEYS = new Set([
-  'id', 'nombre', 'tipoContenido', 'contenidoExpansion', 'contenidoDificultad',
+  'id', 'nombre', 'personaje', 'esPrincipal', 'tipoContenido', 'contenidoExpansion', 'contenidoDificultad',
   'tipo', 'cooldown', 'tiempo_min', 'prioridad', 'recompensa', 'hecho',
   'ultimo_completado', 'expansion', 'tags', 'orden',
 ])
 
 export function normalizeData(data: WowData): WowData {
-  if (!data.misiones) data.misiones = []
   if (!data.warbands) data.warbands = []
   if (!data.keybinds) data.keybinds = {}
   if (!data._meta) data._meta = {
@@ -145,6 +140,8 @@ export function normalizeData(data: WowData): WowData {
     if (!Array.isArray(p.tareas)) p.tareas = []
 
     for (const t of p.tareas) {
+      if (t.esPrincipal === undefined) t.esPrincipal = false
+      if (t.personaje === undefined) t.personaje = ''
       if (t.tipoContenido === undefined) t.tipoContenido = 'descripcion'
       if (t.contenidoExpansion === undefined) t.contenidoExpansion = ''
       if (t.contenidoDificultad === undefined) t.contenidoDificultad = ''
@@ -189,7 +186,6 @@ export function normalizeData(data: WowData): WowData {
     return {
       nombre,
       personajes,
-      tareas_disponibles: existing?.tareas_disponibles ?? [],
       orden: existing?.orden,
     }
   })
@@ -237,7 +233,6 @@ function mergeSeed(data: WowData): WowData {
   for (const p of data.personajes) {
     p.profesiones = normalizeProfesiones((p as any).profesiones)
   }
-  if (!data.misiones) data.misiones = seed.misiones || []
   if (!data.warbands) data.warbands = seed.warbands || []
   data._meta = { ...seed._meta, ...data._meta }
   return propagateExpansion(data)
@@ -270,9 +265,14 @@ export function computeStats(data: WowData): Stats {
 
 export function importJSON(jsonStr: string): WowData {
   const parsed = JSON.parse(jsonStr)
-  const data: Partial<WowData> = Array.isArray(parsed)
-    ? { personajes: parsed as Personaje[], warbands: [], misiones: [] }
-    : (parsed as WowData)
+  const data = (() => {
+    if (Array.isArray(parsed)) {
+      return { personajes: parsed as Personaje[], warbands: [] } as unknown as WowData
+    }
+    const d = parsed as WowData & { misiones?: unknown }
+    delete d.misiones
+    return d
+  })()
   if (!Array.isArray(data.personajes)) {
     throw new Error('Estructura inválida: falta el array de personajes')
   }
@@ -288,7 +288,6 @@ export function importJSON(jsonStr: string): WowData {
     data.warbands = [...grouped.entries()].map(([nombre, personajes]) => ({
       nombre,
       personajes,
-      tareas_disponibles: [],
     }))
   }
   checkWeeklyReset(data as WowData)
@@ -315,7 +314,6 @@ function pickPersonajeFields(p: Personaje, sections: ExportSection[]): any {
     out.raza = p.raza
     out.reino = p.reino
     out.warband = p.warband
-    out.mision_principal = p.mision_principal
     out.expansion_por_defecto = p.expansion_por_defecto
     out.planeado_usar = p.planeado_usar
     out.descripcion = p.descripcion
@@ -362,9 +360,6 @@ export function exportSections(data: WowData, sections: ExportSection[]): string
   if (sections.includes('personajes') || sections.includes('warbands')) {
     payload.data.warbands = data.warbands
   }
-  if (sections.includes('misiones')) {
-    payload.data.misiones = data.misiones
-  }
   if (sections.includes('keybinds')) {
     payload.data.keybinds = data.keybinds
   }
@@ -406,9 +401,6 @@ export function importSections(jsonStr: string, current: WowData): WowData {
       }
     }
 
-    if (sections.includes('misiones')) {
-      result.misiones = incoming.misiones ?? []
-    }
     if (sections.includes('warbands')) {
       result.warbands = incoming.warbands ?? []
       if (sections.includes('personajes')) {
@@ -428,13 +420,18 @@ export function importSections(jsonStr: string, current: WowData): WowData {
     return normalizeData(result)
   }
 
-  const data: Partial<WowData> = Array.isArray(parsed)
-    ? { personajes: parsed as Personaje[], warbands: [], misiones: [] }
-    : (parsed as WowData)
+  const data = (() => {
+    if (Array.isArray(parsed)) {
+      return { personajes: parsed as Personaje[], warbands: [] } as unknown as WowData
+    }
+    const d = parsed as WowData & { misiones?: unknown }
+    delete d.misiones
+    return d
+  })()
   if (!Array.isArray(data.personajes)) {
     throw new Error('Estructura inválida: falta el array de personajes')
   }
-  normalizeData(data as WowData)
+  normalizeData(data)
   if (!data.warbands || data.warbands.length === 0) {
     const grouped = new Map<string, string[]>()
     for (const p of data.personajes) {
@@ -443,7 +440,7 @@ export function importSections(jsonStr: string, current: WowData): WowData {
       if (!grouped.has(wb)) grouped.set(wb, [])
       grouped.get(wb)!.push(p.nombre)
     }
-    data.warbands = [...grouped.entries()].map(([nombre, personajes]) => ({ nombre, personajes, tareas_disponibles: [] }))
+    data.warbands = [...grouped.entries()].map(([nombre, personajes]) => ({ nombre, personajes }))
   }
   checkWeeklyReset(data as WowData)
   return data as WowData
@@ -461,7 +458,7 @@ export function exportFullBackup(data: WowData): string {
       version: 2,
       exported_at: new Date().toISOString(),
       app_name: 'WoW Seg Warband Tracker',
-      data: { ...data, misiones: data.misiones || [] },
+      data: { ...data } as WowData,
       preferences: {
         theme: localStorage.getItem('wowseg_theme') || 'dark',
         fontsize: localStorage.getItem('wowseg_fontsize') || 'medium',
@@ -503,8 +500,10 @@ export function getCharExpansion(nombre: string): string {
 export function getExpansionsList(data: WowData): string[] {
   const exps = new Set<string>()
   for (const e of Object.values(CHAR_EXPANSION)) exps.add(e)
-  for (const m of (data.misiones || [])) {
-    if (m.expansion) exps.add(m.expansion)
+  for (const p of data.personajes) {
+    for (const t of p.tareas) {
+      if (t.expansion) exps.add(t.expansion)
+    }
   }
   return [...exps]
 }
@@ -551,7 +550,6 @@ export function importCSV(csv: string): Personaje[] {
       raza: get('raza') || '',
       reino: get('reino') || '',
       warband: get('warband') || '',
-      mision_principal: null,
       planeado_usar: get('planeado_usar') === 'true' || get('planeado_usar') === '1',
       objetivoNivel: parseInt(get('objetivoNivel')) || 90,
       profesiones: [

@@ -1,22 +1,19 @@
 <script lang="ts">
   import { uiStore } from '../stores/ui'
-  import { dataStore, personajesStore, misionesStore } from '../stores/data'
+  import { dataStore, personajesStore } from '../stores/data'
 
   let {
     filterType,
     filterOptions,
     openTaskEdit,
-    openMissionEdit,
   }: {
     filterType: 'prioridad' | 'tiempo'
     filterOptions: { key: string; label: string }[]
     openTaskEdit?: (char: string, taskId: string) => void
-    openMissionEdit?: (m: any) => void
   } = $props()
 
   let activeFilter = $state('')
   let warbandFilter = $state('')
-  let showMisiones = $state(true)
   let showDone = $state(false)
 
   let warbands = $derived([...new Set($personajesStore.map(p => p.warband))].sort())
@@ -39,23 +36,6 @@
         }
         if (!showDone && t.hecho) continue
         all.push({ ...t, _origen: 'tarea', personaje: p.nombre, clase: p.clase, warband: p.warband, nivel: p.nivel, faccion: p.faccion })
-      }
-    }
-    if (showMisiones) {
-      for (const m of $misionesStore) {
-        if (filterType === 'prioridad' && activeFilter && m.prioridad !== Number(activeFilter)) continue
-        if (filterType === 'tiempo' && activeFilter) {
-          const ranges: Record<string, (v: number) => boolean> = {
-            rapido: v => v <= 15,
-            medio: v => v >= 16 && v <= 30,
-            largo: v => v >= 31 && v <= 60,
-            marathon: v => v > 60,
-          }
-          const fn = ranges[activeFilter]
-          if (fn && !fn(m.tiempo_min || 0)) continue
-        }
-        if (!showDone && m.estado === 'completada') continue
-        all.push({ ...m, _origen: 'mision', nombre: m.nombre, hecho: m.estado === 'completada', personaje: m.personaje || '', warband: '', prioridad: m.prioridad, tiempo_min: m.tiempo_min || 0, cooldown: m.tipo })
       }
     }
     let filtered = all
@@ -97,9 +77,6 @@
       {/each}
     </select>
     <label style="font-size:0.55rem;display:flex;align-items:center;gap:2px;margin-left:4px">
-      <input type="checkbox" bind:checked={showMisiones} /> Misiones
-    </label>
-    <label style="font-size:0.55rem;display:flex;align-items:center;gap:2px;margin-left:4px">
       <input type="checkbox" bind:checked={showDone} /> Hechas
     </label>
     <span class="text-xs text-muted" style="margin-left:8px">{totalDone}/{items.length} ítems</span>
@@ -113,14 +90,11 @@
       </div>
       <div class="task-list" style="padding-left:4px;gap:1px">
         {#each tareas as t}
-          <div class="task-item" class:dones={t.hecho} class:mision={t._origen === 'mision'} style="padding:4px 6px">
+          <div class="task-item" class:dones={t.hecho} style="padding:4px 6px">
             <input
               type="checkbox" class="task-check"
               checked={t.hecho}
-              onchange={() => {
-                if (t._origen === 'mision') dataStore.toggleMision(t.id)
-                else dataStore.toggleTarea(t.personaje, t.id)
-              }}
+              onchange={() => dataStore.toggleTarea(t.personaje, t.id)}
               style="width:14px;height:14px"
             />
             <div class="task-info">
@@ -140,15 +114,9 @@
               </div>
             </div>
             <div style="display:flex;gap:2px;align-items:center;flex-shrink:0">
-              <button onclick={() => {
-                if (t._origen === 'mision' && openMissionEdit) openMissionEdit(t)
-                else if (openTaskEdit) openTaskEdit(t.personaje, t.id)
-              }} title="Editar"
+              <button onclick={() => { if (openTaskEdit) openTaskEdit(t.personaje, t.id) }} title="Editar"
                 style="background:none;border:none;cursor:pointer;font-size:0.65rem;padding:0 2px">✏️</button>
-              <button onclick={() => {
-                if (t._origen === 'mision') { if (confirm('¿Eliminar misión?')) dataStore.deleteMision(t.id) }
-                else { if (confirm('¿Eliminar tarea?')) dataStore.deleteTarea(t.personaje, t.id) }
-              }} title="Eliminar"
+              <button onclick={() => { if (confirm('¿Eliminar tarea?')) dataStore.deleteTarea(t.personaje, t.id) }} title="Eliminar"
                 style="background:none;border:none;cursor:pointer;font-size:0.65rem;padding:0 2px">🗑️</button>
             </div>
           </div>

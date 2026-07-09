@@ -1,7 +1,7 @@
 <script lang="ts">
   import TaskGroupView from './TaskGroupView.svelte'
 
-  let { openTaskEdit, openMissionEdit }: { openTaskEdit?: (char: string, taskId: string) => void, openMissionEdit?: (m: any) => void } = $props()
+  let { openTaskEdit }: { openTaskEdit?: (char: string, taskId: string) => void } = $props()
 </script>
 
 <TaskGroupView
@@ -13,5 +13,4 @@
     { key: 'marathon', label: '🔴 Marathon' },
   ]}
   {openTaskEdit}
-  {openMissionEdit}
 />

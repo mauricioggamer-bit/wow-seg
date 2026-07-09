@@ -22,7 +22,7 @@
   import WarbandManagerView from './lib/views/WarbandManagerView.svelte'
   import { authStore } from './lib/stores/auth'
   import { uiStore } from './lib/stores/ui'
-  import { dataStore, personajesStore, misionesStore, warbandsStore } from './lib/stores/data'
+  import { dataStore, personajesStore, warbandsStore } from './lib/stores/data'
   import { gistStore } from './lib/stores/gist'
   import { supabaseStore } from './lib/stores/supabaseSync'
   import { EXPANSIONS, PERS_RACE_INFO, CLASS_MAP } from './lib/constants'
@@ -30,7 +30,7 @@
   import { PROFESIONES } from './lib/constants/profesiones'
   import type { TipoContenido, DungeonDifficulty, RaidDifficulty } from './lib/constants/wowContent'
   import { fade } from 'svelte/transition'
-  import type { Tarea, Mision, ProfesionSlot, TagEstrategico, ViewType, ExportSection } from './lib/types'
+  import type { Tarea, ProfesionSlot, TagEstrategico, ViewType, ExportSection } from './lib/types'
 
   let charOpts = $derived($personajesStore.map(p => p.nombre))
 
@@ -63,14 +63,6 @@
     }
   })
 
-  let misionNombre = $state('')
-  let misionPersonaje = $state('')
-  let misionTipo = $state('mision')
-  let misionExpansion = $state('')
-  let misionPrioridad = $state('2')
-  let misionTiempo = $state(30)
-  let misionTags = $state('')
-
   let warbandName = $state('')
   let warbandRenameNew = $state('')
   let moveCharName = $state('')
@@ -79,7 +71,7 @@
   let importText = $state('')
   let importResult = $state<'idle' | 'success' | 'error'>('idle')
   let importErrorMsg = $state('')
-  let exportSectionsState = $state<ExportSection[]>(['personajes', 'nombres_fantasia', 'profesiones', 'tareas', 'misiones', 'warbands', 'keybinds', 'tags_estrategicos', 'config_leveling'])
+  let exportSectionsState = $state<ExportSection[]>(['personajes', 'nombres_fantasia', 'profesiones', 'tareas', 'warbands', 'keybinds', 'tags_estrategicos', 'config_leveling'])
   let exportSelectAll = $state(true)
   let copied = $state(false)
 
@@ -88,7 +80,6 @@
     { key: 'nombres_fantasia', label: 'Nombres y fantasía' },
     { key: 'profesiones', label: 'Profesiones' },
     { key: 'tareas', label: 'Tareas' },
-    { key: 'misiones', label: 'Misiones' },
     { key: 'warbands', label: 'Warbands' },
     { key: 'keybinds', label: 'Keybinds' },
     { key: 'tags_estrategicos', label: 'Tags estratégicos' },
@@ -131,7 +122,6 @@
   let editCharReino = $state('')
   let editCharPlaneado = $state(true)
   let editCharWarband = $state('')
-  let editCharMisionPrincipal = $state('')
   let editCharExpansion = $state('')
   let editCharParecidos = $state<string[]>([])
   let editCharDescripcion = $state('')
@@ -165,30 +155,12 @@
   let newTaskCooldown = $state('none')
   let newTaskRecompensa = $state('')
 
-  let editMissionId = $state('')
-  let editMissionNombre = $state('')
-  let editMissionPersonaje = $state('')
-  let editMissionTipo = $state('mision')
-  let editMissionExpansion = $state('')
-  let editMissionPrioridad = $state('2')
-  let editMissionTiempo = $state(30)
-  let editMissionTags = $state('')
   let isNewChar = $state(false)
 
   let charClasses = $derived(Object.keys(CLASS_MAP).sort())
   let charRaces = $derived(Object.keys(PERS_RACE_INFO).sort())
   let charFactions = $derived(['Alianza', 'Horda'])
   let charRealms = $derived([...new Set($personajesStore.map(c => c.reino).filter(r => r))].sort())
-
-  function resetMissionForm() {
-    misionNombre = ''
-    misionPersonaje = $uiStore.selectedCharacter || ''
-    misionTipo = 'mision'
-    misionExpansion = ''
-    misionPrioridad = '2'
-    misionTiempo = 30
-    misionTags = ''
-  }
 
   function openCharEdit(name: string) {
     const c = $personajesStore.find(p => p.nombre === name)
@@ -203,7 +175,6 @@
     editCharReino = c.reino
     editCharPlaneado = c.planeado_usar
     editCharWarband = c.warband
-    editCharMisionPrincipal = c.mision_principal || ''
     editCharExpansion = c.expansion_por_defecto || ''
     editCharParecidos = c.parecidos ? [...c.parecidos] : []
       while (editCharParecidos.length < 2) editCharParecidos.push('')
@@ -232,7 +203,6 @@
     editCharReino = charRealms[0] || 'Raganaros'
     editCharPlaneado = true
     editCharWarband = ([...$warbandsStore].filter(w => w.nombre !== 'nada').sort((a, b) => (a.orden ?? 0) - (b.orden ?? 0))[0]?.nombre) || ''
-    editCharMisionPrincipal = ''
     editCharExpansion = ''
     editCharParecidos = ['', '']
     editCharDescripcion = ''
@@ -398,32 +368,6 @@
     }
   }
 
-  function openMissionEdit(m: Mision) {
-    editMissionId = m.id
-    editMissionNombre = m.nombre
-    editMissionPersonaje = m.personaje || ''
-    editMissionTipo = m.tipo
-    editMissionExpansion = m.expansion || ''
-    editMissionPrioridad = String(m.prioridad)
-    editMissionTiempo = m.tiempo_min || 30
-    editMissionTags = (m.tags || []).join(', ')
-    uiStore.openModal('MissionEdit')
-  }
-
-  function saveMissionEdit() {
-    if (!editMissionNombre.trim()) return
-    dataStore.updateMision(editMissionId, {
-      nombre: editMissionNombre.trim(),
-      personaje: editMissionPersonaje,
-      tipo: editMissionTipo,
-      expansion: editMissionExpansion,
-      prioridad: parseInt(editMissionPrioridad),
-      tiempo_min: editMissionTiempo,
-      tags: editMissionTags.split(',').map(s => s.trim()).filter(Boolean),
-    })
-    uiStore.closeModal()
-  }
-
   function setEditProfesion(idx: number, id: string) {
     const arr = [
       { ...editCharProfesiones[0] },
@@ -473,7 +417,6 @@
         reino: editCharReino,
         planeado_usar: editCharPlaneado,
         warband: editCharWarband,
-        mision_principal: editCharMisionPrincipal || undefined,
         expansion_por_defecto: editCharExpansion || null,
         parecidos: editCharParecidos.filter(x => x.trim()).slice(0, 2),
         profesiones: editCharProfesiones,
@@ -505,7 +448,6 @@
         reino: editCharReino,
         planeado_usar: editCharPlaneado,
         warband: editCharWarband,
-        mision_principal: editCharMisionPrincipal || undefined,
         expansion_por_defecto: editCharExpansion || null,
         parecidos: editCharParecidos.filter(x => x.trim()).slice(0, 2),
         profesiones: editCharProfesiones,
@@ -546,15 +488,15 @@
             {:else if $uiStore.currentView === 'tareas'}
               <TareasView {openTaskEdit} {openTaskNew} />
             {:else if $uiStore.currentView === 'tabla'}
-              <TablaView {openTaskEdit} {openMissionEdit} />
+              <TablaView {openTaskEdit} />
             {:else if $uiStore.currentView === 'priority'}
-              <PriorityView {openTaskEdit} {openMissionEdit} />
+              <PriorityView {openTaskEdit} />
             {:else if $uiStore.currentView === 'time'}
-              <TimeView {openTaskEdit} {openMissionEdit} />
+              <TimeView {openTaskEdit} />
             {:else if $uiStore.currentView === 'personajes'}
               <PersonajesView {openCharEdit} {openNewChar} />
             {:else if $uiStore.currentView === 'mapa'}
-              <MapaView {openTaskEdit} {openMissionEdit} openNewItemForChar={(char) => { resetMissionForm(); misionPersonaje = char; uiStore.openModal('MissionNew') }} />
+              <MapaView {openTaskEdit} openNewItemForChar={(char) => { uiStore.openModal('TaskNew') }} />
             {:else if $uiStore.currentView === 'fantasia'}
               <FantasiaView />
             {:else if $uiStore.currentView === 'profesion'}
@@ -572,7 +514,7 @@
       {#if $uiStore.currentView === 'warband'}
         <aside class="detail-sidebar">
           {#if $uiStore.selectedCharacter}
-            <DetailPanel {openCharEdit} {openTaskEdit} {openMissionEdit} />
+            <DetailPanel {openCharEdit} {openTaskEdit} />
           {:else if $uiStore.currentWarband}
             <AllTasksView {openTaskEdit} />
           {/if}
@@ -581,80 +523,6 @@
     </div>
   </main>
   <Toast />
-
-  <!-- Modal: Nueva Misión -->
-  <Dialog show={$uiStore.activeModal === 'MissionNew'} title="Nueva Misión" onclose={() => uiStore.closeModal()}>
-    {#snippet children()}
-      <div class="form-group">
-        <label for="misionNombre">Nombre de la misión</label>
-        <input id="misionNombre" type="text" bind:value={misionNombre} placeholder="Ej: Farmear Invincible" />
-      </div>
-      <div class="form-group">
-        <label for="misionPersonaje">Personaje (opcional)</label>
-        <select id="misionPersonaje" bind:value={misionPersonaje}>
-          <option value="">(sin personaje)</option>
-          {#each charOpts as n}
-            <option value={n}>{n}</option>
-          {/each}
-        </select>
-      </div>
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px">
-        <div class="form-group">
-          <label for="misionTipo">Tipo</label>
-          <select id="misionTipo" bind:value={misionTipo}>
-            <option value="mision">Misión</option>
-            <option value="achievement">Logro</option>
-            <option value="daily">Diaria</option>
-            <option value="weekly">Semanal</option>
-          </select>
-        </div>
-        <div class="form-group">
-          <label for="misionExpansion">Expansión</label>
-          <select id="misionExpansion" bind:value={misionExpansion}>
-            <option value="">(ninguna)</option>
-            {#each EXPANSIONS as exp}
-              <option value={exp.id}>{exp.nombre}</option>
-            {/each}
-          </select>
-        </div>
-        <div class="form-group">
-          <label for="misionPrioridad">Prioridad</label>
-          <select id="misionPrioridad" bind:value={misionPrioridad}>
-            <option value="1">P1 - Alta</option>
-            <option value="2">P2 - Media</option>
-            <option value="3">P3 - Baja</option>
-          </select>
-        </div>
-        <div class="form-group">
-          <label for="misionTiempo">Tiempo (min)</label>
-          <input id="misionTiempo" type="number" bind:value={misionTiempo} min="0" />
-        </div>
-      </div>
-      <div class="form-group">
-        <label for="misionTags">Etiquetas (separadas por coma)</label>
-        <input id="misionTags" type="text" bind:value={misionTags} placeholder="raids, mounts, weekly" />
-      </div>
-      <div class="modal-footer">
-        <button class="wow-btn" onclick={() => uiStore.closeModal()}>Cancelar</button>
-        <button class="wow-btn wow-btn-primary" onclick={() => {
-          if (!misionNombre.trim()) return
-          const tags = misionTags.split(',').map(s => s.trim()).filter(Boolean)
-          dataStore.addMision({
-            nombre: misionNombre.trim(),
-            personaje: misionPersonaje,
-            tipo: misionTipo,
-            expansion: misionExpansion,
-            tags,
-            estado: 'pendiente',
-            prioridad: parseInt(misionPrioridad),
-            tiempo_min: misionTiempo || 0,
-          })
-          uiStore.closeModal()
-          resetMissionForm()
-        }}>Crear</button>
-      </div>
-    {/snippet}
-  </Dialog>
 
   <!-- Modal: Gist Config -->
   <Dialog show={$uiStore.activeModal === 'GistConfig'} title="Sincronizar Gist" onclose={() => uiStore.closeModal()}>
@@ -887,10 +755,6 @@
             {/each}
           </select>
         </div>
-      </div>
-      <div class="form-group">
-        <label>Misión Principal</label>
-        <input type="text" bind:value={editCharMisionPrincipal} placeholder="Ej: Campaña TWW Cap.4" />
       </div>
       <div class="form-group">
         <label>Expansión por defecto (mapa)</label>
@@ -1191,64 +1055,6 @@
     {/snippet}
   </Dialog>
 
-  <!-- Modal: Editar Misión -->
-  <Dialog show={$uiStore.activeModal === 'MissionEdit'} title="Editar Misión" onclose={() => uiStore.closeModal()}>
-    {#snippet children()}
-      <div class="form-group">
-        <label>Nombre</label>
-        <input type="text" bind:value={editMissionNombre} />
-      </div>
-      <div class="form-group">
-        <label>Personaje (opcional)</label>
-        <select bind:value={editMissionPersonaje}>
-          <option value="">(sin personaje)</option>
-          {#each charOpts as n}
-            <option value={n}>{n}</option>
-          {/each}
-        </select>
-      </div>
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px">
-        <div class="form-group">
-          <label>Tipo</label>
-          <select bind:value={editMissionTipo}>
-            <option value="mision">Misión</option>
-            <option value="achievement">Logro</option>
-            <option value="daily">Diaria</option>
-            <option value="weekly">Semanal</option>
-          </select>
-        </div>
-        <div class="form-group">
-          <label>Expansión</label>
-          <select bind:value={editMissionExpansion}>
-            <option value="">(ninguna)</option>
-            {#each EXPANSIONS as exp}
-              <option value={exp.id}>{exp.nombre}</option>
-            {/each}
-          </select>
-        </div>
-        <div class="form-group">
-          <label>Prioridad</label>
-          <select bind:value={editMissionPrioridad}>
-            <option value="1">P1 - Alta</option>
-            <option value="2">P2 - Media</option>
-            <option value="3">P3 - Baja</option>
-          </select>
-        </div>
-        <div class="form-group">
-          <label>Tiempo (min)</label>
-          <input type="number" bind:value={editMissionTiempo} min="0" />
-        </div>
-      </div>
-      <div class="form-group">
-        <label>Etiquetas (separadas por coma)</label>
-        <input type="text" bind:value={editMissionTags} placeholder="raids, mounts, weekly" />
-      </div>
-      <div class="modal-footer">
-        <button class="wow-btn" onclick={() => uiStore.closeModal()}>Cancelar</button>
-        <button class="wow-btn wow-btn-primary" onclick={saveMissionEdit}>Guardar</button>
-      </div>
-    {/snippet}
-  </Dialog>
 {:else}
   <AuthView />
 {/if}

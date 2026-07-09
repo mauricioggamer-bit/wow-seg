@@ -21,7 +21,6 @@ function makePersonaje(overrides: Partial<Personaje> = {}): Personaje {
     raza: 'Orco',
     reino: 'Stormscale',
     warband: 'Default',
-    mision_principal: null,
     planeado_usar: true,
     tareas: [],
     profesiones: [],

@@ -40,7 +40,6 @@ function makePersonaje(overrides: Partial<Personaje> = {}): Personaje {
     raza: 'Orco',
     reino: 'Stormscale',
     warband: 'Default',
-    mision_principal: null,
     planeado_usar: true,
     tareas: [],
     profesiones: [],
@@ -88,8 +87,7 @@ function generateSyntheticRoster(size: number, seed: number): Personaje[] {
       raza: 'Orco',
       reino: 'Stormscale',
       warband: 'Default',
-      mision_principal: null,
-      planeado_usar: planeado,
+        planeado_usar: planeado,
       tareas: [],
       profesiones,
     }

@@ -3,10 +3,12 @@ import type { TipoContenido } from './constants/wowContent'
 export interface Tarea {
   id: string
   nombre: string
+  personaje?: string
+  esPrincipal: boolean
   tipoContenido?: TipoContenido
   contenidoExpansion?: string
   contenidoDificultad?: string
-  tipo: 'weekly' | 'daily' | 'farm_libre'
+  tipo: 'weekly' | 'daily' | 'farm_libre' | 'mision' | 'achievement'
   cooldown: 'weekly' | 'daily' | 'none'
   tiempo_min: number
   prioridad: 1 | 2 | 3
@@ -39,7 +41,6 @@ export interface Personaje {
   raza: string
   reino: string
   warband: string
-  mision_principal: string | null
   expansion_por_defecto?: string | null
   parecidos?: string[]
   profesiones?: ProfesionSlot[]
@@ -52,34 +53,10 @@ export interface Personaje {
   tareas: Tarea[]
 }
 
-export interface WarbandTareaDisponible {
-  id: string
-  nombre: string
-  tipo: string
-  cooldown: string
-  tiempo_min: number
-  prioridad: number
-  recompensa: string
-}
-
 export interface Warband {
   nombre: string
   personajes: string[]
-  tareas_disponibles: WarbandTareaDisponible[]
   orden?: number
-}
-
-export interface Mision {
-  id: string
-  nombre: string
-  personaje: string
-  tipo: string
-  estado: 'pendiente' | 'completada'
-  prioridad: number
-  tiempo_min: number
-  creada: string
-  expansion?: string
-  tags?: string[]
 }
 
 export interface Meta {
@@ -96,7 +73,6 @@ export interface WowData {
   _meta: Meta
   personajes: Personaje[]
   warbands: Warband[]
-  misiones: Mision[]
   keybinds?: Record<string, string>
   profesionOrden?: string[]
 }
@@ -280,7 +256,6 @@ export type ExportSection =
   | 'nombres_fantasia'
   | 'profesiones'
   | 'tareas'
-  | 'misiones'
   | 'warbands'
   | 'keybinds'
   | 'tags_estrategicos'

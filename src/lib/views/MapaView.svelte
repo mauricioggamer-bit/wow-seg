@@ -1,11 +1,11 @@
 <script lang="ts">
   import { onMount, onDestroy, untrack } from 'svelte'
-  import { personajesStore, dataStore, misionesStore } from '../stores/data'
+  import { personajesStore, dataStore } from '../stores/data'
   import { uiStore } from '../stores/ui'
   import { CLASS_MAP, PERS_CLASS_ICONS, PERS_CLASS_COLORS, EXPANSIONS } from '../constants'
   import mapa_svgs from '../data/mapa_svgs'
 
-  let { openTaskEdit, openMissionEdit, openNewItemForChar }: { openTaskEdit: (char: string, taskId: string) => void, openMissionEdit: (m: any) => void, openNewItemForChar: (char: string) => void } = $props()
+  let { openTaskEdit, openNewItemForChar }: { openTaskEdit: (char: string, taskId: string) => void, openNewItemForChar: (char: string) => void } = $props()
 
   const STORAGE_POS = 'wowseg_mapa_positions'
   const STORAGE_EXP = 'wowseg_mapa_expansion'
@@ -30,7 +30,7 @@
   let charsForExp = $derived(
     $personajesStore.filter(c => {
       if (!c.planeado_usar && !showInactivos) return false
-      return c.expansion_por_defecto === activeExp || c.tareas.some(t => t.expansion === activeExp) || $misionesStore.some(m => m.personaje === c.nombre && m.expansion === activeExp)
+      return c.expansion_por_defecto === activeExp || c.tareas.some(t => t.expansion === activeExp)
     })
   )
 
@@ -60,11 +60,7 @@
       for (const t of c.tareas) {
         items.push({ ...t, personaje: c.nombre, faccion: c.faccion, clase: c.clase, _type: 'task' })
       }
-      for (const m of $misionesStore) {
-        if (m.personaje === c.nombre && (!m.expansion || m.expansion === activeExp)) {
-          items.push({ ...m, personaje: c.nombre, faccion: c.faccion, clase: c.clase, _type: 'mission' })
-        }
-      }
+
     }
     return items
   })
@@ -73,8 +69,7 @@
     const char = $personajesStore.find(c => c.nombre === charName)
     if (!char) return []
     const tasks = char.tareas.map(t => ({ ...t, _type: 'task' as const, _charName: charName }))
-    const misiones = $misionesStore.filter(m => m.personaje === charName).map(m => ({ ...m, _type: 'mission' as const, _charName: charName }))
-    return [...tasks, ...misiones]
+    return [...tasks]
   }
 
   let stats = $derived.by(() => {
@@ -279,12 +274,9 @@
             {#if items.length > 0}
               <div class="mapa-card-items">
                 {#each items.slice(0, 3) as item (item.id)}
-                  <div class="mapa-card-item" class:done={item._type === 'task' ? item.hecho : item.estado === 'completada'}>
-                    <input type="checkbox" checked={item._type === 'task' ? item.hecho : item.estado === 'completada'}
-                      onchange={() => {
-                        if (item._type === 'task') dataStore.toggleTarea(c.nombre, item.id)
-                        else dataStore.toggleMision(item.id)
-                      }}
+                  <div class="mapa-card-item" class:done={item.hecho}>
+                    <input type="checkbox" checked={item.hecho}
+                      onchange={() => dataStore.toggleTarea(c.nombre, item.id)}
                       onclick={(e) => e.stopPropagation()} />
                     <span class="mapa-item-name">{item.nombre}</span>
                   </div>

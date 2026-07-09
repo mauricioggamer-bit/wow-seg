@@ -234,7 +234,7 @@ addTarea(nombrePersonaje: string, tarea: { nombre: string; tipoContenido?: TipoC
         return { ...d }
       })
     },
-    addPersonaje(p: { nombre: string; clase: string; raza: string; nivel: number; faccion: string; reino: string; warband: string; expansion_por_defecto?: string | null; parecidos?: string[]; profesiones?: ProfesionSlot[]; planeado_usar?: boolean; descripcion?: string; tipo?: 'iconico' | 'funcional'; tagsEstrategicos?: TagEstrategico[] }): boolean {
+    addPersonaje(p: { nombre: string; clase: string; raza: string; nivel: number; faccion: string; reino: string; warband: string; expansion_por_defecto?: string | null; parecidos?: string[]; profesiones?: ProfesionSlot[]; planeado_usar?: boolean; descripcion?: string; tagsEstrategicos?: TagEstrategico[] }): boolean {
       if (get({ subscribe }).personajes.find(x => x.nombre === p.nombre)) return false
       if (p.warband !== 'nada') {
         const targetWb = get({ subscribe }).warbands.find(w => w.nombre === p.warband)
@@ -254,7 +254,6 @@ addTarea(nombrePersonaje: string, tarea: { nombre: string; tipoContenido?: TipoC
           profesiones: p.profesiones ?? [{ id: '', completadas: [] }, { id: '', completadas: [] }],
           planeado_usar: p.planeado_usar ?? true,
           descripcion: p.descripcion ?? '',
-          tipo: p.tipo ?? 'funcional',
           timewaysPct: 0,
           tagsEstrategicos: p.tagsEstrategicos ?? [],
           tareas: [],

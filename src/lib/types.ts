@@ -46,7 +46,6 @@ export interface Personaje {
   profesiones?: ProfesionSlot[]
   planeado_usar: boolean
   descripcion?: string
-  tipo?: 'iconico' | 'funcional'
   objetivoNivel?: number
   timewaysPct?: number
   tagsEstrategicos?: TagEstrategico[]
@@ -88,7 +87,7 @@ export interface Stats {
   dailyDone: number
 }
 
-export type ViewType = 'warband' | 'tareas' | 'tabla' | 'priority' | 'time' | 'personajes' | 'mapa' | 'fantasia' | 'profesion' | 'keybinds' | 'leveling' | 'warband-manager'
+export type ViewType = 'warband' | 'tareas' | 'priority' | 'time' | 'personajes' | 'mapa' | 'fantasia' | 'profesion' | 'keybinds' | 'leveling' | 'warband-manager'
 export type ThemeType = 'dark' | 'light'
 export type FontSizeType = 'small' | 'medium' | 'large' | 'xlarge'
 export type AuthDuration = '10min' | '1hora' | '8horas' | '1semana' | 'siempre'

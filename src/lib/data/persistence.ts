@@ -80,7 +80,7 @@ export function initSeed(): WowData {
 const VALID_PERSONAJE_KEYS = new Set([
   'nombre', 'clase', 'nivel', 'faccion', 'raza', 'reino', 'warband',
   'expansion_por_defecto', 'parecidos', 'profesiones',
-  'planeado_usar', 'descripcion', 'tipo', 'objetivoNivel', 'timewaysPct', 'tagsEstrategicos', 'tareas',
+  'planeado_usar', 'descripcion', 'objetivoNivel', 'timewaysPct', 'tagsEstrategicos', 'tareas',
 ])
 
 const VALID_TAREA_KEYS = new Set([
@@ -122,7 +122,6 @@ export function normalizeData(data: WowData): WowData {
     if (typeof p.nivel !== 'number') p.nivel = 80
     if (typeof p.planeado_usar !== 'boolean') p.planeado_usar = true
     if (p.descripcion === undefined) p.descripcion = ''
-    if (p.tipo === undefined) p.tipo = 'funcional'
     if (p.objetivoNivel === undefined || typeof p.objetivoNivel !== 'number') p.objetivoNivel = 90
     if (p.timewaysPct === undefined || typeof p.timewaysPct !== 'number') p.timewaysPct = 0
     if (p.timewaysPct < 0) p.timewaysPct = 0
@@ -317,7 +316,6 @@ function pickPersonajeFields(p: Personaje, sections: ExportSection[]): any {
     out.expansion_por_defecto = p.expansion_por_defecto
     out.planeado_usar = p.planeado_usar
     out.descripcion = p.descripcion
-    out.tipo = p.tipo
     out.objetivoNivel = p.objetivoNivel
     out.timewaysPct = p.timewaysPct
   }
@@ -325,7 +323,6 @@ function pickPersonajeFields(p: Personaje, sections: ExportSection[]): any {
     out.clase = p.clase
     out.raza = p.raza
     out.faccion = p.faccion
-    out.tipo = p.tipo
     out.parecidos = p.parecidos
     out.descripcion = p.descripcion
   }
@@ -391,7 +388,7 @@ export function importSections(jsonStr: string, current: WowData): WowData {
           const out: any = { ...existing }
           if (sections.includes('nombres_fantasia')) {
             out.clase = matching.clase; out.raza = matching.raza; out.faccion = matching.faccion
-            out.tipo = matching.tipo; out.parecidos = matching.parecidos; out.descripcion = matching.descripcion
+            out.parecidos = matching.parecidos; out.descripcion = matching.descripcion
           }
           if (sections.includes('profesiones')) out.profesiones = matching.profesiones
           if (sections.includes('tareas')) out.tareas = matching.tareas
@@ -558,7 +555,6 @@ export function importCSV(csv: string): Personaje[] {
       ],
       tareas: [],
       descripcion: '',
-      tipo: 'funcional',
     })
   }
   return personajes

@@ -10,7 +10,6 @@
   import WarbandView from './lib/views/WarbandView.svelte'
   import AllTasksView from './lib/views/AllTasksView.svelte'
   import TareasView from './lib/views/TareasView.svelte'
-  import TablaView from './lib/views/TablaView.svelte'
   import PriorityView from './lib/views/PriorityView.svelte'
   import TimeView from './lib/views/TimeView.svelte'
   import PersonajesView from './lib/views/PersonajesView.svelte'
@@ -37,7 +36,7 @@
   let hasSidebar = $derived($uiStore.currentView === 'warband')
 
   const VIEW_KEYS: Record<string, string> = {
-    '1': 'warband', '2': 'tareas', '3': 'tabla',
+    '1': 'warband', '2': 'tareas',
     '4': 'priority', '5': 'time', '6': 'personajes',
     '7': 'mapa', '8': 'fantasia', '9': 'profesion',
     '0': 'leveling',
@@ -125,7 +124,6 @@
   let editCharExpansion = $state('')
   let editCharParecidos = $state<string[]>([])
   let editCharDescripcion = $state('')
-  let editCharTipo = $state<'iconico' | 'funcional'>('funcional')
   let editCharProfesiones = $state<ProfesionSlot[]>([{ id: '', completadas: [] }, { id: '', completadas: [] }])
   let editCharTags = $state<TagEstrategico[]>([])
   let newTagText = $state('')
@@ -179,7 +177,6 @@
     editCharParecidos = c.parecidos ? [...c.parecidos] : []
       while (editCharParecidos.length < 2) editCharParecidos.push('')
     editCharDescripcion = c.descripcion || ''
-    editCharTipo = c.tipo || 'funcional'
     const rawProf = c.profesiones ?? []
     editCharProfesiones = [
       { id: rawProf[0]?.id ?? '', completadas: Array.isArray(rawProf[0]?.completadas) ? [...rawProf[0].completadas] : [] },
@@ -206,7 +203,6 @@
     editCharExpansion = ''
     editCharParecidos = ['', '']
     editCharDescripcion = ''
-    editCharTipo = 'funcional'
     editCharProfesiones = [{ id: '', completadas: [] }, { id: '', completadas: [] }]
     editCharTags = []
     newTagText = ''
@@ -421,7 +417,6 @@
         parecidos: editCharParecidos.filter(x => x.trim()).slice(0, 2),
         profesiones: editCharProfesiones,
         descripcion: editCharDescripcion,
-        tipo: editCharTipo,
         tagsEstrategicos: editCharTags,
       })
       if (!ok) {
@@ -452,7 +447,6 @@
         parecidos: editCharParecidos.filter(x => x.trim()).slice(0, 2),
         profesiones: editCharProfesiones,
         descripcion: editCharDescripcion,
-        tipo: editCharTipo,
         tagsEstrategicos: editCharTags,
       })
       if (!updateOk) {
@@ -487,8 +481,6 @@
               <WarbandView />
             {:else if $uiStore.currentView === 'tareas'}
               <TareasView {openTaskEdit} {openTaskNew} />
-            {:else if $uiStore.currentView === 'tabla'}
-              <TablaView {openTaskEdit} />
             {:else if $uiStore.currentView === 'priority'}
               <PriorityView {openTaskEdit} />
             {:else if $uiStore.currentView === 'time'}
@@ -846,13 +838,6 @@
             </div>
           </div>
         {/if}
-      </div>
-      <div class="form-group">
-        <label>Tipo de personaje</label>
-        <select bind:value={editCharTipo}>
-          <option value="funcional">Funcional</option>
-          <option value="iconico">Icónico</option>
-        </select>
       </div>
       <label style="display:flex;align-items:center;gap:6px;font-size:0.75rem;margin-top:4px">
         <input type="checkbox" bind:checked={editCharPlaneado} />

@@ -1048,7 +1048,7 @@ a:hover { color: var(--gold-light); }
 /* === Print === */
 @media print {
   .main-header, nav, .filter-bar, .detail-sidebar, .warband-tabs, .view-switcher,
-  .modal-overlay, .toast-container, .task-check, .task-chip-btn, .tv-actions,
+  .modal-overlay, .toast-container, .task-check, .task-chip-btn,
   .wow-panel-header button, .char-actions, .stats-bar, .tareas-header,
   .lvl-dash-tabs { display: none !important; }
   body { background: #fff; color: #000; font-size: 10pt; }

@@ -881,6 +881,11 @@
                   {#each EXPANSIONS as exp}<option value={exp.id}>{exp.nombre}</option>{/each}
                 </select>
               </div>
+              <div class="form-group" style="margin:0">
+                <label style="font-size:0.7rem">Nivel recomendado</label>
+                <input type="number" min="1" max="90" value={editTaskNivelRecomendado ?? ''}
+                  oninput={(e) => editTaskNivelRecomendado = e.currentTarget.value === '' ? null : parseInt(e.currentTarget.value)} />
+              </div>
             </div>
           {:else}
             <div style="margin-top:6px;display:grid;grid-template-columns:1fr 1fr;gap:6px">
@@ -889,6 +894,11 @@
                 <select bind:value={editTaskExpansion} onchange={onEditExpansionChange}>
                   {#each (editTaskTipoContenido === 'mazmorra' ? DUNGEON_EXPANSION_IDS : editTaskTipoContenido === 'raid' ? RAID_EXPANSION_IDS : WORLDBOSS_EXPANSION_IDS) as e}<option value={e}>{expNombre(e)}</option>{/each}
                 </select>
+              </div>
+              <div class="form-group" style="margin:0">
+                <label style="font-size:0.7rem">Nivel recomendado</label>
+                <input type="number" min="1" max="90" value={editTaskNivelRecomendado ?? ''}
+                  oninput={(e) => editTaskNivelRecomendado = e.currentTarget.value === '' ? null : parseInt(e.currentTarget.value)} />
               </div>
               {#if editTaskTipoContenido !== 'worldboss'}
                 <div class="form-group" style="margin:0">
@@ -952,11 +962,6 @@
           <label>Orden</label>
           <input type="number" bind:value={editTaskOrden} min="0" />
         </div>
-        <div class="form-group">
-          <label>Nivel recomendado</label>
-          <input type="number" min="1" max="90" value={editTaskNivelRecomendado ?? ''}
-            oninput={(e) => editTaskNivelRecomendado = e.currentTarget.value === '' ? null : parseInt(e.currentTarget.value)} />
-        </div>
       </div>
       <div class="modal-footer">
         <button class="wow-btn" onclick={() => uiStore.closeModal()}>Cancelar</button>
@@ -994,6 +999,11 @@
                   {#each EXPANSIONS as exp}<option value={exp.id}>{exp.nombre}</option>{/each}
                 </select>
               </div>
+              <div class="form-group" style="margin:0">
+                <label style="font-size:0.7rem">Nivel recomendado</label>
+                <input type="number" min="1" max="90" value={newTaskNivelRecomendado ?? ''}
+                  oninput={(e) => newTaskNivelRecomendado = e.currentTarget.value === '' ? null : parseInt(e.currentTarget.value)} />
+              </div>
             </div>
           {:else}
             <div style="margin-top:6px;display:grid;grid-template-columns:1fr 1fr;gap:6px">
@@ -1002,6 +1012,11 @@
                 <select bind:value={newTaskExpansion} onchange={onNewExpansionChange}>
                   {#each (newTaskTipoContenido === 'mazmorra' ? DUNGEON_EXPANSION_IDS : newTaskTipoContenido === 'raid' ? RAID_EXPANSION_IDS : WORLDBOSS_EXPANSION_IDS) as e}<option value={e}>{expNombre(e)}</option>{/each}
                 </select>
+              </div>
+              <div class="form-group" style="margin:0">
+                <label style="font-size:0.7rem">Nivel recomendado</label>
+                <input type="number" min="1" max="90" value={newTaskNivelRecomendado ?? ''}
+                  oninput={(e) => newTaskNivelRecomendado = e.currentTarget.value === '' ? null : parseInt(e.currentTarget.value)} />
               </div>
               {#if newTaskTipoContenido !== 'worldboss'}
                 <div class="form-group" style="margin:0">
@@ -1060,11 +1075,6 @@
         <div class="form-group">
           <label>Puntos Estratégicos</label>
           <input type="number" bind:value={newTaskPuntos} min="0" max="100" />
-        </div>
-        <div class="form-group">
-          <label>Nivel recomendado</label>
-          <input type="number" min="1" max="90" value={newTaskNivelRecomendado ?? ''}
-            oninput={(e) => newTaskNivelRecomendado = e.currentTarget.value === '' ? null : parseInt(e.currentTarget.value)} />
         </div>
       </div>
       <div class="modal-footer">

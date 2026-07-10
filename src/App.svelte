@@ -19,9 +19,11 @@
   import LevelingView from './lib/views/LevelingView.svelte'
   import WarbandManagerView from './lib/views/WarbandManagerView.svelte'
   import StrategicView from './lib/views/StrategicView.svelte'
+  import EntityAssignments from './lib/components/strategic/EntityAssignments.svelte'
   import { authStore } from './lib/stores/auth'
   import { uiStore } from './lib/stores/ui'
   import { dataStore, personajesStore, warbandsStore } from './lib/stores/data'
+  import { levelingStore } from './lib/stores/leveling'
   import { gistStore } from './lib/stores/gist'
   import { supabaseStore } from './lib/stores/supabaseSync'
   import { EXPANSIONS, PERS_RACE_INFO, CLASS_MAP } from './lib/constants'
@@ -29,11 +31,21 @@
   import { PROFESIONES } from './lib/constants/profesiones'
   import type { TipoContenido, DungeonDifficulty, RaidDifficulty } from './lib/constants/wowContent'
   import { fade } from 'svelte/transition'
-  import type { Tarea, ProfesionSlot, TagEstrategico, ViewType, ExportSection } from './lib/types'
+  import type { Tarea, ProfesionSlot, ViewType, ExportSection } from './lib/types'
 
   let charOpts = $derived($personajesStore.map(p => p.nombre))
 
   let hasSidebar = $derived($uiStore.currentView === 'warband')
+
+  let strategicIndexes = $derived($dataStore.strategicConfig?.indexes ?? [])
+  let strategicCategories = $derived(
+    [...($dataStore.strategicConfig?.categories ?? [])].sort((a, b) => (a.orden ?? 0) - (b.orden ?? 0))
+  )
+  let strategicLevelingCtx = $derived({
+    config: $levelingStore,
+    roster: $personajesStore,
+    count90: $personajesStore.filter(p => p.nivel >= 90).length,
+  })
 
   const VIEW_KEYS: Record<string, string> = {
     '1': 'warband', '2': 'tareas',
@@ -70,7 +82,7 @@
   let importText = $state('')
   let importResult = $state<'idle' | 'success' | 'error'>('idle')
   let importErrorMsg = $state('')
-  let exportSectionsState = $state<ExportSection[]>(['personajes', 'nombres_fantasia', 'profesiones', 'tareas', 'warbands', 'keybinds', 'tags_estrategicos', 'config_leveling'])
+  let exportSectionsState = $state<ExportSection[]>(['personajes', 'nombres_fantasia', 'profesiones', 'tareas', 'warbands', 'keybinds', 'config_leveling'])
   let exportSelectAll = $state(true)
   let copied = $state(false)
 
@@ -81,7 +93,6 @@
     { key: 'tareas', label: 'Tareas' },
     { key: 'warbands', label: 'Warbands' },
     { key: 'keybinds', label: 'Keybinds' },
-    { key: 'tags_estrategicos', label: 'Tags estratégicos' },
     { key: 'config_leveling', label: 'Config leveling' },
   ]
 
@@ -114,6 +125,7 @@
 
   let editCharName = $state('')
   let editCharOriginalName = $state('')
+  let editCharPersonaje = $derived($personajesStore.find(p => p.nombre === editCharOriginalName))
   let editCharClase = $state('')
   let editCharRaza = $state('')
   let editCharNivel = $state(1)
@@ -125,9 +137,6 @@
   let editCharParecidos = $state<string[]>([])
   let editCharDescripcion = $state('')
   let editCharProfesiones = $state<ProfesionSlot[]>([{ id: '', completadas: [] }, { id: '', completadas: [] }])
-  let editCharTags = $state<TagEstrategico[]>([])
-  let newTagText = $state('')
-  let newTagPuntos = $state(0)
 
   let editTaskChar = $state('')
   let editTaskId = $state('')
@@ -184,9 +193,6 @@
       { id: rawProf[0]?.id ?? '', completadas: Array.isArray(rawProf[0]?.completadas) ? [...rawProf[0].completadas] : [] },
       { id: rawProf[1]?.id ?? '', completadas: Array.isArray(rawProf[1]?.completadas) ? [...rawProf[1].completadas] : [] },
     ]
-    editCharTags = c.tagsEstrategicos ? c.tagsEstrategicos.map(t => ({ ...t })) : []
-    newTagText = ''
-    newTagPuntos = 0
     uiStore.openModal('CharEdit')
   }
 
@@ -206,9 +212,6 @@
     editCharParecidos = ['', '']
     editCharDescripcion = ''
     editCharProfesiones = [{ id: '', completadas: [] }, { id: '', completadas: [] }]
-    editCharTags = []
-    newTagText = ''
-    newTagPuntos = 0
     uiStore.openModal('CharEdit')
   }
 
@@ -381,22 +384,6 @@
     editCharProfesiones = arr
   }
 
-  function addEditTag() {
-    const text = newTagText.trim()
-    if (!text) return
-    editCharTags = [...editCharTags, {
-      id: crypto.randomUUID ? crypto.randomUUID() : 'tag-' + Date.now() + '-' + Math.random().toString(36).slice(2, 8),
-      texto: text,
-      puntos: newTagPuntos,
-    }]
-    newTagText = ''
-    newTagPuntos = 0
-  }
-
-  function removeEditTag(id: string) {
-    editCharTags = editCharTags.filter(t => t.id !== id)
-  }
-
   let charEditError = $state<string | null>(null)
 
   function saveCharEdit() {
@@ -423,7 +410,6 @@
         parecidos: editCharParecidos.filter(x => x.trim()).slice(0, 2),
         profesiones: editCharProfesiones,
         descripcion: editCharDescripcion,
-        tagsEstrategicos: editCharTags,
       })
       if (!ok) {
         charEditError = `Ya existe un personaje llamado "${editCharName.trim()}"`
@@ -453,7 +439,6 @@
         parecidos: editCharParecidos.filter(x => x.trim()).slice(0, 2),
         profesiones: editCharProfesiones,
         descripcion: editCharDescripcion,
-        tagsEstrategicos: editCharTags,
       })
       if (!updateOk) {
         charEditError = 'Ese warband está lleno (máx. 4 personajes)'
@@ -816,35 +801,20 @@
           {/each}
         </div>
       </div>
-      <div class="form-group">
-        <label>Tags estratégicos <span style="font-size:0.55rem;color:var(--text-muted)">— suman pts al valor estratégico</span></label>
-        <div style="display:flex;gap:4px;align-items:flex-end;margin-bottom:6px">
-          <div style="flex:1">
-            <input type="text" bind:value={newTagText} placeholder="Ej: Tank principal, Líder de raid..."
-              onkeydown={(e) => { if (e.key === 'Enter') { e.preventDefault(); addEditTag() } }}
-              style="width:100%;background:var(--input-bg);border:1px solid var(--border-subtle);border-radius:var(--r-sm);padding:4px 6px;color:var(--text-primary);font-size:0.75rem" />
-          </div>
-          <input type="number" bind:value={newTagPuntos} min="0" max="20" step="1"
-            style="width:56px;background:var(--input-bg);border:1px solid var(--border-subtle);border-radius:var(--r-sm);padding:4px 6px;color:var(--text-primary);font-size:0.75rem;text-align:center" />
-          <button onclick={addEditTag}
-            style="background:var(--gold);color:var(--bg,#1a1a1a);border:none;border-radius:var(--r-sm);padding:4px 8px;cursor:pointer;font-size:0.7rem;font-weight:bold">+</button>
+      {#if !isNewChar && editCharPersonaje}
+        <div class="form-group">
+          <label>Ventajas estratégicas <span style="font-size:0.55rem;color:var(--text-muted)">— gestionable también desde Estrategia → Personajes</span></label>
+          <EntityAssignments
+            entityType="personaje"
+            entityId={editCharOriginalName}
+            entityLabel={editCharName}
+            indexes={strategicIndexes}
+            categories={strategicCategories}
+            personajeData={editCharPersonaje}
+            levelingCtx={strategicLevelingCtx}
+          />
         </div>
-        {#if editCharTags.length > 0}
-          <div style="display:flex;flex-direction:column;gap:4px">
-            {#each editCharTags as tag (tag.id)}
-              <div style="display:flex;align-items:center;gap:6px;padding:3px 6px;background:var(--input-bg);border:1px solid var(--border-subtle);border-radius:var(--r-sm);font-size:0.7rem">
-                <span style="flex:1;color:var(--text-primary)">{tag.texto}</span>
-                <span style="color:var(--gold);font-weight:bold;min-width:36px;text-align:right">+{tag.puntos}p</span>
-                <button onclick={() => removeEditTag(tag.id)}
-                  style="background:none;border:none;color:var(--horde,#c5365a);cursor:pointer;font-size:0.7rem;padding:0 2px">✕</button>
-              </div>
-            {/each}
-            <div style="font-size:0.6rem;color:var(--gold-light,#d4af37);text-align:right">
-              Subtotal: +{editCharTags.reduce((s, t) => s + t.puntos, 0)} pts
-            </div>
-          </div>
-        {/if}
-      </div>
+      {/if}
       <label style="display:flex;align-items:center;gap:6px;font-size:0.75rem;margin-top:4px">
         <input type="checkbox" bind:checked={editCharPlaneado} />
         Activo

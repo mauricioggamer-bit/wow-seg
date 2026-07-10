@@ -1,3 +1,12 @@
+export const ENTITY_TYPE_LABELS: { key: import('../types').EntityType; label: string }[] = [
+  { key: 'class', label: 'Clase' },
+  { key: 'race', label: 'Raza' },
+  { key: 'profession', label: 'Profesión' },
+  { key: 'task', label: 'Tarea' },
+  { key: 'warband', label: 'Warband' },
+  { key: 'personaje', label: 'Personaje' },
+]
+
 export const CLASS_MAP: Record<string, string> = {
   'Guerrero': 'warrior', 'Paladín': 'paladin', 'Cazador': 'hunter',
   'Pícaro': 'rogue', 'Sacerdote': 'priest', 'DK': 'dk',
@@ -92,7 +101,6 @@ export const STRATEGIC_COMPONENTS: StrategicComponentInfo[] = [
   { key: 'bonus8089', label: 'Bonus 80-89', weight: 'bonus', description: '+15 fijo si el personaje está en el rango 80-89 (barato para Warband Mentor 80-90).' },
   { key: 'classValue', label: 'Clase', weight: 'fixed', description: 'Suma de las ventajas (índice "General") asignadas a la clase del personaje. No tiene valor base — sale de lo que le asignes en la pestaña Clases.' },
   { key: 'raceValue', label: 'Raza', weight: 'fixed', description: 'Suma de las ventajas (índice "General") asignadas a la raza del personaje. No tiene valor base — sale de lo que le asignes en la pestaña Razas.' },
-  { key: 'tagsValue', label: 'Tags', weight: 'fixed', description: 'Suma de puntos de tags estratégicos definidos por el usuario.' },
   { key: 'taskValue', label: 'Tareas', weight: 'fixed', description: 'Suma de puntos estratégicos de las tareas del personaje.' },
   { key: 'raceProfBonus', label: 'Bono Raza-Profesión', weight: 'fixed', description: 'Bonos raciales que otorgan puntos extra si el personaje tiene la profesión correspondiente.' },
   { key: 'indexValues', label: 'Ventajas', weight: 'fixed', description: 'Suma de ventajas estratégicas definidas por el usuario.' },

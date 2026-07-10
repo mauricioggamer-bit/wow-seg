@@ -44,6 +44,7 @@
   let simState = $derived(createState(simChar))
   let simResult = $derived(simulateCharacter(simContext, simState, gameModel))
   let strategic = $derived(calculateStrategicValue(personaje, config, roster, count90))
+  let ventajasTotal = $derived(Object.values(strategic.indexValues).reduce((a, b) => a + b, 0))
 
   function getTo80(result: SimulationResult) {
     if (result.context.character.nivel >= 80) return { dungeons: 0, time: 0 }
@@ -222,8 +223,8 @@
           <strong>{strategic.raceValue > 0 ? `+${strategic.raceValue}` : '—'}</strong>
         </div>
         <div class="lvl-sv-stat">
-          <span>Tags</span>
-          <strong>{strategic.tagsValue > 0 ? `+${strategic.tagsValue}` : '—'}</strong>
+          <span>Ventajas</span>
+          <strong>{ventajasTotal > 0 ? `+${ventajasTotal}` : '—'}</strong>
         </div>
       </div>
     </div>

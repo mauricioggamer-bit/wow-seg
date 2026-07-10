@@ -28,12 +28,6 @@ export interface ProfesionSlot {
   rol?: 'main' | 'cd'
 }
 
-export interface TagEstrategico {
-  id: string
-  texto: string
-  puntos: number
-}
-
 export interface Personaje {
   nombre: string
   clase: string
@@ -49,7 +43,6 @@ export interface Personaje {
   descripcion?: string
   objetivoNivel?: number
   timewaysPct?: number
-  tagsEstrategicos?: TagEstrategico[]
   tareas: Tarea[]
 }
 
@@ -76,14 +69,15 @@ export interface StrategicCategory {
   orden?: number
 }
 
+export type EntityType = 'class' | 'race' | 'profession' | 'task' | 'warband' | 'personaje'
+
 export interface StrategicIndex {
   id: string
   name: string
   description: string
   context?: string
+  entityTypes?: EntityType[]
 }
-
-export type EntityType = 'class' | 'race' | 'profession' | 'task' | 'warband' | 'personaje'
 
 export interface WowData {
   _meta: Meta
@@ -192,7 +186,6 @@ export interface StrategicValueResult {
   classValue: number
   raceValue: number
   raceProfBonus: number
-  tagsValue: number
   taskValue: number
   indexValues: Record<string, number>
   totalScore: number
@@ -283,7 +276,6 @@ export type ExportSection =
   | 'tareas'
   | 'warbands'
   | 'keybinds'
-  | 'tags_estrategicos'
   | 'config_leveling'
 
 export interface ExportPayload {

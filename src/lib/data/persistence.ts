@@ -1,4 +1,4 @@
-import type { WowData, Stats, BackupData, ProfesionSlot, Personaje, TagEstrategico, ExportSection, ExportPayload } from '../types'
+import type { WowData, Stats, BackupData, ProfesionSlot, Personaje, ExportSection, ExportPayload } from '../types'
 import { SEED_DATA } from './seed'
 import { checkWeeklyReset } from './weekly-reset'
 import { PROFESIONES } from '../constants/profesiones'
@@ -42,9 +42,9 @@ function normalizeProfesiones(raw: any): ProfesionSlot[] {
   return arr.slice(0, 2)
 }
 
-function normalizeTagsEstrategicos(raw: any): TagEstrategico[] {
+function normalizeTagsEstrategicos(raw: any): { id: string; texto: string; puntos: number }[] {
   if (!Array.isArray(raw)) return []
-  const arr: TagEstrategico[] = []
+  const arr: { id: string; texto: string; puntos: number }[] = []
   for (const tag of raw) {
     if (tag && typeof tag === 'object') {
       const id = typeof tag.id === 'string' ? tag.id : typeof tag.id === 'number' ? String(tag.id) : ''
@@ -54,6 +54,29 @@ function normalizeTagsEstrategicos(raw: any): TagEstrategico[] {
     }
   }
   return arr
+}
+
+function migrateTagsToVentajas(data: WowData): void {
+  const indexes = data.strategicConfig!.indexes!
+  const values = data.strategicConfig!.values!
+  for (const p of data.personajes) {
+    const tags = normalizeTagsEstrategicos((p as any).tagsEstrategicos)
+    for (const tag of tags) {
+      const texto = tag.texto.trim()
+      if (!texto || !tag.puntos) continue
+      let idx = indexes.find(i => i.name.toLowerCase() === texto.toLowerCase())
+      if (!idx) {
+        const base = 'idx_' + texto.toLowerCase().replace(/[^a-z0-9]/g, '_')
+        let id = base || `idx_tag_${indexes.length}`
+        let n = 1
+        while (indexes.some(i => i.id === id)) { id = `${base}_${n++}` }
+        idx = { id, name: texto, description: '', context: 'general', entityTypes: ['personaje'] }
+        indexes.push(idx)
+      }
+      const key = `personaje:${p.nombre}:${idx.id}`
+      if (values[key] === undefined) values[key] = tag.puntos
+    }
+  }
 }
 
 const CHAR_EXPANSION: Record<string, string> = {
@@ -88,7 +111,7 @@ export function initSeed(): WowData {
 const VALID_PERSONAJE_KEYS = new Set([
   'nombre', 'clase', 'nivel', 'faccion', 'raza', 'reino', 'warband',
   'expansion_por_defecto', 'parecidos', 'profesiones',
-  'planeado_usar', 'descripcion', 'objetivoNivel', 'timewaysPct', 'tagsEstrategicos', 'tareas',
+  'planeado_usar', 'descripcion', 'objetivoNivel', 'timewaysPct', 'tareas',
 ])
 
 const VALID_TAREA_KEYS = new Set([
@@ -159,9 +182,6 @@ export function normalizeData(data: WowData): WowData {
     }
     if (!Array.isArray(p.parecidos)) p.parecidos = []
     p.profesiones = normalizeProfesiones((p as any).profesiones)
-    if (p.tagsEstrategicos === undefined) p.tagsEstrategicos = []
-    if (!Array.isArray(p.tagsEstrategicos)) p.tagsEstrategicos = []
-    p.tagsEstrategicos = normalizeTagsEstrategicos((p as any).tagsEstrategicos)
     if (!Array.isArray(p.tareas)) p.tareas = []
 
     for (const t of p.tareas) {
@@ -175,6 +195,8 @@ export function normalizeData(data: WowData): WowData {
       if (t.puntos === undefined || typeof t.puntos !== 'number' || isNaN(t.puntos)) t.puntos = 0
     }
   }
+
+  migrateTagsToVentajas(data)
 
   for (let i = 0; i < data.personajes.length; i++) {
     const p = data.personajes[i]
@@ -330,7 +352,7 @@ export function exportPersonajesJSON(data: WowData): string {
 
 function pickPersonajeFields(p: Personaje, sections: ExportSection[]): any {
   const out: any = {}
-  if (sections.includes('personajes') || sections.includes('nombres_fantasia') || sections.includes('profesiones') || sections.includes('tareas') || sections.includes('tags_estrategicos')) {
+  if (sections.includes('personajes') || sections.includes('nombres_fantasia') || sections.includes('profesiones') || sections.includes('tareas')) {
     out.nombre = p.nombre
   }
   if (sections.includes('personajes')) {
@@ -359,9 +381,6 @@ function pickPersonajeFields(p: Personaje, sections: ExportSection[]): any {
   if (sections.includes('tareas')) {
     out.tareas = p.tareas
   }
-  if (sections.includes('tags_estrategicos')) {
-    out.tagsEstrategicos = p.tagsEstrategicos
-  }
   return out
 }
 
@@ -375,7 +394,7 @@ export function exportSections(data: WowData, sections: ExportSection[]): string
   }
 
   const needsPersonajes = sections.some(s =>
-    ['personajes', 'nombres_fantasia', 'profesiones', 'tareas', 'tags_estrategicos'].includes(s)
+    ['personajes', 'nombres_fantasia', 'profesiones', 'tareas'].includes(s)
   )
   if (needsPersonajes) {
     payload.data.personajes = data.personajes.map(p => pickPersonajeFields(p, sections)) as Personaje[]
@@ -419,7 +438,6 @@ export function importSections(jsonStr: string, current: WowData): WowData {
           }
           if (sections.includes('profesiones')) out.profesiones = matching.profesiones
           if (sections.includes('tareas')) out.tareas = matching.tareas
-          if (sections.includes('tags_estrategicos')) out.tagsEstrategicos = matching.tagsEstrategicos
           return out as Personaje
         })
       }

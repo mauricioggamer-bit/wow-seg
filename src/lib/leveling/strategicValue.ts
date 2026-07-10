@@ -154,11 +154,6 @@ export function calculateStrategicValue(
     reasons.push(`Raza ${personaje.raza}: +${raceValue} pts`)
   }
 
-  const tagsValue = (personaje.tagsEstrategicos ?? []).reduce((sum, t) => sum + t.puntos, 0)
-  for (const tag of (personaje.tagsEstrategicos ?? [])) {
-    reasons.push(`Tag "${tag.texto}": +${tag.puntos} pts`)
-  }
-
   const taskValue = (personaje.tareas ?? []).reduce((sum, t) => sum + (t.puntos ?? 0), 0)
   if (taskValue > 0) {
     reasons.push(`Tareas: +${taskValue} pts`)
@@ -197,7 +192,6 @@ export function calculateStrategicValue(
   totalScore += bonusSub90 * wBonusSub90
   totalScore += bonus8089 * wBonus8089
   totalScore += raceProfBonus
-  totalScore += tagsValue
   totalScore += taskValue
   totalScore += totalIndexValue
   totalScore = Math.min(100, totalScore)
@@ -224,7 +218,6 @@ export function calculateStrategicValue(
     classValue,
     raceValue,
     raceProfBonus,
-    tagsValue,
     taskValue,
     indexValues,
     totalScore,

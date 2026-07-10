@@ -16,8 +16,8 @@
     { key: 'classValue', label: 'Clase', weight: 'fijo', calc: (s: StrategicValueResult) => s.classValue, raw: (s: StrategicValueResult) => s.classValue, desc: 'Suma de ventajas asignadas a la clase del personaje.' },
     { key: 'raceValue', label: 'Raza', weight: 'fijo', calc: (s: StrategicValueResult) => s.raceValue, raw: (s: StrategicValueResult) => s.raceValue, desc: 'Suma de ventajas asignadas a la raza del personaje.' },
     { key: 'raceProfBonus', label: 'Bono Raza-Profesión', weight: 'fijo', calc: (s: StrategicValueResult) => s.raceProfBonus, raw: (s: StrategicValueResult) => s.raceProfBonus, desc: 'Bonos raciales que otorgan puntos extra si el personaje tiene la profesión correspondiente.' },
-    { key: 'tagsValue', label: 'Tags', weight: 'fijo', calc: (s: StrategicValueResult) => s.tagsValue, raw: (s: StrategicValueResult) => s.tagsValue, desc: 'Suma de puntos de tags estratégicos del usuario.' },
     { key: 'taskValue', label: 'Tareas', weight: 'fijo', calc: (s: StrategicValueResult) => s.taskValue, raw: (s: StrategicValueResult) => s.taskValue, desc: 'Suma de puntos estratégicos de las tareas del personaje.' },
+    { key: 'indexValues', label: 'Ventajas', weight: 'fijo', calc: (s: StrategicValueResult) => Object.values(s.indexValues).reduce((a, b) => a + b, 0), raw: (s: StrategicValueResult) => Object.values(s.indexValues).reduce((a, b) => a + b, 0), desc: 'Suma de ventajas (por índice) asignadas a este personaje, su clase, raza, profesión, warband y tareas que apliquen.' },
   ] as const
 
   function fmtVal(v: number): string {

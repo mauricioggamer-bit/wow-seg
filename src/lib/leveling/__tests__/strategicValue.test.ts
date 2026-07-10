@@ -29,32 +29,38 @@ const config: LevelingConfig = {
 }
 
 describe('calculateStrategicValue', () => {
-  it('keeps tags/task value when objetivoNivel is reached, but zeroes leveling components', () => {
-    const personaje = makePersonaje({
-      nivel: 40,
-      objetivoNivel: 40,
-      tagsEstrategicos: [{ id: 't1', texto: 'Farmeo', puntos: 7 }],
-      tareas: [{
-        id: 'tarea1', nombre: 'Tarea', esPrincipal: false, tipo: 'weekly', cooldown: 'weekly',
-        tiempo_min: 10, prioridad: 1, recompensa: '', hecho: false, ultimo_completado: null, puntos: 5,
-      }],
-    })
-    const roster = [personaje]
+  it('keeps ventaja/task value when objetivoNivel is reached, but zeroes leveling components', () => {
+    dataStore.addIndex({ id: 'idx_farmeo_test', name: 'Farmeo Test', description: '', entityTypes: ['personaje'] })
+    try {
+      const personaje = makePersonaje({
+        nombre: 'TagTestChar',
+        nivel: 40,
+        objetivoNivel: 40,
+        tareas: [{
+          id: 'tarea1', nombre: 'Tarea', esPrincipal: false, tipo: 'weekly', cooldown: 'weekly',
+          tiempo_min: 10, prioridad: 1, recompensa: '', hecho: false, ultimo_completado: null, puntos: 5,
+        }],
+      })
+      dataStore.setStrategicValue('personaje', personaje.nombre, 'idx_farmeo_test', 7)
+      const roster = [personaje]
 
-    const result = calculateStrategicValue(personaje, config, roster, 0)
+      const result = calculateStrategicValue(personaje, config, roster, 0)
 
-    expect(result.tagsValue).toBe(7)
-    expect(result.taskValue).toBe(5)
+      expect(result.indexValues['idx_farmeo_test']).toBe(7)
+      expect(result.taskValue).toBe(5)
 
-    expect(result.warbandImpact).toBe(0)
-    expect(result.closenessTo90).toBe(0)
-    expect(result.closenessToObjective).toBe(0)
-    expect(result.futureXpIncrease).toBe(0)
-    expect(result.remainingWeight).toBe(0)
-    expect(result.bonusSub90).toBe(0)
-    expect(result.bonus8089).toBe(0)
+      expect(result.warbandImpact).toBe(0)
+      expect(result.closenessTo90).toBe(0)
+      expect(result.closenessToObjective).toBe(0)
+      expect(result.futureXpIncrease).toBe(0)
+      expect(result.remainingWeight).toBe(0)
+      expect(result.bonusSub90).toBe(0)
+      expect(result.bonus8089).toBe(0)
 
-    expect(result.totalScore).toBeGreaterThan(0)
+      expect(result.totalScore).toBeGreaterThan(0)
+    } finally {
+      dataStore.deleteIndex('idx_farmeo_test')
+    }
   })
 
   it('still scores leveling components normally when objetivoNivel is not yet reached', () => {

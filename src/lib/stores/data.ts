@@ -1,5 +1,5 @@
 import { writable, derived, get } from 'svelte/store'
-import type { WowData, Personaje, Warband, Stats, ProfesionSlot, TagEstrategico, Tarea } from '../types'
+import type { WowData, Personaje, Warband, Stats, ProfesionSlot, Tarea } from '../types'
 import type { TipoContenido } from '../constants/wowContent'
 import type { ExportSection } from '../types'
 import { loadData, saveData, normalizeData, computeStats as computeStatsFn, exportJSON as exportJSONFn, exportPersonajesJSON as exportPersonajesJSONFn, exportFullBackup as exportFullBackupFn, initSeed as initSeedFn, exportCSV as exportCSVFn, importCSV as importCSVFn, exportSections as exportSectionsFn, importSections as importSectionsFn } from '../data/persistence'
@@ -71,6 +71,14 @@ function createDataStore() {
           ...w,
           personajes: w.personajes.map(n => n === oldName ? trimmed : n),
         }))
+        if (d.strategicConfig?.values) {
+          const prefix = `personaje:${oldName}:`
+          const newValues: Record<string, number> = {}
+          for (const [key, val] of Object.entries(d.strategicConfig.values)) {
+            newValues[key.startsWith(prefix) ? `personaje:${trimmed}:${key.slice(prefix.length)}` : key] = val
+          }
+          d.strategicConfig.values = newValues
+        }
         saveData(d)
         return { ...d }
       })
@@ -242,7 +250,7 @@ addTarea(nombrePersonaje: string, tarea: { nombre: string; tipoContenido?: TipoC
         return { ...d }
       })
     },
-    addPersonaje(p: { nombre: string; clase: string; raza: string; nivel: number; faccion: string; reino: string; warband: string; expansion_por_defecto?: string | null; parecidos?: string[]; profesiones?: ProfesionSlot[]; planeado_usar?: boolean; descripcion?: string; tagsEstrategicos?: TagEstrategico[] }): boolean {
+    addPersonaje(p: { nombre: string; clase: string; raza: string; nivel: number; faccion: string; reino: string; warband: string; expansion_por_defecto?: string | null; parecidos?: string[]; profesiones?: ProfesionSlot[]; planeado_usar?: boolean; descripcion?: string }): boolean {
       if (get({ subscribe }).personajes.find(x => x.nombre === p.nombre)) return false
       if (p.warband !== 'nada') {
         const targetWb = get({ subscribe }).warbands.find(w => w.nombre === p.warband)
@@ -263,7 +271,6 @@ addTarea(nombrePersonaje: string, tarea: { nombre: string; tipoContenido?: TipoC
           planeado_usar: p.planeado_usar ?? true,
           descripcion: p.descripcion ?? '',
           timewaysPct: 0,
-          tagsEstrategicos: p.tagsEstrategicos ?? [],
           tareas: [],
         }
         d.personajes = [...d.personajes, nuevo]

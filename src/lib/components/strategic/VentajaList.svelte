@@ -1,7 +1,8 @@
 <script lang="ts">
   import { dataStore } from '../../stores/data'
   import VentajaEditModal from './VentajaEditModal.svelte'
-  import type { StrategicIndex, StrategicCategory } from '../../types'
+  import { ENTITY_TYPE_LABELS } from '../../constants'
+  import type { StrategicIndex, StrategicCategory, EntityType } from '../../types'
 
   let { indexes, categories, selectedId = $bindable<string | null>(null) }: {
     indexes: StrategicIndex[]
@@ -12,17 +13,25 @@
   let newName = $state('')
   let newDesc = $state('')
   let newContext = $state('general')
+  let newEntityTypes = $state<Set<EntityType>>(new Set(ENTITY_TYPE_LABELS.map(e => e.key)))
   let addError = $state('')
 
   function contextLabel(ctx?: string): string {
     return categories.find(c => c.id === (ctx ?? 'general'))?.label ?? 'General'
   }
 
+  function toggleNewType(key: EntityType) {
+    const next = new Set(newEntityTypes)
+    if (next.has(key)) next.delete(key)
+    else next.add(key)
+    newEntityTypes = next
+  }
+
   function addIndex() {
     const name = newName.trim()
     if (!name) return
     const id = 'idx_' + name.toLowerCase().replace(/[^a-z0-9]/g, '_')
-    const ok = dataStore.addIndex({ id, name, description: newDesc.trim(), context: newContext })
+    const ok = dataStore.addIndex({ id, name, description: newDesc.trim(), context: newContext, entityTypes: [...newEntityTypes] })
     if (!ok) {
       addError = `Ya existe una ventaja con el id "${id}" (nombre demasiado parecido a otra). Elegí otro nombre.`
       return
@@ -31,6 +40,7 @@
     newName = ''
     newDesc = ''
     newContext = 'general'
+    newEntityTypes = new Set(ENTITY_TYPE_LABELS.map(e => e.key))
     selectedId = id
   }
 
@@ -53,7 +63,8 @@
 
 <div class="vl-root">
   <div class="vl-add-row">
-    <input type="text" bind:value={newName} placeholder="Nombre de la ventaja" class="sv-text-input" />
+    <input type="text" bind:value={newName} placeholder="Nombre de la ventaja" class="sv-text-input"
+      onkeydown={(e) => { if (e.key === 'Enter') { e.preventDefault(); addIndex() } }} />
     <input type="text" bind:value={newDesc} placeholder="Descripción (opcional)" class="sv-text-input sv-text-wide" />
     <select bind:value={newContext} class="sv-text-input">
       {#each categories as ctx}
@@ -61,6 +72,14 @@
       {/each}
     </select>
     <button class="sv-btn-add" onclick={addIndex}>+ Añadir</button>
+  </div>
+  <div class="vl-checks">
+    {#each ENTITY_TYPE_LABELS as et}
+      <label class="vl-check">
+        <input type="checkbox" checked={newEntityTypes.has(et.key)} onchange={() => toggleNewType(et.key)} />
+        {et.label}
+      </label>
+    {/each}
   </div>
   {#if addError}
     <p class="sv-error">{addError}</p>
@@ -109,6 +128,18 @@
     gap: 4px;
     align-items: center;
     flex-wrap: wrap;
+  }
+  .vl-checks {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+  }
+  .vl-check {
+    display: flex;
+    align-items: center;
+    gap: 3px;
+    font-size: 0.55rem;
+    color: var(--text-secondary);
   }
   .vl-list {
     list-style: none;

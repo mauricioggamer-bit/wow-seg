@@ -3,6 +3,7 @@
   import { PROFESSION_STRATEGIC_VALUE, RACE_PROFESSION_BONUS } from '../../constants'
   import { calculateStrategicValue } from '../../leveling/strategicValue'
   import StrategicBreakdown from '../leveling/StrategicBreakdown.svelte'
+  import PointStepper from './PointStepper.svelte'
   import type { StrategicIndex, StrategicCategory, EntityType, Personaje, LevelingConfig } from '../../types'
 
   let { entityType, entityId, entityLabel, indexes, categories, personajeData, levelingCtx }: {
@@ -25,9 +26,13 @@
     return categories.find(c => c.id === (ctx ?? 'general'))?.label ?? 'General'
   }
 
+  let applicableIndexes = $derived(
+    indexes.filter(i => !i.entityTypes || i.entityTypes.includes(entityType))
+  )
+
   let groups = $derived.by(() => {
     const q = search.trim().toLowerCase()
-    const filtered = q ? indexes.filter(i => i.name.toLowerCase().includes(q)) : indexes
+    const filtered = q ? applicableIndexes.filter(i => i.name.toLowerCase().includes(q)) : applicableIndexes
     const byCategory = new Map<string, StrategicIndex[]>()
     for (const idx of filtered) {
       const catId = idx.context ?? 'general'
@@ -46,18 +51,12 @@
   })
 
   let total = $derived(
-    indexes.reduce((sum, idx) => sum + (valueFor(idx.id) ?? 0), 0)
+    applicableIndexes.reduce((sum, idx) => sum + (valueFor(idx.id) ?? 0), 0)
   )
 
-  function save(indexId: string, el: EventTarget & HTMLInputElement) {
-    const raw = el.value.trim()
-    if (raw === '') { dataStore.resetStrategicValue(entityType, entityId, indexId); return }
-    const v = parseInt(raw)
-    if (!isNaN(v) && v >= 0) dataStore.setStrategicValue(entityType, entityId, indexId, v)
-  }
-
-  function quitar(indexId: string) {
-    dataStore.resetStrategicValue(entityType, entityId, indexId)
+  function confirmValue(indexId: string, v: number | undefined) {
+    if (v === undefined) dataStore.resetStrategicValue(entityType, entityId, indexId)
+    else dataStore.setStrategicValue(entityType, entityId, indexId, v)
   }
 
   let professionDefault = $derived(entityType === 'profession' ? (PROFESSION_STRATEGIC_VALUE[entityId] ?? 0) : null)
@@ -113,14 +112,9 @@
             {@const assigned = value !== undefined}
             <li class="ea-row" class:ea-dim={!assigned}>
               <span class="ea-row-label">{idx.name}</span>
-              <input type="number" min="0" max="100"
-                value={value ?? ''}
-                placeholder="0"
-                onchange={(e) => save(idx.id, e.currentTarget)}
-                class="sv-input"
-                class:sv-overridden={assigned} />
+              <PointStepper {value} highlight={assigned} onConfirm={(v) => confirmValue(idx.id, v)} />
               {#if assigned}
-                <button class="ea-icon-btn ea-icon-danger" title="Quitar" onclick={() => quitar(idx.id)}>✕</button>
+                <button class="ea-icon-btn ea-icon-danger" title="Quitar" onclick={() => confirmValue(idx.id, undefined)}>✕</button>
               {:else}
                 <span class="ea-row-spacer"></span>
               {/if}

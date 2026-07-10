@@ -1,5 +1,6 @@
 <script lang="ts">
   import { dataStore } from '../../stores/data'
+  import PointStepper from './PointStepper.svelte'
   import type { StrategicIndex } from '../../types'
   import type { EntityKind } from './types'
 
@@ -10,7 +11,17 @@
   let onlyAssigned = $state(true)
   let sortDesc = $state(true)
 
-  let entityTab = $derived(entityKinds.find(k => k.key === entityTabKey) ?? entityKinds[0])
+  let visibleKinds = $derived(
+    entityKinds.filter(k => !idx.entityTypes || idx.entityTypes.includes(k.key))
+  )
+
+  $effect(() => {
+    if (visibleKinds.length > 0 && !visibleKinds.some(k => k.key === entityTabKey)) {
+      entityTabKey = visibleKinds[0].key
+    }
+  })
+
+  let entityTab = $derived(visibleKinds.find(k => k.key === entityTabKey) ?? visibleKinds[0])
 
   function valueFor(entityId: string): number | undefined {
     return dataStore.getStrategicValue(entityTabKey, entityId, idx.id)
@@ -27,15 +38,9 @@
     return [...assigned, ...unassigned]
   })
 
-  function save(entityId: string, el: EventTarget & HTMLInputElement) {
-    const raw = el.value.trim()
-    if (raw === '') { dataStore.resetStrategicValue(entityTabKey, entityId, idx.id); return }
-    const v = parseInt(raw)
-    if (!isNaN(v) && v >= 0) dataStore.setStrategicValue(entityTabKey, entityId, idx.id, v)
-  }
-
-  function quitar(entityId: string) {
-    dataStore.resetStrategicValue(entityTabKey, entityId, idx.id)
+  function confirmValue(entityId: string, v: number | undefined) {
+    if (v === undefined) dataStore.resetStrategicValue(entityTabKey, entityId, idx.id)
+    else dataStore.setStrategicValue(entityTabKey, entityId, idx.id, v)
   }
 </script>
 
@@ -46,7 +51,7 @@
   </div>
 
   <div class="vd-chips">
-    {#each entityKinds as kind}
+    {#each visibleKinds as kind}
       <button class="vd-chip" class:active={entityTabKey === kind.key} onclick={() => entityTabKey = kind.key}>
         {kind.label}
       </button>
@@ -74,14 +79,9 @@
             <span>{r.item.label}</span>
             {#if r.item.sub}<span class="vd-row-sub">{r.item.sub}</span>{/if}
           </div>
-          <input type="number" min="0" max="100"
-            value={r.value ?? ''}
-            placeholder="0"
-            onchange={(e) => save(r.item.id, e.currentTarget)}
-            class="sv-input"
-            class:sv-overridden={r.value !== undefined} />
+          <PointStepper value={r.value} highlight={r.value !== undefined} onConfirm={(v) => confirmValue(r.item.id, v)} />
           {#if r.value !== undefined}
-            <button class="vl-icon-btn vl-icon-danger" title="Quitar" onclick={() => quitar(r.item.id)}>✕</button>
+            <button class="vl-icon-btn vl-icon-danger" title="Quitar" onclick={() => confirmValue(r.item.id, undefined)}>✕</button>
           {:else}
             <span class="vd-row-spacer"></span>
           {/if}

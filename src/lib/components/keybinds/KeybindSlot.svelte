@@ -76,7 +76,7 @@
     position: absolute;
     inset: 0;
     background: var(--cat-color);
-    opacity: 0.15;
+    opacity: 0.30;
     pointer-events: none;
   }
   .kb-label {

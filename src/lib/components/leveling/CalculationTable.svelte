@@ -16,6 +16,20 @@
 
   let viewMode = $state<'both' | 'to80' | 'to90'>('to90')
 
+  let filterName = $state('')
+  let filterLevel = $state('')
+
+  let filteredResults = $derived(
+    results.filter(r => {
+      if (filterName && !r.nombre.toLowerCase().includes(filterName.toLowerCase())) return false
+      if (filterLevel) {
+        const lvl = parseInt(filterLevel)
+        if (!isNaN(lvl) && r.nivel !== lvl) return false
+      }
+      return true
+    })
+  )
+
   const COL_KEY = 'wowseg_lvl_view_mode'
   function loadViewMode(): 'both' | 'to80' | 'to90' {
     try {
@@ -88,6 +102,16 @@
       <button class="lvl-view-btn" class:active={viewMode === 'both'} onclick={() => setViewMode('both')}>Ambos</button>
       <button class="lvl-view-btn" class:active={viewMode === 'to90'} onclick={() => setViewMode('to90')}>→90</button>
     </div>
+    <div class="lvl-filter-row">
+      <input
+        type="text" class="lvl-filter-input" placeholder="Nombre…"
+        bind:value={filterName}
+      />
+      <input
+        type="number" class="lvl-filter-input lvl-filter-nivel" placeholder="Nivel"
+        bind:value={filterLevel} min="1" max="90"
+      />
+    </div>
   </div>
 
   <table class="lvl-table">
@@ -112,7 +136,7 @@
       </tr>
     </thead>
     <tbody>
-      {#each results as r, i (r.nombre)}
+      {#each filteredResults as r, i (r.nombre)}
         <tr class:done={r.done90} class:done80={r.done80 && !r.done90} onclick={() => onSelect?.(r.nombre)}>
           <td class="lvl-priority">{i + 1}</td>
           <td class="lvl-char">
@@ -191,12 +215,39 @@
   }
   .lvl-table-toolbar {
     display: flex;
-    justify-content: flex-end;
+    justify-content: space-between;
+    align-items: center;
     padding: 0 0 4px 0;
+    gap: 6px;
+    flex-wrap: wrap;
   }
   .lvl-view-toggle {
     display: flex;
     gap: 2px;
+  }
+  .lvl-filter-row {
+    display: flex;
+    gap: 4px;
+  }
+  .lvl-filter-input {
+    background: var(--input-bg);
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--r-sm);
+    padding: 2px 6px;
+    font-size: 0.5rem;
+    color: var(--text-primary);
+    width: 80px;
+  }
+  .lvl-filter-input::placeholder {
+    color: var(--text-dim);
+  }
+  .lvl-filter-input:focus {
+    outline: none;
+    border-color: var(--gold);
+  }
+  .lvl-filter-nivel {
+    width: 48px;
+    text-align: center;
   }
   .lvl-view-btn {
     background: var(--bg-soft, rgba(0,0,0,0.3));

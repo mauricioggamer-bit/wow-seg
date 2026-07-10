@@ -2,10 +2,11 @@
   import { dataStore } from '../stores/data'
   import { CLASS_STRATEGIC_VALUE, RACE_STRATEGIC_VALUE, PROFESSION_STRATEGIC_VALUE, STRATEGIC_COMPONENTS, RACE_PROFESSION_BONUS } from '../constants'
   import { PROFESIONES } from '../constants/profesiones'
-  import type { Personaje, StrategicIndex } from '../types'
+  import type { Personaje, StrategicIndex, WowData } from '../types'
 
   let tab = $state<string>('indexes')
-  let storeData = $derived($dataStore)
+  let storeData: WowData = $state(dataStore.getData())
+  $effect(() => dataStore.subscribe(v => storeData = v))
 
   const tabs = [
     { key: 'indexes', label: 'Ventajas' },

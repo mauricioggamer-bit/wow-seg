@@ -1,6 +1,6 @@
 import type { Personaje, LevelingConfig, StrategicValueResult, StrategicIndex } from '../types'
 import { calculateForCharacter, getEffectiveXpPerDungeon, getXpRemaining } from './calculator'
-import { PROFESSION_STRATEGIC_VALUE, STAR_THRESHOLDS, RACE_PROFESSION_BONUS } from '../constants'
+import { STAR_THRESHOLDS, RACE_PROFESSION_BONUS } from '../constants'
 import { dataStore } from '../stores/data'
 
 function getClassValue(className: string, indexId: string): number {
@@ -10,9 +10,7 @@ function getRaceValue(race: string, indexId: string): number {
   return dataStore.getStrategicValue('race', race, indexId) ?? 0
 }
 function getProfessionValue(id: string, indexId: string): number {
-  return dataStore.getStrategicValue('profession', id, indexId)
-    ?? (indexId === 'general' ? PROFESSION_STRATEGIC_VALUE[id] : 0)
-    ?? 0
+  return dataStore.getStrategicValue('profession', id, indexId) ?? 0
 }
 function getComponentWeight(key: string): number {
   return dataStore.getComponentWeight(key)
@@ -94,8 +92,10 @@ export function calculateStrategicValue(
   let professionValue = 0
   if (profIds.length > 0) {
     professionValue = profIds.reduce((sum, id) => sum + getProfessionValue(id, 'general'), 0)
-    const profNames = profIds.join(', ')
-    reasons.push(`Profesiones (${profNames}): +${professionValue} pts`)
+    if (professionValue > 0) {
+      const profNames = profIds.join(', ')
+      reasons.push(`Profesiones (${profNames}): +${professionValue} pts`)
+    }
   }
 
   const closenessTo90 = calc.done ? 0 : (personaje.nivel >= 90 ? 1 : Math.max(0, (personaje.nivel - 10) / 80))

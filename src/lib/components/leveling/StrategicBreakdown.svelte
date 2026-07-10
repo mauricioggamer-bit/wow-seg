@@ -6,7 +6,7 @@
 
   const COMPONENT_ROWS = [
     { key: 'warbandImpact', label: 'Warband Impact', weight: '×10', calc: (s: StrategicValueResult) => s.warbandImpact * 10, raw: (s: StrategicValueResult) => s.warbandImpact, desc: 'Personajes 80-89 que reciben +5% XP al llegar este a 90. Cada beneficiario suma 5.' },
-    { key: 'professionValue', label: 'Profesiones', weight: '×15', calc: (s: StrategicValueResult) => s.professionValue * 15, raw: (s: StrategicValueResult) => s.professionValue, desc: '1 si tiene al menos una profesión, 0 si no.' },
+    { key: 'professionValue', label: 'Profesiones', weight: '×15', calc: (s: StrategicValueResult) => s.professionValue * 15, raw: (s: StrategicValueResult) => s.professionValue, desc: 'Suma de puntos estratégicos asignados en Estrategia > Profesiones para las profesiones del personaje.' },
     { key: 'closenessTo90', label: 'Cercanía a 90', weight: '×25', calc: (s: StrategicValueResult) => s.closenessTo90 * 25, raw: (s: StrategicValueResult) => s.closenessTo90, desc: 'max(0, (nivel - 10) / 80). Lineal de nivel 10 a 90.' },
     { key: 'closenessToObjective', label: 'Cercanía obj.', weight: '×25', calc: (s: StrategicValueResult) => s.closenessToObjective * 25, raw: (s: StrategicValueResult) => s.closenessToObjective, desc: 'max(0, 1 - dungeonsTo90 / 200). Menos dungeons = más puntaje.' },
     { key: 'futureXpIncrease', label: 'XP futura', weight: '×8', calc: (s: StrategicValueResult) => s.futureXpIncrease * 8, raw: (s: StrategicValueResult) => s.futureXpIncrease, desc: 'Delta del Warband Mentor (5% por nuevo 90 en cuenta).' },

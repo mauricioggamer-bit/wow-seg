@@ -1,6 +1,6 @@
 <script lang="ts">
   import { dataStore } from '../../stores/data'
-  import { PROFESSION_STRATEGIC_VALUE, RACE_PROFESSION_BONUS } from '../../constants'
+  import { RACE_PROFESSION_BONUS } from '../../constants'
   import { calculateStrategicValue } from '../../leveling/strategicValue'
   import StrategicBreakdown from '../leveling/StrategicBreakdown.svelte'
   import PointStepper from './PointStepper.svelte'
@@ -59,8 +59,6 @@
     else dataStore.setStrategicValue(entityType, entityId, indexId, v)
   }
 
-  let professionDefault = $derived(entityType === 'profession' ? (PROFESSION_STRATEGIC_VALUE[entityId] ?? 0) : null)
-
   let professionRaceBonuses = $derived.by(() => {
     if (entityType !== 'profession') return []
     const result: { race: string; bonus: number; note?: string }[] = []
@@ -84,10 +82,6 @@
 <div class="ea-root">
   <h3 class="ea-title">{entityLabel}</h3>
   <p class="ea-total">Total ventajas propias: <strong>{total} pts</strong></p>
-
-  {#if professionDefault !== null && professionDefault > 0}
-    <p class="sv-hint">Valor base fijo de esta profesión (no editable acá): +{professionDefault} pts en "General".</p>
-  {/if}
 
   {#if entityType === 'profession' && professionRaceBonuses.length > 0}
     <div class="ea-bonus-box">

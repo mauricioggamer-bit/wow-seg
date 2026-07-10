@@ -76,13 +76,6 @@ export const RACE_PROFESSION_BONUS: Record<string, RaceProfBonus[]> = {
   'Tauren':            [{ profId: 'herboristeria', bonus: 5, note: 'Cultivation racial' }],
 }
 
-export const PROFESSION_STRATEGIC_VALUE: Record<string, number> = {
-  'mineria': 5, 'herboristeria': 3, 'desuello': 3,
-  'herreria': 8, 'peleteria': 6, 'sastreria': 6,
-  'alquimia': 7, 'encantamiento': 7, 'ingenieria': 8,
-  'joyeria': 6, 'inscripcion': 5,
-}
-
 export interface StrategicComponentInfo {
   key: string
   label: string

@@ -178,8 +178,8 @@
       </div>
     </div>
 
-    <StrategicValueDisplay {strategic} />
   {/if}
+  <StrategicValueDisplay {strategic} />
 </div>
 
 <style>

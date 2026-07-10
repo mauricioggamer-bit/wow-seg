@@ -1,12 +1,11 @@
 <script lang="ts">
-  import { dataStore } from '../../stores/data'
   import { RACE_PROFESSION_BONUS } from '../../constants'
   import { calculateStrategicValue } from '../../leveling/strategicValue'
   import DetailView from '../leveling/DetailView.svelte'
-  import PointStepper from './PointStepper.svelte'
+  import VentajaIndexList from './VentajaIndexList.svelte'
   import type { StrategicIndex, StrategicCategory, EntityType, Personaje, LevelingConfig } from '../../types'
 
-  let { entityType, entityId, entityLabel, indexes, categories, personajeData, levelingCtx, openCharEdit }: {
+  let { entityType, entityId, entityLabel, indexes, categories, personajeData, levelingCtx, openCharEdit, hideTitle = false }: {
     entityType: EntityType
     entityId: string
     entityLabel: string
@@ -15,50 +14,8 @@
     personajeData?: Personaje
     levelingCtx?: { config: LevelingConfig; roster: Personaje[]; count90: number }
     openCharEdit?: (name: string) => void
+    hideTitle?: boolean
   } = $props()
-
-  let search = $state('')
-
-  function valueFor(indexId: string): number | undefined {
-    return dataStore.getStrategicValue(entityType, entityId, indexId)
-  }
-
-  function categoryLabel(ctx?: string): string {
-    return categories.find(c => c.id === (ctx ?? 'general'))?.label ?? 'General'
-  }
-
-  let applicableIndexes = $derived(
-    indexes.filter(i => !i.entityTypes || i.entityTypes.includes(entityType))
-  )
-
-  let groups = $derived.by(() => {
-    const q = search.trim().toLowerCase()
-    const filtered = q ? applicableIndexes.filter(i => i.name.toLowerCase().includes(q)) : applicableIndexes
-    const byCategory = new Map<string, StrategicIndex[]>()
-    for (const idx of filtered) {
-      const catId = idx.context ?? 'general'
-      if (!byCategory.has(catId)) byCategory.set(catId, [])
-      byCategory.get(catId)!.push(idx)
-    }
-    const orderedCatIds = categories.map(c => c.id).filter(id => byCategory.has(id))
-    for (const id of byCategory.keys()) {
-      if (!orderedCatIds.includes(id)) orderedCatIds.push(id)
-    }
-    return orderedCatIds.map(catId => ({
-      catId,
-      label: categoryLabel(catId),
-      items: byCategory.get(catId)!,
-    }))
-  })
-
-  let total = $derived(
-    applicableIndexes.reduce((sum, idx) => sum + (valueFor(idx.id) ?? 0), 0)
-  )
-
-  function confirmValue(indexId: string, v: number | undefined) {
-    if (v === undefined) dataStore.resetStrategicValue(entityType, entityId, indexId)
-    else dataStore.setStrategicValue(entityType, entityId, indexId, v)
-  }
 
   let professionRaceBonuses = $derived.by(() => {
     if (entityType !== 'profession') return []
@@ -81,8 +38,10 @@
 </script>
 
 <div class="ea-root">
-  <h3 class="ea-title">{entityLabel}</h3>
-  <p class="ea-total">Total ventajas propias: <strong>{total} pts</strong></p>
+  {#if !hideTitle}
+    <h3 class="ea-title">{entityLabel}</h3>
+  {/if}
+  <VentajaIndexList {entityType} {entityId} {indexes} {categories} />
 
   {#if entityType === 'profession' && professionRaceBonuses.length > 0}
     <div class="ea-bonus-box">
@@ -94,34 +53,6 @@
       </ul>
     </div>
   {/if}
-
-  <input type="text" bind:value={search} placeholder="Buscar ventaja..." class="sv-text-input" />
-
-  <div class="ea-groups">
-    {#each groups as group (group.catId)}
-      <div class="ea-group">
-        <h4 class="ea-subheading">{group.label}</h4>
-        <ul class="ea-rows">
-          {#each group.items as idx (idx.id)}
-            {@const value = valueFor(idx.id)}
-            {@const assigned = value !== undefined}
-            <li class="ea-row" class:ea-dim={!assigned}>
-              <span class="ea-row-label">{idx.name}</span>
-              <PointStepper {value} highlight={assigned} onConfirm={(v) => confirmValue(idx.id, v)} />
-              {#if assigned}
-                <button class="ea-icon-btn ea-icon-danger" title="Quitar" onclick={() => confirmValue(idx.id, undefined)}>✕</button>
-              {:else}
-                <span class="ea-row-spacer"></span>
-              {/if}
-            </li>
-          {/each}
-        </ul>
-      </div>
-    {/each}
-    {#if groups.length === 0}
-      <p class="sv-hint">Sin resultados.</p>
-    {/if}
-  </div>
 
   {#if strategicResult && levelingCtx}
     <DetailView

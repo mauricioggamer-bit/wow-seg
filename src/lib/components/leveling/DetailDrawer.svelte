@@ -1,8 +1,10 @@
 <script lang="ts">
   import { slide, fade } from 'svelte/transition'
-  import type { Personaje, LevelingConfig, LevelingResult } from '../../types'
+  import { dataStore } from '../../stores/data'
+  import type { Personaje, LevelingConfig, LevelingResult, StrategicIndex, StrategicCategory } from '../../types'
   import { formatNumber, formatHours } from '../../format'
   import DetailView from './DetailView.svelte'
+  import VentajaIndexList from '../strategic/VentajaIndexList.svelte'
 
   let {
     open = $bindable(false),
@@ -23,6 +25,12 @@
     onEditChar?: (name: string) => void
     onClose?: () => void
   } = $props()
+
+  let storeData = $derived($dataStore)
+  let indexes: StrategicIndex[] = $derived(storeData.strategicConfig?.indexes ?? [])
+  let categories: StrategicCategory[] = $derived(
+    [...(storeData.strategicConfig?.categories ?? [])].sort((a, b) => (a.orden ?? 0) - (b.orden ?? 0))
+  )
 
   function close() {
     open = false
@@ -76,6 +84,7 @@
       </div>
     </div>
     <div class="drawer-body">
+      <VentajaIndexList entityType="personaje" entityId={result.nombre} {indexes} {categories} />
       <DetailView {personaje} {config} {roster} {count90} {onEditChar} />
     </div>
   </aside>

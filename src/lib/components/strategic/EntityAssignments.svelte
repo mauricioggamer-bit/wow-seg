@@ -2,7 +2,7 @@
   import { dataStore } from '../../stores/data'
   import { RACE_PROFESSION_BONUS } from '../../constants'
   import { calculateStrategicValue } from '../../leveling/strategicValue'
-  import StrategicBreakdown from '../leveling/StrategicBreakdown.svelte'
+  import StrategicValueDisplay from '../leveling/StrategicValueDisplay.svelte'
   import PointStepper from './PointStepper.svelte'
   import type { StrategicIndex, StrategicCategory, EntityType, Personaje, LevelingConfig } from '../../types'
 
@@ -123,10 +123,7 @@
   </div>
 
   {#if strategicResult}
-    <div class="ea-breakdown">
-      <h4 class="ea-subheading">Desglose completo</h4>
-      <StrategicBreakdown strategic={strategicResult} />
-    </div>
+    <StrategicValueDisplay strategic={strategicResult} />
   {/if}
 </div>
 
@@ -229,8 +226,5 @@
     border-color: var(--danger);
     color: var(--danger);
   }
-  .ea-breakdown {
-    border-top: 1px solid var(--border-subtle);
-    padding-top: 8px;
-  }
+
 </style>

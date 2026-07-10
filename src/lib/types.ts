@@ -20,6 +20,8 @@ export interface Tarea {
   tags?: string[]
   orden?: number
   puntos?: number
+  profesion?: string
+  cooldownProfesion?: string
 }
 
 export interface ProfesionSlot {

@@ -2,11 +2,11 @@
   import { dataStore } from '../../stores/data'
   import { RACE_PROFESSION_BONUS } from '../../constants'
   import { calculateStrategicValue } from '../../leveling/strategicValue'
-  import StrategicValueDisplay from '../leveling/StrategicValueDisplay.svelte'
+  import DetailView from '../leveling/DetailView.svelte'
   import PointStepper from './PointStepper.svelte'
   import type { StrategicIndex, StrategicCategory, EntityType, Personaje, LevelingConfig } from '../../types'
 
-  let { entityType, entityId, entityLabel, indexes, categories, personajeData, levelingCtx }: {
+  let { entityType, entityId, entityLabel, indexes, categories, personajeData, levelingCtx, openCharEdit }: {
     entityType: EntityType
     entityId: string
     entityLabel: string
@@ -14,6 +14,7 @@
     categories: StrategicCategory[]
     personajeData?: Personaje
     levelingCtx?: { config: LevelingConfig; roster: Personaje[]; count90: number }
+    openCharEdit?: (name: string) => void
   } = $props()
 
   let search = $state('')
@@ -122,8 +123,14 @@
     {/if}
   </div>
 
-  {#if strategicResult}
-    <StrategicValueDisplay strategic={strategicResult} />
+  {#if strategicResult && levelingCtx}
+    <DetailView
+      personaje={personajeData!}
+      config={levelingCtx.config}
+      roster={levelingCtx.roster}
+      count90={levelingCtx.count90}
+      onEditChar={openCharEdit}
+    />
   {/if}
 </div>
 

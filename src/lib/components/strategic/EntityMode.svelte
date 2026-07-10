@@ -4,12 +4,13 @@
   import type { StrategicIndex, StrategicCategory, Personaje, LevelingConfig } from '../../types'
   import type { EntityKind } from './types'
 
-  let { kind, indexes, categories, personajes, levelingCtx }: {
+  let { kind, indexes, categories, personajes, levelingCtx, openCharEdit }: {
     kind: EntityKind
     indexes: StrategicIndex[]
     categories: StrategicCategory[]
     personajes?: Personaje[]
     levelingCtx?: { config: LevelingConfig; roster: Personaje[]; count90: number }
+    openCharEdit?: (name: string) => void
   } = $props()
 
   let search = $state('')
@@ -80,6 +81,7 @@
           {categories}
           personajeData={selectedPersonaje}
           {levelingCtx}
+          {openCharEdit}
         />
       {:else}
         <p class="sv-hint">Elegí {kind.label.toLowerCase()} de la lista para ver y gestionar sus ventajas.</p>

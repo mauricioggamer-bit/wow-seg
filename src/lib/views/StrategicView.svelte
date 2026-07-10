@@ -12,6 +12,8 @@
   import type { Personaje, StrategicIndex, StrategicCategory, Warband } from '../types'
   import type { EntityKind } from '../components/strategic/types'
 
+  let { openCharEdit }: { openCharEdit?: (name: string) => void } = $props()
+
   let tab = $state<'ventajas' | 'class' | 'race' | 'profession' | 'task' | 'warband' | 'personaje' | 'pesos'>('ventajas')
   let storeData = $derived($dataStore)
   let config = $derived($levelingStore)
@@ -84,7 +86,7 @@
     <ClassMatrix {indexes} {categories} />
 
   {:else if activeKind}
-    <EntityMode kind={activeKind} {indexes} {categories} {personajes} {levelingCtx} />
+    <EntityMode kind={activeKind} {indexes} {categories} {personajes} {levelingCtx} {openCharEdit} />
 
   {:else if tab === 'pesos'}
     <div class="sv-params-section">

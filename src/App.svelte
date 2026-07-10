@@ -491,7 +491,7 @@
             {:else if $uiStore.currentView === 'warband-manager'}
               <WarbandManagerView {openCharEdit} />
             {:else if $uiStore.currentView === 'estrategia'}
-              <StrategicView />
+              <StrategicView {openCharEdit} />
             {/if}
           </div>
         {/key}

@@ -1,70 +1,89 @@
 <script lang="ts">
   import { dataStore } from '../stores/data'
-  import { CLASS_STRATEGIC_VALUE, RACE_STRATEGIC_VALUE, PROFESSION_STRATEGIC_VALUE, STRATEGIC_COMPONENTS } from '../constants'
+  import { CLASS_STRATEGIC_VALUE, RACE_STRATEGIC_VALUE, PROFESSION_STRATEGIC_VALUE, STRATEGIC_COMPONENTS, RACE_PROFESSION_BONUS } from '../constants'
   import { PROFESIONES } from '../constants/profesiones'
-  import type { Personaje } from '../types'
+  import type { Personaje, StrategicIndex } from '../types'
 
-  let tab = $state<'classes' | 'races' | 'professions' | 'tasks' | 'components' | 'characters'>('classes')
+  let tab = $state<string>('indexes')
+  let personajes: Personaje[] = $derived(dataStore.getPersonajes())
 
   const tabs = [
+    { key: 'indexes', label: 'Ventajas' },
     { key: 'classes', label: 'Clases' },
     { key: 'races', label: 'Razas' },
     { key: 'professions', label: 'Profesiones' },
     { key: 'tasks', label: 'Tareas' },
-    { key: 'components', label: 'Componentes' },
+    { key: 'warbands', label: 'Warbands' },
     { key: 'characters', label: 'Personajes' },
-  ] as const
+    { key: 'components', label: 'Pesos' },
+  ]
 
-  const allClassNames = Object.keys(CLASS_STRATEGIC_VALUE).sort()
-  const allRaceNames = Object.keys(RACE_STRATEGIC_VALUE).sort()
-  let personajes: Personaje[] = $derived(dataStore.getPersonajes())
+  let indexes: StrategicIndex[] = $derived(dataStore.getIndexes())
+  let allClassNames = $derived(Object.keys(CLASS_STRATEGIC_VALUE).sort())
+  let allRaceNames = $derived(Object.keys(RACE_STRATEGIC_VALUE).sort())
+  let allWarbands = $derived(dataStore.getWarbands().filter(w => w.nombre !== 'nada').map(w => w.nombre))
+  let allProfItems = $derived([...PROFESIONES, { id: 'cocina', nombre: 'Cocina', icon: '🍳' }])
 
-  function currentClassValue(name: string): number {
-    return dataStore.getStrategicClassValue(name) ?? CLASS_STRATEGIC_VALUE[name] ?? 0
+  function getVal(entityType: string, entityId: string, indexId: string): number {
+    return dataStore.getStrategicValue(entityType, entityId, indexId) ?? 0
   }
-  function currentRaceValue(name: string): number {
-    return dataStore.getStrategicRaceValue(name) ?? RACE_STRATEGIC_VALUE[name] ?? 0
+  function defaultFor(entityType: string, entityId: string, indexId: string): number {
+    if (indexId === 'general') {
+      if (entityType === 'class') return CLASS_STRATEGIC_VALUE[entityId] ?? 0
+      if (entityType === 'race') return RACE_STRATEGIC_VALUE[entityId] ?? 0
+      if (entityType === 'profession') return PROFESSION_STRATEGIC_VALUE[entityId] ?? 0
+    }
+    return 0
   }
-  function currentProfValue(id: string): number {
-    return dataStore.getStrategicProfessionValue(id) ?? PROFESSION_STRATEGIC_VALUE[id] ?? 0
+  function isOver(entityType: string, entityId: string, indexId: string): boolean {
+    return dataStore.getStrategicValue(entityType, entityId, indexId) !== undefined
   }
-  function currentComponentWeight(key: string): number {
-    return dataStore.getStrategicComponentWeight(key) ?? 0
+  function save(entityType: string, entityId: string, indexId: string, el: EventTarget & HTMLInputElement) {
+    const v = parseInt(el.value)
+    if (!isNaN(v) && v >= 0) dataStore.setStrategicValue(entityType, entityId, indexId, v)
   }
-  function isOverridden(name: string, type: 'class' | 'race'): boolean {
-    if (type === 'class') return dataStore.getStrategicClassValue(name) !== undefined
-    return dataStore.getStrategicRaceValue(name) !== undefined
-  }
-  function isProfOverridden(id: string): boolean {
-    return dataStore.getStrategicProfessionValue(id) !== undefined
-  }
-  function isWeightOverridden(key: string): boolean {
-    return dataStore.getStrategicComponentWeight(key) !== undefined
+  function reset(entityType: string, entityId: string, indexId: string) {
+    dataStore.resetStrategicValue(entityType, entityId, indexId)
   }
 
-  function saveClassValue(name: string, el: EventTarget & HTMLInputElement) {
-    const val = parseInt(el.value)
-    if (!isNaN(val) && val >= 0) {
-      dataStore.setStrategicClassValue(name, val)
-    }
+  let newIdxName = $state('')
+  let newIdxDesc = $state('')
+  function addIndex() {
+    const name = newIdxName.trim()
+    if (!name) return
+    const id = 'idx_' + name.toLowerCase().replace(/[^a-z0-9]/g, '_')
+    dataStore.addIndex({ id, name, description: newIdxDesc.trim() })
+    newIdxName = ''
+    newIdxDesc = ''
   }
-  function saveRaceValue(name: string, el: EventTarget & HTMLInputElement) {
-    const val = parseInt(el.value)
-    if (!isNaN(val) && val >= 0) {
-      dataStore.setStrategicRaceValue(name, val)
-    }
+  function delIndex(id: string) {
+    const idx = indexes.find(i => i.id === id)
+    if (idx && confirm(`Eliminar ventaja "${idx.name}"?`)) dataStore.deleteIndex(id)
   }
-  function saveProfValue(id: string, el: EventTarget & HTMLInputElement) {
-    const val = parseInt(el.value)
-    if (!isNaN(val) && val >= 0) {
-      dataStore.setStrategicProfessionValue(id, val)
-    }
+
+  function raceProfBonusText(race: string): string {
+    const bonuses = RACE_PROFESSION_BONUS[race]
+    if (!bonuses || bonuses.length === 0) return '—'
+    return bonuses.map(b => {
+      if (b.profId === '*') return `+${b.bonus} a todas`
+      return `+${b.bonus} ${b.profId}${b.note ? ' (' + b.note + ')' : ''}`
+    }).join(', ')
   }
-  function saveWeight(key: string, el: EventTarget & HTMLInputElement) {
-    const val = parseInt(el.value)
-    if (!isNaN(val) && val >= 1) {
-      dataStore.setStrategicComponentWeight(key, val)
+
+  function raceBonusesForProf(profId: string): [string, number][] {
+    const result: [string, number][] = []
+    for (const [race, bonuses] of Object.entries(RACE_PROFESSION_BONUS)) {
+      for (const b of bonuses) {
+        if (b.profId === profId || b.profId === '*') {
+          result.push([race, b.bonus])
+        }
+      }
     }
+    return result
+  }
+
+  function charProfString(p: Personaje): string {
+    return (p.profesiones ?? []).map(pr => pr.id).filter(Boolean).join(',') || '—'
   }
 </script>
 
@@ -77,33 +96,66 @@
     {/each}
   </div>
 
-  {#if tab === 'classes'}
+  {#if tab === 'indexes'}
+    <div class="sv-section">
+      <div class="sv-add-row">
+        <input type="text" bind:value={newIdxName} placeholder="Nombre de la ventaja" class="sv-text-input" />
+        <input type="text" bind:value={newIdxDesc} placeholder="Descripción (opcional)" class="sv-text-input sv-text-wide" />
+        <button class="sv-btn-add" onclick={addIndex}>+ Añadir</button>
+      </div>
+      {#if indexes.length === 0}
+        <p class="sv-hint">No hay ventajas definidas. Crea una para empezar.</p>
+      {:else}
+        <table class="sv-table">
+          <thead>
+            <tr><th>ID</th><th>Nombre</th><th>Descripción</th><th></th></tr>
+          </thead>
+          <tbody>
+            {#each indexes as idx}
+              <tr>
+                <td class="sv-muted">{idx.id}</td>
+                <td>{idx.name}</td>
+                <td class="sv-desc">{idx.description || '—'}</td>
+                <td>
+                  {#if idx.id !== 'general'}
+                    <button class="sv-btn-del" onclick={() => delIndex(idx.id)}>Eliminar</button>
+                  {:else}
+                    <span class="sv-muted">(protegido)</span>
+                  {/if}
+                </td>
+              </tr>
+            {/each}
+          </tbody>
+        </table>
+      {/if}
+    </div>
+
+  {:else if tab === 'classes'}
     <div class="sv-table-wrap">
-      <table class="sv-table">
+      <table class="sv-table sv-matrix">
         <thead>
-          <tr><th>Clase</th><th>Default</th><th>Valor</th><th></th></tr>
+          <tr>
+            <th>Clase</th>
+            {#each indexes as idx}
+              <th class="sv-col-idx">{idx.name}</th>
+            {/each}
+            <th>Default</th>
+          </tr>
         </thead>
         <tbody>
           {#each allClassNames as name}
-            {@const def = CLASS_STRATEGIC_VALUE[name] ?? 0}
-            {@const cur = currentClassValue(name)}
             <tr>
               <td>{name}</td>
-              <td class="sv-default">{def}</td>
-              <td>
-                <input type="number" min="0" max="100"
-                  value={cur}
-                  onchange={(e) => saveClassValue(name, e.currentTarget)}
-                  class="sv-input"
-                  class:sv-overridden={isOverridden(name, 'class')} />
-              </td>
-              <td>
-                {#if isOverridden(name, 'class')}
-                  <button class="sv-btn-reset" onclick={() => dataStore.resetStrategicClassValue(name)}>Reset</button>
-                {:else}
-                  <span class="sv-default-label">Default</span>
-                {/if}
-              </td>
+              {#each indexes as idx}
+                <td>
+                  <input type="number" min="0" max="100"
+                    value={getVal('class', name, idx.id)}
+                    onchange={(e) => save('class', name, idx.id, e.currentTarget)}
+                    class="sv-input"
+                    class:sv-overridden={isOver('class', name, idx.id)} />
+                </td>
+              {/each}
+              <td class="sv-default">{defaultFor('class', name, 'general')}</td>
             </tr>
           {/each}
         </tbody>
@@ -112,31 +164,32 @@
 
   {:else if tab === 'races'}
     <div class="sv-table-wrap">
-      <table class="sv-table">
+      <table class="sv-table sv-matrix">
         <thead>
-          <tr><th>Raza</th><th>Default</th><th>Valor</th><th></th></tr>
+          <tr>
+            <th>Raza</th>
+            {#each indexes as idx}
+              <th class="sv-col-idx">{idx.name}</th>
+            {/each}
+            <th>Bono Prof.</th>
+            <th>Default</th>
+          </tr>
         </thead>
         <tbody>
           {#each allRaceNames as name}
-            {@const def = RACE_STRATEGIC_VALUE[name] ?? 0}
-            {@const cur = currentRaceValue(name)}
             <tr>
               <td>{name}</td>
-              <td class="sv-default">{def}</td>
-              <td>
-                <input type="number" min="0" max="100"
-                  value={cur}
-                  onchange={(e) => saveRaceValue(name, e.currentTarget)}
-                  class="sv-input"
-                  class:sv-overridden={isOverridden(name, 'race')} />
-              </td>
-              <td>
-                {#if isOverridden(name, 'race')}
-                  <button class="sv-btn-reset" onclick={() => dataStore.resetStrategicRaceValue(name)}>Reset</button>
-                {:else}
-                  <span class="sv-default-label">Default</span>
-                {/if}
-              </td>
+              {#each indexes as idx}
+                <td>
+                  <input type="number" min="0" max="100"
+                    value={getVal('race', name, idx.id)}
+                    onchange={(e) => save('race', name, idx.id, e.currentTarget)}
+                    class="sv-input"
+                    class:sv-overridden={isOver('race', name, idx.id)} />
+                </td>
+              {/each}
+              <td class="sv-default">{raceProfBonusText(name)}</td>
+              <td class="sv-default">{defaultFor('race', name, 'general')}</td>
             </tr>
           {/each}
         </tbody>
@@ -145,31 +198,34 @@
 
   {:else if tab === 'professions'}
     <div class="sv-table-wrap">
-      <table class="sv-table">
+      <table class="sv-table sv-matrix">
         <thead>
-          <tr><th>Profesión</th><th>Default</th><th>Valor</th><th></th></tr>
+          <tr>
+            <th>Profesión</th>
+            {#each indexes as idx}
+              <th class="sv-col-idx">{idx.name}</th>
+            {/each}
+            <th>Default</th>
+          </tr>
         </thead>
         <tbody>
-          {#each PROFESIONES as prof}
-            {@const def = PROFESSION_STRATEGIC_VALUE[prof.id] ?? 0}
-            {@const cur = currentProfValue(prof.id)}
+          {#each allProfItems as prof}
             <tr>
-              <td>{prof.icon} {prof.nombre}</td>
-              <td class="sv-default">{def}</td>
-              <td>
-                <input type="number" min="0" max="100"
-                  value={cur}
-                  onchange={(e) => saveProfValue(prof.id, e.currentTarget)}
-                  class="sv-input"
-                  class:sv-overridden={isProfOverridden(prof.id)} />
+              <td>{prof.icon} {prof.nombre}
+                {#each raceBonusesForProf(prof.id) as [race, bonus]}
+                  <span class="sv-race-badge" title="{race}: +{bonus}">{race[0]}+{bonus}</span>
+                {/each}
               </td>
-              <td>
-                {#if isProfOverridden(prof.id)}
-                  <button class="sv-btn-reset" onclick={() => dataStore.resetStrategicProfessionValue(prof.id)}>Reset</button>
-                {:else}
-                  <span class="sv-default-label">Default</span>
-                {/if}
-              </td>
+              {#each indexes as idx}
+                <td>
+                  <input type="number" min="0" max="100"
+                    value={getVal('profession', prof.id, idx.id)}
+                    onchange={(e) => save('profession', prof.id, idx.id, e.currentTarget)}
+                    class="sv-input"
+                    class:sv-overridden={isOver('profession', prof.id, idx.id)} />
+                </td>
+              {/each}
+              <td class="sv-default">{defaultFor('profession', prof.id, 'general')}</td>
             </tr>
           {/each}
         </tbody>
@@ -177,31 +233,96 @@
     </div>
 
   {:else if tab === 'tasks'}
-    <div class="sv-table-wrap">
-      <p class="sv-hint">Edita los puntos estratégicos por tarea directamente desde la vista de Tareas o al editar un personaje. Aquí se muestran todas las tareas de todos los personajes.</p>
+    <div class="sv-section">
+      <p class="sv-hint">Valor estratégico por ventaja aplicado globalmente a todas las tareas (se suma una vez por personaje).</p>
       <table class="sv-table">
         <thead>
-          <tr><th>Personaje</th><th>Tarea</th><th>Puntos</th></tr>
+          <tr><th>Ventaja</th><th>Valor</th></tr>
+        </thead>
+        <tbody>
+          {#each indexes as idx}
+            <tr>
+              <td>{idx.name}</td>
+              <td>
+                <input type="number" min="0" max="100"
+                  value={getVal('task', '', idx.id)}
+                  onchange={(e) => save('task', '', idx.id, e.currentTarget)}
+                  class="sv-input"
+                  class:sv-overridden={isOver('task', '', idx.id)} />
+              </td>
+            </tr>
+          {/each}
+        </tbody>
+      </table>
+    </div>
+
+  {:else if tab === 'warbands'}
+    <div class="sv-table-wrap">
+      <table class="sv-table sv-matrix">
+        <thead>
+          <tr>
+            <th>Warband</th>
+            {#each indexes as idx}
+              <th class="sv-col-idx">{idx.name}</th>
+            {/each}
+          </tr>
+        </thead>
+        <tbody>
+          {#each allWarbands as wb}
+            <tr>
+              <td>{wb}</td>
+              {#each indexes as idx}
+                <td>
+                  <input type="number" min="0" max="100"
+                    value={getVal('warband', wb, idx.id)}
+                    onchange={(e) => save('warband', wb, idx.id, e.currentTarget)}
+                    class="sv-input"
+                    class:sv-overridden={isOver('warband', wb, idx.id)} />
+                </td>
+              {/each}
+            </tr>
+          {/each}
+        </tbody>
+      </table>
+    </div>
+
+  {:else if tab === 'characters'}
+    <div class="sv-table-wrap">
+      <table class="sv-table sv-matrix">
+        <thead>
+          <tr>
+            <th>Personaje</th>
+            <th>Clase</th>
+            <th>Raza</th>
+            <th>Prof.</th>
+            {#each indexes as idx}
+              <th class="sv-col-idx">{idx.name}</th>
+            {/each}
+            <th>Base</th>
+          </tr>
         </thead>
         <tbody>
           {#each personajes as p}
-            {#each p.tareas as t}
-              <tr>
-                <td>{p.nombre}</td>
-                <td>{t.nombre}</td>
+            <tr>
+              <td>{p.nombre}</td>
+              <td class="sv-default">{p.clase}</td>
+              <td class="sv-default">{p.raza}</td>
+              <td class="sv-default">{charProfString(p)}</td>
+              {#each indexes as idx}
                 <td>
                   <input type="number" min="0" max="100"
-                    value={t.puntos ?? 0}
-                    onchange={(e) => {
-                      const val = parseInt(e.currentTarget.value)
-                      if (!isNaN(val) && val >= 0) {
-                        dataStore.updateTarea(p.nombre, t.id, { puntos: val })
-                      }
-                    }}
-                    class="sv-input sv-input-sm" />
+                    value={getVal('personaje', p.nombre, idx.id)}
+                    onchange={(e) => save('personaje', p.nombre, idx.id, e.currentTarget)}
+                    class="sv-input"
+                    class:sv-overridden={isOver('personaje', p.nombre, idx.id)} />
                 </td>
-              </tr>
-            {/each}
+              {/each}
+              <td class="sv-default">
+                {getVal('class', p.clase, 'general') || CLASS_STRATEGIC_VALUE[p.clase] || 0}
+                +
+                {getVal('race', p.raza, 'general') || RACE_STRATEGIC_VALUE[p.raza] || 0}
+              </td>
+            </tr>
           {/each}
         </tbody>
       </table>
@@ -215,75 +336,33 @@
         </thead>
         <tbody>
           {#each STRATEGIC_COMPONENTS as comp}
-            {@const def = comp.weight}
             <tr>
               <td>{comp.label}</td>
-              <td class="sv-default">{def === 'fixed' || def === 'bonus' ? '—' : def}</td>
+              <td class="sv-default">{comp.weight === 'fixed' || comp.weight === 'bonus' ? '—' : comp.weight}</td>
               <td>
-                {#if typeof def === 'number'}
-                  {@const cur = currentComponentWeight(comp.key) || def}
+                {#if typeof comp.weight === 'number'}
                   <input type="number" min="1" max="100"
-                    value={cur}
-                    onchange={(e) => saveWeight(comp.key, e.currentTarget)}
+                    value={dataStore.getComponentWeight(comp.key) || comp.weight}
+                    onchange={(e) => {
+                      const v = parseInt(e.currentTarget.value)
+                      if (!isNaN(v) && v >= 1) dataStore.setComponentWeight(comp.key, v)
+                    }}
                     class="sv-input"
-                    class:sv-overridden={isWeightOverridden(comp.key)} />
+                    class:sv-overridden={dataStore.getComponentWeight(comp.key) > 0} />
                 {:else}
-                  <span class="sv-muted">{def}</span>
+                  <span class="sv-muted">{comp.weight}</span>
                 {/if}
               </td>
               <td class="sv-desc">{comp.description}</td>
               <td>
-                {#if typeof def === 'number'}
-                  {#if isWeightOverridden(comp.key)}
-                    <button class="sv-btn-reset" onclick={() => dataStore.resetStrategicComponentWeight(comp.key)}>Reset</button>
+                {#if typeof comp.weight === 'number'}
+                  {#if dataStore.getComponentWeight(comp.key) > 0}
+                    <button class="sv-btn-reset" onclick={() => dataStore.resetComponentWeight(comp.key)}>Reset</button>
                   {:else}
                     <span class="sv-default-label">Default</span>
                   {/if}
                 {/if}
               </td>
-            </tr>
-          {/each}
-        </tbody>
-      </table>
-    </div>
-
-  {:else if tab === 'characters'}
-    <div class="sv-table-wrap">
-      <table class="sv-table">
-        <thead>
-          <tr>
-            <th>Personaje</th>
-            <th>Clase</th>
-            <th>Valor Clase</th>
-            <th>Raza</th>
-            <th>Valor Raza</th>
-            <th>Profesiones</th>
-            <th>Valor Prof.</th>
-            <th>Tags</th>
-            <th>Valor Tags</th>
-            <th>Tareas</th>
-            <th>Valor Tareas</th>
-          </tr>
-        </thead>
-        <tbody>
-          {#each personajes as p}
-            {@const classVal = currentClassValue(p.clase)}
-            {@const raceVal = currentRaceValue(p.raza)}
-            {@const profVal = (p.profesiones ?? []).reduce((sum, pr) => sum + (pr.id ? currentProfValue(pr.id) : 0), 0)}
-            {@const tagsVal = (p.tagsEstrategicos ?? []).reduce((sum, t) => sum + t.puntos, 0)}
-            {@const taskVal = (p.tareas ?? []).reduce((sum, t) => sum + (t.puntos ?? 0), 0)}
-            <tr>
-              <td>{p.nombre}</td>
-              <td>{p.clase}</td>
-              <td>{classVal}</td>
-              <td>{p.raza}</td>
-              <td>{raceVal}</td>
-              <td>{(p.profesiones ?? []).map(pr => pr.id).filter(Boolean).join(', ') || '—'}</td>
-              <td>{profVal}</td>
-              <td>{(p.tagsEstrategicos ?? []).map(t => t.texto).join(', ') || '—'}</td>
-              <td>{tagsVal}</td>
-              <td>{(p.tareas ?? []).filter(t => t.puntos).length}</td>
-              <td>{taskVal}</td>
             </tr>
           {/each}
         </tbody>
@@ -320,6 +399,55 @@
     color: var(--gold);
     border-color: var(--gold);
     border-bottom-color: var(--bg-card);
+  }
+  .sv-section {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+  .sv-add-row {
+    display: flex;
+    gap: 4px;
+    align-items: center;
+    flex-wrap: wrap;
+  }
+  .sv-text-input {
+    padding: 4px 6px;
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--r-sm);
+    background: var(--input-bg);
+    color: var(--text-primary);
+    font-size: 0.6rem;
+  }
+  .sv-text-wide {
+    flex: 1;
+    min-width: 150px;
+  }
+  .sv-btn-add {
+    font-size: 0.55rem;
+    padding: 4px 10px;
+    border: 1px solid var(--gold);
+    border-radius: var(--r-sm);
+    background: transparent;
+    color: var(--gold);
+    cursor: pointer;
+  }
+  .sv-btn-add:hover {
+    background: var(--gold);
+    color: var(--bg-app);
+  }
+  .sv-btn-del {
+    font-size: 0.5rem;
+    padding: 2px 6px;
+    border: 1px solid var(--danger);
+    border-radius: var(--r-sm);
+    background: transparent;
+    color: var(--danger);
+    cursor: pointer;
+  }
+  .sv-btn-del:hover {
+    background: var(--danger);
+    color: white;
   }
   .sv-table-wrap {
     overflow-x: auto;
@@ -370,8 +498,8 @@
     font-size: 0.6rem;
     text-align: center;
   }
-  .sv-input-sm {
-    width: 40px;
+  .sv-overridden {
+    border-color: var(--gold) !important;
   }
   .sv-btn-reset {
     font-size: 0.5rem;
@@ -386,9 +514,6 @@
     border-color: var(--gold);
     color: var(--gold);
   }
-  .sv-overridden {
-    border-color: var(--gold) !important;
-  }
   .sv-default-label {
     font-size: 0.5rem;
     color: var(--text-dim);
@@ -399,5 +524,25 @@
     color: var(--text-muted);
     margin: 0;
     padding: 4px 0;
+  }
+  .sv-col-idx {
+    min-width: 40px;
+    text-align: center;
+  }
+  .sv-matrix td {
+    text-align: center;
+  }
+  .sv-matrix td:first-child {
+    text-align: left;
+  }
+  .sv-race-badge {
+    display: inline-block;
+    font-size: 0.45rem;
+    background: var(--gold);
+    color: var(--bg-app);
+    border-radius: 4px;
+    padding: 1px 4px;
+    margin: 1px;
+    cursor: help;
   }
 </style>

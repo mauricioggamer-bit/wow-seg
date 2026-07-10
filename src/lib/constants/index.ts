@@ -50,6 +50,23 @@ export const PERS_CLASS_COLORS: Record<string, string> = {
   warlock: '#8788ee', monk: '#00ff96', druid: '#ff7c0a', dh: '#a330c9', evoker: '#33937f',
 }
 
+export type RaceProfBonus = { profId: string; bonus: number; note?: string }
+
+export const RACE_PROFESSION_BONUS: Record<string, RaceProfBonus[]> = {
+  'Gnome':             [{ profId: 'ingenieria', bonus: 5, note: 'The Lazy Goldmaker' }],
+  'Draenei':           [{ profId: 'joyeria', bonus: 5, note: 'The Lazy Goldmaker' }],
+  'Blood Elf':         [{ profId: 'encantamiento', bonus: 5, note: 'The Lazy Goldmaker' }],
+  'Worgen':            [{ profId: 'desuello', bonus: 5, note: 'The Lazy Goldmaker' }],
+  'Goblin':            [{ profId: 'alquimia', bonus: 5, note: 'The Lazy Goldmaker' }],
+  'Pandaren':          [{ profId: 'cocina', bonus: 5, note: 'The Lazy Goldmaker' }],
+  'Light Draenei':     [{ profId: 'herreria', bonus: 5, note: 'The Lazy Goldmaker' }],
+  'Nightborne':        [{ profId: 'inscripcion', bonus: 5, note: 'The Lazy Goldmaker' }],
+  'Highmountain':      [{ profId: 'mineria', bonus: 5, note: 'The Lazy Goldmaker' }],
+  'Dark Iron Dwarf':   [{ profId: 'herreria', bonus: 5, note: 'The Lazy Goldmaker' }],
+  'Kul Tiran':         [{ profId: '*', bonus: 2, note: 'The Lazy Goldmaker — +2 a todas las primarias' }],
+  'Tauren':            [{ profId: 'herboristeria', bonus: 5, note: 'Cultivation racial' }],
+}
+
 export const CLASS_STRATEGIC_VALUE: Record<string, number> = {
   'Guerrero': 8, 'Paladín': 10, 'Cazador': 6, 'Pícaro': 5,
   'Sacerdote': 9, 'DK': 9, 'Chamán': 8, 'Mago': 7,
@@ -92,6 +109,8 @@ export const STRATEGIC_COMPONENTS: StrategicComponentInfo[] = [
   { key: 'raceValue', label: 'Raza', weight: 'fixed', description: 'Valor estratégico fijo según la raza del personaje.' },
   { key: 'tagsValue', label: 'Tags', weight: 'fixed', description: 'Suma de puntos de tags estratégicos definidos por el usuario.' },
   { key: 'taskValue', label: 'Tareas', weight: 'fixed', description: 'Suma de puntos estratégicos de las tareas del personaje.' },
+  { key: 'raceProfBonus', label: 'Bono Raza-Profesión', weight: 'fixed', description: 'Bonos raciales que otorgan puntos extra si el personaje tiene la profesión correspondiente.' },
+  { key: 'indexValues', label: 'Ventajas', weight: 'fixed', description: 'Suma de ventajas estratégicas definidas por el usuario.' },
 ]
 
 export const STAR_THRESHOLDS = [

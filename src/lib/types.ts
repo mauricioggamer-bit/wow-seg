@@ -69,6 +69,14 @@ export interface Meta {
   schema_version?: number
 }
 
+export interface StrategicIndex {
+  id: string
+  name: string
+  description: string
+}
+
+export type EntityType = 'class' | 'race' | 'profession' | 'task' | 'warband' | 'personaje'
+
 export interface WowData {
   _meta: Meta
   personajes: Personaje[]
@@ -76,9 +84,8 @@ export interface WowData {
   keybinds?: Record<string, string>
   profesionOrden?: string[]
   strategicConfig?: {
-    classValues?: Record<string, number>
-    raceValues?: Record<string, number>
-    professionValues?: Record<string, number>
+    indexes?: StrategicIndex[]
+    values?: Record<string, number>
     componentWeights?: Record<string, number>
   }
 }
@@ -175,8 +182,10 @@ export interface StrategicValueResult {
   bonus8089: number
   classValue: number
   raceValue: number
+  raceProfBonus: number
   tagsValue: number
   taskValue: number
+  indexValues: Record<string, number>
   totalScore: number
   reasons: string[]
 }

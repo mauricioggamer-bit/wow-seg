@@ -106,9 +106,12 @@ export function normalizeData(data: WowData): WowData {
     data.profesionOrden = PROFESIONES.map(p => p.id)
   }
   if (!data.strategicConfig) data.strategicConfig = {}
-  if (!data.strategicConfig.classValues) data.strategicConfig.classValues = {}
-  if (!data.strategicConfig.raceValues) data.strategicConfig.raceValues = {}
-  if (!data.strategicConfig.professionValues) data.strategicConfig.professionValues = {}
+  if (!data.strategicConfig.indexes) {
+    data.strategicConfig.indexes = [
+      { id: 'general', name: 'General', description: 'Valor estratégico base' },
+    ]
+  }
+  if (!data.strategicConfig.values) data.strategicConfig.values = {}
   if (!data.strategicConfig.componentWeights) data.strategicConfig.componentWeights = {}
 
   const needsMigration = data.personajes.length > 0 && !Array.isArray(data.personajes[0]?.tareas)

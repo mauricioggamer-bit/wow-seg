@@ -503,73 +503,73 @@ addTarea(nombrePersonaje: string, tarea: { nombre: string; tipoContenido?: TipoC
     getStrategicConfig() {
       return get({ subscribe }).strategicConfig ?? {}
     },
-    getStrategicClassValue(name: string): number | undefined {
-      return get({ subscribe }).strategicConfig?.classValues?.[name]
+    valueKey(entityType: string, entityId: string, indexId: string): string {
+      return `${entityType}:${entityId}:${indexId}`
     },
-    setStrategicClassValue(name: string, value: number) {
+    getStrategicValue(entityType: string, entityId: string, indexId: string): number | undefined {
+      const key = this.valueKey(entityType, entityId, indexId)
+      return get({ subscribe }).strategicConfig?.values?.[key]
+    },
+    setStrategicValue(entityType: string, entityId: string, indexId: string, value: number) {
+      const key = this.valueKey(entityType, entityId, indexId)
       update(d => {
         if (!d.strategicConfig) d.strategicConfig = {}
-        if (!d.strategicConfig.classValues) d.strategicConfig.classValues = {}
-        d.strategicConfig.classValues[name] = value
+        if (!d.strategicConfig.values) d.strategicConfig.values = {}
+        d.strategicConfig.values[key] = value
         saveData(d)
         return { ...d }
       })
     },
-    resetStrategicClassValue(name: string) {
+    resetStrategicValue(entityType: string, entityId: string, indexId: string) {
+      const key = this.valueKey(entityType, entityId, indexId)
       update(d => {
-        if (d.strategicConfig?.classValues) {
-          delete d.strategicConfig.classValues[name]
+        if (d.strategicConfig?.values) {
+          delete d.strategicConfig.values[key]
           saveData(d)
         }
         return { ...d }
       })
     },
-    getStrategicRaceValue(name: string): number | undefined {
-      return get({ subscribe }).strategicConfig?.raceValues?.[name]
+    getIndexes(): import('../types').StrategicIndex[] {
+      return get({ subscribe }).strategicConfig?.indexes ?? []
     },
-    setStrategicRaceValue(name: string, value: number) {
+    addIndex(idx: import('../types').StrategicIndex) {
       update(d => {
         if (!d.strategicConfig) d.strategicConfig = {}
-        if (!d.strategicConfig.raceValues) d.strategicConfig.raceValues = {}
-        d.strategicConfig.raceValues[name] = value
+        if (!d.strategicConfig.indexes) d.strategicConfig.indexes = []
+        if (d.strategicConfig.indexes.some(i => i.id === idx.id)) return d
+        d.strategicConfig.indexes = [...d.strategicConfig.indexes, idx]
         saveData(d)
         return { ...d }
       })
     },
-    resetStrategicRaceValue(name: string) {
+    updateIndex(id: string, updates: Partial<import('../types').StrategicIndex>) {
       update(d => {
-        if (d.strategicConfig?.raceValues) {
-          delete d.strategicConfig.raceValues[name]
-          saveData(d)
-        }
-        return { ...d }
-      })
-    },
-    getStrategicProfessionValue(id: string): number | undefined {
-      return get({ subscribe }).strategicConfig?.professionValues?.[id]
-    },
-    setStrategicProfessionValue(id: string, value: number) {
-      update(d => {
-        if (!d.strategicConfig) d.strategicConfig = {}
-        if (!d.strategicConfig.professionValues) d.strategicConfig.professionValues = {}
-        d.strategicConfig.professionValues[id] = value
+        if (!d.strategicConfig?.indexes) return d
+        d.strategicConfig.indexes = d.strategicConfig.indexes.map(i =>
+          i.id === id ? { ...i, ...updates } : i
+        )
         saveData(d)
         return { ...d }
       })
     },
-    resetStrategicProfessionValue(id: string) {
+    deleteIndex(id: string) {
       update(d => {
-        if (d.strategicConfig?.professionValues) {
-          delete d.strategicConfig.professionValues[id]
-          saveData(d)
+        if (!d.strategicConfig) return d
+        d.strategicConfig.indexes = (d.strategicConfig.indexes ?? []).filter(i => i.id !== id)
+        if (d.strategicConfig.values) {
+          for (const key of Object.keys(d.strategicConfig.values)) {
+            if (key.endsWith(`:${id}`)) delete d.strategicConfig.values[key]
+          }
         }
+        saveData(d)
         return { ...d }
       })
     },
-    getStrategicComponentWeight(key: string): number | undefined {
-      return get({ subscribe }).strategicConfig?.componentWeights?.[key]
+    getComponentWeight(key: string): number {
+      return get({ subscribe }).strategicConfig?.componentWeights?.[key] ?? 0
     },
-    setStrategicComponentWeight(key: string, value: number) {
+    setComponentWeight(key: string, value: number) {
       update(d => {
         if (!d.strategicConfig) d.strategicConfig = {}
         if (!d.strategicConfig.componentWeights) d.strategicConfig.componentWeights = {}
@@ -578,7 +578,7 @@ addTarea(nombrePersonaje: string, tarea: { nombre: string; tipoContenido?: TipoC
         return { ...d }
       })
     },
-    resetStrategicComponentWeight(key: string) {
+    resetComponentWeight(key: string) {
       update(d => {
         if (d.strategicConfig?.componentWeights) {
           delete d.strategicConfig.componentWeights[key]

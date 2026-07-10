@@ -1,19 +1,25 @@
-import type { Personaje, LevelingConfig, StrategicValueResult } from '../types'
+import type { Personaje, LevelingConfig, StrategicValueResult, StrategicIndex } from '../types'
 import { calculateForCharacter, getEffectiveXpPerDungeon, getXpRemaining } from './calculator'
-import { CLASS_STRATEGIC_VALUE, RACE_STRATEGIC_VALUE, PROFESSION_STRATEGIC_VALUE, STAR_THRESHOLDS } from '../constants'
+import { CLASS_STRATEGIC_VALUE, RACE_STRATEGIC_VALUE, PROFESSION_STRATEGIC_VALUE, STAR_THRESHOLDS, RACE_PROFESSION_BONUS } from '../constants'
 import { dataStore } from '../stores/data'
 
-function getClassValue(className: string): number {
-  return dataStore.getStrategicClassValue(className) ?? CLASS_STRATEGIC_VALUE[className] ?? 0
+function getClassValue(className: string, indexId: string): number {
+  return dataStore.getStrategicValue('class', className, indexId)
+    ?? (indexId === 'general' ? CLASS_STRATEGIC_VALUE[className] : 0)
+    ?? 0
 }
-function getRaceValue(race: string): number {
-  return dataStore.getStrategicRaceValue(race) ?? RACE_STRATEGIC_VALUE[race] ?? 0
+function getRaceValue(race: string, indexId: string): number {
+  return dataStore.getStrategicValue('race', race, indexId)
+    ?? (indexId === 'general' ? RACE_STRATEGIC_VALUE[race] : 0)
+    ?? 0
 }
-function getProfessionValue(id: string): number {
-  return dataStore.getStrategicProfessionValue(id) ?? PROFESSION_STRATEGIC_VALUE[id] ?? 0
+function getProfessionValue(id: string, indexId: string): number {
+  return dataStore.getStrategicValue('profession', id, indexId)
+    ?? (indexId === 'general' ? PROFESSION_STRATEGIC_VALUE[id] : 0)
+    ?? 0
 }
 function getComponentWeight(key: string): number {
-  return dataStore.getStrategicComponentWeight(key) ?? 0
+  return dataStore.getComponentWeight(key)
 }
 function getEffectiveWeight(key: string, defaultWeight: number): number {
   const override = getComponentWeight(key)
@@ -42,10 +48,12 @@ export function calculateStrategicValue(
       bonus8089: 0,
       classValue: 0,
       raceValue: 0,
-    tagsValue: 0,
-    taskValue: 0,
-    totalScore: 0,
-    reasons: ['Nivel 90 alcanzado'],
+      raceProfBonus: 0,
+      tagsValue: 0,
+      taskValue: 0,
+      indexValues: {},
+      totalScore: 0,
+      reasons: ['Nivel 90 alcanzado'],
     }
   }
 
@@ -66,9 +74,45 @@ export function calculateStrategicValue(
   }
 
   const profIds = personaje.profesiones?.map(pr => pr.id).filter(Boolean) ?? []
+
+  const indexes: StrategicIndex[] = dataStore.getIndexes()
+  const indexValues: Record<string, number> = {}
+
+  for (const idx of indexes) {
+    let total = 0
+
+    const cv = getClassValue(personaje.clase, idx.id)
+    if (cv > 0) total += cv
+
+    const rv = getRaceValue(personaje.raza, idx.id)
+    if (rv > 0) total += rv
+
+    for (const pid of profIds) {
+      const pv = getProfessionValue(pid, idx.id)
+      if (pv > 0) total += pv
+    }
+
+    const tv = dataStore.getStrategicValue('task', '', idx.id) ?? 0
+    if (tv > 0) total += tv
+
+    const wv = dataStore.getStrategicValue('warband', personaje.warband, idx.id) ?? 0
+    if (wv > 0) total += wv
+
+    const pv2 = dataStore.getStrategicValue('personaje', personaje.nombre, idx.id) ?? 0
+    if (pv2 > 0) total += pv2
+
+    if (total > 0) {
+      indexValues[idx.id] = total
+      reasons.push(`${idx.name}: +${total} pts`)
+    }
+  }
+
+  const classValue = getClassValue(personaje.clase, 'general')
+  const raceValue = getRaceValue(personaje.raza, 'general')
+
   let professionValue = 0
   if (profIds.length > 0) {
-    professionValue = profIds.reduce((sum, id) => sum + getProfessionValue(id), 0)
+    professionValue = profIds.reduce((sum, id) => sum + getProfessionValue(id, 'general'), 0)
     const profNames = profIds.join(', ')
     reasons.push(`Profesiones (${profNames}): +${professionValue} pts`)
   }
@@ -121,24 +165,33 @@ export function calculateStrategicValue(
   const bonusSub90 = personaje.nivel < 90 ? 1 : 0
   const bonus8089 = (personaje.nivel >= 80 && personaje.nivel < 90) ? 1 : 0
 
-  const classValue = getClassValue(personaje.clase)
-  if (classValue > 0) {
+  if (classValue > 0 && !reasons.some(r => r.includes('General'))) {
     reasons.push(`Clase ${personaje.clase}: +${classValue} pts`)
   }
-
-  const raceValue = getRaceValue(personaje.raza)
-  if (raceValue > 0) {
+  if (raceValue > 0 && !reasons.some(r => r.includes('General'))) {
     reasons.push(`Raza ${personaje.raza}: +${raceValue} pts`)
   }
 
   const tagsValue = (personaje.tagsEstrategicos ?? []).reduce((sum, t) => sum + t.puntos, 0)
+  for (const tag of (personaje.tagsEstrategicos ?? [])) {
+    reasons.push(`Tag "${tag.texto}": +${tag.puntos} pts`)
+  }
 
   const taskValue = (personaje.tareas ?? []).reduce((sum, t) => sum + (t.puntos ?? 0), 0)
   if (taskValue > 0) {
     reasons.push(`Tareas: +${taskValue} pts`)
   }
-  for (const tag of (personaje.tagsEstrategicos ?? [])) {
-    reasons.push(`Tag "${tag.texto}": +${tag.puntos} pts`)
+
+  let raceProfBonus = 0
+  const raceBonuses = RACE_PROFESSION_BONUS[personaje.raza] ?? []
+  for (const bonus of raceBonuses) {
+    if (bonus.profId === '*') {
+      raceProfBonus += bonus.bonus * profIds.length
+      if (profIds.length > 0) reasons.push(`Kul Tiran: +${bonus.bonus * profIds.length} pts por ${profIds.length} profesión(es) primaria(s)`)
+    } else if (profIds.includes(bonus.profId)) {
+      raceProfBonus += bonus.bonus
+      reasons.push(`${personaje.raza}: +${bonus.bonus} pts (${bonus.profId}${bonus.note ? ' — ' + bonus.note : ''})`)
+    }
   }
 
   const wWarband = getEffectiveWeight('warbandImpact', 10)
@@ -149,6 +202,8 @@ export function calculateStrategicValue(
   const wRemaining = getEffectiveWeight('remainingWeight', 10)
   const wBonusSub90 = getEffectiveWeight('bonusSub90', 10)
   const wBonus8089 = getEffectiveWeight('bonus8089', 15)
+
+  const totalIndexValue = Object.values(indexValues).reduce((a, b) => a + b, 0)
 
   let totalScore = 0
   totalScore += warbandImpact * wWarband
@@ -161,8 +216,10 @@ export function calculateStrategicValue(
   totalScore += bonus8089 * wBonus8089
   totalScore += classValue
   totalScore += raceValue
+  totalScore += raceProfBonus
   totalScore += tagsValue
   totalScore += taskValue
+  totalScore += totalIndexValue
   totalScore = Math.min(100, totalScore)
 
   let stars = 1
@@ -186,8 +243,10 @@ export function calculateStrategicValue(
     bonus8089,
     classValue,
     raceValue,
+    raceProfBonus,
     tagsValue,
     taskValue,
+    indexValues,
     totalScore,
     reasons,
   }

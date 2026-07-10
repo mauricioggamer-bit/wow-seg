@@ -8,6 +8,8 @@
   let editing = $state<Record<string, string[]>>({})
   let descBuffer = $state<Record<string, string>>({})
   let filterText = $state('')
+  let showSinRep1 = $state(false)
+  let showSinRep2 = $state(false)
   let showSinDesc = $state(false)
 
   let activeWarband = $derived($currentWarband === '' ? null : ($currentWarband || $personajesStore[0]?.warband || null))
@@ -18,6 +20,8 @@
 
   let sorted = $derived(
     [...scoped]
+      .filter(c => !showSinRep1 || !(c.parecidos?.[0]))
+      .filter(c => !showSinRep2 || !(c.parecidos?.[1]))
       .filter(c => !showSinDesc || !c.descripcion)
       .filter(c => !filterText || c.nombre.toLowerCase().includes(filterText.toLowerCase()) || (c.clase || '').toLowerCase().includes(filterText.toLowerCase()) || (c.raza || '').toLowerCase().includes(filterText.toLowerCase()))
       .sort((a, b) => a.nombre.localeCompare(b.nombre))
@@ -96,6 +100,8 @@
   <div class="fantasia-editor">
     <div class="fantasia-editor-header">
       <span class="fantasia-editor-title">✏️ {activeWarband ? activeWarband : 'Todas'} ({sorted.length})</span>
+      <label class="fantasia-toggle"><input type="checkbox" bind:checked={showSinRep1} /> Sin rep. 1</label>
+      <label class="fantasia-toggle"><input type="checkbox" bind:checked={showSinRep2} /> Sin rep. 2</label>
       <label class="fantasia-toggle"><input type="checkbox" bind:checked={showSinDesc} /> Sin descripción</label>
       <input class="fantasia-search" type="text" placeholder="Filtrar personajes..." bind:value={filterText} />
     </div>

@@ -30,7 +30,7 @@ export function simulateRoster(
     results.push({ nombre: char.nombre, result })
     totalTime += result.metrics.totalTime
 
-    if (result.finalState.level >= gameModel.getMaxLevel()) {
+    if (char.nivel < gameModel.getMaxLevel() && result.finalState.level >= gameModel.getMaxLevel()) {
       count90++
     }
   }
@@ -66,7 +66,7 @@ export function simulateRosterWithContext(
     results.push({ nombre: char.nombre, result })
     totalTime += result.metrics.totalTime
 
-    if (result.finalState.level >= gameModel.getMaxLevel()) {
+    if (char.nivel < gameModel.getMaxLevel() && result.finalState.level >= gameModel.getMaxLevel()) {
       count90++
     }
   }

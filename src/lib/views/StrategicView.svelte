@@ -6,6 +6,7 @@
   import VentajaList from '../components/strategic/VentajaList.svelte'
   import VentajaDetail from '../components/strategic/VentajaDetail.svelte'
   import EntityMode from '../components/strategic/EntityMode.svelte'
+  import ClassMatrix from '../components/strategic/ClassMatrix.svelte'
   import CategoryManagerModal from '../components/strategic/CategoryManagerModal.svelte'
   import { STRATEGIC_PARAMS } from '../constants'
   import type { Personaje, StrategicIndex, StrategicCategory, Warband } from '../types'
@@ -78,6 +79,9 @@
         {/if}
       </div>
     </div>
+
+  {:else if tab === 'class'}
+    <ClassMatrix {indexes} {categories} />
 
   {:else if activeKind}
     <EntityMode kind={activeKind} {indexes} {categories} {personajes} {levelingCtx} />

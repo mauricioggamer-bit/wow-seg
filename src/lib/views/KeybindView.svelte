@@ -1,7 +1,7 @@
 <script lang="ts">
-  import { dataStore } from '../stores/data'
+  import { dataStore, keybindsStore } from '../stores/data'
   import { uiStore } from '../stores/ui'
-  import { getKeybindString, getDefaultKeybindString, findSpecInfo } from '../data/keybindDefaults'
+  import { getKeybindString, getDefaultKeybindString, findSpecInfo, keybindKey } from '../data/keybindDefaults'
   import { parseKeybindString } from '../keybinds/parser'
   import { encodeKeybindString } from '../keybinds/encoder'
   import { prefetchSpellData } from '../keybinds/spellService'
@@ -16,10 +16,10 @@
   let spellData = $state<Record<number, SpellInfo>>({})
   let editingKeybind = $state<string | null>(null)
 
-  let currentString = $derived(dataStore.getKeybind(selectedClass, selectedSpec))
+  let currentString = $derived(getKeybindString(selectedClass, selectedSpec, $keybindsStore))
   let defaultString = $derived(getDefaultKeybindString(selectedClass, selectedSpec))
   let parsed = $derived<KeybindState>(parseKeybindString(currentString))
-  let isEdited = $derived(dataStore.isKeybindEdited(selectedClass, selectedSpec))
+  let isEdited = $derived(keybindKey(selectedClass, selectedSpec) in $keybindsStore)
   let specInfo = $derived(findSpecInfo(selectedClass, selectedSpec))
 
   let outputString = $derived(encodeKeybindString(parsed))

@@ -1,6 +1,6 @@
 <script lang="ts">
-  import { KEYBIND_CLASSES } from '../../data/keybindDefaults'
-  import { dataStore } from '../../stores/data'
+  import { KEYBIND_CLASSES, keybindKey } from '../../data/keybindDefaults'
+  import { keybindsStore } from '../../stores/data'
 
   let {
     selectedClass = $bindable('shaman'),
@@ -16,7 +16,7 @@
   let editedSpecs = $derived(
     specs.map(s => ({
       ...s,
-      edited: dataStore.isKeybindEdited(selectedClass, s.id),
+      edited: keybindKey(selectedClass, s.id) in $keybindsStore,
     }))
   )
 

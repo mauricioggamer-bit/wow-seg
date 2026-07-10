@@ -596,4 +596,5 @@ export const dataStore = createDataStore()
 export const statsStore = derived(dataStore, $data => computeStatsFn($data))
 export const personajesStore = derived(dataStore, $data => $data.personajes)
 export const warbandsStore = derived(dataStore, $data => $data.warbands)
+export const keybindsStore = derived(dataStore, $data => $data.keybinds ?? {})
 

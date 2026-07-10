@@ -5,6 +5,7 @@ export interface ObjectiveWeights {
   coberturaProfesiones: number
   tiempoTotal: number
   usoVentanaEvento: number
+  valorEstrategico?: number
 }
 
 import type { RosterState } from './roster-state'
@@ -21,6 +22,7 @@ export interface SimulationOutcome {
   rosterStateFinal: RosterState
   personajesNombreA90: string[]
   tiempoAhorradoFuturo: number
+  valorEstrategicoPromedio?: number
 }
 
 export interface NormalizationCaps {
@@ -143,6 +145,7 @@ export interface ScoreBreakdown {
   coberturaProfesionesNorm: number
   tiempoTotalNorm: number
   usoVentanaEventoNorm: number
+  valorEstrategicoNorm: number
   contribucionPonderada: {
     xpTotal: number
     personajesA90: number
@@ -150,6 +153,7 @@ export interface ScoreBreakdown {
     coberturaProfesiones: number
     tiempoTotal: number
     usoVentanaEvento: number
+    valorEstrategico: number
   }
 }
 
@@ -172,6 +176,8 @@ export function computeObjectiveScore(
   const normProfession = Math.min(outcome.profesionesCubiertas.size / MAX_PROFESSIONS, 1)
   const normTimeRaw = Math.min(outcome.tiempoTotalHoras / c.maxTiempoTotal, 1)
   const normRemaining = 1 - Math.min(outcome.rosterStateFinal.diasRestantesEvento / DEFAULT_MAX_DIAS_EVENTO, 1)
+  const normEstrategico = Math.min(Math.max(outcome.valorEstrategicoPromedio ?? 0, 0) / 100, 1)
+  const wEstrategico = weights.valorEstrategico ?? 0
 
   const total =
     weights.xpTotal * normXP +
@@ -179,7 +185,8 @@ export function computeObjectiveScore(
     weights.tiempoAhorradoFuturo * normFutureSaved +
     weights.coberturaProfesiones * normProfession -
     weights.tiempoTotal * normTimeRaw +
-    weights.usoVentanaEvento * normRemaining
+    weights.usoVentanaEvento * normRemaining +
+    wEstrategico * normEstrategico
 
   return {
     score: Math.min(Math.max(total, 0), 100),
@@ -190,6 +197,7 @@ export function computeObjectiveScore(
       coberturaProfesionesNorm: normProfession,
       tiempoTotalNorm: normTimeRaw,
       usoVentanaEventoNorm: normRemaining,
+      valorEstrategicoNorm: normEstrategico,
       contribucionPonderada: {
         xpTotal: weights.xpTotal * normXP,
         personajesA90: weights.personajesA90 * normA90,
@@ -197,6 +205,7 @@ export function computeObjectiveScore(
         coberturaProfesiones: weights.coberturaProfesiones * normProfession,
         tiempoTotal: -(weights.tiempoTotal * normTimeRaw),
         usoVentanaEvento: weights.usoVentanaEvento * normRemaining,
+        valorEstrategico: wEstrategico * normEstrategico,
       },
     },
   }

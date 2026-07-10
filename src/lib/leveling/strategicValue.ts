@@ -1,4 +1,4 @@
-import type { Personaje, LevelingConfig, StrategicValueResult, StrategicIndex } from '../types'
+import type { Personaje, LevelingConfig, StrategicValueResult, StrategicIndex, StrategicContext } from '../types'
 import { calculateForCharacter, getEffectiveXpPerDungeon, getXpRemaining } from './calculator'
 import { CLASS_STRATEGIC_VALUE, RACE_STRATEGIC_VALUE, PROFESSION_STRATEGIC_VALUE, STAR_THRESHOLDS, RACE_PROFESSION_BONUS } from '../constants'
 import { dataStore } from '../stores/data'
@@ -31,30 +31,13 @@ export function calculateStrategicValue(
   config: LevelingConfig,
   roster: Personaje[],
   count90: number,
+  taskContext?: StrategicContext,
 ): StrategicValueResult {
   const calc = calculateForCharacter(personaje, config, count90)
   const reasons: string[] = []
 
   if (calc.done) {
-    return {
-      stars: 0,
-      warbandImpact: 0,
-      professionValue: 0,
-      closenessTo90: 0,
-      closenessToObjective: 0,
-      futureXpIncrease: 0,
-      remainingWeight: 0,
-      bonusSub90: 0,
-      bonus8089: 0,
-      classValue: 0,
-      raceValue: 0,
-      raceProfBonus: 0,
-      tagsValue: 0,
-      taskValue: 0,
-      indexValues: {},
-      totalScore: 0,
-      reasons: ['Nivel 90 alcanzado'],
-    }
+    reasons.push(`Objetivo de nivel alcanzado (${personaje.objetivoNivel ?? 90}) — ya no suma por leveling`)
   }
 
   const pendingRoster = roster.filter(p => p.planeado_usar && p.nivel < 90)
@@ -65,7 +48,7 @@ export function calculateStrategicValue(
   ).length
 
   let warbandImpact = 0
-  if (personaje.nivel < 90) {
+  if (!calc.done && personaje.nivel < 90) {
     const buffIncrease = 5
     warbandImpact = beneficiaries8089 * buffIncrease
     if (warbandImpact > 0) {
@@ -79,6 +62,7 @@ export function calculateStrategicValue(
   const indexValues: Record<string, number> = {}
 
   for (const idx of indexes) {
+    if (taskContext && idx.context && idx.context !== 'general' && idx.context !== taskContext) continue
     let total = 0
 
     const cv = getClassValue(personaje.clase, idx.id)
@@ -117,12 +101,12 @@ export function calculateStrategicValue(
     reasons.push(`Profesiones (${profNames}): +${professionValue} pts`)
   }
 
-  const closenessTo90 = personaje.nivel >= 90 ? 1 : Math.max(0, (personaje.nivel - 10) / 80)
+  const closenessTo90 = calc.done ? 0 : (personaje.nivel >= 90 ? 1 : Math.max(0, (personaje.nivel - 10) / 80))
   const dungeonsTo90 = calc.dungeons
-  const closenessToObjective = dungeonsTo90 > 0 ? Math.max(0, 1 - dungeonsTo90 / 200) : 1
+  const closenessToObjective = calc.done ? 0 : (dungeonsTo90 > 0 ? Math.max(0, 1 - dungeonsTo90 / 200) : 1)
 
   let futureXpIncrease = 0
-  if (personaje.nivel < 90 && beneficiaries8089 > 0) {
+  if (!calc.done && personaje.nivel < 90 && beneficiaries8089 > 0) {
     const currentBuff = Math.min(count90 * 5, 25)
     const futureBuff = Math.min((count90 + 1) * 5, 25)
     const buffDelta = futureBuff - currentBuff
@@ -147,23 +131,25 @@ export function calculateStrategicValue(
     }
   }
 
-  const remainingWeight = remainingCount > 0 ? Math.min(1, remainingCount / 10) : 0
-  if (remainingCount > 5) {
+  const remainingWeight = !calc.done && remainingCount > 0 ? Math.min(1, remainingCount / 10) : 0
+  if (!calc.done && remainingCount > 5) {
     reasons.push(`${remainingCount} personajes pendientes — alta prioridad para maximizar beneficio de warband`)
-  } else if (remainingCount > 2) {
+  } else if (!calc.done && remainingCount > 2) {
     reasons.push(`${remainingCount} personajes pendientes — beneficio moderado de warband`)
   }
 
-  if (personaje.nivel >= 80 && personaje.nivel < 90) {
-    reasons.push(`Nivel ${personaje.nivel}: cercano a 90, barato para desbloquear Warband Mentor 80-90`)
-  } else if (personaje.nivel < 80) {
-    reasons.push(`Objetivo 90: al completarlo, desbloquea +5% Warband Mentor para toda la cuenta`)
-  } else if (dungeonsTo90 <= 20) {
-    reasons.push(`Solo ${dungeonsTo90} dungeons para llegar a 90 (victoria rápida)`)
+  if (!calc.done) {
+    if (personaje.nivel >= 80 && personaje.nivel < 90) {
+      reasons.push(`Nivel ${personaje.nivel}: cercano a 90, barato para desbloquear Warband Mentor 80-90`)
+    } else if (personaje.nivel < 80) {
+      reasons.push(`Objetivo 90: al completarlo, desbloquea +5% Warband Mentor para toda la cuenta`)
+    } else if (dungeonsTo90 <= 20) {
+      reasons.push(`Solo ${dungeonsTo90} dungeons para llegar a 90 (victoria rápida)`)
+    }
   }
 
-  const bonusSub90 = personaje.nivel < 90 ? 1 : 0
-  const bonus8089 = (personaje.nivel >= 80 && personaje.nivel < 90) ? 1 : 0
+  const bonusSub90 = !calc.done && personaje.nivel < 90 ? 1 : 0
+  const bonus8089 = !calc.done && (personaje.nivel >= 80 && personaje.nivel < 90) ? 1 : 0
 
   if (classValue > 0 && !reasons.some(r => r.includes('General'))) {
     reasons.push(`Clase ${personaje.clase}: +${classValue} pts`)

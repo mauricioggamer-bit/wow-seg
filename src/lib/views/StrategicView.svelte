@@ -1,8 +1,8 @@
 <script lang="ts">
   import { dataStore } from '../stores/data'
-  import { CLASS_STRATEGIC_VALUE, RACE_STRATEGIC_VALUE, PROFESSION_STRATEGIC_VALUE, STRATEGIC_COMPONENTS, RACE_PROFESSION_BONUS } from '../constants'
+  import { CLASS_STRATEGIC_VALUE, RACE_STRATEGIC_VALUE, PROFESSION_STRATEGIC_VALUE, STRATEGIC_COMPONENTS, STRATEGIC_CONTEXTS, RACE_PROFESSION_BONUS } from '../constants'
   import { PROFESIONES } from '../constants/profesiones'
-  import type { Personaje, StrategicIndex } from '../types'
+  import type { Personaje, StrategicIndex, StrategicContext, Warband } from '../types'
 
   let tab = $state<string>('indexes')
   let storeData = $derived($dataStore)
@@ -22,8 +22,13 @@
   let personajes: Personaje[] = $derived(storeData.personajes ?? [])
   let allClassNames = $derived(Object.keys(CLASS_STRATEGIC_VALUE).sort())
   let allRaceNames = $derived(Object.keys(RACE_STRATEGIC_VALUE).sort())
-  let allWarbands = $derived((storeData.warbands ?? []).filter((w: { nombre: string }) => w.nombre !== 'nada').map((w: { nombre: string }) => w.nombre))
+  let warbandList: Warband[] = $derived((storeData.warbands ?? []).filter((w: Warband) => w.nombre !== 'nada'))
+  let allWarbands = $derived(warbandList.map((w: Warband) => w.nombre))
   let allProfItems = $derived([...PROFESIONES, { id: 'cocina', nombre: 'Cocina', icon: '🍳' }])
+
+  function contextLabel(ctx?: StrategicContext): string {
+    return STRATEGIC_CONTEXTS.find(c => c.id === (ctx ?? 'general'))?.label ?? 'General'
+  }
 
   function getVal(entityType: string, entityId: string, indexId: string): number {
     return dataStore.getStrategicValue(entityType, entityId, indexId) ?? 0
@@ -49,17 +54,34 @@
 
   let newIdxName = $state('')
   let newIdxDesc = $state('')
+  let newIdxContext = $state<StrategicContext>('general')
+  let addIndexError = $state('')
   function addIndex() {
     const name = newIdxName.trim()
     if (!name) return
     const id = 'idx_' + name.toLowerCase().replace(/[^a-z0-9]/g, '_')
-    dataStore.addIndex({ id, name, description: newIdxDesc.trim() })
+    const ok = dataStore.addIndex({ id, name, description: newIdxDesc.trim(), context: newIdxContext })
+    if (!ok) {
+      addIndexError = `Ya existe una ventaja con el id "${id}" (nombre demasiado parecido a otra). Elegí otro nombre.`
+      return
+    }
+    addIndexError = ''
     newIdxName = ''
     newIdxDesc = ''
+    newIdxContext = 'general'
   }
   function delIndex(id: string) {
     const idx = indexes.find(i => i.id === id)
     if (idx && confirm(`Eliminar ventaja "${idx.name}"?`)) dataStore.deleteIndex(id)
+  }
+  function changeIndexContext(id: string, ctx: string) {
+    dataStore.updateIndex(id, { context: ctx as StrategicContext })
+  }
+  function setWbObjetivo(nombre: string, el: EventTarget & HTMLInputElement) {
+    const v = el.value.trim()
+    if (v === '') { dataStore.setWarbandObjetivoNivel(nombre, undefined); return }
+    const n = parseInt(v)
+    if (!isNaN(n) && n >= 1 && n <= 90) dataStore.setWarbandObjetivoNivel(nombre, n)
   }
 
   function raceProfBonusText(race: string): string {
@@ -102,14 +124,22 @@
       <div class="sv-add-row">
         <input type="text" bind:value={newIdxName} placeholder="Nombre de la ventaja" class="sv-text-input" />
         <input type="text" bind:value={newIdxDesc} placeholder="Descripción (opcional)" class="sv-text-input sv-text-wide" />
+        <select bind:value={newIdxContext} class="sv-text-input">
+          {#each STRATEGIC_CONTEXTS as ctx}
+            <option value={ctx.id}>{ctx.label}</option>
+          {/each}
+        </select>
         <button class="sv-btn-add" onclick={addIndex}>+ Añadir</button>
       </div>
+      {#if addIndexError}
+        <p class="sv-error">{addIndexError}</p>
+      {/if}
       {#if indexes.length === 0}
         <p class="sv-hint">No hay ventajas definidas. Crea una para empezar.</p>
       {:else}
         <table class="sv-table">
           <thead>
-            <tr><th>ID</th><th>Nombre</th><th>Descripción</th><th></th></tr>
+            <tr><th>ID</th><th>Nombre</th><th>Descripción</th><th>Contexto</th><th></th></tr>
           </thead>
           <tbody>
             {#each indexes as idx}
@@ -117,6 +147,17 @@
                 <td class="sv-muted">{idx.id}</td>
                 <td>{idx.name}</td>
                 <td class="sv-desc">{idx.description || '—'}</td>
+                <td>
+                  {#if idx.id !== 'general'}
+                    <select value={idx.context ?? 'general'} onchange={(e) => changeIndexContext(idx.id, e.currentTarget.value)} class="sv-text-input">
+                      {#each STRATEGIC_CONTEXTS as ctx}
+                        <option value={ctx.id}>{ctx.label}</option>
+                      {/each}
+                    </select>
+                  {:else}
+                    <span class="sv-muted">{contextLabel(idx.context)}</span>
+                  {/if}
+                </td>
                 <td>
                   {#if idx.id !== 'general'}
                     <button class="sv-btn-del" onclick={() => delIndex(idx.id)}>Eliminar</button>
@@ -235,15 +276,16 @@
 
   {:else if tab === 'tasks'}
     <div class="sv-section">
-      <p class="sv-hint">Valor estratégico por ventaja aplicado globalmente a todas las tareas (se suma una vez por personaje).</p>
+      <p class="sv-hint">Valor estratégico por ventaja aplicado globalmente a todas las tareas (se suma una vez por personaje). Solo aplica cuando la ventaja es "General" o coincide con el contexto de la tarea evaluada.</p>
       <table class="sv-table">
         <thead>
-          <tr><th>Ventaja</th><th>Valor</th></tr>
+          <tr><th>Ventaja</th><th>Contexto</th><th>Valor</th></tr>
         </thead>
         <tbody>
           {#each indexes as idx}
             <tr>
               <td>{idx.name}</td>
+              <td class="sv-default">{contextLabel(idx.context)}</td>
               <td>
                 <input type="number" min="0" max="100"
                   value={getVal('task', '', idx.id)}
@@ -259,26 +301,35 @@
 
   {:else if tab === 'warbands'}
     <div class="sv-table-wrap">
+      <p class="sv-hint">"Nivel objetivo" se hereda automáticamente por los personajes sin objetivo propio al asignarlos a este warband (útil para warbands de contenido classic/bajo nivel que no necesitan llegar a 90).</p>
       <table class="sv-table sv-matrix">
         <thead>
           <tr>
             <th>Warband</th>
+            <th>Nivel objetivo</th>
             {#each indexes as idx}
               <th class="sv-col-idx">{idx.name}</th>
             {/each}
           </tr>
         </thead>
         <tbody>
-          {#each allWarbands as wb}
+          {#each warbandList as wb}
             <tr>
-              <td>{wb}</td>
+              <td>{wb.nombre}</td>
+              <td>
+                <input type="number" min="1" max="90"
+                  value={wb.objetivoNivel ?? ''}
+                  placeholder="90"
+                  onchange={(e) => setWbObjetivo(wb.nombre, e.currentTarget)}
+                  class="sv-input" />
+              </td>
               {#each indexes as idx}
                 <td>
                   <input type="number" min="0" max="100"
-                    value={getVal('warband', wb, idx.id)}
-                    onchange={(e) => save('warband', wb, idx.id, e.currentTarget)}
+                    value={getVal('warband', wb.nombre, idx.id)}
+                    onchange={(e) => save('warband', wb.nombre, idx.id, e.currentTarget)}
                     class="sv-input"
-                    class:sv-overridden={isOver('warband', wb, idx.id)} />
+                    class:sv-overridden={isOver('warband', wb.nombre, idx.id)} />
                 </td>
               {/each}
             </tr>
@@ -525,6 +576,12 @@
     color: var(--text-muted);
     margin: 0;
     padding: 4px 0;
+  }
+  .sv-error {
+    font-size: 0.55rem;
+    color: var(--danger);
+    margin: 0;
+    padding: 2px 0;
   }
   .sv-col-idx {
     min-width: 40px;

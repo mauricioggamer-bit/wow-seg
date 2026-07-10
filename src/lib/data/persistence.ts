@@ -6,6 +6,14 @@ import { PROFESIONES } from '../constants/profesiones'
 const STORAGE_KEY = 'wowseg_data'
 const RESET_KEY = 'wowseg_last_reset'
 
+const memoryStorage = new Map<string, string>()
+const storage: Pick<Storage, 'getItem' | 'setItem'> = typeof localStorage !== 'undefined'
+  ? localStorage
+  : {
+      getItem: (key: string) => memoryStorage.get(key) ?? null,
+      setItem: (key: string, value: string) => { memoryStorage.set(key, value) },
+    }
+
 const PROFESION_IDS = new Set(PROFESIONES.map(p => p.id))
 
 function emptyProfesiones(): ProfesionSlot[] {
@@ -211,7 +219,7 @@ export function normalizeData(data: WowData): WowData {
 }
 
 export function loadData(): WowData {
-  const raw = localStorage.getItem(STORAGE_KEY)
+  const raw = storage.getItem(STORAGE_KEY)
   if (!raw) {
     const data = initSeed()
     saveData(data)
@@ -221,7 +229,7 @@ export function loadData(): WowData {
     const data = normalizeData(JSON.parse(raw) as WowData)
     saveData(data)
     if (data._meta?.ultimo_reset_semanal) {
-      localStorage.setItem(RESET_KEY, data._meta.ultimo_reset_semanal)
+      storage.setItem(RESET_KEY, data._meta.ultimo_reset_semanal)
     }
     return data
   } catch {
@@ -247,9 +255,9 @@ function mergeSeed(data: WowData): WowData {
 }
 
 export function saveData(data: WowData): void {
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(data))
+  storage.setItem(STORAGE_KEY, JSON.stringify(data))
   if (data._meta?.ultimo_reset_semanal) {
-    localStorage.setItem(RESET_KEY, data._meta.ultimo_reset_semanal)
+    storage.setItem(RESET_KEY, data._meta.ultimo_reset_semanal)
   }
 }
 
@@ -455,7 +463,7 @@ export function importSections(jsonStr: string, current: WowData): WowData {
 export function exportFullBackup(data: WowData): string {
   let gistConfig = null
   try {
-    const raw = localStorage.getItem('wowseg_gist_config')
+    const raw = storage.getItem('wowseg_gist_config')
     if (raw) gistConfig = JSON.parse(raw)
   } catch { /* empty */ }
 
@@ -466,13 +474,13 @@ export function exportFullBackup(data: WowData): string {
       app_name: 'WoW Seg Warband Tracker',
       data: { ...data } as WowData,
       preferences: {
-        theme: localStorage.getItem('wowseg_theme') || 'dark',
-        fontsize: localStorage.getItem('wowseg_fontsize') || 'medium',
+        theme: storage.getItem('wowseg_theme') || 'dark',
+        fontsize: storage.getItem('wowseg_fontsize') || 'medium',
       },
       gist: gistConfig
-        ? { config: gistConfig, hash: localStorage.getItem('wowseg_gist_lasthash') || '' }
+        ? { config: gistConfig, hash: storage.getItem('wowseg_gist_lasthash') || '' }
         : null,
-      reset_last: localStorage.getItem(RESET_KEY) || null,
+      reset_last: storage.getItem(RESET_KEY) || null,
     },
   }
   return JSON.stringify(backup, null, 2)
@@ -485,16 +493,16 @@ export function importFullBackup(jsonStr: string): WowData {
 
   const data = pkg._export.data as WowData
   if (pkg._export.reset_last) {
-    localStorage.setItem(RESET_KEY, pkg._export.reset_last)
+    storage.setItem(RESET_KEY, pkg._export.reset_last)
   }
   if (pkg._export.preferences) {
     const prefs = pkg._export.preferences
-    if (prefs.theme) localStorage.setItem('wowseg_theme', prefs.theme)
-    if (prefs.fontsize) localStorage.setItem('wowseg_fontsize', prefs.fontsize)
+    if (prefs.theme) storage.setItem('wowseg_theme', prefs.theme)
+    if (prefs.fontsize) storage.setItem('wowseg_fontsize', prefs.fontsize)
   }
   if (pkg._export.gist?.config) {
-    localStorage.setItem('wowseg_gist_config', JSON.stringify(pkg._export.gist.config))
-    if (pkg._export.gist.hash) localStorage.setItem('wowseg_gist_lasthash', pkg._export.gist.hash)
+    storage.setItem('wowseg_gist_config', JSON.stringify(pkg._export.gist.config))
+    if (pkg._export.gist.hash) storage.setItem('wowseg_gist_lasthash', pkg._export.gist.hash)
   }
   return normalizeData(data)
 }

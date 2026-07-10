@@ -111,6 +111,16 @@ export const STRATEGIC_COMPONENTS: StrategicComponentInfo[] = [
   { key: 'taskValue', label: 'Tareas', weight: 'fixed', description: 'Suma de puntos estratégicos de las tareas del personaje.' },
   { key: 'raceProfBonus', label: 'Bono Raza-Profesión', weight: 'fixed', description: 'Bonos raciales que otorgan puntos extra si el personaje tiene la profesión correspondiente.' },
   { key: 'indexValues', label: 'Ventajas', weight: 'fixed', description: 'Suma de ventajas estratégicas definidas por el usuario.' },
+  { key: 'optimizationStrategicBonus', label: 'Bono ROI estratégico', weight: 0.1, description: 'Cuánto influye el valor estratégico total del personaje al elegir el orden de subida en el optimizador ROI.' },
+]
+
+export const STRATEGIC_CONTEXTS: { id: import('../types').StrategicContext; label: string }[] = [
+  { id: 'general', label: 'General' },
+  { id: 'mundo_abierto', label: 'Mundo abierto' },
+  { id: 'mazmorra_larga', label: 'Mazmorra larga' },
+  { id: 'viaje_ciudad', label: 'Viaje entre ciudades' },
+  { id: 'raid', label: 'Raid' },
+  { id: 'rare', label: 'Rare' },
 ]
 
 export const STAR_THRESHOLDS = [

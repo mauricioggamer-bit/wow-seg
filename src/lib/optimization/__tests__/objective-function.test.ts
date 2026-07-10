@@ -107,4 +107,18 @@ describe('computeObjectiveScore', () => {
     expect(a90Score).toBeGreaterThan(0)
     expect(xpScore + a90Score).toBeLessThanOrEqual(100)
   })
+
+  it('ignores valorEstrategico when weight is unset (defaults to 0)', () => {
+    const outcome: SimulationOutcome = { ...baseOutcome(), valorEstrategicoPromedio: 90 }
+    const { score } = computeObjectiveScore(outcome, defaultWeights, totalPendientes)
+    expect(score).toBeCloseTo(0, 0)
+  })
+
+  it('rewards higher valorEstrategicoPromedio when weight is set', () => {
+    const weights: ObjectiveWeights = { ...defaultWeights, valorEstrategico: 20 }
+    const low = computeObjectiveScore({ ...baseOutcome(), valorEstrategicoPromedio: 10 }, weights, totalPendientes)
+    const high = computeObjectiveScore({ ...baseOutcome(), valorEstrategicoPromedio: 90 }, weights, totalPendientes)
+    expect(high.score).toBeGreaterThan(low.score)
+    expect(high.breakdown.valorEstrategicoNorm).toBeCloseTo(0.9, 5)
+  })
 })

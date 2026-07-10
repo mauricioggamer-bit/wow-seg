@@ -2,10 +2,18 @@ import type { WowData } from '../types'
 
 const RESET_KEY = 'wowseg_last_reset'
 
+const memoryStorage = new Map<string, string>()
+const storage: Pick<Storage, 'getItem' | 'setItem'> = typeof localStorage !== 'undefined'
+  ? localStorage
+  : {
+      getItem: (key: string) => memoryStorage.get(key) ?? null,
+      setItem: (key: string, value: string) => { memoryStorage.set(key, value) },
+    }
+
 export function checkWeeklyReset(data: WowData): boolean {
   const today = new Date()
   const dayName = today.toLocaleString('en-US', { weekday: 'long' }).toLowerCase()
-  const lastReset = localStorage.getItem(RESET_KEY)
+  const lastReset = storage.getItem(RESET_KEY)
   const resetDay = data._meta.reset_weekly_dia || 'tuesday'
 
   if (dayName === resetDay) {
@@ -20,7 +28,7 @@ export function checkWeeklyReset(data: WowData): boolean {
         }
       }
       data._meta.ultimo_reset_semanal = todayStr
-      localStorage.setItem(RESET_KEY, todayStr)
+      storage.setItem(RESET_KEY, todayStr)
       return true
     }
   }

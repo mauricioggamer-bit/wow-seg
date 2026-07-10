@@ -4,6 +4,7 @@ import type { Strategy, Decision } from './strategy'
 import { computeRosterState } from './roster-state'
 import { computeFutureTimeSaved } from './future-time-saved'
 import { getEffectiveXpPerDungeon } from '../leveling/calculator'
+import { calculateStrategicValue } from '../leveling/strategicValue'
 import { getXpForLevel } from '../constants/experience'
 import { PROFESIONES } from '../constants/profesiones'
 import { tieneMainCrafter } from './professions'
@@ -160,6 +161,17 @@ export function runTemporalSimulation(
     tiempoAhorradoFuturo += computeFutureTimeSaved(personaje, rosterStateFinal, resto, config)
   }
 
+  let valorEstrategicoPromedio = 0
+  if (personajesNombreA90.length > 0) {
+    let sumaEstrategica = 0
+    for (const nombre of personajesNombreA90) {
+      const personaje = roster.find(p => p.nombre === nombre)
+      if (!personaje) continue
+      sumaEstrategica += calculateStrategicValue(personaje, config, roster, count90).totalScore
+    }
+    valorEstrategicoPromedio = sumaEstrategica / personajesNombreA90.length
+  }
+
   return {
     dias,
     outcome: {
@@ -170,6 +182,7 @@ export function runTemporalSimulation(
       rosterStateFinal,
       personajesNombreA90,
       tiempoAhorradoFuturo,
+      valorEstrategicoPromedio,
     },
   }
 }

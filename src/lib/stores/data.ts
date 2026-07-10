@@ -304,7 +304,10 @@ addTarea(nombrePersonaje: string, tarea: { nombre: string; tipoContenido?: TipoC
           if (targetWb && targetWb.personajes.length >= 4) { ok = false; return d }
         }
         const oldWarband = char.warband
-        d.personajes = d.personajes.map(p => p.nombre === charName ? { ...p, warband: newWarband } : p)
+        const targetWbObjetivo = d.warbands.find(w => w.nombre === newWarband)?.objetivoNivel
+        d.personajes = d.personajes.map(p => p.nombre === charName
+          ? { ...p, warband: newWarband, objetivoNivel: p.objetivoNivel ?? targetWbObjetivo }
+          : p)
         d.warbands = d.warbands
           .map(w => w.nombre === oldWarband
             ? { ...w, personajes: w.personajes.filter(n => n !== charName) }
@@ -328,6 +331,15 @@ addTarea(nombrePersonaje: string, tarea: { nombre: string; tipoContenido?: TipoC
         if (d.warbands.find(w => w.nombre === name)) return d
         const orden = d.warbands.filter(w => w.nombre !== 'nada').length
         d.warbands = [...d.warbands, { nombre: name, personajes: [], orden }]
+        saveData(d)
+        return { ...d }
+      })
+    },
+    setWarbandObjetivoNivel(name: string, objetivoNivel: number | undefined) {
+      update(d => {
+        const wb = d.warbands.find(w => w.nombre === name)
+        if (!wb) return d
+        d.warbands = d.warbands.map(w => w.nombre === name ? { ...w, objetivoNivel } : w)
         saveData(d)
         return { ...d }
       })
@@ -540,15 +552,17 @@ addTarea(nombrePersonaje: string, tarea: { nombre: string; tipoContenido?: TipoC
     getIndexes(): import('../types').StrategicIndex[] {
       return get({ subscribe }).strategicConfig?.indexes ?? []
     },
-    addIndex(idx: import('../types').StrategicIndex) {
+    addIndex(idx: import('../types').StrategicIndex): boolean {
+      let ok = true
       update(d => {
         if (!d.strategicConfig) d.strategicConfig = {}
         if (!d.strategicConfig.indexes) d.strategicConfig.indexes = []
-        if (d.strategicConfig.indexes.some(i => i.id === idx.id)) return d
+        if (d.strategicConfig.indexes.some(i => i.id === idx.id)) { ok = false; return d }
         d.strategicConfig.indexes = [...d.strategicConfig.indexes, idx]
         saveData(d)
         return { ...d }
       })
+      return ok
     },
     updateIndex(id: string, updates: Partial<import('../types').StrategicIndex>) {
       update(d => {

@@ -57,6 +57,7 @@ export interface Warband {
   nombre: string
   personajes: string[]
   orden?: number
+  objetivoNivel?: number
 }
 
 export interface Meta {
@@ -69,10 +70,13 @@ export interface Meta {
   schema_version?: number
 }
 
+export type StrategicContext = 'general' | 'mundo_abierto' | 'mazmorra_larga' | 'viaje_ciudad' | 'raid' | 'rare'
+
 export interface StrategicIndex {
   id: string
   name: string
   description: string
+  context?: StrategicContext
 }
 
 export type EntityType = 'class' | 'race' | 'profession' | 'task' | 'warband' | 'personaje'

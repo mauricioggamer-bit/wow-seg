@@ -1,5 +1,15 @@
 import type { Personaje, LevelingConfig, OptimizationEntry, OptimizationPlan } from '../types'
 import { calculateForCharacter, getTimeHours, getDungeonsNeeded, getXpRemaining } from './calculator'
+import { calculateStrategicValue } from './strategicValue'
+import { dataStore } from '../stores/data'
+import { STRATEGIC_COMPONENTS } from '../constants'
+
+function getStrategicBonusWeight(): number {
+  const override = dataStore.getComponentWeight('optimizationStrategicBonus')
+  if (override > 0) return override
+  const def = STRATEGIC_COMPONENTS.find(c => c.key === 'optimizationStrategicBonus')?.weight
+  return typeof def === 'number' ? def : 0.1
+}
 
 export function optimize(
   personajes: Personaje[],
@@ -20,6 +30,7 @@ export function optimize(
   const order: OptimizationEntry[] = []
   let currentCount90 = initialCount90
   let optimizedTime = 0
+  const strategicBonusWeight = getStrategicBonusWeight()
 
   while (remaining.length > 0) {
     let best: { idx: number; roi: number; timeSaved: number; timeForThis: number } | null = null
@@ -51,7 +62,10 @@ export function optimize(
         }
       }
 
-      const roi = timeSaved - timeForThis
+      const strategicScore = calculateStrategicValue(p, config, personajes, currentCount90).totalScore
+      const strategicBonus = strategicScore * strategicBonusWeight
+
+      const roi = timeSaved - timeForThis + strategicBonus
 
       if (!best || roi > best.roi || (roi === best.roi && timeForThis < best.timeForThis)) {
         best = { idx: i, roi, timeSaved, timeForThis }

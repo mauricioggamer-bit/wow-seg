@@ -47,6 +47,7 @@
     coberturaProfesiones: 15,
     tiempoTotal: 20,
     usoVentanaEvento: 10,
+    valorEstrategico: 10,
   }
 
   let rosterSnapshots = $derived<CharacterSnapshot[]>(

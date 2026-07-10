@@ -1,14 +1,13 @@
 <script lang="ts">
   import Modal from '../leveling/Modal.svelte'
   import { dataStore } from '../../stores/data'
-  import { STRATEGIC_CONTEXTS } from '../../constants'
-  import type { StrategicIndex, StrategicContext } from '../../types'
+  import type { StrategicIndex, StrategicCategory } from '../../types'
 
-  let { open = $bindable(false), idx }: { open?: boolean; idx: StrategicIndex | null } = $props()
+  let { open = $bindable(false), idx, categories }: { open?: boolean; idx: StrategicIndex | null; categories: StrategicCategory[] } = $props()
 
   let name = $state('')
   let description = $state('')
-  let context = $state<StrategicContext>('general')
+  let context = $state('general')
   let error = $state('')
 
   $effect(() => {
@@ -43,7 +42,7 @@
       <label class="vem-field">
         <span class="vem-label">Contexto</span>
         <select bind:value={context} class="sv-text-input" disabled={idx.id === 'general'}>
-          {#each STRATEGIC_CONTEXTS as ctx}
+          {#each categories as ctx}
             <option value={ctx.id}>{ctx.label}</option>
           {/each}
         </select>

@@ -1,4 +1,4 @@
-import type { Personaje, LevelingConfig, StrategicValueResult, StrategicIndex, StrategicContext } from '../types'
+import type { Personaje, LevelingConfig, StrategicValueResult, StrategicIndex } from '../types'
 import { calculateForCharacter, getEffectiveXpPerDungeon, getXpRemaining } from './calculator'
 import { PROFESSION_STRATEGIC_VALUE, STAR_THRESHOLDS, RACE_PROFESSION_BONUS } from '../constants'
 import { dataStore } from '../stores/data'
@@ -27,7 +27,7 @@ export function calculateStrategicValue(
   config: LevelingConfig,
   roster: Personaje[],
   count90: number,
-  taskContext?: StrategicContext,
+  taskContext?: string,
 ): StrategicValueResult {
   const calc = calculateForCharacter(personaje, config, count90)
   const reasons: string[] = []

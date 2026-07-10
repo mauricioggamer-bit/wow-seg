@@ -119,6 +119,16 @@ export function normalizeData(data: WowData): WowData {
       { id: 'general', name: 'General', description: 'Valor estratégico base' },
     ]
   }
+  if (!data.strategicConfig.categories) {
+    data.strategicConfig.categories = [
+      { id: 'general', label: 'General', orden: 0 },
+      { id: 'mundo_abierto', label: 'Mundo abierto', orden: 1 },
+      { id: 'mazmorra_larga', label: 'Mazmorra larga', orden: 2 },
+      { id: 'viaje_ciudad', label: 'Viaje entre ciudades', orden: 3 },
+      { id: 'raid', label: 'Raid', orden: 4 },
+      { id: 'rare', label: 'Rare', orden: 5 },
+    ]
+  }
   if (!data.strategicConfig.values) data.strategicConfig.values = {}
   if (!data.strategicConfig.componentWeights) data.strategicConfig.componentWeights = {}
 

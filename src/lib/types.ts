@@ -70,13 +70,17 @@ export interface Meta {
   schema_version?: number
 }
 
-export type StrategicContext = 'general' | 'mundo_abierto' | 'mazmorra_larga' | 'viaje_ciudad' | 'raid' | 'rare'
+export interface StrategicCategory {
+  id: string
+  label: string
+  orden?: number
+}
 
 export interface StrategicIndex {
   id: string
   name: string
   description: string
-  context?: StrategicContext
+  context?: string
 }
 
 export type EntityType = 'class' | 'race' | 'profession' | 'task' | 'warband' | 'personaje'
@@ -89,6 +93,7 @@ export interface WowData {
   profesionOrden?: string[]
   strategicConfig?: {
     indexes?: StrategicIndex[]
+    categories?: StrategicCategory[]
     values?: Record<string, number>
     componentWeights?: Record<string, number>
   }

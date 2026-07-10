@@ -99,15 +99,6 @@ export const STRATEGIC_COMPONENTS: StrategicComponentInfo[] = [
   { key: 'optimizationStrategicBonus', label: 'Bono ROI estratégico', weight: 0.1, description: 'Cuánto influye el valor estratégico total del personaje al elegir el orden de subida en el optimizador ROI.' },
 ]
 
-export const STRATEGIC_CONTEXTS: { id: import('../types').StrategicContext; label: string }[] = [
-  { id: 'general', label: 'General' },
-  { id: 'mundo_abierto', label: 'Mundo abierto' },
-  { id: 'mazmorra_larga', label: 'Mazmorra larga' },
-  { id: 'viaje_ciudad', label: 'Viaje entre ciudades' },
-  { id: 'raid', label: 'Raid' },
-  { id: 'rare', label: 'Rare' },
-]
-
 export const STAR_THRESHOLDS = [
   { min: 85, stars: 5 },
   { min: 65, stars: 4 },

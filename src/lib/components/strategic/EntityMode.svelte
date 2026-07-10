@@ -1,50 +1,63 @@
 <script lang="ts">
   import EntityAssignments from './EntityAssignments.svelte'
-  import type { StrategicIndex } from '../../types'
+  import { calculateStrategicValue } from '../../leveling/strategicValue'
+  import type { StrategicIndex, StrategicCategory, Personaje, LevelingConfig } from '../../types'
   import type { EntityKind } from './types'
 
-  let { entityKinds, indexes }: { entityKinds: EntityKind[]; indexes: StrategicIndex[] } = $props()
+  let { kind, indexes, categories, personajes, levelingCtx }: {
+    kind: EntityKind
+    indexes: StrategicIndex[]
+    categories: StrategicCategory[]
+    personajes?: Personaje[]
+    levelingCtx?: { config: LevelingConfig; roster: Personaje[]; count90: number }
+  } = $props()
 
-  let typeKey = $state<'class' | 'race' | 'profession' | 'task' | 'warband' | 'personaje'>('class')
   let search = $state('')
   let selectedId = $state<string | null>(null)
 
-  let kind = $derived(entityKinds.find(k => k.key === typeKey) ?? entityKinds[0])
-  let items = $derived.by(() => {
-    const q = search.trim().toLowerCase()
-    const list = kind?.items ?? []
-    return q ? list.filter(i => i.label.toLowerCase().includes(q)) : list
-  })
-
-  function selectType(key: typeof typeKey) {
-    typeKey = key
+  $effect(() => {
+    kind.key
     selectedId = null
     search = ''
-  }
+  })
 
-  let selectedItem = $derived(items.find(i => i.id === selectedId) ?? kind?.items.find(i => i.id === selectedId))
+  let items = $derived.by(() => {
+    const q = search.trim().toLowerCase()
+    return q ? kind.items.filter(i => i.label.toLowerCase().includes(q)) : kind.items
+  })
+
+  let selectedItem = $derived(kind.items.find(i => i.id === selectedId))
+  let selectedPersonaje = $derived(
+    kind.key === 'personaje' ? personajes?.find(p => p.nombre === selectedId) : undefined
+  )
+
+  let scoreMap = $derived.by(() => {
+    if (kind.key !== 'personaje' || !levelingCtx || !personajes) return null
+    const map = new Map<string, number>()
+    for (const p of personajes) {
+      map.set(p.nombre, calculateStrategicValue(p, levelingCtx.config, levelingCtx.roster, levelingCtx.count90).totalScore)
+    }
+    return map
+  })
 </script>
 
 <div class="em-root">
-  <div class="em-chips">
-    {#each entityKinds as k}
-      <button class="vd-chip" class:active={typeKey === k.key} onclick={() => selectType(k.key)}>
-        {k.label}
-      </button>
-    {/each}
-  </div>
-
   <div class="em-body">
     <div class="em-master">
-      {#if kind && kind.items.length > 1}
+      {#if kind.items.length > 1}
         <input type="text" bind:value={search} placeholder="Buscar..." class="sv-text-input" />
       {/if}
       <ul class="em-list">
         {#each items as item (item.id)}
           <li>
             <button class="em-item" class:active={selectedId === item.id} onclick={() => selectedId = item.id}>
-              <span>{item.label}</span>
-              {#if item.sub}<span class="em-item-sub">{item.sub}</span>{/if}
+              <span class="em-item-main">
+                <span>{item.label}</span>
+                {#if item.sub}<span class="em-item-sub">{item.sub}</span>{/if}
+              </span>
+              {#if scoreMap}
+                <span class="em-score">{scoreMap.get(item.id)?.toFixed(0) ?? '—'}</span>
+              {/if}
             </button>
           </li>
         {/each}
@@ -56,9 +69,17 @@
 
     <div class="em-detail">
       {#if selectedItem}
-        <EntityAssignments entityType={typeKey} entityId={selectedItem.id} entityLabel={selectedItem.label} {indexes} />
+        <EntityAssignments
+          entityType={kind.key}
+          entityId={selectedItem.id}
+          entityLabel={selectedItem.label}
+          {indexes}
+          {categories}
+          personajeData={selectedPersonaje}
+          {levelingCtx}
+        />
       {:else}
-        <p class="sv-hint">Elegí {kind?.label.toLowerCase()} de la lista para ver y gestionar sus ventajas.</p>
+        <p class="sv-hint">Elegí {kind.label.toLowerCase()} de la lista para ver y gestionar sus ventajas.</p>
       {/if}
     </div>
   </div>
@@ -71,28 +92,9 @@
     gap: 8px;
     min-width: 0;
   }
-  .em-chips {
-    display: flex;
-    gap: 4px;
-    flex-wrap: wrap;
-  }
-  .vd-chip {
-    font-size: 0.55rem;
-    padding: 3px 8px;
-    border: 1px solid var(--border-subtle);
-    border-radius: 999px;
-    background: transparent;
-    color: var(--text-secondary);
-    cursor: pointer;
-  }
-  .vd-chip.active {
-    border-color: var(--gold);
-    color: var(--gold);
-    background: var(--bg-card);
-  }
   .em-body {
     display: grid;
-    grid-template-columns: minmax(160px, 220px) 1fr;
+    grid-template-columns: minmax(160px, 240px) 1fr;
     gap: 10px;
     min-width: 0;
   }
@@ -109,12 +111,14 @@
     display: flex;
     flex-direction: column;
     gap: 2px;
-    max-height: 60vh;
+    max-height: 65vh;
     overflow-y: auto;
   }
   .em-item {
     display: flex;
-    flex-direction: column;
+    align-items: center;
+    justify-content: space-between;
+    gap: 6px;
     width: 100%;
     text-align: left;
     padding: 5px 6px;
@@ -130,9 +134,20 @@
     background: var(--bg-card);
     color: var(--gold);
   }
+  .em-item-main {
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+  }
   .em-item-sub {
     font-size: 0.5rem;
     color: var(--text-dim);
+  }
+  .em-score {
+    font-size: 0.55rem;
+    color: var(--gold);
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
   }
   .em-detail {
     min-width: 0;

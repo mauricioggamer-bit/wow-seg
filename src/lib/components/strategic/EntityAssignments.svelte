@@ -1,33 +1,53 @@
 <script lang="ts">
   import { dataStore } from '../../stores/data'
-  import { PROFESSION_STRATEGIC_VALUE, STRATEGIC_CONTEXTS } from '../../constants'
-  import type { StrategicIndex, StrategicContext, EntityType } from '../../types'
+  import { PROFESSION_STRATEGIC_VALUE, RACE_PROFESSION_BONUS } from '../../constants'
+  import { calculateStrategicValue } from '../../leveling/strategicValue'
+  import StrategicBreakdown from '../leveling/StrategicBreakdown.svelte'
+  import type { StrategicIndex, StrategicCategory, EntityType, Personaje, LevelingConfig } from '../../types'
 
-  let { entityType, entityId, entityLabel, indexes }: {
+  let { entityType, entityId, entityLabel, indexes, categories, personajeData, levelingCtx }: {
     entityType: EntityType
     entityId: string
     entityLabel: string
     indexes: StrategicIndex[]
+    categories: StrategicCategory[]
+    personajeData?: Personaje
+    levelingCtx?: { config: LevelingConfig; roster: Personaje[]; count90: number }
   } = $props()
 
-  function contextLabel(ctx?: StrategicContext): string {
-    return STRATEGIC_CONTEXTS.find(c => c.id === (ctx ?? 'general'))?.label ?? 'General'
+  let search = $state('')
+
+  function valueFor(indexId: string): number | undefined {
+    return dataStore.getStrategicValue(entityType, entityId, indexId)
   }
 
-  let assigned = $derived(
-    indexes
-      .map(idx => ({ idx, value: dataStore.getStrategicValue(entityType, entityId, idx.id) }))
-      .filter((r): r is { idx: StrategicIndex; value: number } => r.value !== undefined)
+  function categoryLabel(ctx?: string): string {
+    return categories.find(c => c.id === (ctx ?? 'general'))?.label ?? 'General'
+  }
+
+  let groups = $derived.by(() => {
+    const q = search.trim().toLowerCase()
+    const filtered = q ? indexes.filter(i => i.name.toLowerCase().includes(q)) : indexes
+    const byCategory = new Map<string, StrategicIndex[]>()
+    for (const idx of filtered) {
+      const catId = idx.context ?? 'general'
+      if (!byCategory.has(catId)) byCategory.set(catId, [])
+      byCategory.get(catId)!.push(idx)
+    }
+    const orderedCatIds = categories.map(c => c.id).filter(id => byCategory.has(id))
+    for (const id of byCategory.keys()) {
+      if (!orderedCatIds.includes(id)) orderedCatIds.push(id)
+    }
+    return orderedCatIds.map(catId => ({
+      catId,
+      label: categoryLabel(catId),
+      items: byCategory.get(catId)!,
+    }))
+  })
+
+  let total = $derived(
+    indexes.reduce((sum, idx) => sum + (valueFor(idx.id) ?? 0), 0)
   )
-  let unassigned = $derived(indexes.filter(idx => dataStore.getStrategicValue(entityType, entityId, idx.id) === undefined))
-
-  let pickerId = $state('')
-
-  function addPicked() {
-    if (!pickerId) return
-    dataStore.setStrategicValue(entityType, entityId, pickerId, 50)
-    pickerId = ''
-  }
 
   function save(indexId: string, el: EventTarget & HTMLInputElement) {
     const raw = el.value.trim()
@@ -41,44 +61,83 @@
   }
 
   let professionDefault = $derived(entityType === 'profession' ? (PROFESSION_STRATEGIC_VALUE[entityId] ?? 0) : null)
+
+  let professionRaceBonuses = $derived.by(() => {
+    if (entityType !== 'profession') return []
+    const result: { race: string; bonus: number; note?: string }[] = []
+    for (const [race, bonuses] of Object.entries(RACE_PROFESSION_BONUS)) {
+      for (const b of bonuses) {
+        if (b.profId === entityId || b.profId === '*') {
+          result.push({ race, bonus: b.bonus, note: b.note })
+        }
+      }
+    }
+    return result
+  })
+
+  let strategicResult = $derived(
+    entityType === 'personaje' && personajeData && levelingCtx
+      ? calculateStrategicValue(personajeData, levelingCtx.config, levelingCtx.roster, levelingCtx.count90)
+      : null
+  )
 </script>
 
 <div class="ea-root">
   <h3 class="ea-title">{entityLabel}</h3>
+  <p class="ea-total">Total ventajas propias: <strong>{total} pts</strong></p>
 
   {#if professionDefault !== null && professionDefault > 0}
     <p class="sv-hint">Valor base fijo de esta profesión (no editable acá): +{professionDefault} pts en "General".</p>
   {/if}
 
-  {#if assigned.length === 0}
-    <p class="sv-hint">Sin ventajas asignadas todavía.</p>
-  {:else}
-    <ul class="ea-rows">
-      {#each assigned as r (r.idx.id)}
-        <li class="ea-row">
-          <div class="ea-row-label">
-            <span>{r.idx.name}</span>
-            <span class="ea-row-context">{contextLabel(r.idx.context)}</span>
-          </div>
-          <input type="number" min="0" max="100"
-            value={r.value}
-            onchange={(e) => save(r.idx.id, e.currentTarget)}
-            class="sv-input sv-overridden" />
-          <button class="ea-icon-btn ea-icon-danger" title="Quitar" onclick={() => quitar(r.idx.id)}>✕ Quitar</button>
-        </li>
-      {/each}
-    </ul>
+  {#if entityType === 'profession' && professionRaceBonuses.length > 0}
+    <div class="ea-bonus-box">
+      <h4 class="ea-subheading">Razas que benefician esta profesión</h4>
+      <ul class="ea-bonus-list">
+        {#each professionRaceBonuses as b}
+          <li>{b.race}: +{b.bonus}{b.note ? ` (${b.note})` : ''}</li>
+        {/each}
+      </ul>
+    </div>
   {/if}
 
-  {#if unassigned.length > 0}
-    <div class="ea-add-row">
-      <select bind:value={pickerId} class="sv-text-input ea-picker">
-        <option value="">+ Añadir ventaja...</option>
-        {#each unassigned as idx}
-          <option value={idx.id}>{idx.name}</option>
-        {/each}
-      </select>
-      <button class="sv-btn-add" onclick={addPicked} disabled={!pickerId}>Agregar</button>
+  <input type="text" bind:value={search} placeholder="Buscar ventaja..." class="sv-text-input" />
+
+  <div class="ea-groups">
+    {#each groups as group (group.catId)}
+      <div class="ea-group">
+        <h4 class="ea-subheading">{group.label}</h4>
+        <ul class="ea-rows">
+          {#each group.items as idx (idx.id)}
+            {@const value = valueFor(idx.id)}
+            {@const assigned = value !== undefined}
+            <li class="ea-row" class:ea-dim={!assigned}>
+              <span class="ea-row-label">{idx.name}</span>
+              <input type="number" min="0" max="100"
+                value={value ?? ''}
+                placeholder="0"
+                onchange={(e) => save(idx.id, e.currentTarget)}
+                class="sv-input"
+                class:sv-overridden={assigned} />
+              {#if assigned}
+                <button class="ea-icon-btn ea-icon-danger" title="Quitar" onclick={() => quitar(idx.id)}>✕</button>
+              {:else}
+                <span class="ea-row-spacer"></span>
+              {/if}
+            </li>
+          {/each}
+        </ul>
+      </div>
+    {/each}
+    {#if groups.length === 0}
+      <p class="sv-hint">Sin resultados.</p>
+    {/if}
+  </div>
+
+  {#if strategicResult}
+    <div class="ea-breakdown">
+      <h4 class="ea-subheading">Desglose completo (igual que en Leveling)</h4>
+      <StrategicBreakdown strategic={strategicResult} />
     </div>
   {/if}
 </div>
@@ -99,33 +158,74 @@
     border-bottom: 1px solid var(--border-subtle);
     padding-bottom: 6px;
   }
+  .ea-total {
+    font-size: 0.6rem;
+    color: var(--text-primary);
+    margin: 0;
+  }
+  .ea-bonus-box {
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--r-sm);
+    padding: 6px;
+  }
+  .ea-bonus-list {
+    margin: 0;
+    padding-left: 16px;
+    font-size: 0.55rem;
+    color: var(--text-muted);
+  }
+  .ea-subheading {
+    font-size: 0.6rem;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    margin: 0 0 4px;
+  }
+  .ea-groups {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    max-height: 50vh;
+    overflow-y: auto;
+  }
+  .ea-group {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+  }
   .ea-rows {
     list-style: none;
     margin: 0;
     padding: 0;
     display: flex;
     flex-direction: column;
-    gap: 3px;
+    gap: 2px;
   }
   .ea-row {
     display: flex;
     align-items: center;
     gap: 8px;
-    padding: 4px;
-    border: 1px solid var(--border-subtle);
-    border-radius: var(--r-sm);
+    padding: 3px 4px;
+    border-bottom: 1px solid var(--border-subtle);
+  }
+  .ea-row.ea-dim {
+    opacity: 0.45;
+  }
+  .ea-row.ea-dim:focus-within {
+    opacity: 1;
   }
   .ea-row-label {
     flex: 1;
-    display: flex;
-    flex-direction: column;
     min-width: 0;
     font-size: 0.6rem;
     color: var(--text-primary);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
   }
-  .ea-row-context {
-    font-size: 0.5rem;
-    color: var(--text-dim);
+  .ea-row-spacer {
+    width: 18px;
+    display: inline-block;
   }
   .ea-icon-btn {
     background: transparent;
@@ -141,15 +241,8 @@
     border-color: var(--danger);
     color: var(--danger);
   }
-  .ea-add-row {
-    display: flex;
-    gap: 4px;
-    align-items: center;
-    padding-top: 4px;
+  .ea-breakdown {
     border-top: 1px solid var(--border-subtle);
-  }
-  .ea-picker {
-    flex: 1;
-    min-width: 140px;
+    padding-top: 8px;
   }
 </style>

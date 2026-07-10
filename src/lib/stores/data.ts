@@ -587,6 +587,62 @@ addTarea(nombrePersonaje: string, tarea: { nombre: string; tipoContenido?: TipoC
         return { ...d }
       })
     },
+    getCategories(): import('../types').StrategicCategory[] {
+      return [...(get({ subscribe }).strategicConfig?.categories ?? [])]
+        .sort((a, b) => (a.orden ?? 0) - (b.orden ?? 0))
+    },
+    addCategory(label: string): boolean {
+      const trimmed = label.trim()
+      if (!trimmed) return false
+      const id = 'cat_' + trimmed.toLowerCase().replace(/[^a-z0-9]/g, '_')
+      let ok = true
+      update(d => {
+        if (!d.strategicConfig) d.strategicConfig = {}
+        if (!d.strategicConfig.categories) d.strategicConfig.categories = []
+        if (d.strategicConfig.categories.some(c => c.id === id)) { ok = false; return d }
+        const orden = d.strategicConfig.categories.length
+        d.strategicConfig.categories = [...d.strategicConfig.categories, { id, label: trimmed, orden }]
+        saveData(d)
+        return { ...d }
+      })
+      return ok
+    },
+    updateCategory(id: string, updates: Partial<import('../types').StrategicCategory>) {
+      update(d => {
+        if (!d.strategicConfig?.categories) return d
+        d.strategicConfig.categories = d.strategicConfig.categories.map(c =>
+          c.id === id ? { ...c, ...updates } : c
+        )
+        saveData(d)
+        return { ...d }
+      })
+    },
+    deleteCategory(id: string): boolean {
+      if (id === 'general') return false
+      let ok = true
+      update(d => {
+        if (!d.strategicConfig?.categories) { ok = false; return d }
+        if (!d.strategicConfig.categories.some(c => c.id === id)) { ok = false; return d }
+        d.strategicConfig.categories = d.strategicConfig.categories.filter(c => c.id !== id)
+        d.strategicConfig.indexes = (d.strategicConfig.indexes ?? []).map(i =>
+          i.context === id ? { ...i, context: undefined } : i
+        )
+        saveData(d)
+        return { ...d }
+      })
+      return ok
+    },
+    reorderCategories(orderedIds: string[]) {
+      update(d => {
+        if (!d.strategicConfig?.categories) return d
+        d.strategicConfig.categories = d.strategicConfig.categories.map(c => {
+          const idx = orderedIds.indexOf(c.id)
+          return { ...c, orden: idx >= 0 ? idx : (c.orden ?? 0) }
+        })
+        saveData(d)
+        return { ...d }
+      })
+    },
     getComponentWeight(key: string): number {
       return get({ subscribe }).strategicConfig?.componentWeights?.[key] ?? 0
     },

@@ -1,21 +1,21 @@
 <script lang="ts">
   import { dataStore } from '../../stores/data'
-  import { STRATEGIC_CONTEXTS } from '../../constants'
   import VentajaEditModal from './VentajaEditModal.svelte'
-  import type { StrategicIndex, StrategicContext } from '../../types'
+  import type { StrategicIndex, StrategicCategory } from '../../types'
 
-  let { indexes, selectedId = $bindable<string | null>(null) }: {
+  let { indexes, categories, selectedId = $bindable<string | null>(null) }: {
     indexes: StrategicIndex[]
+    categories: StrategicCategory[]
     selectedId?: string | null
   } = $props()
 
   let newName = $state('')
   let newDesc = $state('')
-  let newContext = $state<StrategicContext>('general')
+  let newContext = $state('general')
   let addError = $state('')
 
-  function contextLabel(ctx?: StrategicContext): string {
-    return STRATEGIC_CONTEXTS.find(c => c.id === (ctx ?? 'general'))?.label ?? 'General'
+  function contextLabel(ctx?: string): string {
+    return categories.find(c => c.id === (ctx ?? 'general'))?.label ?? 'General'
   }
 
   function addIndex() {
@@ -56,7 +56,7 @@
     <input type="text" bind:value={newName} placeholder="Nombre de la ventaja" class="sv-text-input" />
     <input type="text" bind:value={newDesc} placeholder="Descripción (opcional)" class="sv-text-input sv-text-wide" />
     <select bind:value={newContext} class="sv-text-input">
-      {#each STRATEGIC_CONTEXTS as ctx}
+      {#each categories as ctx}
         <option value={ctx.id}>{ctx.label}</option>
       {/each}
     </select>
@@ -95,7 +95,7 @@
   {/if}
 </div>
 
-<VentajaEditModal bind:open={editModalOpen} idx={editingIdx} />
+<VentajaEditModal bind:open={editModalOpen} idx={editingIdx} {categories} />
 
 <style>
   .vl-root {

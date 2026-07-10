@@ -1,26 +1,38 @@
 <script lang="ts">
   import { dataStore } from '../stores/data'
+  import { levelingStore } from '../stores/leveling'
   import { CLASS_MAP, PERS_RACE_INFO, STRATEGIC_COMPONENTS } from '../constants'
   import { PROFESIONES } from '../constants/profesiones'
   import VentajaList from '../components/strategic/VentajaList.svelte'
   import VentajaDetail from '../components/strategic/VentajaDetail.svelte'
   import EntityMode from '../components/strategic/EntityMode.svelte'
-  import type { Personaje, StrategicIndex, Warband } from '../types'
+  import CategoryManagerModal from '../components/strategic/CategoryManagerModal.svelte'
+  import type { Personaje, StrategicIndex, StrategicCategory, Warband } from '../types'
   import type { EntityKind } from '../components/strategic/types'
 
-  let mode = $state<'ventajas' | 'entidades' | 'pesos'>('ventajas')
+  let tab = $state<'ventajas' | 'class' | 'race' | 'profession' | 'task' | 'warband' | 'personaje' | 'pesos'>('ventajas')
   let storeData = $derived($dataStore)
+  let config = $derived($levelingStore)
 
-  const modes = [
+  const tabs = [
     { key: 'ventajas' as const, label: 'Ventajas' },
-    { key: 'entidades' as const, label: 'Entidades' },
+    { key: 'class' as const, label: 'Clases' },
+    { key: 'race' as const, label: 'Razas' },
+    { key: 'profession' as const, label: 'Profesiones' },
+    { key: 'task' as const, label: 'Tareas' },
+    { key: 'warband' as const, label: 'Warbands' },
+    { key: 'personaje' as const, label: 'Personajes' },
     { key: 'pesos' as const, label: 'Pesos' },
   ]
 
   let indexes: StrategicIndex[] = $derived(storeData.strategicConfig?.indexes ?? [])
+  let categories: StrategicCategory[] = $derived(
+    [...(storeData.strategicConfig?.categories ?? [])].sort((a, b) => (a.orden ?? 0) - (b.orden ?? 0))
+  )
   let personajes: Personaje[] = $derived(storeData.personajes ?? [])
   let warbandList: Warband[] = $derived((storeData.warbands ?? []).filter((w: Warband) => w.nombre !== 'nada'))
   let allProfItems = $derived([...PROFESIONES, { id: 'cocina', nombre: 'Cocina', icon: '🍳' }])
+  let count90 = $derived(personajes.filter(p => p.nivel >= 90).length)
 
   let entityKinds: EntityKind[] = $derived([
     { key: 'class', label: 'Clases', items: Object.keys(CLASS_MAP).sort().map(name => ({ id: name, label: name })) },
@@ -31,23 +43,31 @@
     { key: 'personaje', label: 'Personajes', items: personajes.map(p => ({ id: p.nombre, label: p.nombre, sub: `${p.clase} · ${p.raza}` })) },
   ])
 
+  let activeKind = $derived(entityKinds.find(k => k.key === tab))
+  let levelingCtx = $derived({ config, roster: personajes, count90 })
+
   let selectedVentajaId = $state<string | null>(null)
   let selectedVentaja = $derived(indexes.find(i => i.id === selectedVentajaId) ?? null)
+
+  let categoryModalOpen = $state(false)
 </script>
 
 <div class="sv-view">
-  <div class="sv-tabs">
-    {#each modes as m}
-      <button class="sv-tab" class:active={mode === m.key} onclick={() => mode = m.key}>
-        {m.label}
-      </button>
-    {/each}
+  <div class="sv-tabbar">
+    <div class="sv-tabs">
+      {#each tabs as t}
+        <button class="sv-tab" class:active={tab === t.key} onclick={() => tab = t.key}>
+          {t.label}
+        </button>
+      {/each}
+    </div>
+    <button class="sv-btn-reset sv-cat-btn" onclick={() => categoryModalOpen = true}>⚙ Categorías</button>
   </div>
 
-  {#if mode === 'ventajas'}
+  {#if tab === 'ventajas'}
     <div class="sv-split">
       <div class="sv-split-master">
-        <VentajaList {indexes} bind:selectedId={selectedVentajaId} />
+        <VentajaList {indexes} {categories} bind:selectedId={selectedVentajaId} />
       </div>
       <div class="sv-split-detail">
         {#if selectedVentaja}
@@ -58,10 +78,10 @@
       </div>
     </div>
 
-  {:else if mode === 'entidades'}
-    <EntityMode {entityKinds} {indexes} />
+  {:else if activeKind}
+    <EntityMode kind={activeKind} {indexes} {categories} {personajes} {levelingCtx} />
 
-  {:else if mode === 'pesos'}
+  {:else if tab === 'pesos'}
     <div class="sv-table-wrap">
       <table class="sv-table">
         <thead>
@@ -104,16 +124,28 @@
   {/if}
 </div>
 
+<CategoryManagerModal bind:open={categoryModalOpen} />
+
 <style>
   .sv-view {
     display: flex;
     flex-direction: column;
     gap: 8px;
   }
+  .sv-tabbar {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-end;
+    gap: 8px;
+    flex-wrap: wrap;
+  }
   .sv-tabs {
     display: flex;
     gap: 2px;
     flex-wrap: wrap;
+  }
+  .sv-cat-btn {
+    margin-bottom: 2px;
   }
   :global(.sv-tab) {
     font-family: var(--font-heading);

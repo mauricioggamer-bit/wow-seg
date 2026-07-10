@@ -121,11 +121,11 @@
           </td>
           <td class="lvl-num" onclick={(e) => e.stopPropagation()}>
             {#if editing?.nombre === r.nombre && editing?.field === 'nivel'}
-              <div class="lvl-edit-row">
-                <input type="number" class="lvl-edit-input" bind:value={editing.value} min="1" max="90" />
-                <button class="lvl-edit-yes" onclick={confirmEdit}>✓</button>
-                <button class="lvl-edit-no" onclick={cancelEdit}>✗</button>
-              </div>
+              <button class="lvl-tw-btn" onclick={() => adjustEdit(-1)} disabled={editing.value <= 1}>−</button>
+              <span class="lvl-tw-val">{editing.value}</span>
+              <button class="lvl-tw-btn" onclick={() => adjustEdit(1)} disabled={editing.value >= 90}>+</button>
+              <button class="lvl-edit-yes" onclick={confirmEdit}>✓</button>
+              <button class="lvl-edit-no" onclick={cancelEdit}>✗</button>
             {:else}
               <span class="lvl-clickable" onclick={() => startEditNivel(r.nombre)}>{r.nivel}</span>
             {/if}
@@ -334,24 +334,6 @@
     z-index: 50;
     box-shadow: 0 4px 16px rgba(0,0,0,0.6);
     pointer-events: none;
-  }
-  .lvl-edit-row {
-    display: flex;
-    align-items: center;
-    gap: 3px;
-  }
-  .lvl-edit-input {
-    width: 36px;
-    padding: 1px 3px;
-    font-size: 0.6rem;
-    background: var(--input-bg);
-    border: 1px solid var(--gold);
-    border-radius: var(--r-sm);
-    color: var(--text-primary);
-    text-align: center;
-  }
-  .lvl-edit-input:focus {
-    outline: none;
   }
   .lvl-edit-yes, .lvl-edit-no {
     width: 18px;

@@ -5,7 +5,7 @@
   import type { Personaje, StrategicIndex } from '../types'
 
   let tab = $state<string>('indexes')
-  let personajes: Personaje[] = $derived(dataStore.getPersonajes())
+  let storeData = $derived($dataStore)
 
   const tabs = [
     { key: 'indexes', label: 'Ventajas' },
@@ -18,10 +18,11 @@
     { key: 'components', label: 'Pesos' },
   ]
 
-  let indexes: StrategicIndex[] = $derived(dataStore.getIndexes())
+  let indexes: StrategicIndex[] = $derived(storeData.strategicConfig?.indexes ?? [])
+  let personajes: Personaje[] = $derived(storeData.personajes ?? [])
   let allClassNames = $derived(Object.keys(CLASS_STRATEGIC_VALUE).sort())
   let allRaceNames = $derived(Object.keys(RACE_STRATEGIC_VALUE).sort())
-  let allWarbands = $derived(dataStore.getWarbands().filter(w => w.nombre !== 'nada').map(w => w.nombre))
+  let allWarbands = $derived((storeData.warbands ?? []).filter((w: { nombre: string }) => w.nombre !== 'nada').map((w: { nombre: string }) => w.nombre))
   let allProfItems = $derived([...PROFESIONES, { id: 'cocina', nombre: 'Cocina', icon: '🍳' }])
 
   function getVal(entityType: string, entityId: string, indexId: string): number {

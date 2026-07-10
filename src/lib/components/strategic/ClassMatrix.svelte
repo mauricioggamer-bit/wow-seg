@@ -40,8 +40,10 @@
     collapsed = next
   }
 
+  let liveValues = $derived($dataStore.strategicConfig?.values ?? {})
+
   function cellValue(className: string, indexId: string): number | undefined {
-    return dataStore.getStrategicValue('class', className, indexId)
+    return liveValues[dataStore.valueKey('class', className, indexId)]
   }
 
   function setCell(className: string, indexId: string, raw: string) {

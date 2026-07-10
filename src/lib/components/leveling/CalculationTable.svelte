@@ -101,16 +101,8 @@
       <button class="lvl-view-btn" class:active={viewMode === 'to80'} onclick={() => setViewMode('to80')}>→80</button>
       <button class="lvl-view-btn" class:active={viewMode === 'both'} onclick={() => setViewMode('both')}>Ambos</button>
       <button class="lvl-view-btn" class:active={viewMode === 'to90'} onclick={() => setViewMode('to90')}>→90</button>
-    </div>
-    <div class="lvl-filter-row">
-      <input
-        type="text" class="lvl-filter-input" placeholder="Nombre…"
-        bind:value={filterName}
-      />
-      <input
-        type="number" class="lvl-filter-input lvl-filter-nivel" placeholder="Nivel"
-        bind:value={filterLevel} min="1" max="90"
-      />
+      <input type="text" class="lvl-filter-input" placeholder="Nombre…" bind:value={filterName} />
+      <input type="text" class="lvl-filter-input lvl-filter-nivel" placeholder="Nivel" bind:value={filterLevel} />
     </div>
   </div>
 
@@ -215,7 +207,7 @@
   }
   .lvl-table-toolbar {
     display: flex;
-    justify-content: space-between;
+    justify-content: flex-start;
     align-items: center;
     padding: 0 0 4px 0;
     gap: 6px;
@@ -224,10 +216,7 @@
   .lvl-view-toggle {
     display: flex;
     gap: 2px;
-  }
-  .lvl-filter-row {
-    display: flex;
-    gap: 4px;
+    align-items: center;
   }
   .lvl-filter-input {
     background: var(--input-bg);

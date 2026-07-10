@@ -2,11 +2,10 @@
   import { dataStore } from '../stores/data'
   import { CLASS_STRATEGIC_VALUE, RACE_STRATEGIC_VALUE, PROFESSION_STRATEGIC_VALUE, STRATEGIC_COMPONENTS, RACE_PROFESSION_BONUS } from '../constants'
   import { PROFESIONES } from '../constants/profesiones'
-  import type { Personaje, StrategicIndex, WowData } from '../types'
+  import type { Personaje, StrategicIndex } from '../types'
 
   let tab = $state<string>('indexes')
-  let storeData: WowData = $state(dataStore.getData())
-  $effect(() => dataStore.subscribe(v => storeData = v))
+  let storeData = $derived($dataStore)
 
   const tabs = [
     { key: 'indexes', label: 'Ventajas' },
@@ -25,19 +24,11 @@
   let allRaceNames = $derived(Object.keys(RACE_STRATEGIC_VALUE).sort())
   let allWarbands = $derived((storeData.warbands ?? []).filter((w: { nombre: string }) => w.nombre !== 'nada').map((w: { nombre: string }) => w.nombre))
   let allProfItems = $derived([...PROFESIONES, { id: 'cocina', nombre: 'Cocina', icon: '🍳' }])
-  let strategicValues = $derived(storeData.strategicConfig?.values ?? {})
-  let componentWeights = $derived(storeData.strategicConfig?.componentWeights ?? {})
 
-  function valKey(entityType: string, entityId: string, indexId: string): string {
-    return `${entityType}:${entityId}:${indexId}`
-  }
   function getVal(entityType: string, entityId: string, indexId: string): number {
-    return strategicValues[valKey(entityType, entityId, indexId)] ?? 0
+    return dataStore.getStrategicValue(entityType, entityId, indexId) ?? 0
   }
-  function isOver(entityType: string, entityId: string, indexId: string): boolean {
-    return valKey(entityType, entityId, indexId) in strategicValues
-  }
-  function getDefault(entityType: string, entityId: string, indexId: string): number {
+  function defaultFor(entityType: string, entityId: string, indexId: string): number {
     if (indexId === 'general') {
       if (entityType === 'class') return CLASS_STRATEGIC_VALUE[entityId] ?? 0
       if (entityType === 'race') return RACE_STRATEGIC_VALUE[entityId] ?? 0
@@ -45,11 +36,8 @@
     }
     return 0
   }
-  function getCW(key: string): number {
-    return componentWeights[key] || 0
-  }
-  function isCWOver(key: string): boolean {
-    return key in componentWeights
+  function isOver(entityType: string, entityId: string, indexId: string): boolean {
+    return dataStore.getStrategicValue(entityType, entityId, indexId) !== undefined
   }
   function save(entityType: string, entityId: string, indexId: string, el: EventTarget & HTMLInputElement) {
     const v = parseInt(el.value)
@@ -168,7 +156,7 @@
                     class:sv-overridden={isOver('class', name, idx.id)} />
                 </td>
               {/each}
-              <td class="sv-default">{getDefault('class', name, 'general')}</td>
+              <td class="sv-default">{defaultFor('class', name, 'general')}</td>
             </tr>
           {/each}
         </tbody>
@@ -202,7 +190,7 @@
                 </td>
               {/each}
               <td class="sv-default">{raceProfBonusText(name)}</td>
-              <td class="sv-default">{getDefault('race', name, 'general')}</td>
+              <td class="sv-default">{defaultFor('race', name, 'general')}</td>
             </tr>
           {/each}
         </tbody>
@@ -238,7 +226,7 @@
                     class:sv-overridden={isOver('profession', prof.id, idx.id)} />
                 </td>
               {/each}
-              <td class="sv-default">{getDefault('profession', prof.id, 'general')}</td>
+              <td class="sv-default">{defaultFor('profession', prof.id, 'general')}</td>
             </tr>
           {/each}
         </tbody>
@@ -355,13 +343,13 @@
               <td>
                 {#if typeof comp.weight === 'number'}
                   <input type="number" min="1" max="100"
-                    value={getCW(comp.key) || comp.weight}
+                    value={dataStore.getComponentWeight(comp.key) || comp.weight}
                     onchange={(e) => {
                       const v = parseInt(e.currentTarget.value)
                       if (!isNaN(v) && v >= 1) dataStore.setComponentWeight(comp.key, v)
                     }}
                     class="sv-input"
-                    class:sv-overridden={isCWOver(comp.key)} />
+                    class:sv-overridden={dataStore.getComponentWeight(comp.key) > 0} />
                 {:else}
                   <span class="sv-muted">{comp.weight}</span>
                 {/if}
@@ -369,7 +357,7 @@
               <td class="sv-desc">{comp.description}</td>
               <td>
                 {#if typeof comp.weight === 'number'}
-                  {#if isCWOver(comp.key)}
+                  {#if dataStore.getComponentWeight(comp.key) > 0}
                     <button class="sv-btn-reset" onclick={() => dataStore.resetComponentWeight(comp.key)}>Reset</button>
                   {:else}
                     <span class="sv-default-label">Default</span>

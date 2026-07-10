@@ -22,60 +22,21 @@
       .sort((a, b) => a.label.localeCompare(b.label))
   )
 
-  function profLabel(id: string): string {
-    return allProfItems.find(p => p.id === id)?.nombre ?? id
-  }
-
   let racialBonusRows = $derived.by(() => {
-    const rows: { race: string; prof: string; bonus: number; note?: string }[] = []
+    const rows: { label: string; values: Record<string, number> }[] = []
     for (const [race, bonuses] of Object.entries(RACE_PROFESSION_BONUS)) {
+      const values: Record<string, number> = {}
       for (const b of bonuses) {
-        rows.push({
-          race,
-          prof: b.profId === '*' ? 'todas las primarias' : profLabel(b.profId),
-          bonus: b.bonus,
-          note: b.note,
-        })
+        if (b.profId === '*') {
+          for (const p of PROFESIONES) values[p.id] = (values[p.id] ?? 0) + b.bonus
+        } else {
+          values[b.profId] = (values[b.profId] ?? 0) + b.bonus
+        }
       }
+      rows.push({ label: race, values })
     }
     return rows
   })
 </script>
 
-<EntityMatrix entityType="profession" {columns} {indexes} {categories} />
-
-{#if racialBonusRows.length > 0}
-  <div class="pmx-bonus-box">
-    <h4 class="pmx-bonus-title">Bonos raciales fijos (no forman parte de esta tabla)</h4>
-    <ul class="pmx-bonus-list">
-      {#each racialBonusRows as r}
-        <li>{r.race}: +{r.bonus} en {r.prof}{r.note ? ` (${r.note})` : ''}</li>
-      {/each}
-    </ul>
-  </div>
-{/if}
-
-<style>
-  .pmx-bonus-box {
-    margin-top: 8px;
-    border: 1px solid var(--border-subtle);
-    border-radius: var(--r-sm);
-    padding: 6px 8px;
-  }
-  .pmx-bonus-title {
-    font-size: 0.6rem;
-    color: var(--text-muted);
-    text-transform: uppercase;
-    letter-spacing: 0.06em;
-    margin: 0 0 4px;
-  }
-  .pmx-bonus-list {
-    margin: 0;
-    padding-left: 16px;
-    font-size: 0.55rem;
-    color: var(--text-secondary);
-    display: flex;
-    flex-direction: column;
-    gap: 2px;
-  }
-</style>
+<EntityMatrix entityType="profession" {columns} {indexes} {categories} extraRows={racialBonusRows} extraRowsLabel="Bonos raciales fijos" />

@@ -3,13 +3,16 @@
   import type { StrategicIndex, StrategicCategory, EntityType } from '../../types'
 
   type Column = { id: string; label: string; color: string; icon: string }
+  type ExtraRow = { label: string; values: Record<string, number> }
 
-  let { entityType, columns, indexes, categories, rowLabel = 'Modificador' }: {
+  let { entityType, columns, indexes, categories, rowLabel = 'Modificador', extraRows = [], extraRowsLabel = 'Fijos' }: {
     entityType: EntityType
     columns: Column[]
     indexes: StrategicIndex[]
     categories: StrategicCategory[]
     rowLabel?: string
+    extraRows?: ExtraRow[]
+    extraRowsLabel?: string
   } = $props()
 
   let applicableIndexes = $derived(
@@ -50,7 +53,9 @@
   }
 
   function totalFor(colId: string): number {
-    return applicableIndexes.reduce((sum, idx) => sum + (cellValue(colId, idx.id) ?? 0), 0)
+    const idxSum = applicableIndexes.reduce((sum, idx) => sum + (cellValue(colId, idx.id) ?? 0), 0)
+    const extraSum = extraRows.reduce((sum, r) => sum + (r.values[colId] ?? 0), 0)
+    return idxSum + extraSum
   }
 
   function deleteRow(idx: StrategicIndex) {
@@ -150,6 +155,21 @@
             {/if}
           {/if}
         {/each}
+        {#if extraRows.length > 0}
+          <tr class="cmx-cat-row">
+            <td class="cmx-cat-cell" colspan={columns.length + 1}>
+              <span class="cmx-collapse-btn cmx-static-label">{extraRowsLabel}</span>
+            </td>
+          </tr>
+          {#each extraRows as row (row.label)}
+            <tr class="cmx-row">
+              <td class="cmx-row-label"><span>{row.label}</span></td>
+              {#each columns as c (c.id)}
+                <td class="cmx-cell cmx-cell-readonly">{row.values[c.id] ?? ''}</td>
+              {/each}
+            </tr>
+          {/each}
+        {/if}
       </tbody>
       <tfoot>
         <tr class="cmx-total-row">
@@ -305,6 +325,13 @@
     border-left: 1px solid var(--border-subtle);
     padding: 1px;
     text-align: center;
+  }
+  .cmx-cell-readonly {
+    color: var(--text-muted);
+    font-variant-numeric: tabular-nums;
+  }
+  .cmx-static-label {
+    cursor: default;
   }
   .cmx-input {
     width: 36px;

@@ -4,9 +4,10 @@
   import { calculateStrategicValue } from '../../leveling/strategicValue'
   import { WoWRetailModel, simulateCharacter, createContext, createState, buildBreakdown } from '../../simulation'
   import type { SimulationResult } from '../../simulation'
-  import StrategicBreakdown from './StrategicBreakdown.svelte'
+  import StrategicValueModal from './StrategicValueModal.svelte'
 
   const gameModel = new WoWRetailModel()
+  let stratModalOpen = $state(false)
 
   let {
     personaje,
@@ -43,6 +44,7 @@
   let simState = $derived(createState(simChar))
   let simResult = $derived(simulateCharacter(simContext, simState, gameModel))
   let strategic = $derived(calculateStrategicValue(personaje, config, roster, count90))
+  let ventajasTotal = $derived(Object.values(strategic.indexValues).reduce((a, b) => a + b, 0))
 
   function getTo80(result: SimulationResult) {
     if (result.context.character.nivel >= 80) return { dungeons: 0, time: 0 }
@@ -179,9 +181,54 @@
     </div>
 
     <div class="lvl-strategic-detail">
-      <h4 style="margin:0 0 6px">Valor estratégico</h4>
-      <StrategicBreakdown strategic={strategic} />
+      <div style="display:flex;justify-content:space-between;align-items:center">
+        <h4 style="margin:0">Valor estratégico</h4>
+        <button onclick={() => { stratModalOpen = true }}
+          title="Ver fórmula y desglose"
+          style="background:var(--input-bg,#2a2a2a);border:1px solid var(--gold,#d4af37);border-radius:50%;width:18px;height:18px;line-height:16px;color:var(--gold,#d4af37);cursor:pointer;font-size:0.55rem;padding:0">?</button>
+      </div>
+      <div class="lvl-stars-display">{'★'.repeat(strategic.stars)}{'☆'.repeat(5 - strategic.stars)}</div>
+      <div class="lvl-score-bar">
+        <div class="lvl-score-fill" style="width: {strategic.totalScore}%"></div>
+        <span class="lvl-score-label">{strategic.totalScore}/100</span>
+      </div>
+      <ul class="lvl-reasons">
+        {#each strategic.reasons as reason}
+          <li>{reason}</li>
+        {/each}
+      </ul>
+      <div class="lvl-strategic-stats">
+        <div class="lvl-sv-stat">
+          <span>Warband Impact</span>
+          <strong>{strategic.warbandImpact > 0 ? `+${strategic.warbandImpact}%` : '—'}</strong>
+        </div>
+        <div class="lvl-sv-stat">
+          <span>Profesiones</span>
+          <strong>{strategic.professionValue > 0 ? 'Sí' : 'No'}</strong>
+        </div>
+        <div class="lvl-sv-stat">
+          <span>Cercanía a 90</span>
+          <strong>{(strategic.closenessTo90 * 100).toFixed(0)}%</strong>
+        </div>
+        <div class="lvl-sv-stat">
+          <span>Cercanía obj.</span>
+          <strong>{(strategic.closenessToObjective * 100).toFixed(0)}%</strong>
+        </div>
+        <div class="lvl-sv-stat">
+          <span>Clase</span>
+          <strong>{strategic.classValue > 0 ? `+${strategic.classValue}` : '—'}</strong>
+        </div>
+        <div class="lvl-sv-stat">
+          <span>Raza</span>
+          <strong>{strategic.raceValue > 0 ? `+${strategic.raceValue}` : '—'}</strong>
+        </div>
+        <div class="lvl-sv-stat">
+          <span>Ventajas</span>
+          <strong>{ventajasTotal > 0 ? `+${ventajasTotal}` : '—'}</strong>
+        </div>
+      </div>
     </div>
+    <StrategicValueModal bind:open={stratModalOpen} strategic={strategic} />
   {/if}
 </div>
 
@@ -318,5 +365,70 @@
     font-size: 0.6rem;
     color: var(--gold);
     margin-bottom: 4px;
+  }
+  .lvl-stars-display {
+    color: var(--gold);
+    font-size: 0.8rem;
+    letter-spacing: -1px;
+    margin-bottom: 4px;
+  }
+  .lvl-score-bar {
+    position: relative;
+    height: 10px;
+    background: rgba(0,0,0,0.4);
+    border-radius: 5px;
+    overflow: hidden;
+    margin-bottom: 6px;
+  }
+  .lvl-score-fill {
+    height: 100%;
+    background: linear-gradient(90deg, var(--gold), var(--gold-light, #d4af37));
+    border-radius: 5px;
+    transition: width var(--t-fast) var(--ease);
+  }
+  .lvl-score-label {
+    position: absolute;
+    right: 4px;
+    top: -1px;
+    font-size: 0.45rem;
+    color: var(--text-primary);
+    line-height: 10px;
+  }
+  .lvl-reasons {
+    list-style: none;
+    padding: 0;
+    margin: 0 0 6px 0;
+  }
+  .lvl-reasons li {
+    font-size: 0.5rem;
+    color: var(--text-secondary);
+    padding: 1px 0;
+    padding-left: 10px;
+    position: relative;
+  }
+  .lvl-reasons li::before {
+    content: '▸';
+    position: absolute;
+    left: 0;
+    color: var(--gold);
+  }
+  .lvl-strategic-stats {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+  }
+  .lvl-sv-stat {
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+  }
+  .lvl-sv-stat span {
+    font-size: 0.4rem;
+    color: var(--text-muted);
+    text-transform: uppercase;
+  }
+  .lvl-sv-stat strong {
+    font-size: 0.55rem;
+    color: var(--gold-light, #d4af37);
   }
 </style>

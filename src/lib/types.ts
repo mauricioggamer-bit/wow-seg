@@ -159,7 +159,7 @@ export interface LevelingResult {
   done90: boolean
   roi: number
   strategicStars: number
-  strategicReasons: string[]
+  strategicText: string
   strategicScore: number
   warbandImpact: number
 }
@@ -187,10 +187,6 @@ export interface StrategicValueResult {
   raceValue: number
   raceProfBonus: number
   taskValue: number
-  personajeVentajas: number
-  warbandVentajas: number
-  taskGlobalVentajas: number
-  professionExtraVentajas: number
   indexValues: Record<string, number>
   totalScore: number
   reasons: string[]

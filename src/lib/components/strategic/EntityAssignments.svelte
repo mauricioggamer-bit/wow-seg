@@ -83,9 +83,7 @@
 
 <div class="ea-root">
   <h3 class="ea-title">{entityLabel}</h3>
-  {#if entityType !== 'personaje'}
-    <p class="ea-total">Total ventajas propias: <strong>{total} pts</strong></p>
-  {/if}
+  <p class="ea-total">Total ventajas propias: <strong>{total} pts</strong></p>
 
   {#if professionDefault !== null && professionDefault > 0}
     <p class="sv-hint">Valor base fijo de esta profesión (no editable acá): +{professionDefault} pts en "General".</p>
@@ -132,7 +130,7 @@
 
   {#if strategicResult}
     <div class="ea-breakdown">
-      <h4 class="ea-subheading">Valor estratégico</h4>
+      <h4 class="ea-subheading">Desglose completo (igual que en Leveling)</h4>
       <StrategicBreakdown strategic={strategicResult} />
     </div>
   {/if}

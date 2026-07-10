@@ -57,59 +57,44 @@ export function calculateStrategicValue(
   const indexes: StrategicIndex[] = dataStore.getIndexes()
   const indexValues: Record<string, number> = {}
 
-  // Subtotales por fuente: cada ventaja (índice) puede recibir puntos de varias
-  // fuentes a la vez (clase, raza, profesión, personaje, warband, tarea global).
-  // Se acumulan acá para que el desglose pueda atribuir cada punto a quien
-  // corresponde, en vez de mostrar solo la suma ciega por índice.
-  let classTotal = 0
-  let raceTotal = 0
-  let professionExtraTotal = 0
-  let personajeTotal = 0
-  let warbandTotal = 0
-  let taskGlobalTotal = 0
-
   for (const idx of indexes) {
     if (taskContext && idx.context && idx.context !== 'general' && idx.context !== taskContext) continue
+    let total = 0
 
     const cv = getClassValue(personaje.clase, idx.id)
+    if (cv > 0) total += cv
+
     const rv = getRaceValue(personaje.raza, idx.id)
-    let pv = 0
+    if (rv > 0) total += rv
+
     for (const pid of profIds) {
-      const p = getProfessionValue(pid, idx.id)
-      if (p > 0) pv += p
+      const pv = getProfessionValue(pid, idx.id)
+      if (pv > 0) total += pv
     }
+
     const tv = dataStore.getStrategicValue('task', '', idx.id) ?? 0
+    if (tv > 0) total += tv
+
     const wv = dataStore.getStrategicValue('warband', personaje.warband, idx.id) ?? 0
+    if (wv > 0) total += wv
+
     const pv2 = dataStore.getStrategicValue('personaje', personaje.nombre, idx.id) ?? 0
-
-    const total = Math.max(0, cv) + Math.max(0, rv) + Math.max(0, pv) + Math.max(0, tv) + Math.max(0, wv) + Math.max(0, pv2)
-
-    if (cv > 0) classTotal += cv
-    if (rv > 0) raceTotal += rv
-    if (idx.id !== 'general' && pv > 0) professionExtraTotal += pv
-    if (tv > 0) taskGlobalTotal += tv
-    if (wv > 0) warbandTotal += wv
-    if (pv2 > 0) personajeTotal += pv2
+    if (pv2 > 0) total += pv2
 
     if (total > 0) {
       indexValues[idx.id] = total
-      const parts: string[] = []
-      if (cv > 0) parts.push(`clase ${personaje.clase} +${cv}`)
-      if (rv > 0) parts.push(`raza ${personaje.raza} +${rv}`)
-      if (pv > 0) parts.push(`profesión +${pv}`)
-      if (tv > 0) parts.push(`tarea global +${tv}`)
-      if (wv > 0) parts.push(`warband +${wv}`)
-      if (pv2 > 0) parts.push(`personaje +${pv2}`)
-      reasons.push(`${idx.name}: ${parts.join(', ')} (total +${total} pts)`)
+      reasons.push(`${idx.name}: +${total} pts`)
     }
   }
 
-  const classValue = classTotal
-  const raceValue = raceTotal
+  const classValue = getClassValue(personaje.clase, 'general')
+  const raceValue = getRaceValue(personaje.raza, 'general')
 
   let professionValue = 0
   if (profIds.length > 0) {
     professionValue = profIds.reduce((sum, id) => sum + getProfessionValue(id, 'general'), 0)
+    const profNames = profIds.join(', ')
+    reasons.push(`Profesiones (${profNames}): +${professionValue} pts`)
   }
 
   const closenessTo90 = calc.done ? 0 : (personaje.nivel >= 90 ? 1 : Math.max(0, (personaje.nivel - 10) / 80))
@@ -162,9 +147,16 @@ export function calculateStrategicValue(
   const bonusSub90 = !calc.done && personaje.nivel < 90 ? 1 : 0
   const bonus8089 = !calc.done && (personaje.nivel >= 80 && personaje.nivel < 90) ? 1 : 0
 
+  if (classValue > 0 && !reasons.some(r => r.includes('General'))) {
+    reasons.push(`Clase ${personaje.clase}: +${classValue} pts`)
+  }
+  if (raceValue > 0 && !reasons.some(r => r.includes('General'))) {
+    reasons.push(`Raza ${personaje.raza}: +${raceValue} pts`)
+  }
+
   const taskValue = (personaje.tareas ?? []).reduce((sum, t) => sum + (t.puntos ?? 0), 0)
   if (taskValue > 0) {
-    reasons.push(`Tareas (puntos manuales): +${taskValue} pts`)
+    reasons.push(`Tareas: +${taskValue} pts`)
   }
 
   let raceProfBonus = 0
@@ -227,10 +219,6 @@ export function calculateStrategicValue(
     raceValue,
     raceProfBonus,
     taskValue,
-    personajeVentajas: personajeTotal,
-    warbandVentajas: warbandTotal,
-    taskGlobalVentajas: taskGlobalTotal,
-    professionExtraVentajas: professionExtraTotal,
     indexValues,
     totalScore,
     reasons,

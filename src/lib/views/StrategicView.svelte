@@ -8,6 +8,7 @@
   import EntityMode from '../components/strategic/EntityMode.svelte'
   import ClassMatrix from '../components/strategic/ClassMatrix.svelte'
   import RaceMatrix from '../components/strategic/RaceMatrix.svelte'
+  import ProfessionMatrix from '../components/strategic/ProfessionMatrix.svelte'
   import CategoryManagerModal from '../components/strategic/CategoryManagerModal.svelte'
   import { STRATEGIC_PARAMS } from '../constants'
   import type { Personaje, StrategicIndex, StrategicCategory, Warband } from '../types'
@@ -88,6 +89,9 @@
 
   {:else if tab === 'race'}
     <RaceMatrix {indexes} {categories} />
+
+  {:else if tab === 'profession'}
+    <ProfessionMatrix {indexes} {categories} />
 
   {:else if activeKind}
     <EntityMode kind={activeKind} {indexes} {categories} {personajes} {levelingCtx} {openCharEdit} />

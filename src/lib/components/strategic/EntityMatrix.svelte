@@ -324,6 +324,15 @@
     border-color: var(--gold);
     background: var(--input-bg);
   }
+  .cmx-input::-webkit-outer-spin-button,
+  .cmx-input::-webkit-inner-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+  }
+  .cmx-input[type='number'] {
+    appearance: textfield;
+    -moz-appearance: textfield;
+  }
   .cmx-total-row td {
     border-top: 2px solid var(--gold);
     background: var(--bg-soft);

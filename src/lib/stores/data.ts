@@ -173,7 +173,7 @@ function createDataStore() {
         return { ...d }
       })
     },
-addTarea(nombrePersonaje: string, tarea: { nombre: string; tipoContenido?: TipoContenido; contenidoExpansion?: string; contenidoDificultad?: string; tipo?: string; cooldown?: string; prioridad?: number; tiempo_min?: number; expansion?: string; recompensa?: string; puntos?: number }) {
+addTarea(nombrePersonaje: string, tarea: { nombre: string; tipoContenido?: TipoContenido; contenidoExpansion?: string; contenidoDificultad?: string; tipo?: string; cooldown?: string; prioridad?: number; tiempo_min?: number; expansion?: string; nivelRecomendado?: number; recompensa?: string; puntos?: number }) {
       update(d => {
         const p = d.personajes.find(pj => pj.nombre === nombrePersonaje)
         if (!p) return d
@@ -192,6 +192,7 @@ addTarea(nombrePersonaje: string, tarea: { nombre: string; tipoContenido?: TipoC
           prioridad: (tarea.prioridad ?? 2) as 1 | 2 | 3,
           tiempo_min: tarea.tiempo_min ?? 15,
           expansion: tarea.expansion || '',
+          nivelRecomendado: tarea.nivelRecomendado,
           ultimo_completado: null,
           tags: [],
           orden: maxOrden + 1,

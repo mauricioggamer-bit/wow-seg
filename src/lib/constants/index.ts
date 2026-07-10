@@ -134,4 +134,10 @@ export const EXPANSIONS = [
   { id: 'midnight', nombre: 'Midnight', color: '#7B2FBE', region: 'TBD' },
 ]
 
+export const EXPANSION_RECOMMENDED_LEVEL: Record<string, number> = {
+  classic: 45, outland: 45, wotlk: 45, cata: 45, mop: 45,
+  draenor: 70, legion: 70, bfa: 70, shadowlands: 70,
+  dragonflight: 90, tww: 90, midnight: 90,
+}
+
 export const LABELS: Record<string, string> = { all: 'Todas', weekly: 'Semanal', daily: 'Diaria', farm_libre: 'Farm' }

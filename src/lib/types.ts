@@ -16,6 +16,7 @@ export interface Tarea {
   hecho: boolean
   ultimo_completado: string | null
   expansion?: string
+  nivelRecomendado?: number
   tags?: string[]
   orden?: number
   puntos?: number

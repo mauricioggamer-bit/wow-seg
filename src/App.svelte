@@ -26,7 +26,7 @@
   import { levelingStore } from './lib/stores/leveling'
   import { gistStore } from './lib/stores/gist'
   import { supabaseStore } from './lib/stores/supabaseSync'
-  import { EXPANSIONS, PERS_RACE_INFO, CLASS_MAP } from './lib/constants'
+  import { EXPANSIONS, EXPANSION_RECOMMENDED_LEVEL, PERS_RACE_INFO, CLASS_MAP } from './lib/constants'
   import { DUNGEON_EXPANSION_IDS, RAID_EXPANSION_IDS, WORLDBOSS_EXPANSION_IDS, dungeonsForExpansion, raidsForExpansion, worldBossesForExpansion, expNombre } from './lib/constants/wowContent'
   import { PROFESIONES } from './lib/constants/profesiones'
   import type { TipoContenido, DungeonDifficulty, RaidDifficulty } from './lib/constants/wowContent'
@@ -151,6 +151,7 @@
   let editTaskRecompensa = $state('')
   let editTaskOrden = $state(0)
   let editTaskPuntos = $state(0)
+  let editTaskNivelRecomendado = $state<number | null>(null)
 
   let newTaskChar = $state('')
   let newTaskNombre = $state('')
@@ -163,6 +164,7 @@
   let newTaskCooldown = $state('none')
   let newTaskRecompensa = $state('')
   let newTaskPuntos = $state(0)
+  let newTaskNivelRecomendado = $state<number | null>(null)
 
   let isNewChar = $state(false)
 
@@ -238,6 +240,7 @@
     editTaskRecompensa = t.recompensa || ''
     editTaskOrden = t.orden ?? 0
     editTaskPuntos = t.puntos ?? 0
+    editTaskNivelRecomendado = t.nivelRecomendado ?? null
     uiStore.openModal('TaskEdit')
   }
 
@@ -252,6 +255,7 @@
       contenidoExpansion: editTaskTipoContenido === 'descripcion' ? '' : editTaskExpansion,
       contenidoDificultad: (editTaskTipoContenido === 'mazmorra' || editTaskTipoContenido === 'raid') ? editTaskDificultad : '',
       expansion: editTaskTipoContenido === 'descripcion' ? editTaskExpansion : '',
+      nivelRecomendado: editTaskNivelRecomendado ?? undefined,
       prioridad: parseInt(editTaskPrioridad) as 1 | 2 | 3,
       tiempo_min: editTaskTiempo,
       cooldown: editTaskCooldown as 'weekly' | 'daily' | 'none',
@@ -274,6 +278,7 @@
     newTaskCooldown = 'none'
     newTaskRecompensa = ''
     newTaskPuntos = 0
+    newTaskNivelRecomendado = null
     uiStore.openModal('TaskNew')
   }
 
@@ -288,6 +293,7 @@
       contenidoExpansion: newTaskTipoContenido === 'descripcion' ? '' : newTaskExpansion,
       contenidoDificultad: (newTaskTipoContenido === 'mazmorra' || newTaskTipoContenido === 'raid') ? newTaskDificultad : '',
       expansion: newTaskTipoContenido === 'descripcion' ? newTaskExpansion : '',
+      nivelRecomendado: newTaskNivelRecomendado ?? undefined,
       prioridad: parseInt(newTaskPrioridad),
       tiempo_min: newTaskTiempo,
       cooldown: newTaskCooldown,
@@ -297,11 +303,16 @@
     uiStore.closeModal()
   }
 
+  function defaultLevelFor(expId: string): number | null {
+    return EXPANSION_RECOMMENDED_LEVEL[expId] ?? null
+  }
+
   function setNewTipoContenido(t: TipoContenido) {
     newTaskTipoContenido = t
     newTaskExpansion = ''
     newTaskDificultad = ''
     newTaskContenidoNombre = ''
+    newTaskNivelRecomendado = null
     if (t === 'descripcion') { newTaskNombre = ''; return }
     if (t === 'mazmorra') newTaskExpansion = DUNGEON_EXPANSION_IDS[0] ?? ''
     else if (t === 'raid') newTaskExpansion = RAID_EXPANSION_IDS[0] ?? ''
@@ -314,6 +325,7 @@
     editTaskExpansion = ''
     editTaskDificultad = ''
     editTaskContenidoNombre = ''
+    editTaskNivelRecomendado = null
     if (t === 'descripcion') return
     if (t === 'mazmorra') editTaskExpansion = DUNGEON_EXPANSION_IDS[0] ?? ''
     else if (t === 'raid') editTaskExpansion = RAID_EXPANSION_IDS[0] ?? ''
@@ -324,6 +336,7 @@
   function onNewExpansionChange() {
     newTaskDificultad = ''
     newTaskContenidoNombre = ''
+    newTaskNivelRecomendado = defaultLevelFor(newTaskExpansion)
     if (newTaskTipoContenido === 'mazmorra') {
       const list = dungeonsForExpansion(newTaskExpansion)
       if (list.length) newTaskDificultad = list[0].dificultades[0]
@@ -351,6 +364,7 @@
   function onEditExpansionChange() {
     editTaskDificultad = ''
     editTaskContenidoNombre = ''
+    editTaskNivelRecomendado = defaultLevelFor(editTaskExpansion)
     if (editTaskTipoContenido === 'mazmorra') {
       const list = dungeonsForExpansion(editTaskExpansion)
       if (list.length) editTaskDificultad = list[0].dificultades[0]
@@ -860,9 +874,9 @@
                 <label style="font-size:0.7rem">Nombre</label>
                 <input id="editTaskNombre" type="text" bind:value={editTaskNombre} style="width:100%" />
               </div>
-              <div class="form-group" style="margin:0;grid-column:1/-1">
+              <div class="form-group" style="margin:0">
                 <label style="font-size:0.7rem">Expansión</label>
-                <select bind:value={editTaskExpansion}>
+                <select bind:value={editTaskExpansion} onchange={() => editTaskNivelRecomendado = defaultLevelFor(editTaskExpansion)}>
                   <option value="">Sin especificar</option>
                   {#each EXPANSIONS as exp}<option value={exp.id}>{exp.nombre}</option>{/each}
                 </select>
@@ -938,6 +952,11 @@
           <label>Orden</label>
           <input type="number" bind:value={editTaskOrden} min="0" />
         </div>
+        <div class="form-group">
+          <label>Nivel recomendado</label>
+          <input type="number" min="1" max="90" value={editTaskNivelRecomendado ?? ''}
+            oninput={(e) => editTaskNivelRecomendado = e.currentTarget.value === '' ? null : parseInt(e.currentTarget.value)} />
+        </div>
       </div>
       <div class="modal-footer">
         <button class="wow-btn" onclick={() => uiStore.closeModal()}>Cancelar</button>
@@ -968,9 +987,9 @@
                 <label style="font-size:0.7rem">Nombre</label>
                 <input id="newTaskNombre" type="text" bind:value={newTaskNombre} placeholder="Ej: Weekly Zereth Mortis" style="width:100%" />
               </div>
-              <div class="form-group" style="margin:0;grid-column:1/-1">
+              <div class="form-group" style="margin:0">
                 <label style="font-size:0.7rem">Expansión</label>
-                <select bind:value={newTaskExpansion}>
+                <select bind:value={newTaskExpansion} onchange={() => newTaskNivelRecomendado = defaultLevelFor(newTaskExpansion)}>
                   <option value="">Sin especificar</option>
                   {#each EXPANSIONS as exp}<option value={exp.id}>{exp.nombre}</option>{/each}
                 </select>
@@ -1041,6 +1060,11 @@
         <div class="form-group">
           <label>Puntos Estratégicos</label>
           <input type="number" bind:value={newTaskPuntos} min="0" max="100" />
+        </div>
+        <div class="form-group">
+          <label>Nivel recomendado</label>
+          <input type="number" min="1" max="90" value={newTaskNivelRecomendado ?? ''}
+            oninput={(e) => newTaskNivelRecomendado = e.currentTarget.value === '' ? null : parseInt(e.currentTarget.value)} />
         </div>
       </div>
       <div class="modal-footer">

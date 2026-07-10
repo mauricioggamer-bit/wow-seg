@@ -117,7 +117,7 @@ const VALID_PERSONAJE_KEYS = new Set([
 const VALID_TAREA_KEYS = new Set([
   'id', 'nombre', 'personaje', 'esPrincipal', 'tipoContenido', 'contenidoExpansion', 'contenidoDificultad',
   'tipo', 'cooldown', 'tiempo_min', 'prioridad', 'recompensa', 'hecho',
-  'ultimo_completado', 'expansion', 'tags', 'orden', 'puntos',
+  'ultimo_completado', 'expansion', 'nivelRecomendado', 'tags', 'orden', 'puntos',
 ])
 
 export function normalizeData(data: WowData): WowData {

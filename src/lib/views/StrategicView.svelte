@@ -1,380 +1,67 @@
 <script lang="ts">
   import { dataStore } from '../stores/data'
-  import { CLASS_MAP, PERS_RACE_INFO, PROFESSION_STRATEGIC_VALUE, STRATEGIC_COMPONENTS, STRATEGIC_CONTEXTS, RACE_PROFESSION_BONUS } from '../constants'
+  import { CLASS_MAP, PERS_RACE_INFO, STRATEGIC_COMPONENTS } from '../constants'
   import { PROFESIONES } from '../constants/profesiones'
-  import type { Personaje, StrategicIndex, StrategicContext, Warband } from '../types'
+  import VentajaList from '../components/strategic/VentajaList.svelte'
+  import VentajaDetail from '../components/strategic/VentajaDetail.svelte'
+  import EntityMode from '../components/strategic/EntityMode.svelte'
+  import type { Personaje, StrategicIndex, Warband } from '../types'
+  import type { EntityKind } from '../components/strategic/types'
 
-  let tab = $state<string>('indexes')
+  let mode = $state<'ventajas' | 'entidades' | 'pesos'>('ventajas')
   let storeData = $derived($dataStore)
 
-  const tabs = [
-    { key: 'indexes', label: 'Ventajas' },
-    { key: 'classes', label: 'Clases' },
-    { key: 'races', label: 'Razas' },
-    { key: 'professions', label: 'Profesiones' },
-    { key: 'tasks', label: 'Tareas' },
-    { key: 'warbands', label: 'Warbands' },
-    { key: 'characters', label: 'Personajes' },
-    { key: 'components', label: 'Pesos' },
+  const modes = [
+    { key: 'ventajas' as const, label: 'Ventajas' },
+    { key: 'entidades' as const, label: 'Entidades' },
+    { key: 'pesos' as const, label: 'Pesos' },
   ]
 
   let indexes: StrategicIndex[] = $derived(storeData.strategicConfig?.indexes ?? [])
   let personajes: Personaje[] = $derived(storeData.personajes ?? [])
-  let allClassNames = $derived(Object.keys(CLASS_MAP).sort())
-  let allRaceNames = $derived(Object.keys(PERS_RACE_INFO).sort())
   let warbandList: Warband[] = $derived((storeData.warbands ?? []).filter((w: Warband) => w.nombre !== 'nada'))
-  let allWarbands = $derived(warbandList.map((w: Warband) => w.nombre))
   let allProfItems = $derived([...PROFESIONES, { id: 'cocina', nombre: 'Cocina', icon: '🍳' }])
 
-  function contextLabel(ctx?: StrategicContext): string {
-    return STRATEGIC_CONTEXTS.find(c => c.id === (ctx ?? 'general'))?.label ?? 'General'
-  }
+  let entityKinds: EntityKind[] = $derived([
+    { key: 'class', label: 'Clases', items: Object.keys(CLASS_MAP).sort().map(name => ({ id: name, label: name })) },
+    { key: 'race', label: 'Razas', items: Object.keys(PERS_RACE_INFO).sort().map(name => ({ id: name, label: name })) },
+    { key: 'profession', label: 'Profesiones', items: allProfItems.map(p => ({ id: p.id, label: `${p.icon} ${p.nombre}` })) },
+    { key: 'task', label: 'Tareas', items: [{ id: '', label: 'Todas las tareas (global)' }] },
+    { key: 'warband', label: 'Warbands', items: warbandList.map(w => ({ id: w.nombre, label: w.nombre })) },
+    { key: 'personaje', label: 'Personajes', items: personajes.map(p => ({ id: p.nombre, label: p.nombre, sub: `${p.clase} · ${p.raza}` })) },
+  ])
 
-  function getVal(entityType: string, entityId: string, indexId: string): number {
-    return dataStore.getStrategicValue(entityType, entityId, indexId) ?? 0
-  }
-  function defaultFor(entityType: string, entityId: string, indexId: string): number {
-    if (indexId === 'general' && entityType === 'profession') return PROFESSION_STRATEGIC_VALUE[entityId] ?? 0
-    return 0
-  }
-  function isOver(entityType: string, entityId: string, indexId: string): boolean {
-    return dataStore.getStrategicValue(entityType, entityId, indexId) !== undefined
-  }
-  function save(entityType: string, entityId: string, indexId: string, el: EventTarget & HTMLInputElement) {
-    const v = parseInt(el.value)
-    if (!isNaN(v) && v >= 0) dataStore.setStrategicValue(entityType, entityId, indexId, v)
-  }
-  function reset(entityType: string, entityId: string, indexId: string) {
-    dataStore.resetStrategicValue(entityType, entityId, indexId)
-  }
-
-  let newIdxName = $state('')
-  let newIdxDesc = $state('')
-  let newIdxContext = $state<StrategicContext>('general')
-  let addIndexError = $state('')
-  function addIndex() {
-    const name = newIdxName.trim()
-    if (!name) return
-    const id = 'idx_' + name.toLowerCase().replace(/[^a-z0-9]/g, '_')
-    const ok = dataStore.addIndex({ id, name, description: newIdxDesc.trim(), context: newIdxContext })
-    if (!ok) {
-      addIndexError = `Ya existe una ventaja con el id "${id}" (nombre demasiado parecido a otra). Elegí otro nombre.`
-      return
-    }
-    addIndexError = ''
-    newIdxName = ''
-    newIdxDesc = ''
-    newIdxContext = 'general'
-  }
-  function delIndex(id: string) {
-    const idx = indexes.find(i => i.id === id)
-    if (idx && confirm(`Eliminar ventaja "${idx.name}"?`)) dataStore.deleteIndex(id)
-  }
-  function changeIndexContext(id: string, ctx: string) {
-    dataStore.updateIndex(id, { context: ctx as StrategicContext })
-  }
-  function setWbObjetivo(nombre: string, el: EventTarget & HTMLInputElement) {
-    const v = el.value.trim()
-    if (v === '') { dataStore.setWarbandObjetivoNivel(nombre, undefined); return }
-    const n = parseInt(v)
-    if (!isNaN(n) && n >= 1 && n <= 90) dataStore.setWarbandObjetivoNivel(nombre, n)
-  }
-
-  function raceProfBonusText(race: string): string {
-    const bonuses = RACE_PROFESSION_BONUS[race]
-    if (!bonuses || bonuses.length === 0) return '—'
-    return bonuses.map(b => {
-      if (b.profId === '*') return `+${b.bonus} a todas`
-      return `+${b.bonus} ${b.profId}${b.note ? ' (' + b.note + ')' : ''}`
-    }).join(', ')
-  }
-
-  function raceBonusesForProf(profId: string): [string, number][] {
-    const result: [string, number][] = []
-    for (const [race, bonuses] of Object.entries(RACE_PROFESSION_BONUS)) {
-      for (const b of bonuses) {
-        if (b.profId === profId || b.profId === '*') {
-          result.push([race, b.bonus])
-        }
-      }
-    }
-    return result
-  }
-
-  function charProfString(p: Personaje): string {
-    return (p.profesiones ?? []).map(pr => pr.id).filter(Boolean).join(',') || '—'
-  }
+  let selectedVentajaId = $state<string | null>(null)
+  let selectedVentaja = $derived(indexes.find(i => i.id === selectedVentajaId) ?? null)
 </script>
 
 <div class="sv-view">
   <div class="sv-tabs">
-    {#each tabs as t}
-      <button class="sv-tab" class:active={tab === t.key} onclick={() => tab = t.key}>
-        {t.label}
+    {#each modes as m}
+      <button class="sv-tab" class:active={mode === m.key} onclick={() => mode = m.key}>
+        {m.label}
       </button>
     {/each}
   </div>
 
-  {#if tab === 'indexes'}
-    <div class="sv-section">
-      <div class="sv-add-row">
-        <input type="text" bind:value={newIdxName} placeholder="Nombre de la ventaja" class="sv-text-input" />
-        <input type="text" bind:value={newIdxDesc} placeholder="Descripción (opcional)" class="sv-text-input sv-text-wide" />
-        <select bind:value={newIdxContext} class="sv-text-input">
-          {#each STRATEGIC_CONTEXTS as ctx}
-            <option value={ctx.id}>{ctx.label}</option>
-          {/each}
-        </select>
-        <button class="sv-btn-add" onclick={addIndex}>+ Añadir</button>
+  {#if mode === 'ventajas'}
+    <div class="sv-split">
+      <div class="sv-split-master">
+        <VentajaList {indexes} bind:selectedId={selectedVentajaId} />
       </div>
-      {#if addIndexError}
-        <p class="sv-error">{addIndexError}</p>
-      {/if}
-      {#if indexes.length === 0}
-        <p class="sv-hint">No hay ventajas definidas. Crea una para empezar.</p>
-      {:else}
-        <table class="sv-table">
-          <thead>
-            <tr><th>ID</th><th>Nombre</th><th>Descripción</th><th>Contexto</th><th></th></tr>
-          </thead>
-          <tbody>
-            {#each indexes as idx}
-              <tr>
-                <td class="sv-muted">{idx.id}</td>
-                <td>{idx.name}</td>
-                <td class="sv-desc">{idx.description || '—'}</td>
-                <td>
-                  {#if idx.id !== 'general'}
-                    <select value={idx.context ?? 'general'} onchange={(e) => changeIndexContext(idx.id, e.currentTarget.value)} class="sv-text-input">
-                      {#each STRATEGIC_CONTEXTS as ctx}
-                        <option value={ctx.id}>{ctx.label}</option>
-                      {/each}
-                    </select>
-                  {:else}
-                    <span class="sv-muted">{contextLabel(idx.context)}</span>
-                  {/if}
-                </td>
-                <td>
-                  {#if idx.id !== 'general'}
-                    <button class="sv-btn-del" onclick={() => delIndex(idx.id)}>Eliminar</button>
-                  {:else}
-                    <span class="sv-muted">(protegido)</span>
-                  {/if}
-                </td>
-              </tr>
-            {/each}
-          </tbody>
-        </table>
-      {/if}
+      <div class="sv-split-detail">
+        {#if selectedVentaja}
+          <VentajaDetail idx={selectedVentaja} {entityKinds} />
+        {:else}
+          <p class="sv-hint">Elegí una ventaja de la lista para ver y editar quién la tiene asignada.</p>
+        {/if}
+      </div>
     </div>
 
-  {:else if tab === 'classes'}
-    <div class="sv-table-wrap">
-      <p class="sv-hint">Las clases no tienen valor base fijo — valen por las ventajas que les asignes acá. Toda ventaja nueva arranca en 0 para todas las clases.</p>
-      <table class="sv-table sv-matrix">
-        <thead>
-          <tr>
-            <th>Clase</th>
-            {#each indexes as idx}
-              <th class="sv-col-idx">{idx.name}</th>
-            {/each}
-          </tr>
-        </thead>
-        <tbody>
-          {#each allClassNames as name}
-            <tr>
-              <td>{name}</td>
-              {#each indexes as idx}
-                <td>
-                  <input type="number" min="0" max="100"
-                    value={getVal('class', name, idx.id)}
-                    onchange={(e) => save('class', name, idx.id, e.currentTarget)}
-                    class="sv-input"
-                    class:sv-overridden={isOver('class', name, idx.id)} />
-                </td>
-              {/each}
-            </tr>
-          {/each}
-        </tbody>
-      </table>
-    </div>
+  {:else if mode === 'entidades'}
+    <EntityMode {entityKinds} {indexes} />
 
-  {:else if tab === 'races'}
-    <div class="sv-table-wrap">
-      <p class="sv-hint">Las razas no tienen valor base fijo — valen por las ventajas que les asignes acá. Toda ventaja nueva arranca en 0 para todas las razas.</p>
-      <table class="sv-table sv-matrix">
-        <thead>
-          <tr>
-            <th>Raza</th>
-            {#each indexes as idx}
-              <th class="sv-col-idx">{idx.name}</th>
-            {/each}
-            <th>Bono Prof.</th>
-          </tr>
-        </thead>
-        <tbody>
-          {#each allRaceNames as name}
-            <tr>
-              <td>{name}</td>
-              {#each indexes as idx}
-                <td>
-                  <input type="number" min="0" max="100"
-                    value={getVal('race', name, idx.id)}
-                    onchange={(e) => save('race', name, idx.id, e.currentTarget)}
-                    class="sv-input"
-                    class:sv-overridden={isOver('race', name, idx.id)} />
-                </td>
-              {/each}
-              <td class="sv-default">{raceProfBonusText(name)}</td>
-            </tr>
-          {/each}
-        </tbody>
-      </table>
-    </div>
-
-  {:else if tab === 'professions'}
-    <div class="sv-table-wrap">
-      <table class="sv-table sv-matrix">
-        <thead>
-          <tr>
-            <th>Profesión</th>
-            {#each indexes as idx}
-              <th class="sv-col-idx">{idx.name}</th>
-            {/each}
-            <th>Default</th>
-          </tr>
-        </thead>
-        <tbody>
-          {#each allProfItems as prof}
-            <tr>
-              <td>{prof.icon} {prof.nombre}
-                {#each raceBonusesForProf(prof.id) as [race, bonus]}
-                  <span class="sv-race-badge" title="{race}: +{bonus}">{race[0]}+{bonus}</span>
-                {/each}
-              </td>
-              {#each indexes as idx}
-                <td>
-                  <input type="number" min="0" max="100"
-                    value={getVal('profession', prof.id, idx.id)}
-                    onchange={(e) => save('profession', prof.id, idx.id, e.currentTarget)}
-                    class="sv-input"
-                    class:sv-overridden={isOver('profession', prof.id, idx.id)} />
-                </td>
-              {/each}
-              <td class="sv-default">{defaultFor('profession', prof.id, 'general')}</td>
-            </tr>
-          {/each}
-        </tbody>
-      </table>
-    </div>
-
-  {:else if tab === 'tasks'}
-    <div class="sv-section">
-      <p class="sv-hint">Valor estratégico por ventaja aplicado globalmente a todas las tareas (se suma una vez por personaje). Solo aplica cuando la ventaja es "General" o coincide con el contexto de la tarea evaluada.</p>
-      <table class="sv-table">
-        <thead>
-          <tr><th>Ventaja</th><th>Contexto</th><th>Valor</th></tr>
-        </thead>
-        <tbody>
-          {#each indexes as idx}
-            <tr>
-              <td>{idx.name}</td>
-              <td class="sv-default">{contextLabel(idx.context)}</td>
-              <td>
-                <input type="number" min="0" max="100"
-                  value={getVal('task', '', idx.id)}
-                  onchange={(e) => save('task', '', idx.id, e.currentTarget)}
-                  class="sv-input"
-                  class:sv-overridden={isOver('task', '', idx.id)} />
-              </td>
-            </tr>
-          {/each}
-        </tbody>
-      </table>
-    </div>
-
-  {:else if tab === 'warbands'}
-    <div class="sv-table-wrap">
-      <p class="sv-hint">"Nivel objetivo" se hereda automáticamente por los personajes sin objetivo propio al asignarlos a este warband (útil para warbands de contenido classic/bajo nivel que no necesitan llegar a 90).</p>
-      <table class="sv-table sv-matrix">
-        <thead>
-          <tr>
-            <th>Warband</th>
-            <th>Nivel objetivo</th>
-            {#each indexes as idx}
-              <th class="sv-col-idx">{idx.name}</th>
-            {/each}
-          </tr>
-        </thead>
-        <tbody>
-          {#each warbandList as wb}
-            <tr>
-              <td>{wb.nombre}</td>
-              <td>
-                <input type="number" min="1" max="90"
-                  value={wb.objetivoNivel ?? ''}
-                  placeholder="90"
-                  onchange={(e) => setWbObjetivo(wb.nombre, e.currentTarget)}
-                  class="sv-input" />
-              </td>
-              {#each indexes as idx}
-                <td>
-                  <input type="number" min="0" max="100"
-                    value={getVal('warband', wb.nombre, idx.id)}
-                    onchange={(e) => save('warband', wb.nombre, idx.id, e.currentTarget)}
-                    class="sv-input"
-                    class:sv-overridden={isOver('warband', wb.nombre, idx.id)} />
-                </td>
-              {/each}
-            </tr>
-          {/each}
-        </tbody>
-      </table>
-    </div>
-
-  {:else if tab === 'characters'}
-    <div class="sv-table-wrap">
-      <table class="sv-table sv-matrix">
-        <thead>
-          <tr>
-            <th>Personaje</th>
-            <th>Clase</th>
-            <th>Raza</th>
-            <th>Prof.</th>
-            {#each indexes as idx}
-              <th class="sv-col-idx">{idx.name}</th>
-            {/each}
-            <th>Base</th>
-          </tr>
-        </thead>
-        <tbody>
-          {#each personajes as p}
-            <tr>
-              <td>{p.nombre}</td>
-              <td class="sv-default">{p.clase}</td>
-              <td class="sv-default">{p.raza}</td>
-              <td class="sv-default">{charProfString(p)}</td>
-              {#each indexes as idx}
-                <td>
-                  <input type="number" min="0" max="100"
-                    value={getVal('personaje', p.nombre, idx.id)}
-                    onchange={(e) => save('personaje', p.nombre, idx.id, e.currentTarget)}
-                    class="sv-input"
-                    class:sv-overridden={isOver('personaje', p.nombre, idx.id)} />
-                </td>
-              {/each}
-              <td class="sv-default">
-                {getVal('class', p.clase, 'general')}
-                +
-                {getVal('race', p.raza, 'general')}
-              </td>
-            </tr>
-          {/each}
-        </tbody>
-      </table>
-    </div>
-
-  {:else if tab === 'components'}
+  {:else if mode === 'pesos'}
     <div class="sv-table-wrap">
       <table class="sv-table">
         <thead>
@@ -428,7 +115,7 @@
     gap: 2px;
     flex-wrap: wrap;
   }
-  .sv-tab {
+  :global(.sv-tab) {
     font-family: var(--font-heading);
     font-size: 0.6rem;
     padding: 4px 10px;
@@ -440,24 +127,38 @@
     text-transform: uppercase;
     letter-spacing: 0.08em;
   }
-  .sv-tab.active {
+  :global(.sv-tab.active) {
     background: var(--bg-card);
     color: var(--gold);
     border-color: var(--gold);
     border-bottom-color: var(--bg-card);
   }
-  .sv-section {
-    display: flex;
-    flex-direction: column;
-    gap: 6px;
+  .sv-split {
+    display: grid;
+    grid-template-columns: minmax(200px, 280px) 1fr;
+    gap: 10px;
+    min-width: 0;
   }
-  .sv-add-row {
-    display: flex;
-    gap: 4px;
-    align-items: center;
-    flex-wrap: wrap;
+  .sv-split-master {
+    min-width: 0;
   }
-  .sv-text-input {
+  .sv-split-detail {
+    min-width: 0;
+    border-left: 1px solid var(--border-subtle);
+    padding-left: 10px;
+  }
+  @media (max-width: 640px) {
+    .sv-split {
+      grid-template-columns: 1fr;
+    }
+    .sv-split-detail {
+      border-left: none;
+      padding-left: 0;
+      border-top: 1px solid var(--border-subtle);
+      padding-top: 8px;
+    }
+  }
+  :global(.sv-text-input) {
     padding: 4px 6px;
     border: 1px solid var(--border-subtle);
     border-radius: var(--r-sm);
@@ -465,11 +166,11 @@
     color: var(--text-primary);
     font-size: 0.6rem;
   }
-  .sv-text-wide {
+  :global(.sv-text-wide) {
     flex: 1;
     min-width: 150px;
   }
-  .sv-btn-add {
+  :global(.sv-btn-add) {
     font-size: 0.55rem;
     padding: 4px 10px;
     border: 1px solid var(--gold);
@@ -478,11 +179,15 @@
     color: var(--gold);
     cursor: pointer;
   }
-  .sv-btn-add:hover {
+  :global(.sv-btn-add:hover) {
     background: var(--gold);
     color: var(--bg-app);
   }
-  .sv-btn-del {
+  :global(.sv-btn-add:disabled) {
+    opacity: 0.4;
+    cursor: not-allowed;
+  }
+  :global(.sv-btn-del) {
     font-size: 0.5rem;
     padding: 2px 6px;
     border: 1px solid var(--danger);
@@ -491,19 +196,15 @@
     color: var(--danger);
     cursor: pointer;
   }
-  .sv-btn-del:hover {
-    background: var(--danger);
-    color: white;
-  }
-  .sv-table-wrap {
+  :global(.sv-table-wrap) {
     overflow-x: auto;
   }
-  .sv-table {
+  :global(.sv-table) {
     width: 100%;
     border-collapse: collapse;
     font-size: 0.6rem;
   }
-  .sv-table th {
+  :global(.sv-table th) {
     text-align: left;
     padding: 4px 6px;
     border-bottom: 1px solid var(--border-subtle);
@@ -514,27 +215,27 @@
     font-weight: 400;
     white-space: nowrap;
   }
-  .sv-table td {
+  :global(.sv-table td) {
     padding: 3px 6px;
     border-bottom: 1px solid var(--border-subtle);
     color: var(--text-primary);
     white-space: nowrap;
   }
-  .sv-default {
+  :global(.sv-default) {
     color: var(--text-muted);
     font-size: 0.55rem;
   }
-  .sv-muted {
+  :global(.sv-muted) {
     color: var(--text-dim);
     font-style: italic;
   }
-  .sv-desc {
+  :global(.sv-desc) {
     color: var(--text-dim);
     font-size: 0.5rem;
     max-width: 300px;
     white-space: normal;
   }
-  .sv-input {
+  :global(.sv-input) {
     width: 50px;
     padding: 2px 4px;
     border: 1px solid var(--border-subtle);
@@ -544,10 +245,10 @@
     font-size: 0.6rem;
     text-align: center;
   }
-  .sv-overridden {
+  :global(.sv-overridden) {
     border-color: var(--gold) !important;
   }
-  .sv-btn-reset {
+  :global(.sv-btn-reset) {
     font-size: 0.5rem;
     padding: 2px 6px;
     border: 1px solid var(--border-subtle);
@@ -556,45 +257,25 @@
     color: var(--text-muted);
     cursor: pointer;
   }
-  .sv-btn-reset:hover {
+  :global(.sv-btn-reset:hover) {
     border-color: var(--gold);
     color: var(--gold);
   }
-  .sv-default-label {
+  :global(.sv-default-label) {
     font-size: 0.5rem;
     color: var(--text-dim);
     font-style: italic;
   }
-  .sv-hint {
+  :global(.sv-hint) {
     font-size: 0.55rem;
     color: var(--text-muted);
     margin: 0;
     padding: 4px 0;
   }
-  .sv-error {
+  :global(.sv-error) {
     font-size: 0.55rem;
     color: var(--danger);
     margin: 0;
     padding: 2px 0;
-  }
-  .sv-col-idx {
-    min-width: 40px;
-    text-align: center;
-  }
-  .sv-matrix td {
-    text-align: center;
-  }
-  .sv-matrix td:first-child {
-    text-align: left;
-  }
-  .sv-race-badge {
-    display: inline-block;
-    font-size: 0.45rem;
-    background: var(--gold);
-    color: var(--bg-app);
-    border-radius: 4px;
-    padding: 1px 4px;
-    margin: 1px;
-    cursor: help;
   }
 </style>

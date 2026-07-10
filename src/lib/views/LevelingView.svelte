@@ -273,33 +273,6 @@
   function selectChar(nombre: string) { selectedChar = selectedChar === nombre ? null : nombre }
   function closeDrawer() { selectedChar = null }
 
-  function exportCSVData() {
-    const csv = dataStore.exportCSV()
-    const blob = new Blob([csv], { type: 'text/csv' })
-    const url = URL.createObjectURL(blob)
-    const a = document.createElement('a')
-    a.href = url
-    a.download = 'wow_personajes.csv'
-    a.click()
-    URL.revokeObjectURL(url)
-  }
-
-  function exportPlanJSON() {
-    const planData = JSON.stringify({
-      multiStart: optimizationResult,
-      order: rosterOrder,
-      config,
-      results,
-      exportedAt: new Date().toISOString(),
-    }, null, 2)
-    const blob = new Blob([planData], { type: 'application/json' })
-    const url = URL.createObjectURL(blob)
-    const a = document.createElement('a')
-    a.href = url
-    a.download = 'wow_leveling_plan.json'
-    a.click()
-    URL.revokeObjectURL(url)
-  }
 </script>
 
 <div class="lvl-view">
@@ -357,8 +330,6 @@
       <button class="wow-btn wow-btn-sm" onclick={toggleOptimization}>{showOptimization ? '✕ Optimizar' : '⚡ Optimizar'}</button>
       <button class="wow-btn wow-btn-sm" onclick={toggleDungeonXp}>🏰 XP Mazmorra</button>
       <button class="wow-btn wow-btn-sm" onclick={toggleConfig}>{showConfig ? '✕ Cerrar' : '⚙ Config'}</button>
-      <button class="wow-btn wow-btn-sm" onclick={exportCSVData}>📥 CSV</button>
-      <button class="wow-btn wow-btn-sm" onclick={exportPlanJSON}>📋 Plan</button>
     </div>
   </div>
 

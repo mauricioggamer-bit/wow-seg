@@ -20,32 +20,47 @@
     }))
   )
 
-  function onClassChange(e: Event) {
-    selectedClass = (e.target as HTMLSelectElement).value
-    const firstSpec = classes.find(c => c.name === selectedClass)?.specs[0]
+  function selectClass(name: string) {
+    selectedClass = name
+    const firstSpec = classes.find(c => c.name === name)?.specs[0]
     if (firstSpec) selectedSpec = firstSpec.id
   }
 
-  function onSpecChange(e: Event) {
-    selectedSpec = parseInt((e.target as HTMLSelectElement).value)
+  function selectSpec(id: number) {
+    selectedSpec = id
   }
 </script>
 
-<div class="kb-selector">
-  <div class="form-group" style="margin:0">
-    <label>Clase</label>
-    <select value={selectedClass} onchange={onClassChange}>
-      {#each classes as c}
-        <option value={c.name}>{c.displayName}</option>
-      {/each}
-    </select>
+<div class="kb-class-selector">
+  <div class="kb-btn-row">
+    {#each classes as c}
+      <button
+        class="wow-btn wow-btn-sm"
+        class:wow-btn-primary={selectedClass === c.name}
+        onclick={() => selectClass(c.name)}
+      >{c.displayName}</button>
+    {/each}
   </div>
-  <div class="form-group" style="margin:0">
-    <label>Spec</label>
-    <select value={String(selectedSpec)} onchange={onSpecChange}>
-      {#each editedSpecs as s}
-        <option value={String(s.id)}>{s.name}{s.edited ? ' *' : ''}</option>
-      {/each}
-    </select>
+  <div class="kb-btn-row">
+    {#each editedSpecs as s}
+      <button
+        class="wow-btn wow-btn-sm"
+        class:wow-btn-primary={selectedSpec === s.id}
+        onclick={() => selectSpec(s.id)}
+      >{s.name}{s.edited ? ' *' : ''}</button>
+    {/each}
   </div>
 </div>
+
+<style>
+  .kb-class-selector {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+  .kb-btn-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 3px;
+  }
+</style>

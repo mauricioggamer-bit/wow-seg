@@ -803,7 +803,7 @@
       </div>
       {#if !isNewChar && editCharPersonaje}
         <div class="form-group">
-          <label>Ventajas estratégicas <span style="font-size:0.55rem;color:var(--text-muted)">— gestionable también desde Estrategia → Personajes</span></label>
+          <label>Ventajas estratégicas</label>
           <EntityAssignments
             entityType="personaje"
             entityId={editCharOriginalName}

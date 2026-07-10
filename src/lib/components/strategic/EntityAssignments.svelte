@@ -124,7 +124,7 @@
 
   {#if strategicResult}
     <div class="ea-breakdown">
-      <h4 class="ea-subheading">Desglose completo (igual que en Leveling)</h4>
+      <h4 class="ea-subheading">Desglose completo</h4>
       <StrategicBreakdown strategic={strategicResult} />
     </div>
   {/if}

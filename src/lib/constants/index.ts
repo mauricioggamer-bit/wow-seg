@@ -83,10 +83,14 @@ export interface StrategicComponentInfo {
   description: string
 }
 
+export const STRATEGIC_PARAMS = [
+  { key: 'nivelMaximo', label: 'Nivel máximo', default: 90, description: 'Nivel máximo actual del juego (TWW: 80, TWW S2: 90). Afecta el cálculo de proximidad al nivel máximo.' },
+]
+
 export const STRATEGIC_COMPONENTS: StrategicComponentInfo[] = [
   { key: 'warbandImpact', label: 'Warband Impact', weight: 10, description: 'Personajes 80-89 que reciben +5% XP al llegar este a 90. Cada beneficiario suma 5 puntos.' },
   { key: 'professionValue', label: 'Profesiones', weight: 15, description: 'Suma de valores estratégicos de las profesiones del personaje.' },
-  { key: 'closenessTo90', label: 'Cercanía a 90', weight: 25, description: 'max(0, (nivel - 10) / 80). Lineal de nivel 10 a 90.' },
+  { key: 'proximityToMaxLevel', label: 'Proximidad al nivel máximo', weight: 25, description: 'max(0, (nivel - 10) / (nivelMaximo - 10)). Qué tan cerca está del nivel máximo configurado.' },
   { key: 'closenessToObjective', label: 'Cercanía obj.', weight: 25, description: 'max(0, 1 - dungeonsTo90 / 200). Menos dungeons para 90 = más puntaje.' },
   { key: 'futureXpIncrease', label: 'XP futura', weight: 8, description: 'Incremento de Warband Mentor al subir a 90 (delta del buff entre count90 actual y +1).' },
   { key: 'remainingWeight', label: 'Peso restante', weight: 10, description: 'min(1, pendientes/10). Más personajes pendientes = más valor de Warband.' },

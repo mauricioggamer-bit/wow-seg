@@ -98,7 +98,8 @@ export function calculateStrategicValue(
     }
   }
 
-  const closenessTo90 = calc.done ? 0 : (personaje.nivel >= 90 ? 1 : Math.max(0, (personaje.nivel - 10) / 80))
+  const nivelMaximo = dataStore.getStrategicParam('nivelMaximo', 90)
+  const proximityToMaxLevel = calc.done ? 0 : (personaje.nivel >= nivelMaximo ? 1 : Math.max(0, (personaje.nivel - 10) / (nivelMaximo - 10)))
   const dungeonsTo90 = calc.dungeons
   const closenessToObjective = calc.done ? 0 : (dungeonsTo90 > 0 ? Math.max(0, 1 - dungeonsTo90 / 200) : 1)
 
@@ -174,7 +175,7 @@ export function calculateStrategicValue(
 
   const wWarband = getEffectiveWeight('warbandImpact', 10)
   const wProfession = getEffectiveWeight('professionValue', 15)
-  const wCloseness90 = getEffectiveWeight('closenessTo90', 25)
+  const wProximityToMaxLevel = getEffectiveWeight('proximityToMaxLevel', 25)
   const wClosenessObj = getEffectiveWeight('closenessToObjective', 25)
   const wFutureXp = getEffectiveWeight('futureXpIncrease', 8)
   const wRemaining = getEffectiveWeight('remainingWeight', 10)
@@ -186,7 +187,7 @@ export function calculateStrategicValue(
   let totalScore = 0
   totalScore += warbandImpact * wWarband
   totalScore += professionValue * wProfession
-  totalScore += closenessTo90 * wCloseness90
+  totalScore += proximityToMaxLevel * wProximityToMaxLevel
   totalScore += closenessToObjective * wClosenessObj
   totalScore += futureXpIncrease * wFutureXp
   totalScore += remainingWeight * wRemaining
@@ -208,11 +209,28 @@ export function calculateStrategicValue(
     reasons.push(`${dungeonsTo90} dungeons restantes para llegar a 90`)
   }
 
+  const intrinsicScore =
+    proximityToMaxLevel * wProximityToMaxLevel
+    + closenessToObjective * wClosenessObj
+    + professionValue * wProfession
+    + bonusSub90 * wBonusSub90
+    + bonus8089 * wBonus8089
+    + raceProfBonus
+    + taskValue
+    + classValue
+    + raceValue
+    + totalIndexValue
+
+  const accountImpactScore =
+    warbandImpact * wWarband
+    + futureXpIncrease * wFutureXp
+    + remainingWeight * wRemaining
+
   return {
     stars,
     warbandImpact,
     professionValue,
-    closenessTo90,
+    proximityToMaxLevel,
     closenessToObjective,
     futureXpIncrease,
     remainingWeight,
@@ -224,6 +242,8 @@ export function calculateStrategicValue(
     taskValue,
     indexValues,
     totalScore,
+    intrinsicScore,
+    accountImpactScore,
     reasons,
   }
 }

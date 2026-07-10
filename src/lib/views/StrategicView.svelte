@@ -7,6 +7,7 @@
   import VentajaDetail from '../components/strategic/VentajaDetail.svelte'
   import EntityMode from '../components/strategic/EntityMode.svelte'
   import CategoryManagerModal from '../components/strategic/CategoryManagerModal.svelte'
+  import { STRATEGIC_PARAMS } from '../constants'
   import type { Personaje, StrategicIndex, StrategicCategory, Warband } from '../types'
   import type { EntityKind } from '../components/strategic/types'
 
@@ -82,6 +83,26 @@
     <EntityMode kind={activeKind} {indexes} {categories} {personajes} {levelingCtx} />
 
   {:else if tab === 'pesos'}
+    <div class="sv-params-section">
+      <h4 class="sv-params-title">Parámetros</h4>
+      <div class="sv-params-grid">
+        {#each STRATEGIC_PARAMS as param}
+          <div class="sv-param-row">
+            <span class="sv-param-label">{param.label}</span>
+            <input type="number" min="1" max="200"
+              value={dataStore.getStrategicParam(param.key, param.default)}
+              onchange={(e) => {
+                const v = parseInt(e.currentTarget.value)
+                if (!isNaN(v) && v >= 1) dataStore.setStrategicParam(param.key, v)
+              }}
+              class="sv-input" />
+            <span class="sv-default">Default: {param.default}</span>
+            <span class="sv-desc">{param.description}</span>
+          </div>
+        {/each}
+      </div>
+    </div>
+
     <div class="sv-table-wrap">
       <table class="sv-table">
         <thead>
@@ -298,6 +319,11 @@
     color: var(--text-dim);
     font-style: italic;
   }
+  :global(.sv-params-section) { margin-bottom: 12px; }
+  :global(.sv-params-title) { font-size: 0.65rem; color: var(--gold); margin: 0 0 6px 0; font-family: var(--font-heading); text-transform: uppercase; letter-spacing: 0.06em; }
+  :global(.sv-params-grid) { display: flex; flex-direction: column; gap: 6px; }
+  :global(.sv-param-row) { display: flex; align-items: center; gap: 8px; font-size: 0.6rem; padding: 4px 6px; border: 1px solid var(--border-subtle); border-radius: var(--r-sm); }
+  :global(.sv-param-label) { min-width: 100px; color: var(--text-primary); font-weight: bold; }
   :global(.sv-hint) {
     font-size: 0.55rem;
     color: var(--text-muted);

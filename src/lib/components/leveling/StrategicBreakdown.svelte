@@ -4,21 +4,32 @@
 
   let { strategic }: { strategic: StrategicValueResult } = $props()
 
-  const COMPONENT_ROWS = [
-    { key: 'warbandImpact', label: 'Warband Impact', weight: '×10', calc: (s: StrategicValueResult) => s.warbandImpact * 10, raw: (s: StrategicValueResult) => s.warbandImpact, desc: 'Personajes 80-89 que reciben +5% XP al llegar este a 90. Cada beneficiario suma 5.' },
-    { key: 'professionValue', label: 'Profesiones', weight: '×15', calc: (s: StrategicValueResult) => s.professionValue * 15, raw: (s: StrategicValueResult) => s.professionValue, desc: 'Suma de puntos estratégicos asignados en Estrategia > Profesiones para las profesiones del personaje.' },
-    { key: 'closenessTo90', label: 'Cercanía a 90', weight: '×25', calc: (s: StrategicValueResult) => s.closenessTo90 * 25, raw: (s: StrategicValueResult) => s.closenessTo90, desc: 'max(0, (nivel - 10) / 80). Lineal de nivel 10 a 90.' },
-    { key: 'closenessToObjective', label: 'Cercanía obj.', weight: '×25', calc: (s: StrategicValueResult) => s.closenessToObjective * 25, raw: (s: StrategicValueResult) => s.closenessToObjective, desc: 'max(0, 1 - dungeonsTo90 / 200). Menos dungeons = más puntaje.' },
-    { key: 'futureXpIncrease', label: 'XP futura', weight: '×8', calc: (s: StrategicValueResult) => s.futureXpIncrease * 8, raw: (s: StrategicValueResult) => s.futureXpIncrease, desc: 'Delta del Warband Mentor (5% por nuevo 90 en cuenta).' },
-    { key: 'remainingWeight', label: 'Peso restante', weight: '×10', calc: (s: StrategicValueResult) => s.remainingWeight * 10, raw: (s: StrategicValueResult) => s.remainingWeight, desc: 'min(1, pendientes/10). Más pendientes = más valor Warband.' },
-    { key: 'bonusSub90', label: 'Bonus <90', weight: '+10', calc: (s: StrategicValueResult) => s.bonusSub90 * 10, raw: (s: StrategicValueResult) => s.bonusSub90, desc: '+10 fijo si el personaje está por debajo de 90.' },
-    { key: 'bonus8089', label: 'Bonus 80-89', weight: '+15', calc: (s: StrategicValueResult) => s.bonus8089 * 15, raw: (s: StrategicValueResult) => s.bonus8089, desc: '+15 si está en 80-89 (barato para Warband Mentor).' },
-    { key: 'classValue', label: 'Clase', weight: 'fijo', calc: (s: StrategicValueResult) => s.classValue, raw: (s: StrategicValueResult) => s.classValue, desc: 'Suma de ventajas asignadas a la clase del personaje.' },
-    { key: 'raceValue', label: 'Raza', weight: 'fijo', calc: (s: StrategicValueResult) => s.raceValue, raw: (s: StrategicValueResult) => s.raceValue, desc: 'Suma de ventajas asignadas a la raza del personaje.' },
-    { key: 'raceProfBonus', label: 'Bono Raza-Profesión', weight: 'fijo', calc: (s: StrategicValueResult) => s.raceProfBonus, raw: (s: StrategicValueResult) => s.raceProfBonus, desc: 'Bonos raciales que otorgan puntos extra si el personaje tiene la profesión correspondiente.' },
-    { key: 'taskValue', label: 'Tareas', weight: 'fijo', calc: (s: StrategicValueResult) => s.taskValue, raw: (s: StrategicValueResult) => s.taskValue, desc: 'Suma de puntos estratégicos de las tareas del personaje.' },
-    { key: 'indexValues', label: 'Ventajas', weight: 'fijo', calc: (s: StrategicValueResult) => Object.values(s.indexValues).reduce((a, b) => a + b, 0), raw: (s: StrategicValueResult) => Object.values(s.indexValues).reduce((a, b) => a + b, 0), desc: 'Suma de ventajas (por índice) asignadas a este personaje, su clase, raza, profesión, warband y tareas que apliquen.' },
-  ] as const
+  interface RowDef {
+    label: string
+    weight: string
+    calc: (s: StrategicValueResult) => number
+    raw: (s: StrategicValueResult) => number
+    desc: string
+  }
+
+  const INTRINSIC_ROWS: RowDef[] = [
+    { label: 'Proximidad al nivel máx.', weight: '×25', calc: (s: StrategicValueResult) => s.proximityToMaxLevel * 25, raw: (s: StrategicValueResult) => s.proximityToMaxLevel, desc: 'Qué tan cerca está del nivel máximo configurado.' },
+    { label: 'Cercanía obj.', weight: '×25', calc: (s: StrategicValueResult) => s.closenessToObjective * 25, raw: (s: StrategicValueResult) => s.closenessToObjective, desc: 'Menos dungeons = más puntaje.' },
+    { label: 'Profesiones', weight: '×15', calc: (s: StrategicValueResult) => s.professionValue * 15, raw: (s: StrategicValueResult) => s.professionValue, desc: 'Puntos estratégicos de las profesiones del personaje.' },
+    { label: 'Clase', weight: 'fijo', calc: (s: StrategicValueResult) => s.classValue, raw: (s: StrategicValueResult) => s.classValue, desc: 'Ventajas asignadas a la clase.' },
+    { label: 'Raza', weight: 'fijo', calc: (s: StrategicValueResult) => s.raceValue, raw: (s: StrategicValueResult) => s.raceValue, desc: 'Ventajas asignadas a la raza.' },
+    { label: 'Bono Raza-Profesión', weight: 'fijo', calc: (s: StrategicValueResult) => s.raceProfBonus, raw: (s: StrategicValueResult) => s.raceProfBonus, desc: 'Bonos raciales si la profesión coincide.' },
+    { label: 'Tareas', weight: 'fijo', calc: (s: StrategicValueResult) => s.taskValue, raw: (s: StrategicValueResult) => s.taskValue, desc: 'Puntos estratégicos de tareas.' },
+    { label: 'Bonus <90', weight: '+10', calc: (s: StrategicValueResult) => s.bonusSub90 * 10, raw: (s: StrategicValueResult) => s.bonusSub90, desc: 'Fijo si está por debajo de 90.' },
+    { label: 'Bonus 80-89', weight: '+15', calc: (s: StrategicValueResult) => s.bonus8089 * 15, raw: (s: StrategicValueResult) => s.bonus8089, desc: 'Fijo si está en 80-89.' },
+    { label: 'Ventajas', weight: 'fijo', calc: (s: StrategicValueResult) => Object.values(s.indexValues).reduce((a, b) => a + b, 0), raw: (s: StrategicValueResult) => Object.values(s.indexValues).reduce((a, b) => a + b, 0), desc: 'Ventajas por índice asignadas al personaje.' },
+  ]
+
+  const ACCOUNT_ROWS: RowDef[] = [
+    { label: 'Warband Impact', weight: '×10', calc: (s: StrategicValueResult) => s.warbandImpact * 10, raw: (s: StrategicValueResult) => s.warbandImpact, desc: 'Personajes 80-89 que reciben +5% XP.' },
+    { label: 'XP futura', weight: '×8', calc: (s: StrategicValueResult) => s.futureXpIncrease * 8, raw: (s: StrategicValueResult) => s.futureXpIncrease, desc: 'Delta de Warband Mentor al subir a 90.' },
+    { label: 'Peso restante', weight: '×10', calc: (s: StrategicValueResult) => s.remainingWeight * 10, raw: (s: StrategicValueResult) => s.remainingWeight, desc: 'Más pendientes = más valor de Warband.' },
+  ]
 
   function fmtVal(v: number): string {
     if (Number.isInteger(v)) return v.toFixed(0)
@@ -53,7 +64,10 @@
     </tr>
   </thead>
   <tbody>
-    {#each COMPONENT_ROWS as row}
+    <tr class="svm-section-row">
+      <td colspan="5"><strong>VALOR INTRÍNSECO</strong></td>
+    </tr>
+    {#each INTRINSIC_ROWS as row}
       <tr>
         <td class="svm-label">{row.label}</td>
         <td class="svm-weight">{row.weight}</td>
@@ -62,6 +76,30 @@
         <td class="svm-help" title={row.desc}>?</td>
       </tr>
     {/each}
+    <tr class="svm-subtotal-row">
+      <td colspan="3">Subtotal intrínseco</td>
+      <td class="svm-contrib">{fmtContrib(strategic.intrinsicScore)}</td>
+      <td></td>
+    </tr>
+
+    <tr class="svm-section-row">
+      <td colspan="5"><strong>IMPACTO EN CUENTA</strong></td>
+    </tr>
+    {#each ACCOUNT_ROWS as row}
+      <tr>
+        <td class="svm-label">{row.label}</td>
+        <td class="svm-weight">{row.weight}</td>
+        <td class="svm-val">{fmtVal(row.raw(strategic))}</td>
+        <td class="svm-contrib">{fmtContrib(row.calc(strategic))}</td>
+        <td class="svm-help" title={row.desc}>?</td>
+      </tr>
+    {/each}
+    <tr class="svm-subtotal-row">
+      <td colspan="3">Subtotal impacto</td>
+      <td class="svm-contrib">{fmtContrib(strategic.accountImpactScore)}</td>
+      <td></td>
+    </tr>
+
     <tr class="svm-total-row">
       <td colspan="3"><strong>Total</strong></td>
       <td class="svm-contrib"><strong>{strategic.totalScore.toFixed(0)}</strong></td>
@@ -127,6 +165,8 @@
     background: var(--input-bg, #2a2a2a); border-radius: 50%;
     width: 16px; height: 16px; line-height: 16px; font-size: 0.55rem;
   }
+  .svm-section-row td { border-top: 1px solid var(--gold, #d4af37); padding-top: 6px; font-size: 0.6rem; color: var(--gold, #d4af37); text-transform: uppercase; letter-spacing: 0.06em; }
+  .svm-subtotal-row td { border-top: 1px solid var(--border-subtle); font-size: 0.6rem; color: var(--text-primary); font-style: italic; }
   .svm-total-row td { border-top: 2px solid var(--gold, #d4af37); border-bottom: none; padding-top: 6px; }
   .svm-stars-section { margin-bottom: 12px; }
   .svm-stars-section h4, .svm-reasons h4 {

@@ -90,6 +90,7 @@ export interface WowData {
     categories?: StrategicCategory[]
     values?: Record<string, number>
     componentWeights?: Record<string, number>
+    params?: Record<string, number>
   }
 }
 
@@ -177,7 +178,7 @@ export interface StrategicValueResult {
   stars: number
   warbandImpact: number
   professionValue: number
-  closenessTo90: number
+  proximityToMaxLevel: number
   closenessToObjective: number
   futureXpIncrease: number
   remainingWeight: number
@@ -189,6 +190,8 @@ export interface StrategicValueResult {
   taskValue: number
   indexValues: Record<string, number>
   totalScore: number
+  intrinsicScore: number
+  accountImpactScore: number
   reasons: string[]
 }
 

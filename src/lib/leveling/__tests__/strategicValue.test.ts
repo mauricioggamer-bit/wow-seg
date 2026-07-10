@@ -50,7 +50,7 @@ describe('calculateStrategicValue', () => {
       expect(result.taskValue).toBe(5)
 
       expect(result.warbandImpact).toBe(0)
-      expect(result.closenessTo90).toBe(0)
+      expect(result.proximityToMaxLevel).toBe(0)
       expect(result.closenessToObjective).toBe(0)
       expect(result.futureXpIncrease).toBe(0)
       expect(result.remainingWeight).toBe(0)

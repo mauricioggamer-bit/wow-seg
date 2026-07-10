@@ -207,8 +207,8 @@
           <strong>{strategic.professionValue > 0 ? 'Sí' : 'No'}</strong>
         </div>
         <div class="lvl-sv-stat">
-          <span>Cercanía a 90</span>
-          <strong>{(strategic.closenessTo90 * 100).toFixed(0)}%</strong>
+          <span>Prox. nivel máx.</span>
+          <strong>{(strategic.proximityToMaxLevel * 100).toFixed(0)}%</strong>
         </div>
         <div class="lvl-sv-stat">
           <span>Cercanía obj.</span>

@@ -645,6 +645,27 @@ addTarea(nombrePersonaje: string, tarea: { nombre: string; tipoContenido?: TipoC
         return { ...d }
       })
     },
+    getStrategicParam(key: string, defaultVal: number): number {
+      return get({ subscribe }).strategicConfig?.params?.[key] ?? defaultVal
+    },
+    setStrategicParam(key: string, value: number) {
+      update(d => {
+        if (!d.strategicConfig) d.strategicConfig = {}
+        if (!d.strategicConfig.params) d.strategicConfig.params = {}
+        d.strategicConfig.params[key] = value
+        saveData(d)
+        return { ...d }
+      })
+    },
+    resetStrategicParam(key: string) {
+      update(d => {
+        if (d.strategicConfig?.params) {
+          delete d.strategicConfig.params[key]
+          saveData(d)
+        }
+        return { ...d }
+      })
+    },
   }
 
   return store

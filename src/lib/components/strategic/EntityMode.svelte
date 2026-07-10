@@ -14,11 +14,14 @@
 
   let search = $state('')
   let selectedId = $state<string | null>(null)
+  let prevKind = $state<string | null>(null)
 
   $effect(() => {
-    kind.key
-    selectedId = null
-    search = ''
+    if (kind.key !== prevKind) {
+      prevKind = kind.key
+      selectedId = null
+      search = ''
+    }
   })
 
   let items = $derived.by(() => {

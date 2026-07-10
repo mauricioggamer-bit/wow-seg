@@ -119,16 +119,20 @@
             <span class="lvl-char-name">{r.nombre}</span>
             <span class="lvl-char-class" style="color: {clsClass(r.clase)}">{r.clase}</span>
           </td>
-          <td class="lvl-num" onclick={(e) => e.stopPropagation()}>
-            {#if editing?.nombre === r.nombre && editing?.field === 'nivel'}
-              <button class="lvl-tw-btn" onclick={() => adjustEdit(-1)} disabled={editing.value <= 1}>−</button>
-              <span class="lvl-tw-val">{editing.value}</span>
-              <button class="lvl-tw-btn" onclick={() => adjustEdit(1)} disabled={editing.value >= 90}>+</button>
-              <button class="lvl-edit-yes" onclick={confirmEdit}>✓</button>
-              <button class="lvl-edit-no" onclick={cancelEdit}>✗</button>
-            {:else}
-              <span class="lvl-clickable" onclick={() => startEditNivel(r.nombre)}>{r.nivel}</span>
-            {/if}
+          <td class="lvl-num">
+            <div class="lvl-tw-cell" onclick={(e) => e.stopPropagation()}>
+              {#if editing?.nombre === r.nombre && editing?.field === 'nivel'}
+                <button class="lvl-tw-btn" onclick={() => adjustEdit(-1)} disabled={editing.value <= 1}>−</button>
+                <span class="lvl-tw-val">{editing.value}</span>
+                <button class="lvl-tw-btn" onclick={() => adjustEdit(1)} disabled={editing.value >= 90}>+</button>
+                <button class="lvl-edit-yes" onclick={confirmEdit}>✓</button>
+                <button class="lvl-edit-no" onclick={cancelEdit}>✗</button>
+              {:else}
+                <button class="lvl-tw-btn" onclick={() => { startEditNivel(r.nombre); editing!.value = Math.max(1, r.nivel - 1) }} disabled={r.nivel <= 1}>−</button>
+                <span class="lvl-clickable" onclick={() => startEditNivel(r.nombre)}>{r.nivel}</span>
+                <button class="lvl-tw-btn" onclick={() => { startEditNivel(r.nombre); editing!.value = Math.min(90, r.nivel + 1) }} disabled={r.nivel >= 90}>+</button>
+              {/if}
+            </div>
           </td>
           <td class="lvl-tw-cell" onclick={(e) => e.stopPropagation()}>
             {#if editing?.nombre === r.nombre && editing?.field === 'timeways'}

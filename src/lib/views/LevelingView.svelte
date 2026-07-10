@@ -51,7 +51,7 @@
   }
 
   let rosterSnapshots = $derived<CharacterSnapshot[]>(
-    personajes.filter(p => p.nivel >= 10).map(p => ({
+    personajes.map(p => ({
       nombre: p.nombre,
       clase: p.clase,
       nivel: p.nivel,
@@ -70,7 +70,7 @@
   })
 
   // Quick sync fallback for the main table order (before async optimization finishes)
-  let fallbackOrder = $derived(personajes.filter(p => p.nivel >= 10 && p.nivel < 90).map(p => p.nombre))
+  let fallbackOrder = $derived(personajes.map(p => p.nombre))
 
   let optimizationResult = $state<MultiStartResult | null>(null)
   let isOptimizing = $state(false)
@@ -85,7 +85,10 @@
 
   let rosterOrder = $derived(
     optimizationResult
-      ? optimizationResult.bestOverall.strategy.decisiones.map(d => d.personaje.nombre)
+      ? [
+          ...optimizationResult.bestOverall.strategy.decisiones.map(d => d.personaje.nombre),
+          ...personajes.filter(p => p.nivel >= 90).map(p => p.nombre),
+        ]
       : fallbackOrder
   )
 

@@ -242,6 +242,11 @@
                 title="Eliminar personaje"
                 onclick={(e) => { e.stopPropagation(); if (confirm(`¿Eliminar a ${c.nombre}?`)) dataStore.deletePersonaje(c.nombre) }}
               >✕</button>
+              <button
+                class="pers-card-edit"
+                title="Editar personaje"
+                onclick={(e) => { e.stopPropagation(); if (openCharEdit) openCharEdit(c.nombre) }}
+              >✎</button>
               <span class="pers-card-faction-tag {c.faccion === 'Alianza' ? 'a' : 'h'}">
                 {c.faccion === 'Alianza' ? 'A' : 'H'}
               </span>
@@ -414,6 +419,9 @@
   .pers-card-delete { position:absolute; top:3px; right:3px; width:14px; height:14px; padding:0; border:none; background:none; color:var(--text-dim); font-size:10px; line-height:1; cursor:pointer; z-index:3; display:flex; align-items:center; justify-content:center; border-radius:1px; opacity:0; transition:opacity 0.12s,color 0.12s; }
   .pers-char-card:hover .pers-card-delete { opacity:1; }
   .pers-card-delete:hover { color:#ff4444; background:rgba(0,0,0,0.5); }
+  .pers-card-edit { position:absolute; top:3px; right:17px; width:14px; height:14px; padding:0; border:none; background:none; color:var(--text-dim); font-size:10px; line-height:1; cursor:pointer; z-index:3; display:flex; align-items:center; justify-content:center; border-radius:1px; opacity:0; transition:opacity 0.12s,color 0.12s; }
+  .pers-char-card:hover .pers-card-edit { opacity:1; }
+  .pers-card-edit:hover { color:var(--gold); background:rgba(0,0,0,0.5); }
   .pers-char-card:hover { border-color:var(--border-main); background:rgba(31,14,0,0.53); }
   .pers-char-card.selected-a { border-color:var(--alliance); background:rgba(10,32,80,0.5); box-shadow:0 0 12px rgba(26,74,153,0.5); }
   .pers-char-card.selected-h { border-color:var(--horde); background:rgba(58,8,0,0.5); box-shadow:0 0 12px rgba(136,21,0,0.5); }

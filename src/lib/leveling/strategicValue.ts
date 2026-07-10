@@ -1,17 +1,13 @@
 import type { Personaje, LevelingConfig, StrategicValueResult, StrategicIndex, StrategicContext } from '../types'
 import { calculateForCharacter, getEffectiveXpPerDungeon, getXpRemaining } from './calculator'
-import { CLASS_STRATEGIC_VALUE, RACE_STRATEGIC_VALUE, PROFESSION_STRATEGIC_VALUE, STAR_THRESHOLDS, RACE_PROFESSION_BONUS } from '../constants'
+import { PROFESSION_STRATEGIC_VALUE, STAR_THRESHOLDS, RACE_PROFESSION_BONUS } from '../constants'
 import { dataStore } from '../stores/data'
 
 function getClassValue(className: string, indexId: string): number {
-  return dataStore.getStrategicValue('class', className, indexId)
-    ?? (indexId === 'general' ? CLASS_STRATEGIC_VALUE[className] : 0)
-    ?? 0
+  return dataStore.getStrategicValue('class', className, indexId) ?? 0
 }
 function getRaceValue(race: string, indexId: string): number {
-  return dataStore.getStrategicValue('race', race, indexId)
-    ?? (indexId === 'general' ? RACE_STRATEGIC_VALUE[race] : 0)
-    ?? 0
+  return dataStore.getStrategicValue('race', race, indexId) ?? 0
 }
 function getProfessionValue(id: string, indexId: string): number {
   return dataStore.getStrategicValue('profession', id, indexId)
@@ -200,8 +196,6 @@ export function calculateStrategicValue(
   totalScore += remainingWeight * wRemaining
   totalScore += bonusSub90 * wBonusSub90
   totalScore += bonus8089 * wBonus8089
-  totalScore += classValue
-  totalScore += raceValue
   totalScore += raceProfBonus
   totalScore += tagsValue
   totalScore += taskValue

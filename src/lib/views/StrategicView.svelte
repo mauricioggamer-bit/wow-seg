@@ -1,6 +1,6 @@
 <script lang="ts">
   import { dataStore } from '../stores/data'
-  import { CLASS_STRATEGIC_VALUE, RACE_STRATEGIC_VALUE, PROFESSION_STRATEGIC_VALUE, STRATEGIC_COMPONENTS, STRATEGIC_CONTEXTS, RACE_PROFESSION_BONUS } from '../constants'
+  import { CLASS_MAP, PERS_RACE_INFO, PROFESSION_STRATEGIC_VALUE, STRATEGIC_COMPONENTS, STRATEGIC_CONTEXTS, RACE_PROFESSION_BONUS } from '../constants'
   import { PROFESIONES } from '../constants/profesiones'
   import type { Personaje, StrategicIndex, StrategicContext, Warband } from '../types'
 
@@ -20,8 +20,8 @@
 
   let indexes: StrategicIndex[] = $derived(storeData.strategicConfig?.indexes ?? [])
   let personajes: Personaje[] = $derived(storeData.personajes ?? [])
-  let allClassNames = $derived(Object.keys(CLASS_STRATEGIC_VALUE).sort())
-  let allRaceNames = $derived(Object.keys(RACE_STRATEGIC_VALUE).sort())
+  let allClassNames = $derived(Object.keys(CLASS_MAP).sort())
+  let allRaceNames = $derived(Object.keys(PERS_RACE_INFO).sort())
   let warbandList: Warband[] = $derived((storeData.warbands ?? []).filter((w: Warband) => w.nombre !== 'nada'))
   let allWarbands = $derived(warbandList.map((w: Warband) => w.nombre))
   let allProfItems = $derived([...PROFESIONES, { id: 'cocina', nombre: 'Cocina', icon: '🍳' }])
@@ -34,11 +34,7 @@
     return dataStore.getStrategicValue(entityType, entityId, indexId) ?? 0
   }
   function defaultFor(entityType: string, entityId: string, indexId: string): number {
-    if (indexId === 'general') {
-      if (entityType === 'class') return CLASS_STRATEGIC_VALUE[entityId] ?? 0
-      if (entityType === 'race') return RACE_STRATEGIC_VALUE[entityId] ?? 0
-      if (entityType === 'profession') return PROFESSION_STRATEGIC_VALUE[entityId] ?? 0
-    }
+    if (indexId === 'general' && entityType === 'profession') return PROFESSION_STRATEGIC_VALUE[entityId] ?? 0
     return 0
   }
   function isOver(entityType: string, entityId: string, indexId: string): boolean {
@@ -174,6 +170,7 @@
 
   {:else if tab === 'classes'}
     <div class="sv-table-wrap">
+      <p class="sv-hint">Las clases no tienen valor base fijo — valen por las ventajas que les asignes acá. Toda ventaja nueva arranca en 0 para todas las clases.</p>
       <table class="sv-table sv-matrix">
         <thead>
           <tr>
@@ -181,7 +178,6 @@
             {#each indexes as idx}
               <th class="sv-col-idx">{idx.name}</th>
             {/each}
-            <th>Default</th>
           </tr>
         </thead>
         <tbody>
@@ -197,7 +193,6 @@
                     class:sv-overridden={isOver('class', name, idx.id)} />
                 </td>
               {/each}
-              <td class="sv-default">{defaultFor('class', name, 'general')}</td>
             </tr>
           {/each}
         </tbody>
@@ -206,6 +201,7 @@
 
   {:else if tab === 'races'}
     <div class="sv-table-wrap">
+      <p class="sv-hint">Las razas no tienen valor base fijo — valen por las ventajas que les asignes acá. Toda ventaja nueva arranca en 0 para todas las razas.</p>
       <table class="sv-table sv-matrix">
         <thead>
           <tr>
@@ -214,7 +210,6 @@
               <th class="sv-col-idx">{idx.name}</th>
             {/each}
             <th>Bono Prof.</th>
-            <th>Default</th>
           </tr>
         </thead>
         <tbody>
@@ -231,7 +226,6 @@
                 </td>
               {/each}
               <td class="sv-default">{raceProfBonusText(name)}</td>
-              <td class="sv-default">{defaultFor('race', name, 'general')}</td>
             </tr>
           {/each}
         </tbody>
@@ -370,9 +364,9 @@
                 </td>
               {/each}
               <td class="sv-default">
-                {getVal('class', p.clase, 'general') || CLASS_STRATEGIC_VALUE[p.clase] || 0}
+                {getVal('class', p.clase, 'general')}
                 +
-                {getVal('race', p.raza, 'general') || RACE_STRATEGIC_VALUE[p.raza] || 0}
+                {getVal('race', p.raza, 'general')}
               </td>
             </tr>
           {/each}

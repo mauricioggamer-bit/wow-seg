@@ -67,26 +67,11 @@ export const RACE_PROFESSION_BONUS: Record<string, RaceProfBonus[]> = {
   'Tauren':            [{ profId: 'herboristeria', bonus: 5, note: 'Cultivation racial' }],
 }
 
-export const CLASS_STRATEGIC_VALUE: Record<string, number> = {
-  'Guerrero': 8, 'Paladín': 10, 'Cazador': 6, 'Pícaro': 5,
-  'Sacerdote': 9, 'DK': 9, 'Chamán': 8, 'Mago': 7,
-  'Brujo': 7, 'Monje': 8, 'Druida': 10, 'DH': 6, 'Evocadora': 8,
-}
-
 export const PROFESSION_STRATEGIC_VALUE: Record<string, number> = {
   'mineria': 5, 'herboristeria': 3, 'desuello': 3,
   'herreria': 8, 'peleteria': 6, 'sastreria': 6,
   'alquimia': 7, 'encantamiento': 7, 'ingenieria': 8,
   'joyeria': 6, 'inscripcion': 5,
-}
-
-export const RACE_STRATEGIC_VALUE: Record<string, number> = {
-  'Orco': 5, 'Blood Elf': 4, 'Tauren': 6, 'Troll': 4, 'Goblin': 3,
-  "Mag'har": 5, 'Nightborne': 4, 'Highmountain': 6, 'Zandalari': 5,
-  'Vulpera': 3, 'Undead': 4, 'Earthen': 5, 'Pandaren': 4,
-  'Human': 5, 'Night Elf': 4, 'Draenei': 5, 'Gnome': 3, 'Dwarf': 5,
-  'Void Elf': 4, 'Light Draenei': 5, 'Dark Iron Dwarf': 5, 'Kul Tiran': 6,
-  'Mechagnome': 3, 'Haranir': 4, 'Dracthyr': 7, 'Worgen': 4,
 }
 
 export interface StrategicComponentInfo {
@@ -105,8 +90,8 @@ export const STRATEGIC_COMPONENTS: StrategicComponentInfo[] = [
   { key: 'remainingWeight', label: 'Peso restante', weight: 10, description: 'min(1, pendientes/10). Más personajes pendientes = más valor de Warband.' },
   { key: 'bonusSub90', label: 'Bonus <90', weight: 'bonus', description: '+10 fijo si el personaje está por debajo de nivel 90.' },
   { key: 'bonus8089', label: 'Bonus 80-89', weight: 'bonus', description: '+15 fijo si el personaje está en el rango 80-89 (barato para Warband Mentor 80-90).' },
-  { key: 'classValue', label: 'Clase', weight: 'fixed', description: 'Valor estratégico fijo según la clase del personaje.' },
-  { key: 'raceValue', label: 'Raza', weight: 'fixed', description: 'Valor estratégico fijo según la raza del personaje.' },
+  { key: 'classValue', label: 'Clase', weight: 'fixed', description: 'Suma de las ventajas (índice "General") asignadas a la clase del personaje. No tiene valor base — sale de lo que le asignes en la pestaña Clases.' },
+  { key: 'raceValue', label: 'Raza', weight: 'fixed', description: 'Suma de las ventajas (índice "General") asignadas a la raza del personaje. No tiene valor base — sale de lo que le asignes en la pestaña Razas.' },
   { key: 'tagsValue', label: 'Tags', weight: 'fixed', description: 'Suma de puntos de tags estratégicos definidos por el usuario.' },
   { key: 'taskValue', label: 'Tareas', weight: 'fixed', description: 'Suma de puntos estratégicos de las tareas del personaje.' },
   { key: 'raceProfBonus', label: 'Bono Raza-Profesión', weight: 'fixed', description: 'Bonos raciales que otorgan puntos extra si el personaje tiene la profesión correspondiente.' },

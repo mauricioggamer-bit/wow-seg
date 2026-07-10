@@ -221,7 +221,7 @@ export function normalizeData(data: WowData): WowData {
 export function loadData(): WowData {
   const raw = storage.getItem(STORAGE_KEY)
   if (!raw) {
-    const data = initSeed()
+    const data = normalizeData(initSeed())
     saveData(data)
     return data
   }

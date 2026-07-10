@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest'
 import type { Personaje, LevelingConfig } from '../../types'
 import { calculateStrategicValue } from '../strategicValue'
+import { dataStore } from '../../stores/data'
 
 function makePersonaje(overrides: Partial<Personaje> = {}): Personaje {
   return {
@@ -28,7 +29,7 @@ const config: LevelingConfig = {
 }
 
 describe('calculateStrategicValue', () => {
-  it('keeps class/race/tags/task value when objetivoNivel is reached, but zeroes leveling components', () => {
+  it('keeps tags/task value when objetivoNivel is reached, but zeroes leveling components', () => {
     const personaje = makePersonaje({
       nivel: 40,
       objetivoNivel: 40,
@@ -42,8 +43,6 @@ describe('calculateStrategicValue', () => {
 
     const result = calculateStrategicValue(personaje, config, roster, 0)
 
-    expect(result.classValue).toBeGreaterThan(0)
-    expect(result.raceValue).toBeGreaterThan(0)
     expect(result.tagsValue).toBe(7)
     expect(result.taskValue).toBe(5)
 
@@ -67,5 +66,47 @@ describe('calculateStrategicValue', () => {
 
     expect(result.bonus8089).toBe(1)
     expect(result.warbandImpact).toBeGreaterThan(0)
+  })
+
+  it('class and race have no base value: default to 0 with no overrides set', () => {
+    const personaje = makePersonaje({ clase: 'Mago', raza: 'Gnome' })
+    const roster = [personaje]
+
+    const result = calculateStrategicValue(personaje, config, roster, 0)
+
+    expect(result.classValue).toBe(0)
+    expect(result.raceValue).toBe(0)
+    expect(result.indexValues['general']).toBeUndefined()
+  })
+
+  it('counts a class "general" override exactly once in totalScore (no double counting)', () => {
+    dataStore.setStrategicValue('class', 'Guerrero', 'general', 5)
+    try {
+      const personaje = makePersonaje({ clase: 'Guerrero', raza: 'Orco', nivel: 40, objetivoNivel: 40 })
+      const roster = [personaje]
+
+      const result = calculateStrategicValue(personaje, config, roster, 0)
+
+      expect(result.classValue).toBe(5)
+      expect(result.indexValues['general']).toBe(5)
+      expect(result.totalScore).toBe(5)
+    } finally {
+      dataStore.resetStrategicValue('class', 'Guerrero', 'general')
+    }
+  })
+
+  it('a newly created advantage starts at 0 for every class/race until explicitly set', () => {
+    const ok = dataStore.addIndex({ id: 'idx_movilidad_test', name: 'Movilidad Test', description: '' })
+    expect(ok).toBe(true)
+    try {
+      const personaje = makePersonaje({ clase: 'Druida', raza: 'Tauren' })
+      const roster = [personaje]
+
+      const result = calculateStrategicValue(personaje, config, roster, 0)
+
+      expect(result.indexValues['idx_movilidad_test']).toBeUndefined()
+    } finally {
+      dataStore.deleteIndex('idx_movilidad_test')
+    }
   })
 })

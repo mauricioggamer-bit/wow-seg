@@ -580,17 +580,17 @@ addTarea(nombrePersonaje: string, tarea: { nombre: string; tipoContenido?: TipoC
       return [...(get({ subscribe }).strategicConfig?.categories ?? [])]
         .sort((a, b) => (a.orden ?? 0) - (b.orden ?? 0))
     },
-    addCategory(label: string): boolean {
+    addCategory(label: string, entityType?: import('../types').EntityType): boolean {
       const trimmed = label.trim()
       if (!trimmed) return false
-      const id = 'cat_' + trimmed.toLowerCase().replace(/[^a-z0-9]/g, '_')
+      const id = 'cat_' + (entityType ? entityType + '_' : '') + trimmed.toLowerCase().replace(/[^a-z0-9]/g, '_')
       let ok = true
       update(d => {
         if (!d.strategicConfig) d.strategicConfig = {}
         if (!d.strategicConfig.categories) d.strategicConfig.categories = []
         if (d.strategicConfig.categories.some(c => c.id === id)) { ok = false; return d }
         const orden = d.strategicConfig.categories.length
-        d.strategicConfig.categories = [...d.strategicConfig.categories, { id, label: trimmed, orden }]
+        d.strategicConfig.categories = [...d.strategicConfig.categories, { id, label: trimmed, orden, entityType }]
         saveData(d)
         return { ...d }
       })

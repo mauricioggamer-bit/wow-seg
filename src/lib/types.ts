@@ -67,6 +67,7 @@ export interface StrategicCategory {
   id: string
   label: string
   orden?: number
+  entityType?: EntityType
 }
 
 export type EntityType = 'class' | 'race' | 'profession' | 'task' | 'warband' | 'personaje'

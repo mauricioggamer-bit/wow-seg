@@ -9,6 +9,7 @@
   import ClassMatrix from '../components/strategic/ClassMatrix.svelte'
   import RaceMatrix from '../components/strategic/RaceMatrix.svelte'
   import ProfessionMatrix from '../components/strategic/ProfessionMatrix.svelte'
+  import WarbandMatrix from '../components/strategic/WarbandMatrix.svelte'
   import CategoryManagerModal from '../components/strategic/CategoryManagerModal.svelte'
   import { STRATEGIC_PARAMS } from '../constants'
   import type { Personaje, StrategicIndex, StrategicCategory, Warband } from '../types'
@@ -56,6 +57,10 @@
   let selectedVentaja = $derived(indexes.find(i => i.id === selectedVentajaId) ?? null)
 
   let categoryModalOpen = $state(false)
+  const MATRIX_TABS = new Set(['class', 'race', 'profession', 'warband'])
+  let categoryModalEntityType = $derived(
+    MATRIX_TABS.has(tab) ? (tab as 'class' | 'race' | 'profession' | 'warband') : undefined
+  )
 </script>
 
 <div class="sv-view">
@@ -92,6 +97,9 @@
 
   {:else if tab === 'profession'}
     <ProfessionMatrix {indexes} {categories} />
+
+  {:else if tab === 'warband'}
+    <WarbandMatrix {indexes} {categories} warbands={warbandList} />
 
   {:else if activeKind}
     <EntityMode kind={activeKind} {indexes} {categories} {personajes} {levelingCtx} {openCharEdit} />
@@ -159,7 +167,7 @@
   {/if}
 </div>
 
-<CategoryManagerModal bind:open={categoryModalOpen} />
+<CategoryManagerModal bind:open={categoryModalOpen} entityType={categoryModalEntityType} />
 
 <style>
   .sv-view {

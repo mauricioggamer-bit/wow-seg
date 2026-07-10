@@ -19,8 +19,12 @@
     indexes.filter(i => i.entityTypes?.length === 1 && i.entityTypes[0] === entityType)
   )
 
+  let applicableCategories = $derived(
+    categories.filter(c => c.id === 'general' || c.entityType === entityType)
+  )
+
   let groups = $derived(
-    categories.map(cat => ({
+    applicableCategories.map(cat => ({
       catId: cat.id,
       label: cat.label,
       items: applicableIndexes.filter(i => (i.context ?? 'general') === cat.id),

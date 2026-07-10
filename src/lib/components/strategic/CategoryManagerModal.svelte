@@ -1,20 +1,22 @@
 <script lang="ts">
   import Modal from '../leveling/Modal.svelte'
   import { dataStore } from '../../stores/data'
-  import type { StrategicCategory } from '../../types'
+  import type { StrategicCategory, EntityType } from '../../types'
 
-  let { open = $bindable(false) }: { open?: boolean } = $props()
+  let { open = $bindable(false), entityType }: { open?: boolean; entityType?: EntityType } = $props()
 
   let storeData = $derived($dataStore)
   let categories: StrategicCategory[] = $derived(
-    [...(storeData.strategicConfig?.categories ?? [])].sort((a, b) => (a.orden ?? 0) - (b.orden ?? 0))
+    [...(storeData.strategicConfig?.categories ?? [])]
+      .filter(c => !entityType || c.id === 'general' || c.entityType === entityType)
+      .sort((a, b) => (a.orden ?? 0) - (b.orden ?? 0))
   )
 
   let newLabel = $state('')
   let error = $state('')
 
   function add() {
-    if (!dataStore.addCategory(newLabel)) {
+    if (!dataStore.addCategory(newLabel, entityType)) {
       error = 'Ya existe una categoría con ese nombre. Elegí otro.'
       return
     }
@@ -42,9 +44,15 @@
     ;[ids[i], ids[j]] = [ids[j], ids[i]]
     dataStore.reorderCategories(ids)
   }
+
+  const ENTITY_LABELS: Record<EntityType, string> = {
+    class: 'Clases', race: 'Razas', profession: 'Profesiones',
+    task: 'Tareas', warband: 'Warbands', personaje: 'Personajes',
+  }
+  let modalTitle = $derived(entityType ? `Categorías — ${ENTITY_LABELS[entityType]}` : 'Gestionar categorías')
 </script>
 
-<Modal bind:open title="Gestionar categorías">
+<Modal bind:open title={modalTitle}>
   <div class="cm-root">
     <div class="cm-add-row">
       <input type="text" bind:value={newLabel} placeholder="Nueva categoría" class="sv-text-input sv-text-wide" onkeydown={(e) => e.key === 'Enter' && add()} />

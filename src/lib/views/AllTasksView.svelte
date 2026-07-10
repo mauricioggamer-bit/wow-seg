@@ -2,6 +2,7 @@
   import { personajesStore, dataStore } from '../stores/data'
   import { uiStore } from '../stores/ui'
   import { clsClass } from '../constants'
+  import { expNombre } from '../constants/wowContent'
 
   let { openTaskEdit }: {
     openTaskEdit?: (charName: string, taskId: string) => void
@@ -44,12 +45,16 @@
           </div>
           <div class="task-list" style="padding-left:4px;gap:1px">
             {#each tasks as t}
+              {@const expId = t.contenidoExpansion || t.expansion}
               <div class="task-item" class:done={t.hecho} style="padding:4px 6px;position:relative">
                 <input type="checkbox" class="task-check" checked={t.hecho}
                   onchange={() => dataStore.toggleTarea(t.personaje, t.id)} style="width:14px;height:14px" />
                 <div class="task-info">
                   <div class="task-name" style="font-size:0.75rem">{t.nombre}</div>
                   <div class="task-meta" style="font-size:0.6rem">
+                    {#if expId}
+                      <span class="tag-badge">{expNombre(expId)}</span>
+                    {/if}
                     <span class="text-xs text-muted">⏱{t.orden ?? 0}</span>
                     <span class="text-xs text-muted">P{t.prioridad}</span>
                     <span>{t.tiempo_min}min</span>

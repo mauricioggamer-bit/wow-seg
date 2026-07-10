@@ -224,7 +224,7 @@
     editTaskId = taskId
     editTaskNombre = t.nombre
     editTaskTipoContenido = t.tipoContenido ?? 'descripcion'
-    editTaskExpansion = t.contenidoExpansion || ''
+    editTaskExpansion = editTaskTipoContenido === 'descripcion' ? (t.expansion || '') : (t.contenidoExpansion || '')
     editTaskDificultad = t.contenidoDificultad || ''
     editTaskContenidoNombre = t.nombre
     if (editTaskTipoContenido === 'descripcion') editTaskContenidoNombre = ''
@@ -251,6 +251,7 @@
       tipoContenido: editTaskTipoContenido,
       contenidoExpansion: editTaskTipoContenido === 'descripcion' ? '' : editTaskExpansion,
       contenidoDificultad: (editTaskTipoContenido === 'mazmorra' || editTaskTipoContenido === 'raid') ? editTaskDificultad : '',
+      expansion: editTaskTipoContenido === 'descripcion' ? editTaskExpansion : '',
       prioridad: parseInt(editTaskPrioridad) as 1 | 2 | 3,
       tiempo_min: editTaskTiempo,
       cooldown: editTaskCooldown as 'weekly' | 'daily' | 'none',
@@ -286,6 +287,7 @@
       tipoContenido: newTaskTipoContenido,
       contenidoExpansion: newTaskTipoContenido === 'descripcion' ? '' : newTaskExpansion,
       contenidoDificultad: (newTaskTipoContenido === 'mazmorra' || newTaskTipoContenido === 'raid') ? newTaskDificultad : '',
+      expansion: newTaskTipoContenido === 'descripcion' ? newTaskExpansion : '',
       prioridad: parseInt(newTaskPrioridad),
       tiempo_min: newTaskTiempo,
       cooldown: newTaskCooldown,
@@ -853,7 +855,19 @@
             <label><input type="radio" name="editTipoContenido" checked={editTaskTipoContenido==='worldboss'} onclick={() => setEditTipoContenido('worldboss')} /> Jefe del mundo</label>
           </div>
           {#if editTaskTipoContenido === 'descripcion'}
-            <input id="editTaskNombre" type="text" bind:value={editTaskNombre} style="margin-top:6px;width:100%" />
+            <div style="margin-top:6px;display:grid;grid-template-columns:1fr 1fr;gap:6px">
+              <div class="form-group" style="margin:0;grid-column:1/-1">
+                <label style="font-size:0.7rem">Nombre</label>
+                <input id="editTaskNombre" type="text" bind:value={editTaskNombre} style="width:100%" />
+              </div>
+              <div class="form-group" style="margin:0;grid-column:1/-1">
+                <label style="font-size:0.7rem">Expansión</label>
+                <select bind:value={editTaskExpansion}>
+                  <option value="">Sin especificar</option>
+                  {#each EXPANSIONS as exp}<option value={exp.id}>{exp.nombre}</option>{/each}
+                </select>
+              </div>
+            </div>
           {:else}
             <div style="margin-top:6px;display:grid;grid-template-columns:1fr 1fr;gap:6px">
               <div class="form-group" style="margin:0">
@@ -949,7 +963,19 @@
             <label><input type="radio" name="newTipoContenido" checked={newTaskTipoContenido==='worldboss'} onclick={() => setNewTipoContenido('worldboss')} /> Jefe del mundo</label>
           </div>
           {#if newTaskTipoContenido === 'descripcion'}
-            <input id="newTaskNombre" type="text" bind:value={newTaskNombre} placeholder="Ej: Weekly Zereth Mortis" style="margin-top:6px;width:100%" />
+            <div style="margin-top:6px;display:grid;grid-template-columns:1fr 1fr;gap:6px">
+              <div class="form-group" style="margin:0;grid-column:1/-1">
+                <label style="font-size:0.7rem">Nombre</label>
+                <input id="newTaskNombre" type="text" bind:value={newTaskNombre} placeholder="Ej: Weekly Zereth Mortis" style="width:100%" />
+              </div>
+              <div class="form-group" style="margin:0;grid-column:1/-1">
+                <label style="font-size:0.7rem">Expansión</label>
+                <select bind:value={newTaskExpansion}>
+                  <option value="">Sin especificar</option>
+                  {#each EXPANSIONS as exp}<option value={exp.id}>{exp.nombre}</option>{/each}
+                </select>
+              </div>
+            </div>
           {:else}
             <div style="margin-top:6px;display:grid;grid-template-columns:1fr 1fr;gap:6px">
               <div class="form-group" style="margin:0">

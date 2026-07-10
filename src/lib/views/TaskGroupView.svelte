@@ -1,6 +1,7 @@
 <script lang="ts">
   import { uiStore } from '../stores/ui'
   import { dataStore, personajesStore } from '../stores/data'
+  import { expNombre } from '../constants/wowContent'
 
   let {
     filterType,
@@ -92,6 +93,7 @@
       </div>
       <div class="task-list" style="padding-left:4px;gap:1px">
         {#each tareas as t}
+          {@const expId = t.contenidoExpansion || t.expansion}
           <div class="task-item" class:dones={t.hecho} style="padding:4px 6px">
             <input
               type="checkbox" class="task-check"
@@ -104,6 +106,9 @@
                 <span class="text-xs" style="color:var(--gold);font-weight:600">{t.personaje}</span> {t.nombre}
               </div>
               <div class="task-meta" style="font-size:0.6rem">
+                {#if expId}
+                  <span class="tag-badge">{expNombre(expId)}</span>
+                {/if}
                 <span class="task-priority priority-{t.prioridad}">P{t.prioridad}</span>
                 <span>{t.tiempo_min}min</span>
                 <span>{t.cooldown}</span>

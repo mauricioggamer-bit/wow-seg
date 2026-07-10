@@ -2,6 +2,17 @@ import { writable, derived } from 'svelte/store'
 import type { ViewType } from '../types'
 import { dataStore } from './data'
 
+const VIEW_STORAGE_KEY = 'wowseg_current_view'
+const VALID_VIEWS: ViewType[] = ['warband', 'tareas', 'tasks', 'personajes', 'mapa', 'fantasia', 'profesion', 'keybinds', 'leveling', 'warband-manager', 'estrategia']
+
+function loadStoredView(): ViewType {
+  try {
+    const raw = localStorage.getItem(VIEW_STORAGE_KEY)
+    if (raw && (VALID_VIEWS as string[]).includes(raw)) return raw as ViewType
+  } catch { /* empty */ }
+  return 'warband'
+}
+
 interface Filters {
   clase: string[]
   faccion: string
@@ -28,7 +39,7 @@ function createUiStore() {
   }
 
   const { subscribe, set, update } = writable({
-    currentView: 'warband' as ViewType,
+    currentView: loadStoredView(),
     currentWarband: null as string | null,
     warbandInitialized: false,
     selectedCharacter: null as string | null,
@@ -47,6 +58,7 @@ function createUiStore() {
   return {
     subscribe,
     setView(view: ViewType) {
+      try { localStorage.setItem(VIEW_STORAGE_KEY, view) } catch { /* empty */ }
       update(s => ({ ...s, currentView: view, selectedCharacter: null, showDetailPanel: false }))
     },
     selectWarband(nombre: string | null) {

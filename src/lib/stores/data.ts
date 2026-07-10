@@ -513,9 +513,9 @@ addTarea(nombrePersonaje: string, tarea: { nombre: string; tipoContenido?: TipoC
     setStrategicValue(entityType: string, entityId: string, indexId: string, value: number) {
       const key = this.valueKey(entityType, entityId, indexId)
       update(d => {
-        if (!d.strategicConfig) d.strategicConfig = {}
-        if (!d.strategicConfig.values) d.strategicConfig.values = {}
-        d.strategicConfig.values[key] = value
+        const strategicConfig = { ...(d.strategicConfig ?? {}) }
+        strategicConfig.values = { ...(strategicConfig.values ?? {}), [key]: value }
+        d.strategicConfig = strategicConfig
         saveData(d)
         return { ...d }
       })
@@ -524,7 +524,11 @@ addTarea(nombrePersonaje: string, tarea: { nombre: string; tipoContenido?: TipoC
       const key = this.valueKey(entityType, entityId, indexId)
       update(d => {
         if (d.strategicConfig?.values) {
-          delete d.strategicConfig.values[key]
+          const strategicConfig = { ...d.strategicConfig }
+          const values = { ...strategicConfig.values }
+          delete values[key]
+          strategicConfig.values = values
+          d.strategicConfig = strategicConfig
           saveData(d)
         }
         return { ...d }
@@ -558,12 +562,16 @@ addTarea(nombrePersonaje: string, tarea: { nombre: string; tipoContenido?: TipoC
     deleteIndex(id: string) {
       update(d => {
         if (!d.strategicConfig) return d
-        d.strategicConfig.indexes = (d.strategicConfig.indexes ?? []).filter(i => i.id !== id)
-        if (d.strategicConfig.values) {
-          for (const key of Object.keys(d.strategicConfig.values)) {
-            if (key.endsWith(`:${id}`)) delete d.strategicConfig.values[key]
+        const strategicConfig = { ...d.strategicConfig }
+        strategicConfig.indexes = (strategicConfig.indexes ?? []).filter(i => i.id !== id)
+        if (strategicConfig.values) {
+          const values = { ...strategicConfig.values }
+          for (const key of Object.keys(values)) {
+            if (key.endsWith(`:${id}`)) delete values[key]
           }
+          strategicConfig.values = values
         }
+        d.strategicConfig = strategicConfig
         saveData(d)
         return { ...d }
       })
@@ -629,9 +637,9 @@ addTarea(nombrePersonaje: string, tarea: { nombre: string; tipoContenido?: TipoC
     },
     setComponentWeight(key: string, value: number) {
       update(d => {
-        if (!d.strategicConfig) d.strategicConfig = {}
-        if (!d.strategicConfig.componentWeights) d.strategicConfig.componentWeights = {}
-        d.strategicConfig.componentWeights[key] = value
+        const strategicConfig = { ...(d.strategicConfig ?? {}) }
+        strategicConfig.componentWeights = { ...(strategicConfig.componentWeights ?? {}), [key]: value }
+        d.strategicConfig = strategicConfig
         saveData(d)
         return { ...d }
       })
@@ -639,7 +647,11 @@ addTarea(nombrePersonaje: string, tarea: { nombre: string; tipoContenido?: TipoC
     resetComponentWeight(key: string) {
       update(d => {
         if (d.strategicConfig?.componentWeights) {
-          delete d.strategicConfig.componentWeights[key]
+          const strategicConfig = { ...d.strategicConfig }
+          const componentWeights = { ...strategicConfig.componentWeights }
+          delete componentWeights[key]
+          strategicConfig.componentWeights = componentWeights
+          d.strategicConfig = strategicConfig
           saveData(d)
         }
         return { ...d }
@@ -650,9 +662,9 @@ addTarea(nombrePersonaje: string, tarea: { nombre: string; tipoContenido?: TipoC
     },
     setStrategicParam(key: string, value: number) {
       update(d => {
-        if (!d.strategicConfig) d.strategicConfig = {}
-        if (!d.strategicConfig.params) d.strategicConfig.params = {}
-        d.strategicConfig.params[key] = value
+        const strategicConfig = { ...(d.strategicConfig ?? {}) }
+        strategicConfig.params = { ...(strategicConfig.params ?? {}), [key]: value }
+        d.strategicConfig = strategicConfig
         saveData(d)
         return { ...d }
       })
@@ -660,7 +672,11 @@ addTarea(nombrePersonaje: string, tarea: { nombre: string; tipoContenido?: TipoC
     resetStrategicParam(key: string) {
       update(d => {
         if (d.strategicConfig?.params) {
-          delete d.strategicConfig.params[key]
+          const strategicConfig = { ...d.strategicConfig }
+          const params = { ...strategicConfig.params }
+          delete params[key]
+          strategicConfig.params = params
+          d.strategicConfig = strategicConfig
           saveData(d)
         }
         return { ...d }

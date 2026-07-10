@@ -94,7 +94,6 @@ describe('calculateStrategicValue', () => {
       const result = calculateStrategicValue(personaje, config, roster, 0)
 
       expect(result.classValue).toBe(5)
-      expect(result.indexValues['general']).toBe(5)
       expect(result.totalScore).toBe(5)
     } finally {
       dataStore.resetStrategicValue('class', 'Guerrero', 'general')

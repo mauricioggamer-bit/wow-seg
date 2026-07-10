@@ -58,8 +58,9 @@ export function calculateStrategicValue(
   const indexValues: Record<string, number> = {}
 
   for (const idx of indexes) {
-    if (taskContext && idx.context && idx.context !== 'general' && idx.context !== taskContext) continue
-    let total = 0
+      if (taskContext && idx.context && idx.context !== 'general' && idx.context !== taskContext) continue
+      if (idx.id === 'general') continue
+      let total = 0
 
     const cv = getClassValue(personaje.clase, idx.id)
     if (cv > 0) total += cv
@@ -147,10 +148,10 @@ export function calculateStrategicValue(
   const bonusSub90 = !calc.done && personaje.nivel < 90 ? 1 : 0
   const bonus8089 = !calc.done && (personaje.nivel >= 80 && personaje.nivel < 90) ? 1 : 0
 
-  if (classValue > 0 && !reasons.some(r => r.includes('General'))) {
+  if (classValue > 0) {
     reasons.push(`Clase ${personaje.clase}: +${classValue} pts`)
   }
-  if (raceValue > 0 && !reasons.some(r => r.includes('General'))) {
+  if (raceValue > 0) {
     reasons.push(`Raza ${personaje.raza}: +${raceValue} pts`)
   }
 
@@ -193,6 +194,8 @@ export function calculateStrategicValue(
   totalScore += bonus8089 * wBonus8089
   totalScore += raceProfBonus
   totalScore += taskValue
+  totalScore += classValue
+  totalScore += raceValue
   totalScore += totalIndexValue
   totalScore = Math.min(100, totalScore)
 

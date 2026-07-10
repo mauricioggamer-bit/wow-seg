@@ -138,9 +138,7 @@ export function normalizeData(data: WowData): WowData {
   }
   if (!data.strategicConfig) data.strategicConfig = {}
   if (!data.strategicConfig.indexes) {
-    data.strategicConfig.indexes = [
-      { id: 'general', name: 'General', description: 'Valor estratégico base' },
-    ]
+    data.strategicConfig.indexes = []
   }
   if (!data.strategicConfig.categories) {
     data.strategicConfig.categories = [

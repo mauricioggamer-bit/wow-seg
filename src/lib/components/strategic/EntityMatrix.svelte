@@ -16,7 +16,7 @@
   } = $props()
 
   let applicableIndexes = $derived(
-    indexes.filter(i => !i.entityTypes || i.entityTypes.includes(entityType))
+    indexes.filter(i => i.entityTypes?.length === 1 && i.entityTypes[0] === entityType)
   )
 
   let groups = $derived(

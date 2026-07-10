@@ -86,10 +86,6 @@
     return '★'.repeat(stars) + '☆'.repeat(5 - stars)
   }
 
-  function parseReasons(text: string): string[] {
-    return text.split(/(?<=\.)\s+/).filter(Boolean).slice(0, 6)
-  }
-
   function getTimewaysPct(nombre: string): number {
     return personajes.find(p => p.nombre === nombre)?.timewaysPct ?? 0
   }
@@ -188,7 +184,7 @@
                   <div class="lvl-tip-impact">Warband impact: +{r.warbandImpact}%</div>
                 {/if}
                 <ul class="lvl-tip-reasons">
-                  {#each parseReasons(r.strategicText) as reason}
+                  {#each r.strategicReasons.slice(0, 6) as reason}
                     <li>{reason}</li>
                   {/each}
                 </ul>

@@ -115,4 +115,44 @@ describe('calculateStrategicValue', () => {
       dataStore.deleteIndex('idx_movilidad_test')
     }
   })
+
+  it('attributes a non-general advantage to the class/race that owns it, not to the personaje (Mawgul case)', () => {
+    const okMov = dataStore.addIndex({ id: 'idx_mobilidad_test', name: 'Mobilidad Test', description: '' })
+    const okSimp = dataStore.addIndex({ id: 'idx_simpatico_test', name: 'Simpatico Test', description: '' })
+    expect(okMov).toBe(true)
+    expect(okSimp).toBe(true)
+    dataStore.setStrategicValue('class', 'Chamán', 'idx_mobilidad_test', 5)
+    dataStore.setStrategicValue('race', 'Orco', 'idx_simpatico_test', 4)
+    try {
+      const personaje = makePersonaje({ clase: 'Chamán', raza: 'Orco' })
+      const roster = [personaje]
+
+      const result = calculateStrategicValue(personaje, config, roster, 0)
+
+      expect(result.classValue).toBeGreaterThanOrEqual(5)
+      expect(result.raceValue).toBeGreaterThanOrEqual(4)
+      expect(result.personajeVentajas).toBe(0)
+      expect(result.indexValues['idx_mobilidad_test']).toBe(5)
+      expect(result.indexValues['idx_simpatico_test']).toBe(4)
+    } finally {
+      dataStore.resetStrategicValue('class', 'Chamán', 'idx_mobilidad_test')
+      dataStore.resetStrategicValue('race', 'Orco', 'idx_simpatico_test')
+      dataStore.deleteIndex('idx_mobilidad_test')
+      dataStore.deleteIndex('idx_simpatico_test')
+    }
+  })
+
+  it('does not mention the same profession points twice in reasons', () => {
+    const personaje = makePersonaje({
+      clase: 'Guerrero',
+      raza: 'Orco',
+      profesiones: [{ id: 'sastreria', completadas: [] }, { id: 'ingenieria', completadas: [] }],
+    })
+    const roster = [personaje]
+
+    const result = calculateStrategicValue(personaje, config, roster, 0)
+
+    const professionMentions = result.reasons.filter(r => r.toLowerCase().includes('profesión') || r.toLowerCase().includes('profesiones'))
+    expect(professionMentions.length).toBeLessThanOrEqual(1)
+  })
 })

@@ -250,7 +250,7 @@
           done90: r.context.character.nivel >= 90,
           roi: roiMap.get(cr.nombre) ?? 0,
           strategicStars: sv.stars,
-          strategicText: sv.reasons.join(' '),
+          strategicReasons: sv.reasons,
           strategicScore: sv.totalScore,
           warbandImpact: sv.warbandImpact,
         }

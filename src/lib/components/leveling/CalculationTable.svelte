@@ -30,6 +30,44 @@
     try { localStorage.setItem(COL_KEY, m) } catch { /* empty */ }
   }
 
+  let editing = $state<{nombre: string; field: 'timeways' | 'nivel'; value: number} | null>(null)
+  let originalValue = $state<number>(0)
+
+  function startEditTimeways(nombre: string) {
+    const v = personajes.find(p => p.nombre === nombre)?.timewaysPct ?? 0
+    editing = { nombre, field: 'timeways', value: v }
+    originalValue = v
+  }
+
+  function startEditNivel(nombre: string) {
+    const v = personajes.find(p => p.nombre === nombre)?.nivel ?? 0
+    editing = { nombre, field: 'nivel', value: v }
+    originalValue = v
+  }
+
+  function adjustEdit(delta: number) {
+    if (!editing) return
+    if (editing.field === 'timeways') {
+      editing = { ...editing, value: Math.max(0, Math.min(30, editing.value + delta)) }
+    } else {
+      editing = { ...editing, value: Math.max(1, Math.min(90, editing.value + delta)) }
+    }
+  }
+
+  function confirmEdit() {
+    if (!editing) return
+    if (editing.field === 'timeways') {
+      dataStore.updateTimewaysPct(editing.nombre, editing.value)
+    } else if (editing.field === 'nivel') {
+      dataStore.updateNivel(editing.nombre, editing.value)
+    }
+    editing = null
+  }
+
+  function cancelEdit() {
+    editing = null
+  }
+
   function starString(stars: number): string {
     return '★'.repeat(stars) + '☆'.repeat(5 - stars)
   }
@@ -40,10 +78,6 @@
 
   function getTimewaysPct(nombre: string): number {
     return personajes.find(p => p.nombre === nombre)?.timewaysPct ?? 0
-  }
-
-  function setTimewaysPct(nombre: string, pct: number) {
-    dataStore.updateTimewaysPct(nombre, pct)
   }
 </script>
 
@@ -85,19 +119,29 @@
             <span class="lvl-char-name">{r.nombre}</span>
             <span class="lvl-char-class" style="color: {clsClass(r.clase)}">{r.clase}</span>
           </td>
-          <td class="lvl-num">{r.nivel}</td>
+          <td class="lvl-num" onclick={(e) => e.stopPropagation()}>
+            {#if editing?.nombre === r.nombre && editing?.field === 'nivel'}
+              <div class="lvl-edit-row">
+                <input type="number" class="lvl-edit-input" bind:value={editing.value} min="1" max="90" />
+                <button class="lvl-edit-yes" onclick={confirmEdit}>✓</button>
+                <button class="lvl-edit-no" onclick={cancelEdit}>✗</button>
+              </div>
+            {:else}
+              <span class="lvl-clickable" onclick={() => startEditNivel(r.nombre)}>{r.nivel}</span>
+            {/if}
+          </td>
           <td class="lvl-tw-cell" onclick={(e) => e.stopPropagation()}>
-            <button
-              class="lvl-tw-btn"
-              onclick={() => setTimewaysPct(r.nombre, Math.max(0, getTimewaysPct(r.nombre) - 5))}
-              disabled={getTimewaysPct(r.nombre) <= 0}
-            >−</button>
-            <span class="lvl-tw-val">+{getTimewaysPct(r.nombre)}%</span>
-            <button
-              class="lvl-tw-btn"
-              onclick={() => setTimewaysPct(r.nombre, Math.min(30, getTimewaysPct(r.nombre) + 5))}
-              disabled={getTimewaysPct(r.nombre) >= 30}
-            >+</button>
+            {#if editing?.nombre === r.nombre && editing?.field === 'timeways'}
+              <button class="lvl-tw-btn" onclick={() => adjustEdit(-5)} disabled={editing.value <= 0}>−</button>
+              <span class="lvl-tw-val">+{editing.value}%</span>
+              <button class="lvl-tw-btn" onclick={() => adjustEdit(5)} disabled={editing.value >= 30}>+</button>
+              <button class="lvl-edit-yes" onclick={confirmEdit}>✓</button>
+              <button class="lvl-edit-no" onclick={cancelEdit}>✗</button>
+            {:else}
+              <button class="lvl-tw-btn" onclick={() => { startEditTimeways(r.nombre); editing!.value = Math.max(0, getTimewaysPct(r.nombre) - 5) }} disabled={getTimewaysPct(r.nombre) <= 0}>−</button>
+              <span class="lvl-clickable" onclick={() => startEditTimeways(r.nombre)}>+{getTimewaysPct(r.nombre)}%</span>
+              <button class="lvl-tw-btn" onclick={() => { startEditTimeways(r.nombre); editing!.value = Math.min(30, getTimewaysPct(r.nombre) + 5) }} disabled={getTimewaysPct(r.nombre) >= 30}>+</button>
+            {/if}
           </td>
           {#if viewMode !== 'to90'}
             <td class="lvl-num lvl-col-80">{r.done80 ? '✓' : r.dungeonsTo80 || '✓'}</td>
@@ -290,6 +334,62 @@
     z-index: 50;
     box-shadow: 0 4px 16px rgba(0,0,0,0.6);
     pointer-events: none;
+  }
+  .lvl-edit-row {
+    display: flex;
+    align-items: center;
+    gap: 3px;
+  }
+  .lvl-edit-input {
+    width: 36px;
+    padding: 1px 3px;
+    font-size: 0.6rem;
+    background: var(--input-bg);
+    border: 1px solid var(--gold);
+    border-radius: var(--r-sm);
+    color: var(--text-primary);
+    text-align: center;
+  }
+  .lvl-edit-input:focus {
+    outline: none;
+  }
+  .lvl-edit-yes, .lvl-edit-no {
+    width: 18px;
+    height: 18px;
+    border: 1px solid var(--border-subtle);
+    border-radius: 3px;
+    cursor: pointer;
+    font-size: 0.65rem;
+    line-height: 1;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
+    background: transparent;
+  }
+  .lvl-edit-yes {
+    color: var(--green, #38a169);
+    border-color: var(--green, #38a169);
+  }
+  .lvl-edit-yes:hover {
+    background: var(--green, #38a169);
+    color: #000;
+  }
+  .lvl-edit-no {
+    color: var(--horde, #c5365a);
+    border-color: var(--horde, #c5365a);
+  }
+  .lvl-edit-no:hover {
+    background: var(--horde, #c5365a);
+    color: #fff;
+  }
+  .lvl-clickable {
+    cursor: pointer;
+    padding: 2px 4px;
+    border-radius: var(--r-sm);
+  }
+  .lvl-clickable:hover {
+    background: rgba(255, 215, 0, 0.1);
   }
   .lvl-strat-trigger:hover .lvl-strat-tip {
     display: block;

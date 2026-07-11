@@ -109,8 +109,8 @@ export function calculateStrategicValue(
   const indexes: StrategicIndex[] = dataStore.getIndexes()
   const indexValues: Record<string, number> = {}
 
-  let classValue = getClassValue(personaje.clase, 'general')
-  let raceValue = getRaceValue(personaje.raza, 'general')
+  let classValue = 0
+  let raceValue = 0
 
   for (const idx of indexes) {
     if (taskContext && idx.context && idx.context !== 'general' && idx.context !== taskContext) continue
@@ -195,15 +195,6 @@ export function calculateStrategicValue(
 
   const bonusSub90 = !calc.done && personaje.nivel < objetivo ? 1 : 0
   const bonus8089 = !calc.done && (personaje.nivel >= 80 && personaje.nivel < maxLevel && objetivo > 80) ? 1 : 0
-
-  const classValueGeneral = getClassValue(personaje.clase, 'general')
-  const raceValueGeneral = getRaceValue(personaje.raza, 'general')
-  if (classValueGeneral > 0) {
-    ensureGroup(reasonGroups, `Clase: ${personaje.clase}`).entries.push(`General: +${classValueGeneral}`)
-  }
-  if (raceValueGeneral > 0) {
-    ensureGroup(reasonGroups, `Raza: ${personaje.raza}`).entries.push(`General: +${raceValueGeneral}`)
-  }
 
   const taskValue = (personaje.tareas ?? []).reduce((sum, t) => sum + (t.puntos ?? 0), 0)
   if (taskValue > 0) {

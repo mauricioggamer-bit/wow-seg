@@ -24,7 +24,7 @@ export function simulateCharacter(
 
   const history: SimulationStep[] = []
   const generatedEvents: EventLogEntry[] = []
-  const objetivo = context.character.objetivo
+  const objetivo = Math.min(context.character.objetivo, context.scenario.maxLevel, gameModel.getMaxLevel())
   const maxLevel = gameModel.getMaxLevel()
 
   state.activeBuffs = gameModel.getActiveBuffs(state, context)

@@ -66,6 +66,7 @@ export function calculateForCharacter(
   personaje: Personaje,
   config: LevelingConfig,
   count90: number,
+  ignoreDone = false,
 ): CalcResult {
   const objetivo = personaje.objetivoNivel ?? 90
   const nivel = personaje.nivel
@@ -81,7 +82,7 @@ export function calculateForCharacter(
     dungeons,
     timeHours,
     xpPerHour,
-    done: nivel >= objetivo,
+    done: ignoreDone ? false : nivel >= objetivo,
   }
 }
 

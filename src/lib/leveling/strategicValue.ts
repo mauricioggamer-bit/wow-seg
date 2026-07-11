@@ -1,14 +1,15 @@
 import type { Personaje, LevelingConfig, StrategicValueResult, StrategicIndex, ReasonGroup } from '../types'
 import { calculateForCharacter, getEffectiveXpPerDungeon, getXpRemaining } from './calculator'
 import { STAR_THRESHOLDS, RACE_PROFESSION_BONUS } from '../constants'
+import { MAX_LEVEL } from '../constants/experience'
 import { dataStore } from '../stores/data'
 
-function getObjetivo(p: Personaje): number {
+function getObjetivo(p: Personaje, maxLevel: number): number {
   if (p.tareas && p.tareas.length > 0) {
     const maxNivel = Math.max(0, ...p.tareas.map(t => t.nivelRecomendado ?? 0))
-    if (maxNivel > 0) return maxNivel
+    if (maxNivel > 0) return Math.min(maxNivel, maxLevel)
   }
-  return p.objetivoNivel ?? 90
+  return Math.min(p.objetivoNivel ?? maxLevel, maxLevel)
 }
 
 function getClassValue(className: string, indexId: string): number {
@@ -44,23 +45,25 @@ export function calculateStrategicValue(
   count90: number,
   taskContext?: string,
 ): StrategicValueResult {
-  const objetivo = getObjetivo(personaje)
-  const calc = calculateForCharacter({ ...personaje, objetivoNivel: objetivo }, config, count90)
+  const maxLevel = Math.min(dataStore.getStrategicParam('nivelMaximo', 90), MAX_LEVEL)
+  const ignoreDone = dataStore.getStrategicParam('ignoreDone', 0) === 1
+  const objetivo = getObjetivo(personaje, maxLevel)
+  const calc = calculateForCharacter({ ...personaje, objetivoNivel: objetivo }, config, count90, ignoreDone)
   const reasonGroups: ReasonGroup[] = []
 
   if (calc.done) {
     ensureGroup(reasonGroups, 'Objetivo').entries.push(`Nivel ${objetivo} alcanzado — ya no suma por leveling`)
   }
 
-  const pendingRoster = roster.filter(p => p.planeado_usar && p.nivel < 90)
+  const pendingRoster = roster.filter(p => p.planeado_usar && p.nivel < objetivo)
   const remainingCount = pendingRoster.length
 
   const beneficiaries8089 = roster.filter(
-    p => p.planeado_usar && p.nivel >= 80 && p.nivel < 90 && p.nombre !== personaje.nombre,
+    p => p.planeado_usar && p.nivel >= 80 && p.nivel < maxLevel && p.nombre !== personaje.nombre,
   ).length
 
   let warbandImpact = 0
-  if (!calc.done && personaje.nivel < 90) {
+  if (!calc.done && personaje.nivel < maxLevel) {
     const buffIncrease = 5
     warbandImpact = beneficiaries8089 * buffIncrease
     if (warbandImpact > 0) {
@@ -156,7 +159,7 @@ export function calculateStrategicValue(
   const closenessToObjective = calc.done ? 0 : (dungeonsTo90 > 0 ? Math.max(0, 1 - dungeonsTo90 / 200) : 1)
 
   let futureXpIncrease = 0
-  if (!calc.done && personaje.nivel < 90 && beneficiaries8089 > 0) {
+  if (!calc.done && personaje.nivel < maxLevel && beneficiaries8089 > 0) {
     const currentBuff = Math.min(count90 * 5, 25)
     const futureBuff = Math.min((count90 + 1) * 5, 25)
     const buffDelta = futureBuff - currentBuff
@@ -164,10 +167,10 @@ export function calculateStrategicValue(
       let totalFutureTimeSaved = 0
       for (const other of pendingRoster) {
         if (other.nombre === personaje.nombre) continue
-        if (other.nivel >= 80 && other.nivel < 90) {
+        if (other.nivel >= 80 && other.nivel < maxLevel) {
           const oldXpPerDungeon = getEffectiveXpPerDungeon(config, other.nivel, count90, other.timewaysPct ?? 0)
           const newXpPerDungeon = oldXpPerDungeon * (1 + buffDelta / 100)
-          const xpRem = getXpRemaining(other.nivel, 90)
+          const xpRem = getXpRemaining(other.nivel, objetivo)
           const oldDungeons = Math.ceil(xpRem / oldXpPerDungeon)
           const newDungeons = Math.ceil(xpRem / newXpPerDungeon)
           const savedDungeons = oldDungeons - newDungeons
@@ -189,17 +192,17 @@ export function calculateStrategicValue(
   }
 
   if (!calc.done) {
-    if (personaje.nivel >= 80 && personaje.nivel < 90) {
-      ensureGroup(reasonGroups, 'Impacto Warband').entries.push(`Nivel ${personaje.nivel}: cercano a 90, barato para desbloquear Warband Mentor 80-90`)
-    } else if (personaje.nivel < 80 && objetivo >= 90) {
+    if (personaje.nivel >= 80 && personaje.nivel < maxLevel) {
+      ensureGroup(reasonGroups, 'Impacto Warband').entries.push(`Nivel ${personaje.nivel}: cercano al máximo, barato para desbloquear Warband Mentor`)
+    } else if (personaje.nivel < 80 && objetivo >= maxLevel) {
       ensureGroup(reasonGroups, 'Impacto Warband').entries.push(`Objetivo ${objetivo}: al completarlo, desbloquea +5% Warband Mentor para toda la cuenta`)
     } else if (dungeonsTo90 <= 20) {
       ensureGroup(reasonGroups, 'Impacto Warband').entries.push(`Solo ${dungeonsTo90} dungeons para llegar a ${objetivo} (victoria rápida)`)
     }
   }
 
-  const bonusSub90 = !calc.done && personaje.nivel < 90 ? 1 : 0
-  const bonus8089 = !calc.done && (personaje.nivel >= 80 && personaje.nivel < 90) ? 1 : 0
+  const bonusSub90 = !calc.done && personaje.nivel < objetivo ? 1 : 0
+  const bonus8089 = !calc.done && (personaje.nivel >= 80 && personaje.nivel < maxLevel && objetivo > 80) ? 1 : 0
 
   const classValueGeneral = getClassValue(personaje.clase, 'general')
   const raceValueGeneral = getRaceValue(personaje.raza, 'general')

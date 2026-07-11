@@ -15,7 +15,8 @@ export function simulateRoster(
   eventBus = new TypedEventBus(),
   hooks: SimulationHooks = defaultHooks,
 ): RosterSimulationResult {
-  let count90 = roster.filter(c => c.nivel >= gameModel.getMaxLevel()).length
+  const maxLevel = Math.min(scenario.maxLevel, gameModel.getMaxLevel())
+  let count90 = roster.filter(c => c.nivel >= maxLevel).length
   const results: CharacterResult[] = []
   let totalTime = 0
 
@@ -30,7 +31,7 @@ export function simulateRoster(
     results.push({ nombre: char.nombre, result })
     totalTime += result.metrics.totalTime
 
-    if (char.nivel < gameModel.getMaxLevel() && result.finalState.level >= gameModel.getMaxLevel()) {
+    if (char.nivel < maxLevel && result.finalState.level >= maxLevel) {
       count90++
     }
   }
@@ -46,7 +47,8 @@ export function simulateRosterWithContext(
   eventBus = new TypedEventBus(),
   hooks: SimulationHooks = defaultHooks,
 ): RosterSimulationResult {
-  let count90 = roster.filter(c => c.nivel >= gameModel.getMaxLevel()).length
+  const maxLevel = Math.min(baseContext.scenario.maxLevel, gameModel.getMaxLevel())
+  let count90 = roster.filter(c => c.nivel >= maxLevel).length
   const results: CharacterResult[] = []
   let totalTime = 0
 
@@ -66,7 +68,7 @@ export function simulateRosterWithContext(
     results.push({ nombre: char.nombre, result })
     totalTime += result.metrics.totalTime
 
-    if (char.nivel < gameModel.getMaxLevel() && result.finalState.level >= gameModel.getMaxLevel()) {
+    if (char.nivel < maxLevel && result.finalState.level >= maxLevel) {
       count90++
     }
   }

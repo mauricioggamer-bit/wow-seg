@@ -10,6 +10,7 @@
   import { computeFutureTimeSaved } from '../optimization/future-time-saved'
   import type { RosterState } from '../optimization/roster-state'
   import { WoWRetailModel, simulateRoster } from '../simulation'
+  import { MAX_LEVEL } from '../constants/experience'
   import type { CharacterSnapshot, SimulationScenario } from '../simulation'
   import { optimizeStrategyMultiStart } from '../optimization/strategy-optimizer'
   import type { MultiStartResult } from '../optimization/strategy-optimizer'
@@ -62,12 +63,17 @@
     }))
   )
 
+  let nivelMaximo = $derived(Math.min(dataStore.getStrategicParam('nivelMaximo', 90) || MAX_LEVEL, MAX_LEVEL))
+  let ignoreDone = $derived(dataStore.getStrategicParam('ignoreDone', 0) === 1)
+
   let scenario = $derived<SimulationScenario>({
     expansion: 'retail',
     version: '11.0.2',
     activeEvent: null,
     dungeonDuration: config.duracionDungeon,
     globalBuffs: [],
+    maxLevel: nivelMaximo,
+    ignoreDone,
   })
 
   // Quick sync fallback for the main table order (before async optimization finishes)

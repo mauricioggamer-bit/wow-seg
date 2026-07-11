@@ -85,6 +85,7 @@ export interface StrategicComponentInfo {
 
 export const STRATEGIC_PARAMS = [
   { key: 'nivelMaximo', label: 'Nivel máximo', default: 90, description: 'Nivel máximo actual del juego (TWW: 80, TWW S2: 90). Afecta el cálculo de proximidad al nivel máximo.' },
+  { key: 'ignoreDone', label: 'Ignorar objetivo alcanzado', default: 0, description: '1 para seguir sumando proximity/closeness aunque el personaje ya alcanzó el nivel objetivo.' },
 ]
 
 export const STRATEGIC_COMPONENTS: StrategicComponentInfo[] = [

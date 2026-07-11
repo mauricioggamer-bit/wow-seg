@@ -10,6 +10,8 @@ const defaultScenario: SimulationScenario = {
   activeEvent: null,
   dungeonDuration: 18,
   globalBuffs: [],
+  maxLevel: 90,
+  ignoreDone: false,
 }
 
 export function getDungeonXpAtLevel(

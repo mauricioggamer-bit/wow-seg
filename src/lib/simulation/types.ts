@@ -21,6 +21,8 @@ export interface SimulationScenario {
   activeEvent: string | null
   dungeonDuration: number
   globalBuffs: GlobalBuff[]
+  maxLevel: number
+  ignoreDone?: boolean
 }
 
 export interface SimulationContext {

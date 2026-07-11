@@ -32,10 +32,13 @@
   import type { TipoContenido, DungeonDifficulty, RaidDifficulty } from './lib/constants/wowContent'
   import { fade } from 'svelte/transition'
   import type { Tarea, ProfesionSlot, ViewType, ExportSection } from './lib/types'
+  import { MAX_LEVEL } from './lib/constants/experience'
 
   let charOpts = $derived($personajesStore.map(p => p.nombre))
 
   let hasSidebar = $derived($uiStore.currentView === 'warband')
+
+  let nivelMaximo = $derived(Math.min(dataStore.getStrategicParam('nivelMaximo', 90) || MAX_LEVEL, MAX_LEVEL))
 
   let strategicIndexes = $derived($dataStore.strategicConfig?.indexes ?? [])
   let strategicCategories = $derived(
@@ -883,7 +886,7 @@
               </div>
               <div class="form-group" style="margin:0">
                 <label style="font-size:0.7rem">Nivel recomendado</label>
-                <input type="number" min="1" max="90" value={editTaskNivelRecomendado ?? ''}
+                <input type="number" min="1" max={nivelMaximo} value={editTaskNivelRecomendado ?? ''}
                   oninput={(e) => editTaskNivelRecomendado = e.currentTarget.value === '' ? null : parseInt(e.currentTarget.value)} />
               </div>
             </div>
@@ -897,7 +900,7 @@
               </div>
               <div class="form-group" style="margin:0">
                 <label style="font-size:0.7rem">Nivel recomendado</label>
-                <input type="number" min="1" max="90" value={editTaskNivelRecomendado ?? ''}
+                <input type="number" min="1" max={nivelMaximo} value={editTaskNivelRecomendado ?? ''}
                   oninput={(e) => editTaskNivelRecomendado = e.currentTarget.value === '' ? null : parseInt(e.currentTarget.value)} />
               </div>
               {#if editTaskTipoContenido !== 'worldboss'}
@@ -1001,7 +1004,7 @@
               </div>
               <div class="form-group" style="margin:0">
                 <label style="font-size:0.7rem">Nivel recomendado</label>
-                <input type="number" min="1" max="90" value={newTaskNivelRecomendado ?? ''}
+                <input type="number" min="1" max={nivelMaximo} value={newTaskNivelRecomendado ?? ''}
                   oninput={(e) => newTaskNivelRecomendado = e.currentTarget.value === '' ? null : parseInt(e.currentTarget.value)} />
               </div>
             </div>
@@ -1015,7 +1018,7 @@
               </div>
               <div class="form-group" style="margin:0">
                 <label style="font-size:0.7rem">Nivel recomendado</label>
-                <input type="number" min="1" max="90" value={newTaskNivelRecomendado ?? ''}
+                <input type="number" min="1" max={nivelMaximo} value={newTaskNivelRecomendado ?? ''}
                   oninput={(e) => newTaskNivelRecomendado = e.currentTarget.value === '' ? null : parseInt(e.currentTarget.value)} />
               </div>
               {#if newTaskTipoContenido !== 'worldboss'}

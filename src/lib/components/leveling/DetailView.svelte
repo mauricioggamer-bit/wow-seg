@@ -6,6 +6,8 @@
   import { WoWRetailModel, simulateCharacter, createContext, createState, buildBreakdown } from '../../simulation'
   import type { SimulationResult } from '../../simulation'
   import StrategicValueDisplay from './StrategicValueDisplay.svelte'
+  import { MAX_LEVEL } from '../../constants/experience'
+  import { dataStore } from '../../stores/data'
 
   const gameModel = new WoWRetailModel()
 
@@ -23,7 +25,9 @@
     onEditChar?: (name: string) => void
   } = $props()
 
-  let objetivo = $derived(getObjetivoFromTareas(personaje.tareas))
+  let nivelMaximo = $derived(Math.min(dataStore.getStrategicParam('nivelMaximo', 90) || MAX_LEVEL, MAX_LEVEL))
+  let ignoreDone = $derived(dataStore.getStrategicParam('ignoreDone', 0) === 1)
+  let objetivo = $derived(getObjetivoFromTareas(personaje.tareas, nivelMaximo))
 
   let simChar = $derived({
     nombre: personaje.nombre,
@@ -40,6 +44,8 @@
     activeEvent: null as string | null,
     dungeonDuration: config.duracionDungeon,
     globalBuffs: [] as { id: string; name: string; pct: number }[],
+    maxLevel: nivelMaximo,
+    ignoreDone,
   })
 
   let simContext = $derived(createContext(simChar, simScenario, config, count90))

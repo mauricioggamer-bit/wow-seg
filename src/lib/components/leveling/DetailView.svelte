@@ -2,6 +2,7 @@
   import type { Personaje, LevelingConfig } from '../../types'
   import { formatNumber, formatHours } from '../../format'
   import { calculateStrategicValue } from '../../leveling/strategicValue'
+  import { getObjetivoFromTareas } from '../../leveling/objetivo'
   import { WoWRetailModel, simulateCharacter, createContext, createState, buildBreakdown } from '../../simulation'
   import type { SimulationResult } from '../../simulation'
   import StrategicValueDisplay from './StrategicValueDisplay.svelte'
@@ -22,12 +23,14 @@
     onEditChar?: (name: string) => void
   } = $props()
 
+  let objetivo = $derived(getObjetivoFromTareas(personaje.tareas))
+
   let simChar = $derived({
     nombre: personaje.nombre,
     clase: personaje.clase,
     nivel: personaje.nivel,
     xp: 0,
-    objetivo: 90,
+    objetivo,
     timewaysPct: personaje.timewaysPct ?? 0,
   })
 
@@ -44,14 +47,6 @@
   let simResult = $derived(simulateCharacter(simContext, simState, gameModel))
   let strategic = $derived(calculateStrategicValue(personaje, config, roster, count90))
 
-  function getTo80(result: SimulationResult) {
-    if (result.context.character.nivel >= 80) return { dungeons: 0, time: 0 }
-    for (const step of result.history) {
-      if (step.levelAfter >= 80) return { dungeons: step.cumulativeDungeons, time: step.cumulativeTime }
-    }
-    return { dungeons: result.metrics.totalDungeons, time: result.metrics.totalTime }
-  }
-
   function getRangeValues(result: SimulationResult, target: number, nivel: number) {
     if (nivel >= target) return { xp: 0, dungs: 0, time: 0, done: true }
     for (const step of result.history) {
@@ -61,21 +56,17 @@
   }
 
   let dual = $derived({
-    done80: simResult.context.character.nivel >= 80,
-    done90: simResult.context.character.nivel >= 90,
-    dungeonsTo80: getTo80(simResult).dungeons,
-    timeTo80: getTo80(simResult).time,
-    dungeonsTo90: simResult.metrics.totalDungeons,
-    timeTo90: simResult.metrics.totalTime,
+    doneObjetivo: simResult.context.character.nivel >= objetivo,
+    dungeonsToObjetivo: simResult.metrics.totalDungeons,
+    timeToObjetivo: simResult.metrics.totalTime,
     xpPerHour: simResult.metrics.xpPerHour,
   })
 
-  let breakdown80 = $derived(buildBreakdown(simResult, gameModel, 80))
-  let breakdown90 = $derived(buildBreakdown(simResult, gameModel, 90))
+  let breakdownObj = $derived(buildBreakdown(simResult, gameModel, objetivo))
 
   let ranges = $derived(
-    [60, 70, 80, 90]
-      .filter(t => t > personaje.nivel)
+    [...new Set([60, 70, 80, objetivo])]
+      .filter(t => t > personaje.nivel && t <= objetivo)
       .map(t => ({ target: t, ...getRangeValues(simResult, t, personaje.nivel) }))
   )
 </script>
@@ -87,8 +78,8 @@
       <button class="lvl-edit-btn" onclick={() => onEditChar(personaje.nombre)} title="Editar personaje">✏️ Editar</button>
     {/if}
   </div>
-  {#if dual.done90}
-    <p class="lvl-done-msg">Nivel 90 alcanzado ✓</p>
+  {#if dual.doneObjetivo}
+    <p class="lvl-done-msg">Nivel {objetivo} alcanzado ✓</p>
   {:else}
     <div class="lvl-range-summary">
       <h4 class="lvl-bd-title">Resumen de objetivos</h4>
@@ -104,78 +95,39 @@
       </div>
     </div>
 
-    <div class="lvl-breakdown-sections">
-      {#if !dual.done80}
-        <div class="lvl-bd-section">
-          <h4 class="lvl-bd-title">Hasta nivel 80</h4>
-          <table class="lvl-breakdown-table">
-            <thead>
-              <tr>
-                <th>Nivel</th>
-                <th>XP</th>
-                <th>XP/dung</th>
-                <th>Dungs</th>
-                <th>∑Dungs</th>
-                <th>∑Tiempo</th>
-              </tr>
-            </thead>
-            <tbody>
-              {#each breakdown80 as entry (entry.level)}
-                <tr>
-                  <td class="lvl-bd-level">{entry.level}</td>
-                  <td class="lvl-bd-num">{formatNumber(entry.xpNeeded)}</td>
-                  <td class="lvl-bd-num">{formatNumber(entry.xpPerDungeon)}</td>
-                  <td class="lvl-bd-num">{entry.dungeons}</td>
-                  <td class="lvl-bd-num">{entry.cumulativeDungeons}</td>
-                  <td class="lvl-bd-num">{formatHours(entry.cumulativeTime)}</td>
-                </tr>
-              {/each}
-            </tbody>
-            <tfoot>
-              <tr>
-                <td colspan="3" class="lvl-bd-total">Total →80</td>
-                <td class="lvl-bd-num">{dual.dungeonsTo80}</td>
-                <td class="lvl-bd-num">{formatHours(dual.timeTo80)}</td>
-              </tr>
-            </tfoot>
-          </table>
-        </div>
-      {/if}
-
-      <div class="lvl-bd-section">
-        <h4 class="lvl-bd-title">Hasta nivel 90 {#if dual.done80}(desde 80){/if}</h4>
-        <table class="lvl-breakdown-table">
-          <thead>
+    <div class="lvl-bd-section">
+      <h4 class="lvl-bd-title">Hasta nivel {objetivo}</h4>
+      <table class="lvl-breakdown-table">
+        <thead>
+          <tr>
+            <th>Nivel</th>
+            <th>XP</th>
+            <th>XP/dung</th>
+            <th>Dungs</th>
+            <th>∑Dungs</th>
+            <th>∑Tiempo</th>
+          </tr>
+        </thead>
+        <tbody>
+          {#each breakdownObj as entry (entry.level)}
             <tr>
-              <th>Nivel</th>
-              <th>XP</th>
-              <th>XP/dung</th>
-              <th>Dungs</th>
-              <th>∑Dungs</th>
-              <th>∑Tiempo</th>
+              <td class="lvl-bd-level">{entry.level}</td>
+              <td class="lvl-bd-num">{formatNumber(entry.xpNeeded)}</td>
+              <td class="lvl-bd-num">{formatNumber(entry.xpPerDungeon)}</td>
+              <td class="lvl-bd-num">{entry.dungeons}</td>
+              <td class="lvl-bd-num">{entry.cumulativeDungeons}</td>
+              <td class="lvl-bd-num">{formatHours(entry.cumulativeTime)}</td>
             </tr>
-          </thead>
-          <tbody>
-            {#each breakdown90 as entry (entry.level)}
-              <tr class:at80={entry.level === 80}>
-                <td class="lvl-bd-level">{entry.level}</td>
-                <td class="lvl-bd-num">{formatNumber(entry.xpNeeded)}</td>
-                <td class="lvl-bd-num">{formatNumber(entry.xpPerDungeon)}</td>
-                <td class="lvl-bd-num">{entry.dungeons}</td>
-                <td class="lvl-bd-num">{entry.cumulativeDungeons}</td>
-                <td class="lvl-bd-num">{formatHours(entry.cumulativeTime)}</td>
-              </tr>
-            {/each}
-          </tbody>
-          <tfoot>
-            <tr>
-              <td colspan="3" class="lvl-bd-total">Total →90</td>
-              <td class="lvl-bd-num">{dual.dungeonsTo90}</td>
-              <td class="lvl-bd-num">{formatHours(dual.timeTo90)}</td>
-            </tr>
-          </tfoot>
-        </table>
-      </div>
+          {/each}
+        </tbody>
+        <tfoot>
+          <tr>
+            <td colspan="3" class="lvl-bd-total">Total →{objetivo}</td>
+            <td class="lvl-bd-num">{dual.dungeonsToObjetivo}</td>
+            <td class="lvl-bd-num">{formatHours(dual.timeToObjetivo)}</td>
+          </tr>
+        </tfoot>
+      </table>
     </div>
 
   {/if}
@@ -237,11 +189,6 @@
     font-size: 0.45rem;
     color: var(--text-muted);
   }
-  .lvl-breakdown-sections {
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
-  }
   .lvl-bd-section {
     border: 1px solid var(--border-subtle);
     border-radius: var(--r-sm);
@@ -277,12 +224,6 @@
     border-top: 1px solid var(--border-subtle);
     font-weight: 600;
     color: var(--gold-light, #d4af37);
-  }
-  .lvl-breakdown-table tr.at80 {
-    border-top: 2px solid var(--gold);
-  }
-  .lvl-breakdown-table tr.at80 td {
-    padding-top: 4px;
   }
   .lvl-bd-level {
     color: var(--gold);

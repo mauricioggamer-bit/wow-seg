@@ -3,6 +3,14 @@ import { calculateForCharacter, getEffectiveXpPerDungeon, getXpRemaining } from 
 import { STAR_THRESHOLDS, RACE_PROFESSION_BONUS } from '../constants'
 import { dataStore } from '../stores/data'
 
+function getObjetivo(p: Personaje): number {
+  if (p.tareas && p.tareas.length > 0) {
+    const maxNivel = Math.max(0, ...p.tareas.map(t => t.nivelRecomendado ?? 0))
+    if (maxNivel > 0) return maxNivel
+  }
+  return p.objetivoNivel ?? 90
+}
+
 function getClassValue(className: string, indexId: string): number {
   return dataStore.getStrategicValue('class', className, indexId) ?? 0
 }
@@ -27,11 +35,12 @@ export function calculateStrategicValue(
   count90: number,
   taskContext?: string,
 ): StrategicValueResult {
-  const calc = calculateForCharacter(personaje, config, count90)
+  const objetivo = getObjetivo(personaje)
+  const calc = calculateForCharacter({ ...personaje, objetivoNivel: objetivo }, config, count90)
   const reasons: string[] = []
 
   if (calc.done) {
-    reasons.push(`Objetivo de nivel alcanzado (${personaje.objetivoNivel ?? 90}) — ya no suma por leveling`)
+    reasons.push(`Objetivo de nivel alcanzado (${objetivo}) — ya no suma por leveling`)
   }
 
   const pendingRoster = roster.filter(p => p.planeado_usar && p.nivel < 90)
@@ -98,8 +107,7 @@ export function calculateStrategicValue(
     }
   }
 
-  const nivelMaximo = dataStore.getStrategicParam('nivelMaximo', 90)
-  const proximityToMaxLevel = calc.done ? 0 : (personaje.nivel >= nivelMaximo ? 1 : Math.max(0, (personaje.nivel - 10) / (nivelMaximo - 10)))
+  const proximityToMaxLevel = calc.done ? 0 : (personaje.nivel >= objetivo ? 1 : Math.max(0, (personaje.nivel - 10) / (objetivo - 10)))
   const dungeonsTo90 = calc.dungeons
   const closenessToObjective = calc.done ? 0 : (dungeonsTo90 > 0 ? Math.max(0, 1 - dungeonsTo90 / 200) : 1)
 
@@ -139,10 +147,10 @@ export function calculateStrategicValue(
   if (!calc.done) {
     if (personaje.nivel >= 80 && personaje.nivel < 90) {
       reasons.push(`Nivel ${personaje.nivel}: cercano a 90, barato para desbloquear Warband Mentor 80-90`)
-    } else if (personaje.nivel < 80) {
-      reasons.push(`Objetivo 90: al completarlo, desbloquea +5% Warband Mentor para toda la cuenta`)
+    } else if (personaje.nivel < 80 && objetivo >= 90) {
+      reasons.push(`Objetivo ${objetivo}: al completarlo, desbloquea +5% Warband Mentor para toda la cuenta`)
     } else if (dungeonsTo90 <= 20) {
-      reasons.push(`Solo ${dungeonsTo90} dungeons para llegar a 90 (victoria rápida)`)
+      reasons.push(`Solo ${dungeonsTo90} dungeons para llegar a ${objetivo} (victoria rápida)`)
     }
   }
 
@@ -206,7 +214,7 @@ export function calculateStrategicValue(
   }
 
   if (reasons.length === 0) {
-    reasons.push(`${dungeonsTo90} dungeons restantes para llegar a 90`)
+    reasons.push(`${dungeonsTo90} dungeons restantes para llegar a ${objetivo}`)
   }
 
   const intrinsicScore =

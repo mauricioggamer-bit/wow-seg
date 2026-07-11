@@ -70,27 +70,35 @@
     </div>
 
     {#if strategic.reasonGroups.length > 0}
-      {#each strategic.reasonGroups as group (group.subtitle)}
-        {#if group.subtitle}
-          <h5 class="svd-group-title">{group.subtitle}</h5>
-        {/if}
-        {#if group.subGroups}
-          {#each group.subGroups as sub (sub.subtitle)}
-            <h6 class="svd-sub-title">{sub.subtitle}</h6>
-            <ul class="svd-reasons">
-              {#each sub.entries as entry}
-                <li>{entry}</li>
+      <table class="svd-reasons-table">
+        <tbody>
+          {#each strategic.reasonGroups as group (group.subtitle)}
+            {#if group.subtitle}
+              <tr class="svd-reason-group-row">
+                <td class="svd-group-title">{group.subtitle}</td>
+              </tr>
+            {/if}
+            {#if group.subGroups}
+              {#each group.subGroups as sub (sub.subtitle)}
+                <tr class="svd-reason-sub-row">
+                  <td class="svd-sub-title">{sub.subtitle}</td>
+                </tr>
+                {#each sub.entries as entry}
+                  <tr class="svd-reason-entry-row">
+                    <td class="svd-reason-entry">▸ {entry}</td>
+                  </tr>
+                {/each}
               {/each}
-            </ul>
+            {:else}
+              {#each group.entries as entry}
+                <tr class="svd-reason-entry-row">
+                  <td class="svd-reason-entry">▸ {entry}</td>
+                </tr>
+              {/each}
+            {/if}
           {/each}
-        {:else}
-          <ul class="svd-reasons">
-            {#each group.entries as entry}
-              <li>{entry}</li>
-            {/each}
-          </ul>
-        {/if}
-      {/each}
+        </tbody>
+      </table>
     {/if}
 
 
@@ -214,35 +222,33 @@
     color: var(--text-primary);
     line-height: 10px;
   }
+  .svd-reasons-table {
+    width: 100%;
+    border-collapse: collapse;
+  }
   .svd-group-title {
     font-size: 0.55rem;
     color: var(--gold);
     font-family: var(--font-heading);
-    margin: 4px 0 2px 0;
+    padding: 4px 0 2px 0;
+    border: none;
   }
   .svd-sub-title {
     font-size: 0.5rem;
     color: var(--gold-light, #d4af37);
     font-family: var(--font-heading);
-    margin: 3px 0 1px 4px;
+    padding: 3px 0 1px 4px;
+    border: none;
   }
-  .svd-reasons {
-    list-style: none;
-    padding: 0;
-    margin: 0 0 4px 0;
-  }
-  .svd-reasons li {
+  .svd-reason-entry-row td {
     font-size: 0.5rem;
     color: var(--text-secondary);
     padding: 1px 0;
     padding-left: 10px;
-    position: relative;
+    border: none;
   }
-  .svd-reasons li::before {
-    content: '▸';
-    position: absolute;
-    left: 0;
-    color: var(--gold);
+  .svd-reason-entry {
+    color: var(--text-secondary);
   }
   .svd-table {
     width: 100%;

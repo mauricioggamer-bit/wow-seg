@@ -18,25 +18,21 @@ function createPreferencesStore() {
 
   const { subscribe, update } = store
 
-  const setTheme = (theme: ThemeType) => {
-    localStorage.setItem('wowseg_theme', theme)
-    update(s => ({ ...s, theme }))
-    document.documentElement.setAttribute('data-theme', theme)
-  }
-
-  const setFontSize = (size: FontSizeType) => {
-    localStorage.setItem('wowseg_fontsize', size)
-    update(s => ({ ...s, fontSize: size }))
-    document.documentElement.setAttribute('data-size', size)
-  }
-
   return {
     subscribe,
-    setTheme,
-    setFontSize,
+    setTheme(theme: ThemeType) {
+      localStorage.setItem('wowseg_theme', theme)
+      update(s => ({ ...s, theme }))
+      document.documentElement.setAttribute('data-theme', theme)
+    },
+    setFontSize(size: FontSizeType) {
+      localStorage.setItem('wowseg_fontsize', size)
+      update(s => ({ ...s, fontSize: size }))
+      document.documentElement.setAttribute('data-size', size)
+    },
     toggleTheme() {
       const current = get(store)
-      setTheme(current.theme === 'dark' ? 'light' : 'dark')
+      this.setTheme(current.theme === 'dark' ? 'light' : 'dark')
     },
     init() {
       const prefs = get(store)

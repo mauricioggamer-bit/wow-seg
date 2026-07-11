@@ -1,6 +1,7 @@
 <script lang="ts">
   import type { Personaje, LevelingConfig, LevelingResult, OptimizationPlan, TimeRecommendation } from '../../types'
   import { formatHours } from '../../format'
+  import { getObjetivoFromTareas } from '../../leveling/objetivo'
   import TimeChart from './TimeChart.svelte'
   import DungeonChart from './DungeonChart.svelte'
   import XpPerHourChart from './XpPerHourChart.svelte'
@@ -30,8 +31,8 @@
   let totalTime = $derived(results.reduce((s, r) => s + r.timeTo90, 0))
   let totalDungeons = $derived(results.reduce((s, r) => s + r.dungeonsTo90, 0))
   let totalXp = $derived(results.reduce((s, r) => s + r.xpTo90, 0))
-  let pendingCount = $derived(personajes.filter(p => p.nivel < 90).length)
-  let totalLevelsToGain = $derived(results.reduce((s, r) => s + Math.max(0, 90 - r.nivel), 0))
+  let pendingCount = $derived(personajes.filter(p => p.nivel < getObjetivoFromTareas(p.tareas)).length)
+  let totalLevelsToGain = $derived(results.reduce((s, r) => s + Math.max(0, r.objetivo - r.nivel), 0))
   let avgTimePerLevel = $derived(totalTime > 0 && totalLevelsToGain > 0 ? totalTime / totalLevelsToGain : 0)
 
   let hoursSaved = $derived(plan.timeSaved)
@@ -49,7 +50,7 @@
   let simMatchesActual = $derived.by(() => Math.abs(hoursPerWeek - patronTotal) < 0.01)
 
   // --- Sim stats from plan ---
-  let reached90Count = $derived(plan.entries.filter(e => e.reason === 'Sube a 90').length)
+  let reachedCount = $derived(plan.entries.filter(e => e.dungeonsToObjective > 0 && e.reason.startsWith('Sube a ')).length)
   let charactersWithTime = $derived(plan.entries.filter(e => e.dungeonsTo90 > 0).length)
 
   let weeksNeeded = $derived(plan.optimizedTime > 0 ? Math.ceil(plan.optimizedTime / hoursPerWeek) : 0)
@@ -60,10 +61,10 @@
   let progressSteps = $derived(
     plan.entries.map(e => ({
       nombre: e.nombre,
-      nivelFinal: e.reason === 'Sube a 90' ? 90 : e.nivel,
+      nivelFinal: e.dungeonsToObjective > 0 ? e.objetivoNivel : e.nivel,
       dungeonsUsed: e.dungeonsTo90,
-      completed: e.reason === 'Sube a 90',
-      reached90: e.reason === 'Sube a 90',
+      completed: e.dungeonsToObjective > 0,
+      reached90: e.objetivoNivel >= 90 && e.dungeonsToObjective > 0,
     }))
   )
 
@@ -73,22 +74,23 @@
   function buildRecs(plan: OptimizationPlan, totalSemanal: number): TimeRecommendation[] {
     const result: TimeRecommendation[] = []
     for (const e of plan.entries) {
-      if (e.reason === 'Sube a 90') {
+      if (e.dungeonsToObjective > 0) {
+        const lvl = e.objetivoNivel
         if (e.timeSavedForOthers > 0) {
           result.push({
-            option: `Subir ${e.nombre} a 90`,
+            option: `Subir ${e.nombre} a ${lvl}`,
             description: `Ahorra ${formatHours(e.timeSavedForOthers)} al resto del roster (ROI neto: ${e.roi > 0 ? '+' : ''}${formatHours(e.roi)})`,
             timeUsed: e.timeTo90,
             benefit: e.timeSavedForOthers,
-            charactersInvolved: [{ nombre: e.nombre, nivelFinal: 90, dungeons: e.dungeonsTo90 }],
+            charactersInvolved: [{ nombre: e.nombre, nivelFinal: lvl, dungeons: e.dungeonsTo90 }],
           })
         } else {
           result.push({
-            option: `Subir ${e.nombre} a 90`,
+            option: `Subir ${e.nombre} a ${lvl}`,
             description: `Desbloquea Warband Mentor 80-90 +${e.buffAfter}% para toda la cuenta`,
             timeUsed: e.timeTo90,
             benefit: e.timeSavedForOthers,
-            charactersInvolved: [{ nombre: e.nombre, nivelFinal: 90, dungeons: e.dungeonsTo90 }],
+            charactersInvolved: [{ nombre: e.nombre, nivelFinal: lvl, dungeons: e.dungeonsTo90 }],
           })
         }
       }
@@ -97,8 +99,8 @@
       result.push({
         option: 'Tiempo insuficiente',
         description: simMatchesActual
-          ? `Con tu ritmo actual (${totalSemanal}h/sem), ningún personaje alcanza nivel 90 antes del fin del evento. Ajusta las horas en ConfigPanel.`
-          : `Con ${hoursPerWeek}h/sem ninguno llega a 90. Tu configuración real es ${totalSemanal}h/sem.`,
+          ? `Con tu ritmo actual (${totalSemanal}h/sem), ningún personaje alcanza su nivel objetivo antes del fin del evento. Ajusta las horas en ConfigPanel.`
+          : `Con ${hoursPerWeek}h/sem ninguno llega a su objetivo. Tu configuración real es ${totalSemanal}h/sem.`,
         timeUsed: 0,
         benefit: 0,
         charactersInvolved: [],
@@ -142,7 +144,7 @@
       </div>
       <div class="lvl-dash-card">
         <div class="lvl-dash-card-title">Personajes completados</div>
-        <CompletedChart completed={reached90Count} totalPending={pendingCount} />
+        <CompletedChart completed={reachedCount} totalPending={pendingCount} />
       </div>
     </div>
   {:else}
@@ -176,13 +178,13 @@
       </div>
       <div class="lvl-whatif-stats">
         <div class="lvl-wf-stat"><span>Semanas para completar</span><strong>{weeksNeeded}</strong></div>
-        <div class="lvl-wf-stat"><span>Completados</span><strong>{reached90Count}/{pendingCount}</strong></div>
+        <div class="lvl-wf-stat"><span>Completados</span><strong>{reachedCount}/{pendingCount}</strong></div>
         <div class="lvl-wf-stat"><span>Dungeons</span><strong>{totalDungeonsUsed}</strong></div>
         <div class="lvl-wf-stat"><span>Tiempo usado</span><strong>{formatHours(simTimeUsed)}</strong></div>
-        <div class="lvl-wf-stat"><span>Llegan a 90</span><strong>{reached90Count} pjs</strong></div>
+        <div class="lvl-wf-stat"><span>Llegan a 90</span><strong>{reachedCount} pjs</strong></div>
       </div>
 
-      {#if hoursSaved === 0 && reached90Count === 0}
+      {#if hoursSaved === 0 && reachedCount === 0}
         <div class="lvl-whatif-note-box">
           Con tu ritmo actual ({patronTotal}h/sem), ningún personaje alcanza nivel 90 antes del fin del evento (Turbulent Timeways V). Para mejorar resultados, aumentá las horas semanales en ConfigPanel o priorizá personajes de nivel alto.
         </div>

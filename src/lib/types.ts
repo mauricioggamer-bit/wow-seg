@@ -20,8 +20,6 @@ export interface Tarea {
   tags?: string[]
   orden?: number
   puntos?: number
-  profesion?: string
-  cooldownProfesion?: string
 }
 
 export interface ProfesionSlot {
@@ -153,6 +151,7 @@ export interface LevelingResult {
   nombre: string
   clase: string
   nivel: number
+  objetivo: number
   xpTo80: number
   dungeonsTo80: number
   timeTo80: number
@@ -162,6 +161,7 @@ export interface LevelingResult {
   xpPerHour: number
   done80: boolean
   done90: boolean
+  doneObjetivo: boolean
   roi: number
   strategicStars: number
   strategicText: string

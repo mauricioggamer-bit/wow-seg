@@ -1,5 +1,6 @@
 import type { Personaje, LevelingConfig, OptimizationEntry } from '../types'
 import { getWarbandMentor8090Pct } from '../leveling/calculator'
+import { getObjetivoFromTareas } from '../leveling/objetivo'
 import { tieneMainCrafter } from './professions'
 import { optimize } from '../leveling/optimizer'
 import { PROFESIONES } from '../constants/profesiones'
@@ -19,7 +20,7 @@ export function generateNaiveStrategies(
   roster: Personaje[],
   config?: LevelingConfig,
 ): Strategy[] {
-  const pending = roster.filter(p => p.planeado_usar && p.nivel < 90)
+  const pending = roster.filter(p => p.planeado_usar && p.nivel < getObjetivoFromTareas(p.tareas))
   if (pending.length === 0) return []
 
   const strategies: Strategy[] = []

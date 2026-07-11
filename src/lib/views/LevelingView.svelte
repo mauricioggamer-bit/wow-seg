@@ -6,6 +6,7 @@
   import { formatHours, formatNumber } from '../format'
   import { getWarbandMentor8090FromRoster } from '../leveling/calculator'
   import { calculateStrategicValue } from '../leveling/strategicValue'
+  import { getObjetivoFromTareas } from '../leveling/objetivo'
   import { computeFutureTimeSaved } from '../optimization/future-time-saved'
   import type { RosterState } from '../optimization/roster-state'
   import { WoWRetailModel, simulateRoster } from '../simulation'
@@ -56,7 +57,7 @@
       clase: p.clase,
       nivel: p.nivel,
       xp: 0,
-      objetivo: 90,
+      objetivo: getObjetivoFromTareas(p.tareas),
       timewaysPct: p.timewaysPct ?? 0,
     }))
   )
@@ -160,9 +161,10 @@
       return {
         entries: order.map((nombre, i) => {
           const p = roster.find(pp => pp.nombre === nombre)
+          const obj = p ? getObjetivoFromTareas(p.tareas) : 90
           return {
             nombre, clase: p?.clase ?? '', nivel: p?.nivel ?? 0,
-            objetivoNivel: 90, orden: i + 1,
+            objetivoNivel: obj, orden: i + 1,
             dungeonsTo90: 0, timeTo90: 0,
             dungeonsToObjective: 0, timeToObjective: 0,
             buffBefore: initialBuff, buffAfter: initialBuff,
@@ -189,23 +191,24 @@
 
     let count90SoFar = initialCount90
     const entries: OptimizationEntry[] = strategy.decisiones.map((d, i) => {
+      const objetivo = getObjetivoFromTareas(d.personaje.tareas)
       const buffBefore = Math.min(count90SoFar * 5, 25)
-      const reaches90 = a90Achieved.has(d.personaje.nombre)
+      const reachesObjetivo = a90Achieved.has(d.personaje.nombre)
       const rs: RosterState = {
         count90: count90SoFar, warbandMentorBuff: 0, horasConsumidas: 0,
         horasDisponiblesSemana: 0, fechaActual: new Date(), fechaLimiteEvento: new Date(), diasRestantesEvento: 0,
       }
-      const timeSavedForOthers = d.personaje.nivel < 90
+      const timeSavedForOthers = d.personaje.nivel < objetivo
         ? computeFutureTimeSaved(d.personaje, rs, roster.filter(p => p.planeado_usar), config)
         : 0
-      if (reaches90) count90SoFar++
+      if (reachesObjetivo && objetivo >= 90) count90SoFar++
       const buffAfter = Math.min(count90SoFar * 5, 25)
       const hours = charTime[d.personaje.nombre] ?? 0
       return {
         nombre: d.personaje.nombre,
         clase: d.personaje.clase,
         nivel: d.personaje.nivel,
-        objetivoNivel: 90,
+        objetivoNivel: objetivo,
         orden: i + 1,
         dungeonsTo90: Math.round(hours * 60 / config.duracionDungeon),
         timeTo90: hours,
@@ -215,7 +218,7 @@
         buffAfter,
         timeSavedForOthers,
         roi: timeSavedForOthers - hours,
-        reason: reaches90 ? 'Sube a 90' : `Nv${d.personaje.nivel}`,
+        reason: reachesObjetivo ? `Sube a ${objetivo}` : `Nv${d.personaje.nivel}`,
       }
     })
     return {
@@ -238,10 +241,12 @@
         const p = personajes.find(p => p.nombre === cr.nombre)!
         const sv = calculateStrategicValue(p, config, personajes, count90)
         const to80 = getTo80Values(r.context.character.nivel, r.history)
+        const objetivo = r.context.character.objetivo
         return {
           nombre: cr.nombre,
           clase: r.context.character.clase,
           nivel: r.context.character.nivel,
+          objetivo,
           xpTo80: to80.xp,
           dungeonsTo80: to80.dungeons,
           timeTo80: to80.time,
@@ -251,6 +256,7 @@
           xpPerHour: r.metrics.xpPerHour,
           done80: r.context.character.nivel >= 80,
           done90: r.context.character.nivel >= 90,
+          doneObjetivo: r.finalState.level >= objetivo,
           roi: roiMap.get(cr.nombre) ?? 0,
           strategicStars: sv.stars,
           strategicText: sv.reasons.join(' '),
@@ -259,8 +265,8 @@
         }
       })
       .sort((a, b) => {
-        if (a.done90 && !b.done90) return 1
-        if (!a.done90 && b.done90) return -1
+        if (a.doneObjetivo && !b.doneObjetivo) return 1
+        if (!a.doneObjetivo && b.doneObjetivo) return -1
         return a.dungeonsTo90 - b.dungeonsTo90
       })
   )

@@ -1,7 +1,7 @@
 <script lang="ts">
   import { personajesStore, dataStore } from '../stores/data'
   import { uiStore, currentWarband } from '../stores/ui'
-  import { clsClass, CLASS_MAP, PERS_CLASS_ICONS, PERS_CLASS_COLORS, EXPANSION_RECOMMENDED_LEVEL } from '../constants'
+  import { clsClass, CLASS_MAP, PERS_CLASS_ICONS, PERS_CLASS_COLORS } from '../constants'
   import VirtualList from '../components/VirtualList.svelte'
 
   let { openTaskEdit, openTaskNew }: {
@@ -12,8 +12,6 @@
   let filterInput = $state('')
   let filterText = $state('')
   let showAll = $state(false)
-  let showConfirmModal = $state(false)
-  let tasksToUpdate = $state<{ charName: string; taskId: string; expansion: string }[]>([])
 
   let debounceTimer: ReturnType<typeof setTimeout> | undefined
   $effect(() => {
@@ -38,33 +36,6 @@
     return [...tareas].sort((a, b) => (a.orden ?? 0) - (b.orden ?? 0))
   }
 
-  function checkMissingLevels() {
-    const missing: { charName: string; taskId: string; expansion: string }[] = []
-    for (const c of sorted) {
-      for (const t of c.tareas) {
-        const expId = t.expansion || t.contenidoExpansion
-        if (expId && !t.nivelRecomendado && EXPANSION_RECOMMENDED_LEVEL[expId]) {
-          missing.push({ charName: c.nombre, taskId: t.id, expansion: expId })
-        }
-      }
-    }
-    tasksToUpdate = missing
-    if (missing.length > 0) {
-      showConfirmModal = true
-    }
-  }
-
-  function updateRecommendedLevels() {
-    for (const { charName, taskId, expansion } of tasksToUpdate) {
-      const recommendedLevel = EXPANSION_RECOMMENDED_LEVEL[expansion]
-      if (recommendedLevel) {
-        dataStore.updateTarea(charName, taskId, { nivelRecomendado: recommendedLevel })
-      }
-    }
-    showConfirmModal = false
-    tasksToUpdate = []
-  }
-
   const CD_LABELS: Record<string, string> = { weekly: 'S', daily: 'D', none: 'F' }
   const CD_COLORS: Record<string, string> = { weekly: 'var(--gold-light)', daily: '#4fc3f7', none: '#888' }
 </script>
@@ -73,7 +44,6 @@
   <div class="tareas-header">
     <span class="tareas-title">✅ {activeWarband ? activeWarband : 'Todas'} ({sorted.length})</span>
     <label class="tareas-toggle"><input type="checkbox" bind:checked={showAll} /> Todas</label>
-    <button class="tareas-btn" onclick={checkMissingLevels} title="Actualizar niveles recomendados faltantes">🎯</button>
     <input class="tareas-search" type="text" placeholder="Filtrar personajes..." bind:value={filterInput} />
   </div>
   <VirtualList items={sorted} itemHeight={48}>
@@ -116,27 +86,12 @@
   </VirtualList>
 </div>
 
-{#if showConfirmModal}
-  <div class="modal-overlay">
-    <div class="modal-content">
-      <h3>Actualizar niveles recomendados</h3>
-      <p>Se actualizarán {tasksToUpdate.length} tareas con el nivel recomendado según su expansión.</p>
-      <div class="modal-actions">
-        <button class="wow-btn" onclick={() => showConfirmModal = false}>Cancelar</button>
-        <button class="wow-btn wow-btn-primary" onclick={updateRecommendedLevels}>Confirmar</button>
-      </div>
-    </div>
-  </div>
-{/if}
-
 <style>
   .tareas-panel { display:flex; flex-direction:column; height:calc(100vh - 100px); margin-top:6px; border:1px solid var(--border-subtle); border-radius:var(--r-md); overflow:hidden; background:var(--bg-base); }
   .tareas-header { display:flex; align-items:center; gap:8px; padding:6px 10px; border-bottom:1px solid var(--border-subtle); flex-shrink:0; }
   .tareas-title { font-size:0.6rem; color:var(--gold-light); font-weight:700; text-transform:uppercase; letter-spacing:1px; }
   .tareas-toggle { display:flex; align-items:center; gap:3px; font-size:0.5rem; color:var(--text-secondary); cursor:pointer; margin-left:auto; }
   .tareas-toggle input { width:auto; }
-  .tareas-btn { background:none; border:none; cursor:pointer; font-size:0.7rem; padding:2px 4px; opacity:0.7; transition:opacity var(--t-fast); }
-  .tareas-btn:hover { opacity:1; }
   .tareas-search { background:var(--input-bg); border:1px solid var(--border-subtle); border-radius:var(--r-sm); padding:3px 8px; color:var(--text-primary); font-size:0.5rem; font-family:var(--font-body); width:180px; }
   .tareas-search:focus { outline:none; border-color:var(--gold-dim); }
   .tareas-search::placeholder { color:var(--text-dim); }
@@ -160,12 +115,5 @@
   .task-chip-btn:hover { opacity:1; }
   .task-chip-add { color:var(--gold-light); border-style:dashed; border-color:var(--gold-dim); cursor:pointer; font-size:0.5rem; font-weight:600; padding:2px 8px; }
   .task-chip-add:hover { background:var(--bg-raised); border-color:var(--gold); color:var(--gold); }
-  .modal-overlay { position:fixed; inset:0; background:rgba(0,0,0,0.65); display:flex; align-items:center; justify-content:center; z-index:1000; }
-  .modal-content { background:var(--bg-base); border:1px solid var(--border-subtle); border-radius:var(--r-md); padding:16px; max-width:400px; width:90%; }
-  .modal-content h3 { margin:0 0 8px 0; font-size:0.9rem; color:var(--text-primary); }
-  .modal-content p { margin:0 0 16px 0; font-size:0.75rem; color:var(--text-secondary); }
-  .modal-actions { display:flex; gap:8px; justify-content:flex-end; }
-  .wow-btn { background:var(--bg-soft); border:1px solid var(--border-subtle); border-radius:var(--r-sm); padding:6px 12px; color:var(--text-primary); cursor:pointer; font-size:0.7rem; }
-  .wow-btn-primary { background:var(--gold); border-color:var(--gold); color:#000; }
   @media (max-width:768px) { .tareas-char { min-width:90px; } .tareas-char-info { display:none; } }
 </style>

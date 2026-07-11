@@ -32,19 +32,3 @@ export function profesionIcon(id: string): string {
   if (!id) return ''
   return PROFESION_MAP[id]?.icon ?? ''
 }
-
-export interface ProfesionCooldown {
-  id: string
-  nombre: string
-  expansion: string
-}
-
-export const PROFESION_COOLDOWNS: Record<string, ProfesionCooldown[]> = {
-  alquimia: [
-    { id: 'transmutacion_tww', nombre: 'Transmutación TWW', expansion: 'tww' },
-  ],
-}
-
-export function cooldownsForProfesion(profesionId: string): ProfesionCooldown[] {
-  return PROFESION_COOLDOWNS[profesionId] || []
-}

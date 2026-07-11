@@ -6,6 +6,7 @@ import { computeFutureTimeSaved } from './future-time-saved'
 import { getEffectiveXpPerDungeon } from '../leveling/calculator'
 import { calculateStrategicValue } from '../leveling/strategicValue'
 import { getXpForLevel } from '../constants/experience'
+import { getObjetivoFromTareas } from '../leveling/objetivo'
 import { PROFESIONES } from '../constants/profesiones'
 import { tieneMainCrafter } from './professions'
 
@@ -76,7 +77,8 @@ export function runTemporalSimulation(
       if (dec.accion === 'saltear') continue
       const st = charState.get(dec.personaje.nombre)
       if (!st || st.done) continue
-      const targetLevel = dec.accion === 'subir-a-90' ? 90 : 80
+      const objetivo = getObjetivoFromTareas(dec.personaje.tareas)
+      const targetLevel = dec.accion === 'subir-a-90' ? objetivo : 80
       if (st.nivel >= targetLevel) {
         st.done = true
         continue
@@ -89,7 +91,8 @@ export function runTemporalSimulation(
 
     const dec = targetDecision
     const st = charState.get(dec.personaje.nombre)!
-    const targetLevel = dec.accion === 'subir-a-90' ? 90 : 80
+    const objetivo = getObjetivoFromTareas(dec.personaje.tareas)
+    const targetLevel = dec.accion === 'subir-a-90' ? objetivo : 80
     day.personajeActivo = dec.personaje.nombre
     const timewaysPct = dec.personaje.timewaysPct ?? 0
 
@@ -112,7 +115,7 @@ export function runTemporalSimulation(
 
         if (st.nivel >= targetLevel) {
           st.done = true
-          if (targetLevel === 90 && st.nivel >= 90) {
+          if (objetivo >= 90 && st.nivel >= 90) {
             count90++
             personajesA90++
             personajesNombreA90.push(dec.personaje.nombre)

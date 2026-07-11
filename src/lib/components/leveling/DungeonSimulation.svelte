@@ -34,8 +34,8 @@
         start,
         end,
         nivelInicial: e.nivel,
-        nivelFinal: e.reason === 'Sube a 90' && dungsForChar >= e.dungeonsTo90 ? 90 : e.nivel,
-        completed: e.reason === 'Sube a 90' && dungsForChar >= e.dungeonsTo90,
+        nivelFinal: dungsForChar >= e.dungeonsTo90 ? e.objetivoNivel : e.nivel,
+        completed: dungsForChar >= e.dungeonsTo90,
       })
     }
     return result

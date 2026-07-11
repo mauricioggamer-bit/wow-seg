@@ -13,6 +13,7 @@ import type { Personaje, LevelingConfig } from '../types'
 import type { PatronSemanal } from '../types'
 import { getXpRemaining, getEffectiveXpPerDungeon } from '../leveling/calculator'
 import { getXpForLevel } from '../constants/experience'
+import { getObjetivoFromTareas } from '../leveling/objetivo'
 
 export interface SimulationOutcome {
   xpTotal: number
@@ -58,19 +59,18 @@ function computeAchievableXp(
   maxTimewaysPct: number,
   count90: number,
 ): number {
-  const pendientes = roster.filter(p => p.planeado_usar && p.nivel < 90)
+  const pendientes = roster.filter(p => p.planeado_usar && p.nivel < getObjetivoFromTareas(p.tareas))
   if (pendientes.length === 0) return 500_000_000
   if (maxTiempoTotal <= 0) return 1
 
-  const maxLevel = 90
-
   const candidates = pendientes.map(p => {
+    const objetivo = getObjetivoFromTareas(p.tareas)
     const xpPerDungeon = getEffectiveXpPerDungeon(config, p.nivel, count90, maxTimewaysPct)
     const hoursPerDungeon = config.duracionDungeon / 60
     const xpPerHour = hoursPerDungeon > 0 ? xpPerDungeon / hoursPerDungeon : 0
-    const xpTo90 = getXpRemaining(p.nivel, maxLevel)
-    const hoursTo90 = xpPerHour > 0 ? xpTo90 / xpPerHour : Infinity
-    return { xpPerHour, hoursTo90 }
+    const xpToObj = getXpRemaining(p.nivel, objetivo)
+    const hoursToObj = xpPerHour > 0 ? xpToObj / xpPerHour : Infinity
+    return { xpPerHour, hoursToObj }
   })
 
   candidates.sort((a, b) => b.xpPerHour - a.xpPerHour)
@@ -79,7 +79,7 @@ function computeAchievableXp(
   let totalXp = 0
   for (const c of candidates) {
     if (remainingHours <= 0 || c.xpPerHour <= 0) break
-    const hoursForThisChar = Math.min(remainingHours, c.hoursTo90)
+    const hoursForThisChar = Math.min(remainingHours, c.hoursToObj)
     totalXp += hoursForThisChar * c.xpPerHour
     remainingHours -= hoursForThisChar
   }
@@ -95,7 +95,7 @@ export function computeNormalizationCaps(
   fechaLimite: Date,
   patronSemanal?: PatronSemanal,
 ): NormalizationCaps {
-  const pendientes = roster.filter(p => p.planeado_usar && p.nivel < 90)
+  const pendientes = roster.filter(p => p.planeado_usar && p.nivel < getObjetivoFromTareas(p.tareas))
   const totalPendientes = pendientes.length
   const semanas = computediasHastaLimite(fechaInicio, fechaLimite)
 

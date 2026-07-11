@@ -1,6 +1,7 @@
 import type { Personaje, LevelingConfig, OptimizationEntry, OptimizationPlan } from '../types'
 import { calculateForCharacter, getTimeHours, getDungeonsNeeded, getXpRemaining } from './calculator'
 import { calculateStrategicValue } from './strategicValue'
+import { getObjetivoFromTareas } from './objetivo'
 import { dataStore } from '../stores/data'
 import { STRATEGIC_COMPONENTS } from '../constants'
 
@@ -16,7 +17,7 @@ export function optimize(
   config: LevelingConfig,
   initialCount90: number,
 ): OptimizationPlan {
-  const pending = personajes.filter(p => p.planeado_usar && p.nivel < 90)
+  const pending = personajes.filter(p => p.planeado_usar && p.nivel < getObjetivoFromTareas(p.tareas))
   if (pending.length === 0) {
     return { entries: [], optimizedTime: 0, baselineTime: 0, timeSaved: 0, order: [] }
   }
@@ -76,16 +77,19 @@ export function optimize(
 
     const chosen = remaining[best.idx]
     const calc = calculateForCharacter(chosen, config, currentCount90)
+    const objetivo = getObjetivoFromTareas(chosen.tareas)
 
-    const willReach90 = chosen.nivel < 90
+    const willReachObjetivo = chosen.nivel < objetivo
     const buffBefore = Math.min(currentCount90 * 5, 25)
-    const buffAfter = willReach90 ? Math.min((currentCount90 + 1) * 5, 25) : buffBefore
+    const buffAfter = willReachObjetivo && objetivo >= 90 ? Math.min((currentCount90 + 1) * 5, 25) : buffBefore
 
     let reason: string
-    if (willReach90 && best.timeSaved > 0) {
-      reason = `Llevar a 90 ahorra ${best.timeSaved.toFixed(1)}h al resto (ROI neto: ${best.roi > 0 ? '+' : ''}${best.roi.toFixed(1)}h)`
-    } else if (willReach90) {
+    if (willReachObjetivo && objetivo >= 90 && best.timeSaved > 0) {
+      reason = `Llevar a ${objetivo} ahorra ${best.timeSaved.toFixed(1)}h al resto (ROI neto: ${best.roi > 0 ? '+' : ''}${best.roi.toFixed(1)}h)`
+    } else if (willReachObjetivo && objetivo >= 90) {
       reason = `Desbloquea Warband Mentor 80-90 (+5% para toda la cuenta)`
+    } else if (willReachObjetivo) {
+      reason = `Subir a ${objetivo} para tareas del personaje`
     } else {
       reason = `Sin impacto en warband, completar cuando sea conveniente`
     }
@@ -94,7 +98,7 @@ export function optimize(
       nombre: chosen.nombre,
       clase: chosen.clase,
       nivel: chosen.nivel,
-      objetivoNivel: 90,
+      objetivoNivel: objetivo,
       orden: order.length + 1,
       dungeonsTo90: calc.dungeons,
       timeTo90: calc.timeHours,
@@ -109,7 +113,7 @@ export function optimize(
 
     optimizedTime += calc.timeHours
 
-    if (willReach90) {
+    if (willReachObjetivo && objetivo >= 90) {
       currentCount90 += 1
     }
 
@@ -140,7 +144,8 @@ function recomputeOptimizedTime(
     if (!p) continue
     const calc = calculateForCharacter(p, config, count90)
     total += calc.timeHours
-    if (p.nivel < 90) {
+    const objetivo = getObjetivoFromTareas(p.tareas)
+    if (p.nivel < objetivo && objetivo >= 90) {
       count90 += 1
     }
   }

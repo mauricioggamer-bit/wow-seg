@@ -8,7 +8,7 @@
   const W = 300, H = 120, PAD_L = 4, PAD_R = 4, PAD_T = 8, PAD_B = 16
   const innerW = W - PAD_L - PAD_R, innerH = H - PAD_T - PAD_B
 
-  let pending = $derived(results.filter(r => !r.done90))
+  let pending = $derived(results.filter(r => !r.doneObjetivo))
   let maxXp = $derived(Math.max(1, ...pending.map(r => r.xpTo90)))
   let barW = $derived(pending.length > 0 ? Math.min(40, innerW / pending.length - 2) : 0)
 

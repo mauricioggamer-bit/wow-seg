@@ -14,7 +14,7 @@
   const innerW = W - PAD_L - PAD_R
   const innerH = H - PAD_T - PAD_B
 
-  let pending = $derived(results.filter(r => !r.done90))
+  let pending = $derived(results.filter(r => !r.doneObjetivo))
   let maxTime = $derived(Math.max(1, ...pending.map(r => r.timeTo90)))
   let barW = $derived(pending.length > 0 ? Math.min(40, innerW / pending.length - 2) : 0)
 

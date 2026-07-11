@@ -28,7 +28,7 @@
   import { supabaseStore } from './lib/stores/supabaseSync'
   import { EXPANSIONS, EXPANSION_RECOMMENDED_LEVEL, PERS_RACE_INFO, CLASS_MAP } from './lib/constants'
   import { DUNGEON_EXPANSION_IDS, RAID_EXPANSION_IDS, WORLDBOSS_EXPANSION_IDS, dungeonsForExpansion, raidsForExpansion, worldBossesForExpansion, expNombre } from './lib/constants/wowContent'
-  import { PROFESIONES, cooldownsForProfesion } from './lib/constants/profesiones'
+  import { PROFESIONES } from './lib/constants/profesiones'
   import type { TipoContenido, DungeonDifficulty, RaidDifficulty } from './lib/constants/wowContent'
   import { fade } from 'svelte/transition'
   import type { Tarea, ProfesionSlot, ViewType, ExportSection } from './lib/types'
@@ -152,10 +152,6 @@
   let editTaskOrden = $state(0)
   let editTaskPuntos = $state(0)
   let editTaskNivelRecomendado = $state<number | null>(null)
-  let editTaskProfesion = $state('')
-  let editTaskCooldownProfesion = $state('')
-  let editTaskPersonaje = $derived($personajesStore.find(p => p.nombre === editTaskChar))
-  let editTaskProfesiones = $derived(editTaskPersonaje?.profesiones?.filter(p => p.id).map(p => p.id) || [])
 
   let newTaskChar = $state('')
   let newTaskNombre = $state('')
@@ -169,10 +165,6 @@
   let newTaskRecompensa = $state('')
   let newTaskPuntos = $state(0)
   let newTaskNivelRecomendado = $state<number | null>(null)
-  let newTaskProfesion = $state('')
-  let newTaskCooldownProfesion = $state('')
-  let newTaskPersonaje = $derived($personajesStore.find(p => p.nombre === newTaskChar))
-  let newTaskProfesiones = $derived(newTaskPersonaje?.profesiones?.filter(p => p.id).map(p => p.id) || [])
 
   let isNewChar = $state(false)
 
@@ -249,8 +241,6 @@
     editTaskOrden = t.orden ?? 0
     editTaskPuntos = t.puntos ?? 0
     editTaskNivelRecomendado = t.nivelRecomendado ?? null
-    editTaskProfesion = t.profesion || ''
-    editTaskCooldownProfesion = t.cooldownProfesion || ''
     uiStore.openModal('TaskEdit')
   }
 
@@ -272,8 +262,6 @@
       recompensa: editTaskRecompensa || undefined,
       orden: editTaskOrden,
       puntos: editTaskPuntos,
-      profesion: editTaskProfesion || undefined,
-      cooldownProfesion: editTaskCooldownProfesion || undefined,
     })
     uiStore.closeModal()
   }
@@ -291,8 +279,6 @@
     newTaskRecompensa = ''
     newTaskPuntos = 0
     newTaskNivelRecomendado = null
-    newTaskProfesion = ''
-    newTaskCooldownProfesion = ''
     uiStore.openModal('TaskNew')
   }
 
@@ -313,8 +299,6 @@
       cooldown: newTaskCooldown,
       recompensa: newTaskRecompensa || '',
       puntos: newTaskPuntos,
-      profesion: newTaskProfesion || undefined,
-      cooldownProfesion: newTaskCooldownProfesion || undefined,
     })
     uiStore.closeModal()
   }
@@ -329,10 +313,7 @@
     newTaskDificultad = ''
     newTaskContenidoNombre = ''
     newTaskNivelRecomendado = null
-    newTaskProfesion = ''
-    newTaskCooldownProfesion = ''
     if (t === 'descripcion') { newTaskNombre = ''; return }
-    if (t === 'profesion') return
     if (t === 'mazmorra') newTaskExpansion = DUNGEON_EXPANSION_IDS[0] ?? ''
     else if (t === 'raid') newTaskExpansion = RAID_EXPANSION_IDS[0] ?? ''
     else if (t === 'worldboss') newTaskExpansion = WORLDBOSS_EXPANSION_IDS[0] ?? ''
@@ -345,10 +326,7 @@
     editTaskDificultad = ''
     editTaskContenidoNombre = ''
     editTaskNivelRecomendado = null
-    editTaskProfesion = ''
-    editTaskCooldownProfesion = ''
     if (t === 'descripcion') return
-    if (t === 'profesion') return
     if (t === 'mazmorra') editTaskExpansion = DUNGEON_EXPANSION_IDS[0] ?? ''
     else if (t === 'raid') editTaskExpansion = RAID_EXPANSION_IDS[0] ?? ''
     else if (t === 'worldboss') editTaskExpansion = WORLDBOSS_EXPANSION_IDS[0] ?? ''
@@ -889,7 +867,6 @@
             <label><input type="radio" name="editTipoContenido" checked={editTaskTipoContenido==='mazmorra'} onclick={() => setEditTipoContenido('mazmorra')} /> Mazmorra</label>
             <label><input type="radio" name="editTipoContenido" checked={editTaskTipoContenido==='raid'} onclick={() => setEditTipoContenido('raid')} /> Raid</label>
             <label><input type="radio" name="editTipoContenido" checked={editTaskTipoContenido==='worldboss'} onclick={() => setEditTipoContenido('worldboss')} /> Jefe del mundo</label>
-            <label><input type="radio" name="editTipoContenido" checked={editTaskTipoContenido==='profesion'} onclick={() => setEditTipoContenido('profesion')} /> Profesión</label>
           </div>
           {#if editTaskTipoContenido === 'descripcion'}
             <div style="margin-top:6px;display:grid;grid-template-columns:1fr 1fr;gap:6px">
@@ -923,36 +900,7 @@
                 <input type="number" min="1" max="90" value={editTaskNivelRecomendado ?? ''}
                   oninput={(e) => editTaskNivelRecomendado = e.currentTarget.value === '' ? null : parseInt(e.currentTarget.value)} />
               </div>
-              {#if editTaskTipoContenido === 'profesion'}
-                <div class="form-group" style="margin:0">
-                  <label style="font-size:0.7rem">Profesión</label>
-                  <select bind:value={editTaskProfesion} onchange={() => editTaskCooldownProfesion = ''}>
-                    <option value="">Seleccionar...</option>
-                    {#each editTaskProfesiones as profId}
-                      {@const prof = PROFESIONES.find(p => p.id === profId)}
-                      {#if prof}<option value={prof.id}>{prof.icon} {prof.nombre}</option>{/if}
-                    {/each}
-                  </select>
-                </div>
-                <div class="form-group" style="margin:0">
-                  <label style="font-size:0.7rem">Expansión</label>
-                  <select bind:value={editTaskExpansion}>
-                    <option value="">Sin especificar</option>
-                    {#each EXPANSIONS as exp}<option value={exp.id}>{exp.nombre}</option>{/each}
-                  </select>
-                </div>
-                {#if editTaskProfesion}
-                  <div class="form-group" style="margin:0;grid-column:1/-1">
-                    <label style="font-size:0.7rem">Cooldown</label>
-                    <select bind:value={editTaskCooldownProfesion}>
-                      <option value="">Seleccionar...</option>
-                      {#each cooldownsForProfesion(editTaskProfesion) as cd}
-                        <option value={cd.id}>{cd.nombre}</option>
-                      {/each}
-                    </select>
-                  </div>
-                {/if}
-              {:else if editTaskTipoContenido !== 'worldboss'}
+              {#if editTaskTipoContenido !== 'worldboss'}
                 <div class="form-group" style="margin:0">
                   <label style="font-size:0.7rem">Dificultad</label>
                   <select bind:value={editTaskDificultad} onchange={onEditDificultadChange}>
@@ -1037,7 +985,6 @@
             <label><input type="radio" name="newTipoContenido" checked={newTaskTipoContenido==='mazmorra'} onclick={() => setNewTipoContenido('mazmorra')} /> Mazmorra</label>
             <label><input type="radio" name="newTipoContenido" checked={newTaskTipoContenido==='raid'} onclick={() => setNewTipoContenido('raid')} /> Raid</label>
             <label><input type="radio" name="newTipoContenido" checked={newTaskTipoContenido==='worldboss'} onclick={() => setNewTipoContenido('worldboss')} /> Jefe del mundo</label>
-            <label><input type="radio" name="newTipoContenido" checked={newTaskTipoContenido==='profesion'} onclick={() => setNewTipoContenido('profesion')} /> Profesión</label>
           </div>
           {#if newTaskTipoContenido === 'descripcion'}
             <div style="margin-top:6px;display:grid;grid-template-columns:1fr 1fr;gap:6px">
@@ -1071,36 +1018,7 @@
                 <input type="number" min="1" max="90" value={newTaskNivelRecomendado ?? ''}
                   oninput={(e) => newTaskNivelRecomendado = e.currentTarget.value === '' ? null : parseInt(e.currentTarget.value)} />
               </div>
-              {#if newTaskTipoContenido === 'profesion'}
-                <div class="form-group" style="margin:0">
-                  <label style="font-size:0.7rem">Profesión</label>
-                  <select bind:value={newTaskProfesion} onchange={() => newTaskCooldownProfesion = ''}>
-                    <option value="">Seleccionar...</option>
-                    {#each newTaskProfesiones as profId}
-                      {@const prof = PROFESIONES.find(p => p.id === profId)}
-                      {#if prof}<option value={prof.id}>{prof.icon} {prof.nombre}</option>{/if}
-                    {/each}
-                  </select>
-                </div>
-                <div class="form-group" style="margin:0">
-                  <label style="font-size:0.7rem">Expansión</label>
-                  <select bind:value={newTaskExpansion}>
-                    <option value="">Sin especificar</option>
-                    {#each EXPANSIONS as exp}<option value={exp.id}>{exp.nombre}</option>{/each}
-                  </select>
-                </div>
-                {#if newTaskProfesion}
-                  <div class="form-group" style="margin:0;grid-column:1/-1">
-                    <label style="font-size:0.7rem">Cooldown</label>
-                    <select bind:value={newTaskCooldownProfesion}>
-                      <option value="">Seleccionar...</option>
-                      {#each cooldownsForProfesion(newTaskProfesion) as cd}
-                        <option value={cd.id}>{cd.nombre}</option>
-                      {/each}
-                    </select>
-                  </div>
-                {/if}
-              {:else if newTaskTipoContenido !== 'worldboss'}
+              {#if newTaskTipoContenido !== 'worldboss'}
                 <div class="form-group" style="margin:0">
                   <label style="font-size:0.7rem">Dificultad</label>
                   <select bind:value={newTaskDificultad} onchange={onNewDificultadChange}>

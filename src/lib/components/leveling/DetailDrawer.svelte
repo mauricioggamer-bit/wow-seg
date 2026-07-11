@@ -75,12 +75,12 @@
         </div>
       {/if}
       <div class="drawer-stat">
-        <span>→90 Dungs</span>
-        <strong>{result.done90 ? '✓' : result.dungeonsTo90}</strong>
+        <span>→{result.objetivo} Dungs</span>
+        <strong>{result.doneObjetivo ? '✓' : result.dungeonsTo90}</strong>
       </div>
       <div class="drawer-stat">
-        <span>→90 Horas</span>
-        <strong>{result.done90 ? '✓' : formatHours(result.timeTo90)}</strong>
+        <span>→{result.objetivo} Horas</span>
+        <strong>{result.doneObjetivo ? '✓' : formatHours(result.timeTo90)}</strong>
       </div>
     </div>
     <div class="drawer-body">

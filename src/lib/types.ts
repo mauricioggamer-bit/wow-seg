@@ -181,12 +181,13 @@ export interface LevelBreakdownEntry {
 export interface ReasonGroup {
   subtitle: string
   entries: string[]
+  subGroups?: ReasonGroup[]
 }
 
 export interface StrategicValueResult {
   stars: number
   warbandImpact: number
-  professionValue: number
+  profesionesCompletasValor: number
   proximityToMaxLevel: number
   closenessToObjective: number
   futureXpIncrease: number

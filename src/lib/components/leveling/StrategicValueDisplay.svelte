@@ -20,8 +20,7 @@
   const INTRINSIC_ROWS: RowDef[] = [
     { label: 'Proximidad al nivel máx.', weight: '×25', calc: (s: StrategicValueResult) => s.proximityToMaxLevel * 25, raw: (s: StrategicValueResult) => s.proximityToMaxLevel, desc: 'Qué tan cerca está del nivel máximo configurado.' },
     { label: 'Cercanía obj.', weight: '×25', calc: (s: StrategicValueResult) => s.closenessToObjective * 25, raw: (s: StrategicValueResult) => s.closenessToObjective, desc: 'Menos dungeons = más puntaje.' },
-    { label: 'Profesiones', weight: '×15', calc: (s: StrategicValueResult) => s.professionValue * 15, raw: (s: StrategicValueResult) => s.professionValue, desc: 'Puntos estratégicos de las profesiones del personaje.' },
-    { label: 'Bono Raza-Profesión', weight: 'fijo', calc: (s: StrategicValueResult) => s.raceProfBonus, raw: (s: StrategicValueResult) => s.raceProfBonus, desc: 'Bonos raciales si la profesión coincide.' },
+    { label: 'Profesiones completas', weight: '×15', calc: (s: StrategicValueResult) => s.profesionesCompletasValor * 15, raw: (s: StrategicValueResult) => s.profesionesCompletasValor, desc: 'Puntos por tener 1ª y 2ª profesión asignadas.' },
     { label: 'Tareas', weight: 'fijo', calc: (s: StrategicValueResult) => s.taskValue, raw: (s: StrategicValueResult) => s.taskValue, desc: 'Puntos estratégicos de tareas.' },
     { label: 'Bonus <90', weight: '+10', calc: (s: StrategicValueResult) => s.bonusSub90 * 10, raw: (s: StrategicValueResult) => s.bonusSub90, desc: 'Fijo si está por debajo de 90.' },
     { label: 'Bonus 80-89', weight: '+15', calc: (s: StrategicValueResult) => s.bonus8089 * 15, raw: (s: StrategicValueResult) => s.bonus8089, desc: 'Fijo si está en 80-89.' },
@@ -63,11 +62,22 @@
         {#if group.subtitle}
           <h5 class="svd-group-title">{group.subtitle}</h5>
         {/if}
-        <ul class="svd-reasons">
-          {#each group.entries as entry}
-            <li>{entry}</li>
+        {#if group.subGroups}
+          {#each group.subGroups as sub (sub.subtitle)}
+            <h6 class="svd-sub-title">{sub.subtitle}</h6>
+            <ul class="svd-reasons">
+              {#each sub.entries as entry}
+                <li>{entry}</li>
+              {/each}
+            </ul>
           {/each}
-        </ul>
+        {:else}
+          <ul class="svd-reasons">
+            {#each group.entries as entry}
+              <li>{entry}</li>
+            {/each}
+          </ul>
+        {/if}
       {/each}
     {/if}
 
@@ -78,7 +88,7 @@
       </div>
       <div class="svd-stat">
         <span>Profesiones</span>
-        <strong>{strategic.professionValue > 0 ? 'Sí' : 'No'}</strong>
+        <strong>{strategic.profesionesCompletasValor > 0 ? 'Sí' : 'No'}</strong>
       </div>
       <div class="svd-stat">
         <span>Prox. nivel máx.</span>
@@ -238,6 +248,12 @@
     color: var(--gold);
     font-family: var(--font-heading);
     margin: 4px 0 2px 0;
+  }
+  .svd-sub-title {
+    font-size: 0.5rem;
+    color: var(--gold-light, #d4af37);
+    font-family: var(--font-heading);
+    margin: 3px 0 1px 4px;
   }
   .svd-reasons {
     list-style: none;

@@ -69,6 +69,40 @@ export function calculateStrategicValue(
   }
 
   const profIds = personaje.profesiones?.map(pr => pr.id).filter(Boolean) ?? []
+  const profesionesCompletasValor = profIds.length
+
+  // Build professions group with per-profession sub-groups
+  let profGroup: ReasonGroup | undefined
+  if (profIds.length > 0) {
+    profGroup = ensureGroup(reasonGroups, 'Profesiones')
+    profGroup.subGroups = []
+    for (let i = 0; i < profIds.length; i++) {
+      profGroup.subGroups.push({
+        subtitle: profIds[i],
+        entries: [`+1 (${i === 0 ? '1ª' : '2ª'} profesión)`],
+      })
+    }
+  }
+
+  // Race-profession bonuses — push into each profession's sub-group
+  let raceProfBonus = 0
+  const raceBonuses = RACE_PROFESSION_BONUS[personaje.raza] ?? []
+  if (profGroup) {
+    for (const bonus of raceBonuses) {
+      if (bonus.profId === '*') {
+        for (const sub of profGroup.subGroups!) {
+          sub.entries.push(`Bono racial (${personaje.raza}): +${bonus.bonus}`)
+          raceProfBonus += bonus.bonus
+        }
+      } else if (profIds.includes(bonus.profId)) {
+        const sub = profGroup.subGroups!.find(s => s.subtitle === bonus.profId)
+        if (sub) {
+          sub.entries.push(`Bono racial (${personaje.raza}${bonus.note ? ' — ' + bonus.note : ''}): +${bonus.bonus}`)
+          raceProfBonus += bonus.bonus
+        }
+      }
+    }
+  }
 
   const indexes: StrategicIndex[] = dataStore.getIndexes()
   const indexValues: Record<string, number> = {}
@@ -79,41 +113,41 @@ export function calculateStrategicValue(
 
     const cv = getClassValue(personaje.clase, idx.id)
     const rv = getRaceValue(personaje.raza, idx.id)
-    const profVals: { id: string; value: number }[] = []
-    for (const pid of profIds) {
-      const pv = getProfessionValue(pid, idx.id)
-      if (pv > 0) profVals.push({ id: pid, value: pv })
-    }
     const tv = dataStore.getStrategicValue('task', '', idx.id) ?? 0
     const wv = dataStore.getStrategicValue('warband', personaje.warband, idx.id) ?? 0
     const pv2 = dataStore.getStrategicValue('personaje', personaje.nombre, idx.id) ?? 0
 
-    let hasNonEntity = false
     if (cv > 0) ensureGroup(reasonGroups, `Clase: ${personaje.clase}`).entries.push(`${idx.name}: +${cv}`)
     if (rv > 0) ensureGroup(reasonGroups, `Raza: ${personaje.raza}`).entries.push(`${idx.name}: +${rv}`)
-    for (const pv of profVals) {
-      ensureGroup(reasonGroups, 'Profesiones').entries.push(`${pv.id}: +${pv.value} (${idx.name})`)
+
+    // Per-index profession values → push into each profession's sub-group
+    if (profGroup) {
+      for (const pid of profIds) {
+        const pv = getProfessionValue(pid, idx.id)
+        if (pv > 0) {
+          const sub = profGroup.subGroups!.find(s => s.subtitle === pid)
+          if (sub) sub.entries.push(`${idx.name}: +${pv}`)
+        }
+      }
     }
+
     if (tv > 0) ensureGroup(reasonGroups, 'Tareas').entries.push(`${idx.name}: +${tv}`)
 
-    if (wv > 0) { ensureGroup(reasonGroups, idx.name).entries.push(`Warband (${personaje.warband}): +${wv}`); hasNonEntity = true }
-    if (pv2 > 0) { ensureGroup(reasonGroups, idx.name).entries.push(`Personaje: +${pv2}`); hasNonEntity = true }
+    if (wv > 0) { ensureGroup(reasonGroups, idx.name).entries.push(`Warband (${personaje.warband}): +${wv}`) }
+    if (pv2 > 0) { ensureGroup(reasonGroups, idx.name).entries.push(`Personaje: +${pv2}`) }
 
-    const total = cv + rv + profVals.reduce((s, p) => s + p.value, 0) + tv + wv + pv2
+    let totalProf = 0
+    if (profGroup) {
+      for (const pid of profIds) {
+        totalProf += getProfessionValue(pid, idx.id)
+      }
+    }
+    const total = cv + rv + totalProf + tv + wv + pv2
     if (total > 0) indexValues[idx.id] = total
   }
 
   const classValue = getClassValue(personaje.clase, 'general')
   const raceValue = getRaceValue(personaje.raza, 'general')
-
-  let professionValue = 0
-  if (profIds.length > 0) {
-    professionValue = profIds.reduce((sum, id) => sum + getProfessionValue(id, 'general'), 0)
-    if (professionValue > 0) {
-      const profNames = profIds.join(', ')
-      ensureGroup(reasonGroups, 'Profesiones').entries.push(`General (${profNames}): +${professionValue}`)
-    }
-  }
 
   const proximityToMaxLevel = calc.done ? 0 : (personaje.nivel >= objetivo ? 1 : Math.max(0, (personaje.nivel - 10) / (objetivo - 10)))
   const dungeonsTo90 = calc.dungeons
@@ -177,22 +211,8 @@ export function calculateStrategicValue(
     ensureGroup(reasonGroups, 'Tareas').entries.push(`General: +${taskValue}`)
   }
 
-  let raceProfBonus = 0
-  const raceBonuses = RACE_PROFESSION_BONUS[personaje.raza] ?? []
-  for (const bonus of raceBonuses) {
-    if (bonus.profId === '*') {
-      raceProfBonus += bonus.bonus * profIds.length
-      if (profIds.length > 0) {
-        ensureGroup(reasonGroups, `Raza: ${personaje.raza}`).entries.push(`Bono racial (${profIds.length} profesiones): +${bonus.bonus * profIds.length}`)
-      }
-    } else if (profIds.includes(bonus.profId)) {
-      raceProfBonus += bonus.bonus
-      ensureGroup(reasonGroups, `Raza: ${personaje.raza}`).entries.push(`Bono racial (${bonus.profId}${bonus.note ? ' — ' + bonus.note : ''}): +${bonus.bonus}`)
-    }
-  }
-
   const wWarband = getEffectiveWeight('warbandImpact', 10)
-  const wProfession = getEffectiveWeight('professionValue', 15)
+  const wProfesionesCompletas = getEffectiveWeight('profesionesCompletas', 15)
   const wProximityToMaxLevel = getEffectiveWeight('proximityToMaxLevel', 25)
   const wClosenessObj = getEffectiveWeight('closenessToObjective', 25)
   const wFutureXp = getEffectiveWeight('futureXpIncrease', 8)
@@ -204,7 +224,7 @@ export function calculateStrategicValue(
 
   let totalScore = 0
   totalScore += warbandImpact * wWarband
-  totalScore += professionValue * wProfession
+  totalScore += profesionesCompletasValor * wProfesionesCompletas
   totalScore += proximityToMaxLevel * wProximityToMaxLevel
   totalScore += closenessToObjective * wClosenessObj
   totalScore += futureXpIncrease * wFutureXp
@@ -232,7 +252,7 @@ export function calculateStrategicValue(
   const intrinsicScore =
     proximityToMaxLevel * wProximityToMaxLevel
     + closenessToObjective * wClosenessObj
-    + professionValue * wProfession
+    + profesionesCompletasValor * wProfesionesCompletas
     + bonusSub90 * wBonusSub90
     + bonus8089 * wBonus8089
     + raceProfBonus
@@ -249,7 +269,7 @@ export function calculateStrategicValue(
   return {
     stars,
     warbandImpact,
-    professionValue,
+    profesionesCompletasValor,
     proximityToMaxLevel,
     closenessToObjective,
     futureXpIncrease,

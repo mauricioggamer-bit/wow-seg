@@ -107,12 +107,17 @@ export function calculateStrategicValue(
   const indexes: StrategicIndex[] = dataStore.getIndexes()
   const indexValues: Record<string, number> = {}
 
+  let classValue = getClassValue(personaje.clase, 'general')
+  let raceValue = getRaceValue(personaje.raza, 'general')
+
   for (const idx of indexes) {
     if (taskContext && idx.context && idx.context !== 'general' && idx.context !== taskContext) continue
     if (idx.id === 'general') continue
 
     const cv = getClassValue(personaje.clase, idx.id)
     const rv = getRaceValue(personaje.raza, idx.id)
+    classValue += cv
+    raceValue += rv
     const tv = dataStore.getStrategicValue('task', '', idx.id) ?? 0
     const wv = dataStore.getStrategicValue('warband', personaje.warband, idx.id) ?? 0
     const pv2 = dataStore.getStrategicValue('personaje', personaje.nombre, idx.id) ?? 0
@@ -142,12 +147,9 @@ export function calculateStrategicValue(
         totalProf += getProfessionValue(pid, idx.id)
       }
     }
-    const total = cv + rv + totalProf + tv + wv + pv2
+    const total = totalProf + tv + wv + pv2
     if (total > 0) indexValues[idx.id] = total
   }
-
-  const classValue = getClassValue(personaje.clase, 'general')
-  const raceValue = getRaceValue(personaje.raza, 'general')
 
   const proximityToMaxLevel = calc.done ? 0 : (personaje.nivel >= objetivo ? 1 : Math.max(0, (personaje.nivel - 10) / (objetivo - 10)))
   const dungeonsTo90 = calc.dungeons
@@ -199,11 +201,13 @@ export function calculateStrategicValue(
   const bonusSub90 = !calc.done && personaje.nivel < 90 ? 1 : 0
   const bonus8089 = !calc.done && (personaje.nivel >= 80 && personaje.nivel < 90) ? 1 : 0
 
-  if (classValue > 0) {
-    ensureGroup(reasonGroups, `Clase: ${personaje.clase}`).entries.push(`General: +${classValue}`)
+  const classValueGeneral = getClassValue(personaje.clase, 'general')
+  const raceValueGeneral = getRaceValue(personaje.raza, 'general')
+  if (classValueGeneral > 0) {
+    ensureGroup(reasonGroups, `Clase: ${personaje.clase}`).entries.push(`General: +${classValueGeneral}`)
   }
-  if (raceValue > 0) {
-    ensureGroup(reasonGroups, `Raza: ${personaje.raza}`).entries.push(`General: +${raceValue}`)
+  if (raceValueGeneral > 0) {
+    ensureGroup(reasonGroups, `Raza: ${personaje.raza}`).entries.push(`General: +${raceValueGeneral}`)
   }
 
   const taskValue = (personaje.tareas ?? []).reduce((sum, t) => sum + (t.puntos ?? 0), 0)

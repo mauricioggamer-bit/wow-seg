@@ -6,7 +6,6 @@
   let { strategic }: { strategic: StrategicValueResult } = $props()
 
   let modalOpen = $state(false)
-  let ventajasTotal = $derived(Object.values(strategic.indexValues).reduce((a, b) => a + b, 0))
   let starBand = $derived([...STAR_THRESHOLDS].find(t => strategic.totalScore >= t.min))
 
   interface RowDef {
@@ -18,13 +17,15 @@
   }
 
   const INTRINSIC_ROWS: RowDef[] = [
+    { label: 'Clase', weight: 'fijo', calc: (s: StrategicValueResult) => s.classValue, raw: (s: StrategicValueResult) => s.classValue, desc: 'Ventajas estratégicas de la clase (todos los índices).' },
+    { label: 'Raza', weight: 'fijo', calc: (s: StrategicValueResult) => s.raceValue, raw: (s: StrategicValueResult) => s.raceValue, desc: 'Ventajas estratégicas de la raza (todos los índices).' },
     { label: 'Proximidad al nivel máx.', weight: '×25', calc: (s: StrategicValueResult) => s.proximityToMaxLevel * 25, raw: (s: StrategicValueResult) => s.proximityToMaxLevel, desc: 'Qué tan cerca está del nivel máximo configurado.' },
     { label: 'Cercanía obj.', weight: '×25', calc: (s: StrategicValueResult) => s.closenessToObjective * 25, raw: (s: StrategicValueResult) => s.closenessToObjective, desc: 'Menos dungeons = más puntaje.' },
     { label: 'Profesiones completas', weight: '×15', calc: (s: StrategicValueResult) => s.profesionesCompletasValor * 15, raw: (s: StrategicValueResult) => s.profesionesCompletasValor, desc: 'Puntos por tener 1ª y 2ª profesión asignadas.' },
     { label: 'Tareas', weight: 'fijo', calc: (s: StrategicValueResult) => s.taskValue, raw: (s: StrategicValueResult) => s.taskValue, desc: 'Puntos estratégicos de tareas.' },
     { label: 'Bonus <90', weight: '+10', calc: (s: StrategicValueResult) => s.bonusSub90 * 10, raw: (s: StrategicValueResult) => s.bonusSub90, desc: 'Fijo si está por debajo de 90.' },
     { label: 'Bonus 80-89', weight: '+15', calc: (s: StrategicValueResult) => s.bonus8089 * 15, raw: (s: StrategicValueResult) => s.bonus8089, desc: 'Fijo si está en 80-89.' },
-    { label: 'Ventajas', weight: 'fijo', calc: (s: StrategicValueResult) => Object.values(s.indexValues).reduce((a, b) => a + b, 0), raw: (s: StrategicValueResult) => Object.values(s.indexValues).reduce((a, b) => a + b, 0), desc: 'Ventajas por índice asignadas al personaje.' },
+    { label: 'Ventajas', weight: 'fijo', calc: (s: StrategicValueResult) => Object.values(s.indexValues).reduce((a, b) => a + b, 0), raw: (s: StrategicValueResult) => Object.values(s.indexValues).reduce((a, b) => a + b, 0), desc: 'Ventajas por índice (sin incluir clase/raza).' },
   ]
 
   const ACCOUNT_ROWS: RowDef[] = [
@@ -81,36 +82,7 @@
       {/each}
     {/if}
 
-    <div class="svd-stats">
-      <div class="svd-stat">
-        <span>Warband Impact</span>
-        <strong>{strategic.warbandImpact > 0 ? `+${strategic.warbandImpact}%` : '—'}</strong>
-      </div>
-      <div class="svd-stat">
-        <span>Profesiones</span>
-        <strong>{strategic.profesionesCompletasValor > 0 ? 'Sí' : 'No'}</strong>
-      </div>
-      <div class="svd-stat">
-        <span>Prox. nivel máx.</span>
-        <strong>{(strategic.proximityToMaxLevel * 100).toFixed(0)}%</strong>
-      </div>
-      <div class="svd-stat">
-        <span>Cercanía obj.</span>
-        <strong>{(strategic.closenessToObjective * 100).toFixed(0)}%</strong>
-      </div>
-      <div class="svd-stat">
-        <span>Clase</span>
-        <strong>{strategic.classValue > 0 ? `+${strategic.classValue}` : '—'}</strong>
-      </div>
-      <div class="svd-stat">
-        <span>Raza</span>
-        <strong>{strategic.raceValue > 0 ? `+${strategic.raceValue}` : '—'}</strong>
-      </div>
-      <div class="svd-stat">
-        <span>Ventajas</span>
-        <strong>{ventajasTotal > 0 ? `+${ventajasTotal}` : '—'}</strong>
-      </div>
-    </div>
+
   </div>
 
   <table class="svd-table">
@@ -272,25 +244,6 @@
     position: absolute;
     left: 0;
     color: var(--gold);
-  }
-  .svd-stats {
-    display: flex;
-    gap: 8px;
-    flex-wrap: wrap;
-  }
-  .svd-stat {
-    display: flex;
-    flex-direction: column;
-    gap: 0;
-  }
-  .svd-stat span {
-    font-size: 0.4rem;
-    color: var(--text-muted);
-    text-transform: uppercase;
-  }
-  .svd-stat strong {
-    font-size: 0.55rem;
-    color: var(--gold-light, #d4af37);
   }
   .svd-table {
     width: 100%;

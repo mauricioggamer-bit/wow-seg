@@ -153,6 +153,12 @@ export function normalizeData(data: WowData): WowData {
   if (!data.strategicConfig.values) data.strategicConfig.values = {}
   if (!data.strategicConfig.componentWeights) data.strategicConfig.componentWeights = {}
 
+  // Migration: professionValue → profesionesCompletas (Jul 2026)
+  if (data.strategicConfig.componentWeights.professionValue > 0) {
+    data.strategicConfig.componentWeights.profesionesCompletas = data.strategicConfig.componentWeights.professionValue
+    delete data.strategicConfig.componentWeights.professionValue
+  }
+
   const needsMigration = data.personajes.length > 0 && !Array.isArray(data.personajes[0]?.tareas)
   if (needsMigration) {
     return mergeSeed(data)

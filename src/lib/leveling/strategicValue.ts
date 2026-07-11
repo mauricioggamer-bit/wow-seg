@@ -81,7 +81,7 @@ export function calculateStrategicValue(
     for (let i = 0; i < profIds.length; i++) {
       profGroup.subGroups.push({
         subtitle: profIds[i],
-        entries: [`+1 (${i === 0 ? '1ª' : '2ª'} profesión)`],
+        entries: [`Profesión ${i === 0 ? '1ª' : '2ª'}: +1`],
       })
     }
   }
@@ -99,7 +99,7 @@ export function calculateStrategicValue(
       } else if (profIds.includes(bonus.profId)) {
         const sub = profGroup.subGroups!.find(s => s.subtitle === bonus.profId)
         if (sub) {
-          sub.entries.push(`Bono racial (${personaje.raza}${bonus.note ? ' — ' + bonus.note : ''}): +${bonus.bonus}`)
+          sub.entries.push(`Bono racial (${personaje.raza}): +${bonus.bonus}`)
           raceProfBonus += bonus.bonus
         }
       }

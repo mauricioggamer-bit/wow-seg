@@ -62,17 +62,17 @@ export const PERS_CLASS_COLORS: Record<string, string> = {
 export type RaceProfBonus = { profId: string; bonus: number; note?: string }
 
 export const RACE_PROFESSION_BONUS: Record<string, RaceProfBonus[]> = {
-  'Gnome':             [{ profId: 'ingenieria', bonus: 5, note: 'The Lazy Goldmaker' }],
-  'Draenei':           [{ profId: 'joyeria', bonus: 5, note: 'The Lazy Goldmaker' }],
-  'Blood Elf':         [{ profId: 'encantamiento', bonus: 5, note: 'The Lazy Goldmaker' }],
-  'Worgen':            [{ profId: 'desuello', bonus: 5, note: 'The Lazy Goldmaker' }],
-  'Goblin':            [{ profId: 'alquimia', bonus: 5, note: 'The Lazy Goldmaker' }],
-  'Pandaren':          [{ profId: 'cocina', bonus: 5, note: 'The Lazy Goldmaker' }],
-  'Light Draenei':     [{ profId: 'herreria', bonus: 5, note: 'The Lazy Goldmaker' }],
-  'Nightborne':        [{ profId: 'inscripcion', bonus: 5, note: 'The Lazy Goldmaker' }],
-  'Highmountain':      [{ profId: 'mineria', bonus: 5, note: 'The Lazy Goldmaker' }],
-  'Dark Iron Dwarf':   [{ profId: 'herreria', bonus: 5, note: 'The Lazy Goldmaker' }],
-  'Kul Tiran':         [{ profId: '*', bonus: 2, note: 'The Lazy Goldmaker — +2 a todas las primarias' }],
+  'Gnome':             [{ profId: 'ingenieria', bonus: 5 }],
+  'Draenei':           [{ profId: 'joyeria', bonus: 5 }],
+  'Blood Elf':         [{ profId: 'encantamiento', bonus: 5 }],
+  'Worgen':            [{ profId: 'desuello', bonus: 5 }],
+  'Goblin':            [{ profId: 'alquimia', bonus: 5 }],
+  'Pandaren':          [{ profId: 'cocina', bonus: 5 }],
+  'Light Draenei':     [{ profId: 'herreria', bonus: 5 }],
+  'Nightborne':        [{ profId: 'inscripcion', bonus: 5 }],
+  'Highmountain':      [{ profId: 'mineria', bonus: 5 }],
+  'Dark Iron Dwarf':   [{ profId: 'herreria', bonus: 5 }],
+  'Kul Tiran':         [{ profId: '*', bonus: 2 }],
   'Tauren':            [{ profId: 'herboristeria', bonus: 5, note: 'Cultivation racial' }],
 }
 

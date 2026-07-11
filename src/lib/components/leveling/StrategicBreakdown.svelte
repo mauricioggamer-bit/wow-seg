@@ -16,8 +16,6 @@
     { label: 'Proximidad al nivel máx.', weight: '×25', calc: (s: StrategicValueResult) => s.proximityToMaxLevel * 25, raw: (s: StrategicValueResult) => s.proximityToMaxLevel, desc: 'Qué tan cerca está del nivel máximo configurado.' },
     { label: 'Cercanía obj.', weight: '×25', calc: (s: StrategicValueResult) => s.closenessToObjective * 25, raw: (s: StrategicValueResult) => s.closenessToObjective, desc: 'Menos dungeons = más puntaje.' },
     { label: 'Profesiones', weight: '×15', calc: (s: StrategicValueResult) => s.professionValue * 15, raw: (s: StrategicValueResult) => s.professionValue, desc: 'Puntos estratégicos de las profesiones del personaje.' },
-    { label: 'Clase', weight: 'fijo', calc: (s: StrategicValueResult) => s.classValue, raw: (s: StrategicValueResult) => s.classValue, desc: 'Ventajas asignadas a la clase.' },
-    { label: 'Raza', weight: 'fijo', calc: (s: StrategicValueResult) => s.raceValue, raw: (s: StrategicValueResult) => s.raceValue, desc: 'Ventajas asignadas a la raza.' },
     { label: 'Bono Raza-Profesión', weight: 'fijo', calc: (s: StrategicValueResult) => s.raceProfBonus, raw: (s: StrategicValueResult) => s.raceProfBonus, desc: 'Bonos raciales si la profesión coincide.' },
     { label: 'Tareas', weight: 'fijo', calc: (s: StrategicValueResult) => s.taskValue, raw: (s: StrategicValueResult) => s.taskValue, desc: 'Puntos estratégicos de tareas.' },
     { label: 'Bonus <90', weight: '+10', calc: (s: StrategicValueResult) => s.bonusSub90 * 10, raw: (s: StrategicValueResult) => s.bonusSub90, desc: 'Fijo si está por debajo de 90.' },
@@ -120,14 +118,19 @@
   </div>
 </div>
 
-{#if strategic.reasons.length > 0}
+{#if strategic.reasonGroups.length > 0}
   <div class="svm-reasons">
     <h4>Razones</h4>
-    <ul>
-      {#each strategic.reasons as reason}
-        <li>{reason}</li>
-      {/each}
-    </ul>
+    {#each strategic.reasonGroups as group (group.subtitle)}
+      {#if group.subtitle}
+        <h5 class="svm-group-title">{group.subtitle}</h5>
+      {/if}
+      <ul>
+        {#each group.entries as entry}
+          <li>{entry}</li>
+        {/each}
+      </ul>
+    {/each}
   </div>
 {/if}
 
@@ -169,8 +172,12 @@
   .svm-subtotal-row td { border-top: 1px solid var(--border-subtle); font-size: 0.6rem; color: var(--text-primary); font-style: italic; }
   .svm-total-row td { border-top: 2px solid var(--gold, #d4af37); border-bottom: none; padding-top: 6px; }
   .svm-stars-section { margin-bottom: 12px; }
-  .svm-stars-section h4, .svm-reasons h4 {
+  .svm-stars-section h4,   .svm-reasons h4 {
     font-size: 0.7rem; color: var(--gold); margin: 0 0 6px 0; font-family: var(--font-heading);
+  }
+  .svm-group-title {
+    font-size: 0.6rem; color: var(--gold); font-family: var(--font-heading);
+    margin: 6px 0 2px 0;
   }
   .svm-stars-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 4px; }
   .svm-star-band {

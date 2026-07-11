@@ -178,6 +178,11 @@ export interface LevelBreakdownEntry {
   cumulativeTime: number
 }
 
+export interface ReasonGroup {
+  subtitle: string
+  entries: string[]
+}
+
 export interface StrategicValueResult {
   stars: number
   warbandImpact: number
@@ -197,6 +202,7 @@ export interface StrategicValueResult {
   intrinsicScore: number
   accountImpactScore: number
   reasons: string[]
+  reasonGroups: ReasonGroup[]
 }
 
 export interface TimeRecommendation {

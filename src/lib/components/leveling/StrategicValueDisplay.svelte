@@ -21,8 +21,6 @@
     { label: 'Proximidad al nivel máx.', weight: '×25', calc: (s: StrategicValueResult) => s.proximityToMaxLevel * 25, raw: (s: StrategicValueResult) => s.proximityToMaxLevel, desc: 'Qué tan cerca está del nivel máximo configurado.' },
     { label: 'Cercanía obj.', weight: '×25', calc: (s: StrategicValueResult) => s.closenessToObjective * 25, raw: (s: StrategicValueResult) => s.closenessToObjective, desc: 'Menos dungeons = más puntaje.' },
     { label: 'Profesiones', weight: '×15', calc: (s: StrategicValueResult) => s.professionValue * 15, raw: (s: StrategicValueResult) => s.professionValue, desc: 'Puntos estratégicos de las profesiones del personaje.' },
-    { label: 'Clase', weight: 'fijo', calc: (s: StrategicValueResult) => s.classValue, raw: (s: StrategicValueResult) => s.classValue, desc: 'Ventajas asignadas a la clase.' },
-    { label: 'Raza', weight: 'fijo', calc: (s: StrategicValueResult) => s.raceValue, raw: (s: StrategicValueResult) => s.raceValue, desc: 'Ventajas asignadas a la raza.' },
     { label: 'Bono Raza-Profesión', weight: 'fijo', calc: (s: StrategicValueResult) => s.raceProfBonus, raw: (s: StrategicValueResult) => s.raceProfBonus, desc: 'Bonos raciales si la profesión coincide.' },
     { label: 'Tareas', weight: 'fijo', calc: (s: StrategicValueResult) => s.taskValue, raw: (s: StrategicValueResult) => s.taskValue, desc: 'Puntos estratégicos de tareas.' },
     { label: 'Bonus <90', weight: '+10', calc: (s: StrategicValueResult) => s.bonusSub90 * 10, raw: (s: StrategicValueResult) => s.bonusSub90, desc: 'Fijo si está por debajo de 90.' },
@@ -60,12 +58,17 @@
       <span class="svd-bar-label">{strategic.totalScore.toFixed(0)}/100</span>
     </div>
 
-    {#if strategic.reasons.length > 0}
-      <ul class="svd-reasons">
-        {#each strategic.reasons as reason}
-          <li>{reason}</li>
-        {/each}
-      </ul>
+    {#if strategic.reasonGroups.length > 0}
+      {#each strategic.reasonGroups as group (group.subtitle)}
+        {#if group.subtitle}
+          <h5 class="svd-group-title">{group.subtitle}</h5>
+        {/if}
+        <ul class="svd-reasons">
+          {#each group.entries as entry}
+            <li>{entry}</li>
+          {/each}
+        </ul>
+      {/each}
     {/if}
 
     <div class="svd-stats">
@@ -230,10 +233,16 @@
     color: var(--text-primary);
     line-height: 10px;
   }
+  .svd-group-title {
+    font-size: 0.55rem;
+    color: var(--gold);
+    font-family: var(--font-heading);
+    margin: 4px 0 2px 0;
+  }
   .svd-reasons {
     list-style: none;
     padding: 0;
-    margin: 0 0 6px 0;
+    margin: 0 0 4px 0;
   }
   .svd-reasons li {
     font-size: 0.5rem;

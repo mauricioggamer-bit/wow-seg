@@ -1,4 +1,4 @@
-import type { Personaje, LevelingConfig, StrategicValueResult, StrategicIndex } from '../types'
+import type { Personaje, LevelingConfig, StrategicValueResult, StrategicIndex, ReasonGroup } from '../types'
 import { calculateForCharacter, getEffectiveXpPerDungeon, getXpRemaining } from './calculator'
 import { STAR_THRESHOLDS, RACE_PROFESSION_BONUS } from '../constants'
 import { dataStore } from '../stores/data'
@@ -28,6 +28,15 @@ function getEffectiveWeight(key: string, defaultWeight: number): number {
   return override > 0 ? override : defaultWeight
 }
 
+function ensureGroup(groups: ReasonGroup[], subtitle: string): ReasonGroup {
+  let g = groups.find(g => g.subtitle === subtitle)
+  if (!g) {
+    g = { subtitle, entries: [] }
+    groups.push(g)
+  }
+  return g
+}
+
 export function calculateStrategicValue(
   personaje: Personaje,
   config: LevelingConfig,
@@ -37,10 +46,10 @@ export function calculateStrategicValue(
 ): StrategicValueResult {
   const objetivo = getObjetivo(personaje)
   const calc = calculateForCharacter({ ...personaje, objetivoNivel: objetivo }, config, count90)
-  const reasons: string[] = []
+  const reasonGroups: ReasonGroup[] = []
 
   if (calc.done) {
-    reasons.push(`Objetivo de nivel alcanzado (${objetivo}) — ya no suma por leveling`)
+    ensureGroup(reasonGroups, 'Objetivo').entries.push(`Nivel ${objetivo} alcanzado — ya no suma por leveling`)
   }
 
   const pendingRoster = roster.filter(p => p.planeado_usar && p.nivel < 90)
@@ -55,7 +64,7 @@ export function calculateStrategicValue(
     const buffIncrease = 5
     warbandImpact = beneficiaries8089 * buffIncrease
     if (warbandImpact > 0) {
-      reasons.push(`Llegar a 90 añade +5% XP para ${beneficiaries8089} personaje(s) 80-89 (${warbandImpact}% total)`)
+      ensureGroup(reasonGroups, 'Impacto Warband').entries.push(`Llegar a 90 añade +5% XP para ${beneficiaries8089} personaje(s) 80-89 (${warbandImpact}% total)`)
     }
   }
 
@@ -65,34 +74,33 @@ export function calculateStrategicValue(
   const indexValues: Record<string, number> = {}
 
   for (const idx of indexes) {
-      if (taskContext && idx.context && idx.context !== 'general' && idx.context !== taskContext) continue
-      if (idx.id === 'general') continue
-      let total = 0
+    if (taskContext && idx.context && idx.context !== 'general' && idx.context !== taskContext) continue
+    if (idx.id === 'general') continue
 
     const cv = getClassValue(personaje.clase, idx.id)
-    if (cv > 0) total += cv
-
     const rv = getRaceValue(personaje.raza, idx.id)
-    if (rv > 0) total += rv
-
+    const profVals: { id: string; value: number }[] = []
     for (const pid of profIds) {
       const pv = getProfessionValue(pid, idx.id)
-      if (pv > 0) total += pv
+      if (pv > 0) profVals.push({ id: pid, value: pv })
     }
-
     const tv = dataStore.getStrategicValue('task', '', idx.id) ?? 0
-    if (tv > 0) total += tv
-
     const wv = dataStore.getStrategicValue('warband', personaje.warband, idx.id) ?? 0
-    if (wv > 0) total += wv
-
     const pv2 = dataStore.getStrategicValue('personaje', personaje.nombre, idx.id) ?? 0
-    if (pv2 > 0) total += pv2
 
-    if (total > 0) {
-      indexValues[idx.id] = total
-      reasons.push(`${idx.name}: +${total} pts`)
+    let hasNonEntity = false
+    if (cv > 0) ensureGroup(reasonGroups, `Clase: ${personaje.clase}`).entries.push(`${idx.name}: +${cv}`)
+    if (rv > 0) ensureGroup(reasonGroups, `Raza: ${personaje.raza}`).entries.push(`${idx.name}: +${rv}`)
+    for (const pv of profVals) {
+      ensureGroup(reasonGroups, 'Profesiones').entries.push(`${pv.id}: +${pv.value} (${idx.name})`)
     }
+    if (tv > 0) ensureGroup(reasonGroups, 'Tareas').entries.push(`${idx.name}: +${tv}`)
+
+    if (wv > 0) { ensureGroup(reasonGroups, idx.name).entries.push(`Warband (${personaje.warband}): +${wv}`); hasNonEntity = true }
+    if (pv2 > 0) { ensureGroup(reasonGroups, idx.name).entries.push(`Personaje: +${pv2}`); hasNonEntity = true }
+
+    const total = cv + rv + profVals.reduce((s, p) => s + p.value, 0) + tv + wv + pv2
+    if (total > 0) indexValues[idx.id] = total
   }
 
   const classValue = getClassValue(personaje.clase, 'general')
@@ -103,7 +111,7 @@ export function calculateStrategicValue(
     professionValue = profIds.reduce((sum, id) => sum + getProfessionValue(id, 'general'), 0)
     if (professionValue > 0) {
       const profNames = profIds.join(', ')
-      reasons.push(`Profesiones (${profNames}): +${professionValue} pts`)
+      ensureGroup(reasonGroups, 'Profesiones').entries.push(`General (${profNames}): +${professionValue}`)
     }
   }
 
@@ -132,25 +140,25 @@ export function calculateStrategicValue(
       }
       futureXpIncrease = buffDelta
       if (totalFutureTimeSaved > 0) {
-        reasons.push(`Aumentar XP futura +${buffDelta}% para ${beneficiaries8089} personaje(s) — ahorra ~${totalFutureTimeSaved.toFixed(1)}h`)
+        ensureGroup(reasonGroups, 'Impacto Warband').entries.push(`Aumentar XP futura +${buffDelta}% para ${beneficiaries8089} personaje(s) — ahorra ~${totalFutureTimeSaved.toFixed(1)}h`)
       }
     }
   }
 
   const remainingWeight = !calc.done && remainingCount > 0 ? Math.min(1, remainingCount / 10) : 0
   if (!calc.done && remainingCount > 5) {
-    reasons.push(`${remainingCount} personajes pendientes — alta prioridad para maximizar beneficio de warband`)
+    ensureGroup(reasonGroups, 'Prioridad').entries.push(`${remainingCount} personajes pendientes — alta prioridad para maximizar beneficio de warband`)
   } else if (!calc.done && remainingCount > 2) {
-    reasons.push(`${remainingCount} personajes pendientes — beneficio moderado de warband`)
+    ensureGroup(reasonGroups, 'Prioridad').entries.push(`${remainingCount} personajes pendientes — beneficio moderado de warband`)
   }
 
   if (!calc.done) {
     if (personaje.nivel >= 80 && personaje.nivel < 90) {
-      reasons.push(`Nivel ${personaje.nivel}: cercano a 90, barato para desbloquear Warband Mentor 80-90`)
+      ensureGroup(reasonGroups, 'Impacto Warband').entries.push(`Nivel ${personaje.nivel}: cercano a 90, barato para desbloquear Warband Mentor 80-90`)
     } else if (personaje.nivel < 80 && objetivo >= 90) {
-      reasons.push(`Objetivo ${objetivo}: al completarlo, desbloquea +5% Warband Mentor para toda la cuenta`)
+      ensureGroup(reasonGroups, 'Impacto Warband').entries.push(`Objetivo ${objetivo}: al completarlo, desbloquea +5% Warband Mentor para toda la cuenta`)
     } else if (dungeonsTo90 <= 20) {
-      reasons.push(`Solo ${dungeonsTo90} dungeons para llegar a ${objetivo} (victoria rápida)`)
+      ensureGroup(reasonGroups, 'Impacto Warband').entries.push(`Solo ${dungeonsTo90} dungeons para llegar a ${objetivo} (victoria rápida)`)
     }
   }
 
@@ -158,15 +166,15 @@ export function calculateStrategicValue(
   const bonus8089 = !calc.done && (personaje.nivel >= 80 && personaje.nivel < 90) ? 1 : 0
 
   if (classValue > 0) {
-    reasons.push(`Clase ${personaje.clase}: +${classValue} pts`)
+    ensureGroup(reasonGroups, `Clase: ${personaje.clase}`).entries.push(`General: +${classValue}`)
   }
   if (raceValue > 0) {
-    reasons.push(`Raza ${personaje.raza}: +${raceValue} pts`)
+    ensureGroup(reasonGroups, `Raza: ${personaje.raza}`).entries.push(`General: +${raceValue}`)
   }
 
   const taskValue = (personaje.tareas ?? []).reduce((sum, t) => sum + (t.puntos ?? 0), 0)
   if (taskValue > 0) {
-    reasons.push(`Tareas: +${taskValue} pts`)
+    ensureGroup(reasonGroups, 'Tareas').entries.push(`General: +${taskValue}`)
   }
 
   let raceProfBonus = 0
@@ -174,10 +182,12 @@ export function calculateStrategicValue(
   for (const bonus of raceBonuses) {
     if (bonus.profId === '*') {
       raceProfBonus += bonus.bonus * profIds.length
-      if (profIds.length > 0) reasons.push(`Kul Tiran: +${bonus.bonus * profIds.length} pts por ${profIds.length} profesión(es) primaria(s)`)
+      if (profIds.length > 0) {
+        ensureGroup(reasonGroups, `Raza: ${personaje.raza}`).entries.push(`Bono racial (${profIds.length} profesiones): +${bonus.bonus * profIds.length}`)
+      }
     } else if (profIds.includes(bonus.profId)) {
       raceProfBonus += bonus.bonus
-      reasons.push(`${personaje.raza}: +${bonus.bonus} pts (${bonus.profId}${bonus.note ? ' — ' + bonus.note : ''})`)
+      ensureGroup(reasonGroups, `Raza: ${personaje.raza}`).entries.push(`Bono racial (${bonus.profId}${bonus.note ? ' — ' + bonus.note : ''}): +${bonus.bonus}`)
     }
   }
 
@@ -213,8 +223,10 @@ export function calculateStrategicValue(
     if (totalScore >= t.min) { stars = t.stars; break }
   }
 
+  const reasons = reasonGroups.flatMap(g => g.entries)
+
   if (reasons.length === 0) {
-    reasons.push(`${dungeonsTo90} dungeons restantes para llegar a ${objetivo}`)
+    ensureGroup(reasonGroups, 'General').entries.push(`${dungeonsTo90} dungeons restantes para llegar a ${objetivo}`)
   }
 
   const intrinsicScore =
@@ -253,6 +265,7 @@ export function calculateStrategicValue(
     intrinsicScore,
     accountImpactScore,
     reasons,
+    reasonGroups,
   }
 }
 

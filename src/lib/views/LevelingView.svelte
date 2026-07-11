@@ -259,7 +259,7 @@
           doneObjetivo: r.finalState.level >= objetivo,
           roi: roiMap.get(cr.nombre) ?? 0,
           strategicStars: sv.stars,
-          strategicText: sv.reasons.join(' '),
+          strategicText: sv.reasonGroups.flatMap(g => g.entries).join(' '),
           strategicScore: sv.totalScore,
           warbandImpact: sv.warbandImpact,
         }

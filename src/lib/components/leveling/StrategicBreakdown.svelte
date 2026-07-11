@@ -47,7 +47,7 @@
     <div class="svm-score-fill" style="width: {strategic.totalScore}%"></div>
   </div>
   <div class="svm-score-label">
-    <strong>{strategic.totalScore.toFixed(0)}/100</strong>
+    <strong>{strategic.totalScore.toFixed(0)}%</strong>
     <span>{'★'.repeat(strategic.stars)}{'☆'.repeat(5 - strategic.stars)}</span>
   </div>
 </div>
@@ -100,9 +100,9 @@
     </tr>
 
     <tr class="svm-total-row">
-      <td colspan="3"><strong>Total</strong></td>
-      <td class="svm-contrib"><strong>{strategic.totalScore.toFixed(0)}</strong></td>
-      <td></td>
+      <td colspan="3"><strong>Pct. real</strong></td>
+      <td class="svm-contrib"><strong>{strategic.totalScore.toFixed(0)}%</strong></td>
+      <td title="Puntuación real sin cap: {strategic.rawTotalScore.toFixed(0)} / {strategic.maxPosible.toFixed(0)}">?</td>
     </tr>
   </tbody>
 </table>

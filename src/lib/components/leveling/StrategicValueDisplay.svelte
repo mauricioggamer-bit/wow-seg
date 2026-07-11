@@ -55,7 +55,7 @@
     <div class="svd-stars">{'★'.repeat(strategic.stars)}{'☆'.repeat(5 - strategic.stars)}</div>
     <div class="svd-bar">
       <div class="svd-bar-fill" style="width: {strategic.totalScore}%"></div>
-      <span class="svd-bar-label">{strategic.totalScore.toFixed(0)}/100</span>
+      <span class="svd-bar-label">{strategic.totalScore.toFixed(0)}%</span>
     </div>
 
     {#if strategic.reasonGroups.length > 0}
@@ -131,9 +131,9 @@
         <td></td>
       </tr>
       <tr class="svd-total">
-        <td colspan="3"><strong>Total</strong></td>
-        <td class="svd-contrib"><strong>{strategic.totalScore.toFixed(0)}</strong></td>
-        <td></td>
+        <td colspan="3"><strong>Pct. real</strong></td>
+        <td class="svd-contrib"><strong>{strategic.totalScore.toFixed(0)}%</strong></td>
+        <td title="Puntuación real sin cap: {strategic.rawTotalScore.toFixed(0)} / {strategic.maxPosible.toFixed(0)}">?</td>
       </tr>
     </tbody>
   </table>

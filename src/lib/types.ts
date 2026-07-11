@@ -200,6 +200,8 @@ export interface StrategicValueResult {
   taskValue: number
   indexValues: Record<string, number>
   totalScore: number
+  rawTotalScore: number
+  maxPosible: number
   intrinsicScore: number
   accountImpactScore: number
   reasons: string[]

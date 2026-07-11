@@ -182,7 +182,7 @@
                   <span class="lvl-tip-score-bar">
                     <span class="lvl-tip-score-fill" style="width: {r.strategicScore}%"></span>
                   </span>
-                  <span class="lvl-tip-score-val">{r.strategicScore}/100</span>
+                  <span class="lvl-tip-score-val">{r.strategicScore}%</span>
                 </div>
                 {#if r.warbandImpact > 0}
                   <div class="lvl-tip-impact">Warband impact: +{r.warbandImpact}%</div>

@@ -229,21 +229,27 @@ export function calculateStrategicValue(
 
   const totalIndexValue = Object.values(indexValues).reduce((a, b) => a + b, 0)
 
-  let totalScore = 0
-  totalScore += warbandImpact * wWarband
-  totalScore += profesionesCompletasValor * wProfesionesCompletas
-  totalScore += proximityToMaxLevel * wProximityToMaxLevel
-  totalScore += closenessToObjective * wClosenessObj
-  totalScore += futureXpIncrease * wFutureXp
-  totalScore += remainingWeight * wRemaining
-  totalScore += bonusSub90 * wBonusSub90
-  totalScore += bonus8089 * wBonus8089
-  totalScore += raceProfBonus
-  totalScore += taskValue
-  totalScore += classValue
-  totalScore += raceValue
-  totalScore += totalIndexValue
-  totalScore = Math.min(100, totalScore)
+  const rawTotalScore =
+    warbandImpact * wWarband
+    + profesionesCompletasValor * wProfesionesCompletas
+    + proximityToMaxLevel * wProximityToMaxLevel
+    + closenessToObjective * wClosenessObj
+    + futureXpIncrease * wFutureXp
+    + remainingWeight * wRemaining
+    + bonusSub90 * wBonusSub90
+    + bonus8089 * wBonus8089
+    + raceProfBonus
+    + taskValue
+    + classValue
+    + raceValue
+    + totalIndexValue
+
+  const gapProximity = calc.done ? 0 : (1 - proximityToMaxLevel) * wProximityToMaxLevel
+  const gapCloseness = calc.done ? 0 : (1 - closenessToObjective) * wClosenessObj
+  const gapProfesiones = Math.max(0, 2 - profesionesCompletasValor) * wProfesionesCompletas
+
+  const maxPosible = rawTotalScore + gapProximity + gapCloseness + gapProfesiones
+  const totalScore = Math.min(100, Math.round((rawTotalScore / maxPosible) * 100))
 
   let stars = 1
   for (const t of STAR_THRESHOLDS) {
@@ -289,6 +295,8 @@ export function calculateStrategicValue(
     taskValue,
     indexValues,
     totalScore,
+    rawTotalScore,
+    maxPosible,
     intrinsicScore,
     accountImpactScore,
     reasons,

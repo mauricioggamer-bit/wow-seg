@@ -111,13 +111,19 @@
         {#each STRATEGIC_PARAMS as param}
           <div class="sv-param-row">
             <span class="sv-param-label">{param.label}</span>
-            <input type="number" min="1" max="200"
-              value={dataStore.getStrategicParam(param.key, param.default)}
-              onchange={(e) => {
-                const v = parseInt(e.currentTarget.value)
-                if (!isNaN(v) && v >= 1) dataStore.setStrategicParam(param.key, v)
-              }}
-              class="sv-input" />
+            {#if param.type === 'boolean'}
+              <input type="checkbox"
+                checked={dataStore.getStrategicParam(param.key, param.default) === 1}
+                onchange={(e) => dataStore.setStrategicParam(param.key, e.currentTarget.checked ? 1 : 0)} />
+            {:else}
+              <input type="number" min="1" max="200"
+                value={dataStore.getStrategicParam(param.key, param.default)}
+                onchange={(e) => {
+                  const v = parseInt(e.currentTarget.value)
+                  if (!isNaN(v) && v >= 1) dataStore.setStrategicParam(param.key, v)
+                }}
+                class="sv-input" />
+            {/if}
             <span class="sv-default">Default: {param.default}</span>
             <span class="sv-desc">{param.description}</span>
           </div>

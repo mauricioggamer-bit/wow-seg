@@ -66,7 +66,7 @@ export function calculateStrategicValue(
     const buffIncrease = 5
     warbandImpact = beneficiaries8089 * buffIncrease
     if (warbandImpact > 0) {
-      ensureGroup(reasonGroups, 'Impacto Warband').entries.push(`Llegar a 90 añade +5% XP para ${beneficiaries8089} personaje(s) 80-89 (${warbandImpact}% total)`)
+      ensureGroup(reasonGroups, 'Impacto Warband').entries.push(`Warband Mentor 80-90: +5% XP para ${beneficiaries8089} personajes 80-89 (${warbandImpact}% total)`)
     }
   }
 
@@ -178,18 +178,18 @@ export function calculateStrategicValue(
       }
       futureXpIncrease = buffDelta
       if (totalFutureTimeSaved > 0) {
-        ensureGroup(reasonGroups, 'Impacto Warband').entries.push(`Aumentar XP futura +${buffDelta}% para ${beneficiaries8089} personaje(s) — ahorra ~${totalFutureTimeSaved.toFixed(1)}h`)
+        ensureGroup(reasonGroups, 'Impacto Warband').entries.push(`Warband Mentor 80-90: +${buffDelta}% XP futura para ${beneficiaries8089} personajes (ahorra ~${totalFutureTimeSaved.toFixed(1)}h)`)
       }
     }
   }
 
   if (!calc.done) {
     if (personaje.nivel >= 80 && personaje.nivel < maxLevel) {
-      ensureGroup(reasonGroups, 'Impacto Warband').entries.push(`Nivel ${personaje.nivel}: cercano al máximo, barato para desbloquear Warband Mentor`)
+      ensureGroup(reasonGroups, 'Impacto Warband').entries.push(`Warband Mentor 80-90: nivel ${personaje.nivel} cercano al máximo, barato de desbloquear`)
     } else if (personaje.nivel < 80 && objetivo >= maxLevel) {
       ensureGroup(reasonGroups, 'Impacto Warband').entries.push(`Objetivo ${objetivo}: al completarlo, desbloquea +5% Warband Mentor para toda la cuenta`)
     } else if (dungeonsTo90 <= 20) {
-      ensureGroup(reasonGroups, 'Impacto Warband').entries.push(`Solo ${dungeonsTo90} dungeons para llegar a ${objetivo} (victoria rápida)`)
+      ensureGroup(reasonGroups, 'Impacto Warband').entries.push(`Warband Mentor 80-90: solo ${dungeonsTo90} dungeons para llegar a ${objetivo} (victoria rápida)`)
     }
   }
 

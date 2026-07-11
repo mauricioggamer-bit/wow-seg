@@ -1,5 +1,5 @@
 <script lang="ts">
-  import type { StrategicValueResult } from '../../types'
+  import type { StrategicValueResult, ReasonGroup } from '../../types'
   import { STAR_THRESHOLDS } from '../../constants'
   import StrategicValueModal from './StrategicValueModal.svelte'
 
@@ -7,6 +7,38 @@
 
   let modalOpen = $state(false)
   let starBand = $derived([...STAR_THRESHOLDS].find(t => strategic.totalScore >= t.min))
+
+  function extractValue(entry: string): number {
+    const m = entry.match(/([+-]\d+(?:\.\d+)?)\s*$/)
+    return m ? parseFloat(m[1]) : 0
+  }
+
+  function valOrDash(v: number): string {
+    return v === 0 ? '—' : (Number.isInteger(v) ? v.toFixed(0) : v.toFixed(1))
+  }
+
+  function formatTotal(v: number): string {
+    const s = Number.isInteger(v) ? v.toFixed(0) : v.toFixed(1)
+    return v >= 0 ? '+' + s : s
+  }
+
+  function groupTotal(g: ReasonGroup): number {
+    let sum = 0
+    if (g.subGroups) {
+      for (const sub of g.subGroups) {
+        for (const e of sub.entries) sum += extractValue(e)
+      }
+    } else {
+      for (const e of g.entries) sum += extractValue(e)
+    }
+    return sum
+  }
+
+  let grandTotal = $derived.by(() => {
+    let sum = 0
+    for (const g of strategic.reasonGroups) sum += groupTotal(g)
+    return sum
+  })
 
   interface RowDef {
     label: string
@@ -75,17 +107,18 @@
           {#each strategic.reasonGroups as group (group.subtitle)}
             {#if group.subtitle}
               <tr class="svd-reason-group-row">
-                <td class="svd-group-title">{group.subtitle}</td>
+                <td class="svd-group-title" colspan="2">{group.subtitle}</td>
               </tr>
             {/if}
             {#if group.subGroups}
               {#each group.subGroups as sub (sub.subtitle)}
                 <tr class="svd-reason-sub-row">
-                  <td class="svd-sub-title">{sub.subtitle}</td>
+                  <td class="svd-sub-title" colspan="2">{sub.subtitle}</td>
                 </tr>
                 {#each sub.entries as entry}
                   <tr class="svd-reason-entry-row">
                     <td class="svd-reason-entry">▸ {entry}</td>
+                    <td class="svd-reason-val">{valOrDash(extractValue(entry))}</td>
                   </tr>
                 {/each}
               {/each}
@@ -93,10 +126,19 @@
               {#each group.entries as entry}
                 <tr class="svd-reason-entry-row">
                   <td class="svd-reason-entry">▸ {entry}</td>
+                  <td class="svd-reason-val">{valOrDash(extractValue(entry))}</td>
                 </tr>
               {/each}
             {/if}
+            <tr class="svd-reason-subtotal-row">
+              <td class="svd-reason-subtotal-label">Subtotal</td>
+              <td class="svd-reason-subtotal-val">{formatTotal(groupTotal(group))}</td>
+            </tr>
           {/each}
+          <tr class="svd-reason-grandtotal-row">
+            <td class="svd-reason-grandtotal-label">Total</td>
+            <td class="svd-reason-grandtotal-val">{formatTotal(grandTotal)}</td>
+          </tr>
         </tbody>
       </table>
     {/if}
@@ -244,11 +286,56 @@
     font-size: 0.5rem;
     color: var(--text-secondary);
     padding: 1px 0;
-    padding-left: 10px;
     border: none;
   }
   .svd-reason-entry {
     color: var(--text-secondary);
+    padding-left: 10px;
+  }
+  .svd-reason-val {
+    text-align: right;
+    color: var(--text-secondary);
+    font-variant-numeric: tabular-nums;
+    width: 28px;
+    padding-right: 2px;
+  }
+  .svd-reason-subtotal-row td {
+    border-top: 1px solid var(--border-subtle);
+    font-size: 0.5rem;
+    padding: 2px 0;
+  }
+  .svd-reason-subtotal-label {
+    text-align: right;
+    color: var(--text-muted);
+    font-style: italic;
+    padding-right: 4px;
+  }
+  .svd-reason-subtotal-val {
+    text-align: right;
+    color: var(--gold-light, #d4af37);
+    font-weight: bold;
+    font-variant-numeric: tabular-nums;
+    width: 28px;
+    padding-right: 2px;
+  }
+  .svd-reason-grandtotal-row td {
+    border-top: 2px solid var(--gold, #d4af37);
+    font-size: 0.55rem;
+    padding: 3px 0;
+  }
+  .svd-reason-grandtotal-label {
+    text-align: right;
+    color: var(--gold);
+    font-weight: bold;
+    padding-right: 4px;
+  }
+  .svd-reason-grandtotal-val {
+    text-align: right;
+    color: var(--gold-light, #d4af37);
+    font-weight: bold;
+    font-variant-numeric: tabular-nums;
+    width: 28px;
+    padding-right: 2px;
   }
   .svd-table {
     width: 100%;

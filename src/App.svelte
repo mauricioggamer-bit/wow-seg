@@ -22,6 +22,7 @@
   import EntityAssignments from './lib/components/strategic/EntityAssignments.svelte'
   import { authStore } from './lib/stores/auth'
   import { uiStore } from './lib/stores/ui'
+  import { taskEditRequest } from './lib/stores/taskEdit'
   import { dataStore, personajesStore, warbandsStore } from './lib/stores/data'
   import { levelingStore } from './lib/stores/leveling'
   import { gistStore } from './lib/stores/gist'
@@ -74,6 +75,14 @@
     if ($authStore.authenticated && !$uiStore.warbandInitialized) {
       const wbs = [...$warbandsStore].sort((a, b) => (a.orden ?? 0) - (b.orden ?? 0))
       if (wbs.length > 0) uiStore.selectWarband(wbs[0].nombre)
+    }
+  })
+
+  $effect(() => {
+    const req = $taskEditRequest
+    if (req) {
+      openTaskEdit(req.charName, req.taskId)
+      taskEditRequest.set(null)
     }
   })
 

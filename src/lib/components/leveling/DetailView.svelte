@@ -137,7 +137,7 @@
     </div>
 
   {/if}
-  <StrategicValueDisplay {strategic} />
+  <StrategicValueDisplay {strategic} {personaje} />
 </div>
 
 <style>

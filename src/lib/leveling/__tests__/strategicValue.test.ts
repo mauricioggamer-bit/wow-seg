@@ -53,7 +53,6 @@ describe('calculateStrategicValue', () => {
       expect(result.proximityToMaxLevel).toBe(0)
       expect(result.closenessToObjective).toBe(0)
       expect(result.futureXpIncrease).toBe(0)
-      expect(result.remainingWeight).toBe(0)
       expect(result.bonusSub90).toBe(0)
       expect(result.bonus8089).toBe(0)
 

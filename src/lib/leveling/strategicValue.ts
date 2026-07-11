@@ -56,7 +56,6 @@ export function calculateStrategicValue(
   }
 
   const pendingRoster = roster.filter(p => p.planeado_usar && p.nivel < objetivo)
-  const remainingCount = pendingRoster.length
 
   const beneficiaries8089 = roster.filter(
     p => p.planeado_usar && p.nivel >= 80 && p.nivel < maxLevel && p.nombre !== personaje.nombre,
@@ -184,13 +183,6 @@ export function calculateStrategicValue(
     }
   }
 
-  const remainingWeight = !calc.done && remainingCount > 0 ? Math.min(1, remainingCount / 10) : 0
-  if (!calc.done && remainingCount > 5) {
-    ensureGroup(reasonGroups, 'Prioridad').entries.push(`${remainingCount} personajes pendientes — alta prioridad para maximizar beneficio de warband`)
-  } else if (!calc.done && remainingCount > 2) {
-    ensureGroup(reasonGroups, 'Prioridad').entries.push(`${remainingCount} personajes pendientes — beneficio moderado de warband`)
-  }
-
   if (!calc.done) {
     if (personaje.nivel >= 80 && personaje.nivel < maxLevel) {
       ensureGroup(reasonGroups, 'Impacto Warband').entries.push(`Nivel ${personaje.nivel}: cercano al máximo, barato para desbloquear Warband Mentor`)
@@ -223,7 +215,6 @@ export function calculateStrategicValue(
   const wProximityToMaxLevel = getEffectiveWeight('proximityToMaxLevel', 25)
   const wClosenessObj = getEffectiveWeight('closenessToObjective', 25)
   const wFutureXp = getEffectiveWeight('futureXpIncrease', 8)
-  const wRemaining = getEffectiveWeight('remainingWeight', 10)
   const wBonusSub90 = getEffectiveWeight('bonusSub90', 10)
   const wBonus8089 = getEffectiveWeight('bonus8089', 15)
 
@@ -235,7 +226,6 @@ export function calculateStrategicValue(
     + proximityToMaxLevel * wProximityToMaxLevel
     + closenessToObjective * wClosenessObj
     + futureXpIncrease * wFutureXp
-    + remainingWeight * wRemaining
     + bonusSub90 * wBonusSub90
     + bonus8089 * wBonus8089
     + raceProfBonus
@@ -277,7 +267,6 @@ export function calculateStrategicValue(
   const accountImpactScore =
     warbandImpact * wWarband
     + futureXpIncrease * wFutureXp
-    + remainingWeight * wRemaining
 
   return {
     stars,
@@ -286,7 +275,6 @@ export function calculateStrategicValue(
     proximityToMaxLevel,
     closenessToObjective,
     futureXpIncrease,
-    remainingWeight,
     bonusSub90,
     bonus8089,
     classValue,
@@ -294,6 +282,7 @@ export function calculateStrategicValue(
     raceProfBonus,
     taskValue,
     indexValues,
+    objetivo,
     totalScore,
     rawTotalScore,
     maxPosible,

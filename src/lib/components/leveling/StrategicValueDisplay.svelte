@@ -1,9 +1,10 @@
 <script lang="ts">
-  import type { StrategicValueResult, ReasonGroup } from '../../types'
+  import type { StrategicValueResult, ReasonGroup, Personaje } from '../../types'
   import { STAR_THRESHOLDS } from '../../constants'
   import StrategicValueModal from './StrategicValueModal.svelte'
+  import { taskEditRequest } from '../../stores/taskEdit'
 
-  let { strategic }: { strategic: StrategicValueResult } = $props()
+  let { strategic, personaje }: { strategic: StrategicValueResult; personaje?: Personaje } = $props()
 
   let modalOpen = $state(false)
   let starBand = $derived([...STAR_THRESHOLDS].find(t => strategic.totalScore >= t.min))
@@ -63,7 +64,6 @@
   const ACCOUNT_ROWS: RowDef[] = [
     { label: 'Warband Impact', weight: '×10', calc: (s: StrategicValueResult) => s.warbandImpact * 10, raw: (s: StrategicValueResult) => s.warbandImpact, desc: 'Personajes 80-89 que reciben +5% XP.' },
     { label: 'XP futura', weight: '×8', calc: (s: StrategicValueResult) => s.futureXpIncrease * 8, raw: (s: StrategicValueResult) => s.futureXpIncrease, desc: 'Delta de Warband Mentor al subir a 90.' },
-    { label: 'Peso restante', weight: '×10', calc: (s: StrategicValueResult) => s.remainingWeight * 10, raw: (s: StrategicValueResult) => s.remainingWeight, desc: 'Más pendientes = más valor de Warband.' },
   ]
 
   function fmtVal(v: number): string {
@@ -107,7 +107,15 @@
           {#each strategic.reasonGroups as group (group.subtitle)}
             {#if group.subtitle}
               <tr class="svd-reason-group-row">
-                <td class="svd-group-title" colspan="2">{group.subtitle}</td>
+                <td class="svd-group-title" colspan="2">
+                  {group.subtitle}
+                  {#if group.subtitle === 'Objetivo' && personaje}
+                    {@const tareaObj = personaje.tareas.find(t => t.nivelRecomendado === strategic.objetivo)}
+                    {#if tareaObj}
+                      <button class="svd-edit-btn" onclick={() => taskEditRequest.set({ charName: personaje.nombre, taskId: tareaObj.id })}>✏️</button>
+                    {/if}
+                  {/if}
+                </td>
               </tr>
             {/if}
             {#if group.subGroups}
@@ -328,6 +336,18 @@
     color: var(--gold);
     font-weight: bold;
     padding-right: 4px;
+  }
+  .svd-edit-btn {
+    background: none;
+    border: none;
+    cursor: pointer;
+    font-size: 0.55rem;
+    padding: 0 2px;
+    vertical-align: middle;
+    line-height: 1;
+  }
+  .svd-edit-btn:hover {
+    filter: brightness(1.5);
   }
   .svd-reason-grandtotal-val {
     text-align: right;

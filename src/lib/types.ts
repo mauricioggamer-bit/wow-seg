@@ -191,7 +191,6 @@ export interface StrategicValueResult {
   proximityToMaxLevel: number
   closenessToObjective: number
   futureXpIncrease: number
-  remainingWeight: number
   bonusSub90: number
   bonus8089: number
   classValue: number
@@ -199,6 +198,7 @@ export interface StrategicValueResult {
   raceProfBonus: number
   taskValue: number
   indexValues: Record<string, number>
+  objetivo: number
   totalScore: number
   rawTotalScore: number
   maxPosible: number

@@ -94,7 +94,6 @@ export const STRATEGIC_COMPONENTS: StrategicComponentInfo[] = [
   { key: 'proximityToMaxLevel', label: 'Proximidad al nivel máximo', weight: 25, description: 'max(0, (nivel - 10) / (nivelMaximo - 10)). Qué tan cerca está del nivel máximo configurado.' },
   { key: 'closenessToObjective', label: 'Cercanía obj.', weight: 25, description: 'max(0, 1 - dungeonsTo90 / 200). Menos dungeons para 90 = más puntaje.' },
   { key: 'futureXpIncrease', label: 'XP futura', weight: 8, description: 'Incremento de Warband Mentor al subir a 90 (delta del buff entre count90 actual y +1).' },
-  { key: 'remainingWeight', label: 'Peso restante', weight: 10, description: 'min(1, pendientes/10). Más personajes pendientes = más valor de Warband.' },
   { key: 'bonusSub90', label: 'Bonus <90', weight: 'bonus', description: '+10 fijo si el personaje está por debajo de nivel 90.' },
   { key: 'bonus8089', label: 'Bonus 80-89', weight: 'bonus', description: '+15 fijo si el personaje está en el rango 80-89 (barato para Warband Mentor 80-90).' },
   { key: 'indexValues', label: 'Ventajas', weight: 'fixed', description: 'Suma de ventajas estratégicas definidas por el usuario (sin incluir clase/raza).' },

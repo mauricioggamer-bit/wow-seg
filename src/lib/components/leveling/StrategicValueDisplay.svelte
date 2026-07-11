@@ -58,6 +58,17 @@
       <span class="svd-bar-label">{strategic.totalScore.toFixed(0)}%</span>
     </div>
 
+    <div class="svd-star-bands">
+      <div class="svd-bands-grid">
+        {#each [...STAR_THRESHOLDS] as band}
+          <div class="svd-band" class:active={starBand?.stars === band.stars}>
+            <span class="svd-band-stars">{'★'.repeat(band.stars)}{'☆'.repeat(5 - band.stars)}</span>
+            <span class="svd-band-thresh">≥ {band.min}</span>
+          </div>
+        {/each}
+      </div>
+    </div>
+
     {#if strategic.reasonGroups.length > 0}
       {#each strategic.reasonGroups as group (group.subtitle)}
         {#if group.subtitle}
@@ -137,18 +148,6 @@
       </tr>
     </tbody>
   </table>
-
-  <div class="svd-star-bands">
-    <h4>Bandas de estrellas</h4>
-    <div class="svd-bands-grid">
-      {#each [...STAR_THRESHOLDS] as band}
-        <div class="svd-band" class:active={starBand?.stars === band.stars}>
-          <span class="svd-band-stars">{'★'.repeat(band.stars)}{'☆'.repeat(5 - band.stars)}</span>
-          <span class="svd-band-thresh">≥ {band.min}</span>
-        </div>
-      {/each}
-    </div>
-  </div>
 </div>
 
 <StrategicValueModal bind:open={modalOpen} {strategic} />
@@ -291,13 +290,7 @@
     border-bottom: none;
     padding-top: 6px;
   }
-  .svd-star-bands { margin-top: 4px; }
-  .svd-star-bands h4 {
-    font-size: 0.7rem;
-    color: var(--gold);
-    margin: 0 0 6px 0;
-    font-family: var(--font-heading);
-  }
+  .svd-star-bands { margin: 6px 0; }
   .svd-bands-grid {
     display: grid;
     grid-template-columns: repeat(5, 1fr);

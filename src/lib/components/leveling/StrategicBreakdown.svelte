@@ -52,6 +52,17 @@
   </div>
 </div>
 
+<div class="svm-stars-section">
+  <div class="svm-stars-grid">
+    {#each [...STAR_THRESHOLDS] as band}
+      <div class="svm-star-band" class:active={starBand?.stars === band.stars}>
+        <span class="svm-band-stars">{'★'.repeat(band.stars)}{'☆'.repeat(5 - band.stars)}</span>
+        <span class="svm-band-thresh">≥ {band.min}</span>
+      </div>
+    {/each}
+  </div>
+</div>
+
 <table class="svm-table">
   <thead>
     <tr>
@@ -106,18 +117,6 @@
     </tr>
   </tbody>
 </table>
-
-<div class="svm-stars-section">
-  <h4>Bandas de estrellas</h4>
-  <div class="svm-stars-grid">
-    {#each [...STAR_THRESHOLDS] as band}
-      <div class="svm-star-band" class:active={starBand?.stars === band.stars}>
-        <span class="svm-band-stars">{'★'.repeat(band.stars)}{'☆'.repeat(5 - band.stars)}</span>
-        <span class="svm-band-thresh">≥ {band.min}</span>
-      </div>
-    {/each}
-  </div>
-</div>
 
 {#if strategic.reasonGroups.length > 0}
   <div class="svm-reasons">
@@ -183,8 +182,8 @@
   .svm-section-row td { border-top: 1px solid var(--gold, #d4af37); padding-top: 6px; font-size: 0.6rem; color: var(--gold, #d4af37); text-transform: uppercase; letter-spacing: 0.06em; }
   .svm-subtotal-row td { border-top: 1px solid var(--border-subtle); font-size: 0.6rem; color: var(--text-primary); font-style: italic; }
   .svm-total-row td { border-top: 2px solid var(--gold, #d4af37); border-bottom: none; padding-top: 6px; }
-  .svm-stars-section { margin-bottom: 12px; }
-  .svm-stars-section h4,   .svm-reasons h4 {
+  .svm-stars-section { margin: 6px 0; }
+  .svm-reasons h4 {
     font-size: 0.7rem; color: var(--gold); margin: 0 0 6px 0; font-family: var(--font-heading);
   }
   .svm-group-title {

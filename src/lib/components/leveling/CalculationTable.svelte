@@ -14,18 +14,69 @@
     onSelect?: (nombre: string) => void
   } = $props()
 
+  type SortField = 'nombre' | 'nivel' | 'objetivo' | 'maxTareaNivel' | 'dungeonsTo90' | 'timeTo90' | 'xpPerHour' | 'strategicScore'
+
+  let sortField: SortField | null = $state(null)
+  let sortDir: 'asc' | 'desc' = $state('asc')
+
   let filterName = $state('')
   let filterLevel = $state('')
+  let filterObj = $state('')
+  let filterTarea = $state('')
+  let filterDungs = $state('')
+  let filterHoras = $state('')
+  let filterXp = $state('')
+  let filterScore = $state('')
 
   let filteredResults = $derived(
-    results.filter(r => {
-      if (filterName && !r.nombre.toLowerCase().includes(filterName.toLowerCase())) return false
-      if (filterLevel) {
-        const lvl = parseInt(filterLevel)
-        if (!isNaN(lvl) && r.nivel !== lvl) return false
-      }
-      return true
-    })
+    results
+      .filter(r => {
+        if (filterName && !r.nombre.toLowerCase().includes(filterName.toLowerCase())) return false
+        if (filterLevel) {
+          const lvl = parseInt(filterLevel)
+          if (!isNaN(lvl) && r.nivel !== lvl) return false
+        }
+        if (filterObj) {
+          const v = parseInt(filterObj)
+          if (!isNaN(v) && r.objetivo !== v) return false
+        }
+        if (filterTarea) {
+          const v = parseInt(filterTarea)
+          if (!isNaN(v) && (r.maxTareaNivel ?? 0) !== v) return false
+        }
+        if (filterDungs) {
+          const v = parseInt(filterDungs)
+          if (!isNaN(v) && (r.doneObjetivo ? 0 : r.dungeonsTo90) !== v) return false
+        }
+        if (filterHoras) {
+          const v = parseInt(filterHoras)
+          if (!isNaN(v) && Math.round(r.doneObjetivo ? 0 : r.timeTo90) !== v) return false
+        }
+        if (filterXp) {
+          const v = parseInt(filterXp)
+          if (!isNaN(v) && Math.round(r.xpPerHour) !== v) return false
+        }
+        if (filterScore) {
+          const v = parseInt(filterScore)
+          if (!isNaN(v) && Math.round(r.strategicScore) !== v) return false
+        }
+        return true
+      })
+      .sort((a, b) => {
+        if (!sortField) return 0
+        let cmp = 0
+        switch (sortField) {
+          case 'nombre': cmp = a.nombre.localeCompare(b.nombre); break
+          case 'nivel': cmp = a.nivel - b.nivel; break
+          case 'objetivo': cmp = a.objetivo - b.objetivo; break
+          case 'maxTareaNivel': cmp = (a.maxTareaNivel ?? 0) - (b.maxTareaNivel ?? 0); break
+          case 'dungeonsTo90': cmp = (a.doneObjetivo ? 0 : a.dungeonsTo90) - (b.doneObjetivo ? 0 : b.dungeonsTo90); break
+          case 'timeTo90': cmp = (a.doneObjetivo ? 0 : a.timeTo90) - (b.doneObjetivo ? 0 : b.timeTo90); break
+          case 'xpPerHour': cmp = a.xpPerHour - b.xpPerHour; break
+          case 'strategicScore': cmp = a.strategicScore - b.strategicScore; break
+        }
+        return sortDir === 'asc' ? cmp : -cmp
+      })
   )
 
   let editing = $state<{nombre: string; field: 'timeways' | 'nivel'; value: number} | null>(null)
@@ -78,29 +129,49 @@
   function getTimewaysPct(nombre: string): number {
     return personajes.find(p => p.nombre === nombre)?.timewaysPct ?? 0
   }
+
+  function toggleSort(field: SortField) {
+    if (sortField === field) {
+      if (sortDir === 'asc') { sortDir = 'desc' }
+      else { sortField = null; sortDir = 'asc' }
+    } else {
+      sortField = field
+      sortDir = 'asc'
+    }
+  }
+
+  function sortArrow(field: SortField): string {
+    if (sortField !== field) return ''
+    return sortDir === 'asc' ? ' ▲' : ' ▼'
+  }
 </script>
 
   <div class="lvl-table-wrap">
-    <div class="lvl-table-toolbar">
-      <div class="lvl-view-toggle">
-        <input type="text" class="lvl-filter-input" placeholder="Nombre…" bind:value={filterName} />
-        <input type="text" class="lvl-filter-input lvl-filter-nivel" placeholder="Nivel" bind:value={filterLevel} />
-      </div>
-    </div>
-
     <table class="lvl-table">
       <thead>
         <tr>
           <th>#</th>
-          <th>Personaje</th>
-          <th>Nivel</th>
-          <th>Obj</th>
-          <th class="lvl-col-tarea">Tarea max</th>
+          <th class="lvl-th-sort" onclick={() => toggleSort('nombre')}>Personaje{sortArrow('nombre')}</th>
+          <th class="lvl-th-sort lvl-th-num" onclick={() => toggleSort('nivel')}>Nivel{sortArrow('nivel')}</th>
+          <th class="lvl-th-sort lvl-th-num" onclick={() => toggleSort('objetivo')}>Obj{sortArrow('objetivo')}</th>
+          <th class="lvl-col-tarea lvl-th-sort lvl-th-num" onclick={() => toggleSort('maxTareaNivel')}>Tarea max{sortArrow('maxTareaNivel')}</th>
           <th class="lvl-col-tw">Timeways</th>
-          <th class="lvl-col-obj">→Obj Dungs</th>
-          <th class="lvl-col-obj">→Obj Horas</th>
-          <th>XP/h</th>
-          <th>Estratégico</th>
+          <th class="lvl-col-obj lvl-th-sort lvl-th-num" onclick={() => toggleSort('dungeonsTo90')}>→Obj Dungs{sortArrow('dungeonsTo90')}</th>
+          <th class="lvl-col-obj lvl-th-sort lvl-th-num" onclick={() => toggleSort('timeTo90')}>→Obj Horas{sortArrow('timeTo90')}</th>
+          <th class="lvl-th-sort lvl-th-num" onclick={() => toggleSort('xpPerHour')}>XP/h{sortArrow('xpPerHour')}</th>
+          <th class="lvl-th-sort lvl-th-num" onclick={() => toggleSort('strategicScore')}>Estratégico{sortArrow('strategicScore')}</th>
+        </tr>
+        <tr class="lvl-filter-row">
+          <td></td>
+          <td><input type="text" class="lvl-filt-inp" placeholder="…" bind:value={filterName} /></td>
+          <td><input type="text" class="lvl-filt-inp lvl-filt-num" placeholder="…" bind:value={filterLevel} /></td>
+          <td><input type="text" class="lvl-filt-inp lvl-filt-num" placeholder="…" bind:value={filterObj} /></td>
+          <td><input type="text" class="lvl-filt-inp lvl-filt-num" placeholder="…" bind:value={filterTarea} /></td>
+          <td></td>
+          <td><input type="text" class="lvl-filt-inp lvl-filt-num" placeholder="…" bind:value={filterDungs} /></td>
+          <td><input type="text" class="lvl-filt-inp lvl-filt-num" placeholder="…" bind:value={filterHoras} /></td>
+          <td><input type="text" class="lvl-filt-inp lvl-filt-num" placeholder="…" bind:value={filterXp} /></td>
+          <td><input type="text" class="lvl-filt-inp lvl-filt-num" placeholder="…" bind:value={filterScore} /></td>
         </tr>
       </thead>
       <tbody>
@@ -181,39 +252,6 @@
   .lvl-table-wrap {
     overflow-x: auto;
   }
-  .lvl-table-toolbar {
-    display: flex;
-    justify-content: flex-start;
-    align-items: center;
-    padding: 0 0 4px 0;
-    gap: 6px;
-    flex-wrap: wrap;
-  }
-  .lvl-view-toggle {
-    display: flex;
-    gap: 2px;
-    align-items: center;
-  }
-  .lvl-filter-input {
-    background: var(--input-bg);
-    border: 1px solid var(--border-subtle);
-    border-radius: var(--r-sm);
-    padding: 2px 6px;
-    font-size: 0.5rem;
-    color: var(--text-primary);
-    width: 80px;
-  }
-  .lvl-filter-input::placeholder {
-    color: var(--text-dim);
-  }
-  .lvl-filter-input:focus {
-    outline: none;
-    border-color: var(--gold);
-  }
-  .lvl-filter-nivel {
-    width: 48px;
-    text-align: center;
-  }
   .lvl-table {
     width: 100%;
     border-collapse: collapse;
@@ -230,7 +268,24 @@
     border-bottom: 1px solid var(--border-subtle);
     white-space: nowrap;
   }
+  .lvl-th-sort { cursor: pointer; user-select: none; }
+  .lvl-th-sort:hover { color: var(--gold-light, #d4af37); }
+  .lvl-th-num { text-align: right; }
   .lvl-col-tw { border-left: 1px solid rgba(255,255,255,0.06); border-right: 1px solid rgba(255,255,255,0.06); }
+  .lvl-filter-row td { padding: 1px 6px; border-bottom: 1px solid var(--border-subtle); }
+  .lvl-filt-inp {
+    background: var(--input-bg);
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--r-sm);
+    padding: 1px 4px;
+    font-size: 0.5rem;
+    color: var(--text-primary);
+    width: 100%;
+    box-sizing: border-box;
+  }
+  .lvl-filt-inp::placeholder { color: var(--text-dim); }
+  .lvl-filt-inp:focus { outline: none; border-color: var(--gold); }
+  .lvl-filt-num { text-align: right; width: 100%; }
   .lvl-col-obj { border-left: 1px solid rgba(255,255,255,0.06); }
   .lvl-col-tarea { border-left: 1px solid rgba(255,255,255,0.06); min-width: 28px; max-width: 40px; }
   .lvl-col-tarea-warn { color: var(--horde, #f97316); font-weight: 700; }

@@ -94,6 +94,7 @@
           <th>#</th>
           <th>Personaje</th>
           <th>Nivel</th>
+          <th>Obj</th>
           <th class="lvl-col-tarea">Tarea max</th>
           <th class="lvl-col-tw">Timeways</th>
           <th class="lvl-col-obj">→Obj Dungs</th>
@@ -125,6 +126,7 @@
                 {/if}
               </div>
             </td>
+            <td class="lvl-num">{r.objetivo}</td>
             <td class="lvl-num lvl-col-tarea" class:lvl-col-tarea-warn={r.maxTareaNivel != null && r.nivel < r.maxTareaNivel}>
               {#if r.maxTareaNivel != null}
                 {r.maxTareaNivel}
@@ -145,7 +147,7 @@
                 {/if}
               </div>
             </td>
-            <td class="lvl-num lvl-col-obj">{r.doneObjetivo ? '✓' : r.dungeonsTo90 || '✓'}</td>
+            <td class="lvl-num lvl-col-obj">{r.doneObjetivo ? '✓' : r.dungeonsTo90}</td>
             <td class="lvl-num lvl-col-obj">{r.doneObjetivo ? '✓' : formatHours(r.timeTo90)}</td>
             <td class="lvl-num">{r.xpPerHour > 0 ? formatNumber(r.xpPerHour) : '—'}</td>
             <td class="lvl-strat-cell">

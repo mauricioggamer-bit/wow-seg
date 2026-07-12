@@ -40,7 +40,7 @@
       clase: p.clase,
       nivel: p.nivel,
       xp: 0,
-      objetivo: getObjetivoFromTareas(p.tareas),
+      objetivo: getObjetivoFromTareas(p.tareas, nivelMaximo),
       timewaysPct: p.timewaysPct ?? 0,
     }))
   )

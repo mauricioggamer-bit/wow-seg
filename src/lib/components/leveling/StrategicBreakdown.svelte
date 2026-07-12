@@ -45,7 +45,7 @@
   </div>
   <div class="svm-score-label">
     <strong>{strategic.totalScore.toFixed(0)}%</strong>
-    <span>{'★'.repeat(strategic.stars)}{'☆'.repeat(5 - strategic.stars)}</span>
+    <span>{'★'.repeat(Math.max(0, Math.min(5, strategic.stars)))}{'☆'.repeat(Math.max(0, 5 - strategic.stars))}</span>
   </div>
 </div>
 
@@ -53,7 +53,7 @@
   <div class="svm-stars-grid">
     {#each [...STAR_THRESHOLDS] as band}
       <div class="svm-star-band" class:active={starBand?.stars === band.stars}>
-        <span class="svm-band-stars">{'★'.repeat(band.stars)}{'☆'.repeat(5 - band.stars)}</span>
+        <span class="svm-band-stars">{'★'.repeat(Math.max(0, Math.min(5, band.stars)))}{'☆'.repeat(Math.max(0, 5 - band.stars))}</span>
         <span class="svm-band-thresh">≥ {band.min}</span>
       </div>
     {/each}

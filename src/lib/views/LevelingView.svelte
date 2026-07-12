@@ -248,7 +248,7 @@
         const sv = calculateStrategicValue(p, config, personajes, count90)
         const to80 = getTo80Values(r.context.character.nivel, r.history)
         const objetivo = r.context.character.objetivo
-        const maxTareaNivel = Math.max(0, ...p.tareas.map(t => t.nivelRecomendado ?? 0)) || undefined
+        const maxTareaNivel = p ? Math.max(0, ...p.tareas.map(t => t.nivelRecomendado ?? 0)) || undefined : undefined
         return {
           nombre: cr.nombre,
           clase: r.context.character.clase,
@@ -302,7 +302,7 @@
       <div class="lvl-buff-item-sm">
         <span class="lvl-buff-label">Warband 80-90</span>
         <span class="lvl-buff-val">+{warbandMentor8090}%</span>
-        <span class="lvl-buff-bar">{'█'.repeat(count90)}{'░'.repeat(5 - count90)}</span>
+        <span class="lvl-buff-bar">{'█'.repeat(Math.max(0, count90))}{'░'.repeat(Math.max(0, 5 - count90))}</span>
       </div>
       <div class="lvl-buff-item-sm">
         <span class="lvl-buff-label">War Mode</span>

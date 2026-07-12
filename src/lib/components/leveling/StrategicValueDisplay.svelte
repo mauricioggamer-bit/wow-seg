@@ -82,7 +82,7 @@
         title="Ver fórmula y desglose"
         class="svd-modal-btn">?</button>
     </div>
-    <div class="svd-stars">{'★'.repeat(strategic.stars)}{'☆'.repeat(5 - strategic.stars)}</div>
+    <div class="svd-stars">{'★'.repeat(Math.max(0, Math.min(5, strategic.stars)))}{'☆'.repeat(Math.max(0, 5 - strategic.stars))}</div>
     <div class="svd-bar">
       <div class="svd-bar-fill" style="width: {strategic.totalScore}%"></div>
       <span class="svd-bar-label">{strategic.totalScore.toFixed(0)}%</span>
@@ -92,7 +92,7 @@
       <div class="svd-bands-grid">
         {#each [...STAR_THRESHOLDS] as band}
           <div class="svd-band" class:active={starBand?.stars === band.stars}>
-            <span class="svd-band-stars">{'★'.repeat(band.stars)}{'☆'.repeat(5 - band.stars)}</span>
+            <span class="svd-band-stars">{'★'.repeat(Math.max(0, Math.min(5, band.stars)))}{'☆'.repeat(Math.max(0, 5 - band.stars))}</span>
             <span class="svd-band-thresh">≥ {band.min}</span>
           </div>
         {/each}

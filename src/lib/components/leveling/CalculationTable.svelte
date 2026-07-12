@@ -83,7 +83,8 @@
   }
 
   function starString(stars: number): string {
-    return '★'.repeat(stars) + '☆'.repeat(5 - stars)
+    const s = Math.max(0, Math.min(5, Math.round(stars)))
+    return '★'.repeat(s) + '☆'.repeat(5 - s)
   }
 
   function parseReasons(text: string): string[] {

@@ -12,6 +12,8 @@
   let newWbName = $state('')
   let showReorder = $state(false)
   let reorderList = $state<string[]>([])
+  let showMotivos = $state(false)
+  let editingMotivo = $state<Record<string, string>>({})
 
   let allChars = $derived(
     [...$personajesStore].sort((a, b) => a.nombre.localeCompare(b.nombre))
@@ -106,6 +108,24 @@
     dataStore.reorderWarbands(reorderList)
     showReorder = false
   }
+
+  function startEditMotivo(charName: string, current: string) {
+    editingMotivo = { ...editingMotivo, [charName]: current }
+  }
+
+  function saveMotivo(charName: string) {
+    const draft = editingMotivo[charName]
+    dataStore.updatePersonaje(charName, { motivoWarband: draft?.trim() || undefined })
+    const next = { ...editingMotivo }
+    delete next[charName]
+    editingMotivo = next
+  }
+
+  function cancelEditMotivo(charName: string) {
+    const next = { ...editingMotivo }
+    delete next[charName]
+    editingMotivo = next
+  }
 </script>
 
 <div class="wm-layout">
@@ -139,12 +159,32 @@
               title="Editar personaje"
             >✏️</button>
           </div>
+          {#if showMotivos}
+            <div class="wm-chip-motivo">
+              {#if editingMotivo[c.nombre] !== undefined}
+                <input type="text" maxlength="200" bind:value={editingMotivo[c.nombre]}
+                  onkeydown={(e) => { if (e.key === 'Enter') saveMotivo(c.nombre); if (e.key === 'Escape') cancelEditMotivo(c.nombre) }}
+                  autofocus />
+                <button class="wm-motivo-btn" onclick={() => saveMotivo(c.nombre)} title="Guardar">✓</button>
+                <button class="wm-motivo-btn" onclick={() => cancelEditMotivo(c.nombre)} title="Cancelar">✗</button>
+              {:else}
+                <span class="wm-motivo-text" onclick={() => startEditMotivo(c.nombre, c.motivoWarband ?? '')} title="Editar motivo">
+                  {c.motivoWarband || '(sin motivo)'}
+                </span>
+              {/if}
+            </div>
+          {/if}
         {/each}
       {/if}
     </div>
   </div>
 
-  <div class="wm-wbs-col">
+  <div class="wm-main-col">
+    <label class="wm-toggle-motivos">
+      <input type="checkbox" bind:checked={showMotivos} />
+      <span>Ver motivos</span>
+    </label>
+    <div class="wm-wbs-col">
     <div class="wm-create-wb">
       <input
         type="text"
@@ -217,6 +257,21 @@
                     title="Editar personaje"
                   >✏️</button>
                 </div>
+                {#if showMotivos}
+                  <div class="wm-chip-motivo-inline">
+                    {#if editingMotivo[c.nombre] !== undefined}
+                      <input type="text" maxlength="200" bind:value={editingMotivo[c.nombre]}
+                        onkeydown={(e) => { if (e.key === 'Enter') saveMotivo(c.nombre); if (e.key === 'Escape') cancelEditMotivo(c.nombre) }}
+                        autofocus />
+                      <button class="wm-motivo-btn" onclick={() => saveMotivo(c.nombre)} title="Guardar">✓</button>
+                      <button class="wm-motivo-btn" onclick={() => cancelEditMotivo(c.nombre)} title="Cancelar">✗</button>
+                    {:else}
+                      <span class="wm-motivo-text" onclick={() => startEditMotivo(c.nombre, c.motivoWarband ?? '')} title="Editar motivo">
+                        {c.motivoWarband || '(sin motivo)'}
+                      </span>
+                    {/if}
+                  </div>
+                {/if}
               {:else}
               {#if wb.personajes.length >= 4}
                 <div class="text-xs text-muted wm-wb-empty">Lleno</div>
@@ -229,6 +284,7 @@
         {/each}
       </div>
     {/if}
+    </div>
   </div>
 </div>
 
@@ -446,5 +502,81 @@
   }
   .wm-chip:hover .wm-chip-edit {
     opacity: 1;
+  }
+  .wm-main-col {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+  .wm-toggle-motivos {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 0.6rem;
+    color: var(--text-secondary);
+    cursor: pointer;
+    user-select: none;
+  }
+  .wm-toggle-motivos input {
+    accent-color: var(--gold, #d4af37);
+  }
+  .wm-chip-motivo {
+    display: flex;
+    align-items: center;
+    gap: 3px;
+    padding: 0 8px 4px 8px;
+    font-size: 0.55rem;
+  }
+  .wm-chip-motivo-inline {
+    display: flex;
+    align-items: center;
+    gap: 3px;
+    padding: 0 10px 4px 10px;
+    font-size: 0.55rem;
+  }
+  .wm-motivo-text {
+    color: var(--text-muted, #888);
+    cursor: pointer;
+    padding: 1px 4px;
+    border-radius: var(--r-sm, 4px);
+    flex: 1;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .wm-motivo-text:hover {
+    background: var(--bg-hover, #333);
+    color: var(--text-primary, #e0e0e0);
+  }
+  .wm-chip-motivo input,
+  .wm-chip-motivo-inline input {
+    flex: 1;
+    font-size: 0.55rem;
+    background: var(--input-bg, #2a2a2a);
+    border: 1px solid var(--gold, #d4af37);
+    border-radius: var(--r-sm, 4px);
+    padding: 1px 4px;
+    color: var(--text-primary, #e0e0e0);
+    outline: none;
+    min-width: 0;
+  }
+  .wm-motivo-btn {
+    font-size: 0.5rem;
+    width: 16px;
+    height: 16px;
+    padding: 0;
+    border: 1px solid var(--border-subtle, #3a3a3a);
+    border-radius: var(--r-sm, 4px);
+    background: transparent;
+    color: var(--text-muted, #888);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    line-height: 1;
+  }
+  .wm-motivo-btn:hover {
+    border-color: var(--gold, #d4af37);
+    color: var(--gold, #d4af37);
   }
 </style>

@@ -251,7 +251,7 @@ addTarea(nombrePersonaje: string, tarea: { nombre: string; tipoContenido?: TipoC
         return { ...d }
       })
     },
-    addPersonaje(p: { nombre: string; clase: string; raza: string; nivel: number; faccion: string; reino: string; warband: string; expansion_por_defecto?: string | null; parecidos?: string[]; profesiones?: ProfesionSlot[]; planeado_usar?: boolean; descripcion?: string }): boolean {
+    addPersonaje(p: { nombre: string; clase: string; raza: string; nivel: number; faccion: string; reino: string; warband: string; motivoWarband?: string | null; expansion_por_defecto?: string | null; parecidos?: string[]; profesiones?: ProfesionSlot[]; planeado_usar?: boolean; descripcion?: string }): boolean {
       if (get({ subscribe }).personajes.find(x => x.nombre === p.nombre)) return false
       if (p.warband !== 'nada') {
         const targetWb = get({ subscribe }).warbands.find(w => w.nombre === p.warband)
@@ -266,6 +266,7 @@ addTarea(nombrePersonaje: string, tarea: { nombre: string; tipoContenido?: TipoC
           faccion: p.faccion as 'Horda' | 'Alianza',
           reino: p.reino,
           warband: p.warband,
+          motivoWarband: p.motivoWarband || undefined,
           expansion_por_defecto: p.expansion_por_defecto || null,
           parecidos: p.parecidos || [],
           profesiones: p.profesiones ?? [{ id: '', completadas: [] }, { id: '', completadas: [] }],

@@ -148,6 +148,7 @@
   let editCharExpansion = $state('')
   let editCharParecidos = $state<string[]>([])
   let editCharDescripcion = $state('')
+  let editCharMotivoWarband = $state('')
   let editCharProfesiones = $state<ProfesionSlot[]>([{ id: '', completadas: [] }, { id: '', completadas: [] }])
 
   let editTaskChar = $state('')
@@ -198,6 +199,7 @@
     editCharReino = c.reino
     editCharPlaneado = c.planeado_usar
     editCharWarband = c.warband
+    editCharMotivoWarband = c.motivoWarband ?? ''
     editCharExpansion = c.expansion_por_defecto || ''
     editCharParecidos = c.parecidos ? [...c.parecidos] : []
       while (editCharParecidos.length < 2) editCharParecidos.push('')
@@ -222,6 +224,7 @@
     editCharReino = charRealms[0] || 'Raganaros'
     editCharPlaneado = true
     editCharWarband = ([...$warbandsStore].filter(w => w.nombre !== 'nada').sort((a, b) => (a.orden ?? 0) - (b.orden ?? 0))[0]?.nombre) || ''
+    editCharMotivoWarband = ''
     editCharExpansion = ''
     editCharParecidos = ['', '']
     editCharDescripcion = ''
@@ -434,6 +437,7 @@
         reino: editCharReino,
         planeado_usar: editCharPlaneado,
         warband: editCharWarband,
+        motivoWarband: editCharMotivoWarband || undefined,
         expansion_por_defecto: editCharExpansion || null,
         parecidos: editCharParecidos.filter(x => x.trim()).slice(0, 2),
         profesiones: editCharProfesiones,
@@ -463,6 +467,7 @@
         reino: editCharReino,
         planeado_usar: editCharPlaneado,
         warband: editCharWarband,
+        motivoWarband: editCharMotivoWarband || undefined,
         expansion_por_defecto: editCharExpansion || null,
         parecidos: editCharParecidos.filter(x => x.trim()).slice(0, 2),
         profesiones: editCharProfesiones,
@@ -765,6 +770,10 @@
               </option>
             {/each}
           </select>
+        </div>
+        <div class="form-group">
+          <label>Motivo en warband</label>
+          <input type="text" bind:value={editCharMotivoWarband} maxlength="200" placeholder="¿Por qué está en este warband?" class="form-input" />
         </div>
       </div>
       <div class="form-group">

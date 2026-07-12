@@ -37,6 +37,7 @@ export interface Personaje {
   raza: string
   reino: string
   warband: string
+  motivoWarband?: string
   expansion_por_defecto?: string | null
   parecidos?: string[]
   profesiones?: ProfesionSlot[]

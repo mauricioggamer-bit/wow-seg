@@ -104,7 +104,7 @@
           xpPerHour: r.metrics.xpPerHour,
           done80: r.context.character.nivel >= 80,
           done90: r.context.character.nivel >= 90,
-          doneObjetivo: r.finalState.level >= objetivo,
+          doneObjetivo: r.context.character.nivel >= objetivo,
           strategicStars: sv.stars,
           strategicText: sv.reasonGroups.flatMap(g => g.subGroups ? g.subGroups.flatMap(s => s.entries) : g.entries).join(' '),
           strategicScore: sv.totalScore,

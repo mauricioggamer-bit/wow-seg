@@ -8,9 +8,14 @@
 
   let show = $derived($currentView === 'warband' || $currentView === 'fantasia' || $currentView === 'tareas' || $currentView === 'tasks' || $currentView === 'profesion' || $currentView === 'leveling')
 
-  let totalPjs = $derived($personajesStore.filter(p => p.planeado_usar).length)
+  let personajesActivos = $derived($personajesStore.filter(p => p.planeado_usar))
+  let totalPjs = $derived(personajesActivos.length)
 
   let isAll = $derived(!$currentWarband || $currentWarband === '')
+
+  function countInWarband(wbName: string): number {
+    return personajesActivos.filter(p => p.warband === wbName).length
+  }
 </script>
 
 <div class="warband-tabs" id="warbandTabs" role="tablist" style="display: {show ? '' : 'none'}">
@@ -23,7 +28,7 @@
   >
     Todos ({totalPjs})
   </button>
-  {#each [...$warbandsStore].sort((a, b) => (a.orden ?? 0) - (b.orden ?? 0)) as wb}
+  {#each [...$warbandsStore].filter(w => w.nombre !== 'nada').sort((a, b) => (a.orden ?? 0) - (b.orden ?? 0)) as wb}
     <button
       class="warband-tab"
       class:active={$currentWarband === wb.nombre}
@@ -31,7 +36,7 @@
       aria-selected={$currentWarband === wb.nombre}
       onclick={() => selectWarband(wb.nombre)}
     >
-      {wb.nombre} ({wb.personajes.length})
+      {wb.nombre} ({countInWarband(wb.nombre)})
     </button>
   {/each}
 </div>

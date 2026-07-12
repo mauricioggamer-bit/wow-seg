@@ -10,7 +10,7 @@
   let filterText = $state('')
   let showSinDesc = $state(false)
 
-  let activeWarband = $derived($currentWarband === '' ? null : ($currentWarband || $personajesStore[0]?.warband || null))
+  let activeWarband = $derived($currentWarband && $currentWarband !== '' ? $currentWarband : null)
 
   let scoped = $derived(
     activeWarband ? $personajesStore.filter(c => c.warband === activeWarband) : $personajesStore

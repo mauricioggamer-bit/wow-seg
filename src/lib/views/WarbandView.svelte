@@ -3,7 +3,7 @@
   import { uiStore, currentWarband } from '../stores/ui'
   import { clsClass } from '../constants'
 
-  let activeWb = $derived($currentWarband === '' ? null : ($currentWarband || $personajesStore[0]?.warband || null))
+  let activeWb = $derived($currentWarband && $currentWarband !== '' ? $currentWarband : null)
 
   let filtered = $derived.by(() => {
     let chars = activeWb ? $personajesStore.filter(c => c.warband === activeWb) : $personajesStore

@@ -11,8 +11,6 @@
 
   let filterInput = $state('')
   let filterText = $state('')
-  let showAll = $state(false)
-
   let debounceTimer: ReturnType<typeof setTimeout> | undefined
   $effect(() => {
     clearTimeout(debounceTimer)
@@ -20,7 +18,7 @@
     return () => clearTimeout(debounceTimer)
   })
 
-  let activeWarband = $derived(showAll || $currentWarband === '' ? null : ($currentWarband || $personajesStore[0]?.warband || null))
+  let activeWarband = $derived($currentWarband && $currentWarband !== '' ? $currentWarband : null)
 
   let scoped = $derived(
     activeWarband ? $personajesStore.filter(c => c.warband === activeWarband) : $personajesStore
@@ -43,7 +41,6 @@
 <div class="tareas-panel">
   <div class="tareas-header">
     <span class="tareas-title">✅ {activeWarband ? activeWarband : 'Todas'} ({sorted.length})</span>
-    <label class="tareas-toggle"><input type="checkbox" bind:checked={showAll} /> Todas</label>
     <input class="tareas-search" type="text" placeholder="Filtrar personajes..." bind:value={filterInput} />
   </div>
   <VirtualList items={sorted} itemHeight={48}>
@@ -90,8 +87,6 @@
   .tareas-panel { display:flex; flex-direction:column; height:calc(100vh - 100px); margin-top:6px; border:1px solid var(--border-subtle); border-radius:var(--r-md); overflow:hidden; background:var(--bg-base); }
   .tareas-header { display:flex; align-items:center; gap:8px; padding:6px 10px; border-bottom:1px solid var(--border-subtle); flex-shrink:0; }
   .tareas-title { font-size:0.6rem; color:var(--gold-light); font-weight:700; text-transform:uppercase; letter-spacing:1px; }
-  .tareas-toggle { display:flex; align-items:center; gap:3px; font-size:0.5rem; color:var(--text-secondary); cursor:pointer; margin-left:auto; }
-  .tareas-toggle input { width:auto; }
   .tareas-search { background:var(--input-bg); border:1px solid var(--border-subtle); border-radius:var(--r-sm); padding:3px 8px; color:var(--text-primary); font-size:0.5rem; font-family:var(--font-body); width:180px; }
   .tareas-search:focus { outline:none; border-color:var(--gold-dim); }
   .tareas-search::placeholder { color:var(--text-dim); }

@@ -16,10 +16,7 @@
   } = $props()
 
   let activeFilter = $state('')
-  let warbandFilter = $state('')
   let showDone = $state(false)
-
-  let warbands = $derived([...new Set($personajesStore.map(p => p.warband))].sort())
 
   let items = $derived.by(() => {
     const all: Array<Record<string, any>> = []
@@ -41,11 +38,7 @@
         all.push({ ...t, _origen: 'tarea', personaje: p.nombre, clase: p.clase, warband: p.warband, nivel: p.nivel, faccion: p.faccion })
       }
     }
-    let filtered = all
-    if (warbandFilter) {
-      filtered = filtered.filter(i => i.warband === warbandFilter)
-    }
-    return filtered
+    return all
   })
 
   let grouped = $derived.by(() => {
@@ -72,13 +65,6 @@
         onclick={() => activeFilter = opt.key}
       >{opt.label}</button>
     {/each}
-    <span class="dash-label" style="margin-left:8px">Warband:</span>
-    <select bind:value={warbandFilter} style="font-size:0.55rem;padding:1px 3px">
-      <option value="">Todas</option>
-      {#each warbands as wb}
-        <option value={wb}>{wb}</option>
-      {/each}
-    </select>
     <label style="font-size:0.55rem;display:flex;align-items:center;gap:2px;margin-left:4px">
       <input type="checkbox" bind:checked={showDone} /> Hechas
     </label>

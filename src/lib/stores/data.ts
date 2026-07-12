@@ -20,6 +20,17 @@ function createDataStore() {
     save() {
       update(d => { saveData(d); return { ...d } })
     },
+    getUIPref(key: string, fallback = false): boolean {
+      return get({ subscribe }).uiPrefs?.[key] ?? fallback
+    },
+    setUIPref(key: string, value: boolean) {
+      update(d => {
+        if (!d.uiPrefs) d.uiPrefs = {}
+        d.uiPrefs[key] = value
+        saveData(d)
+        return { ...d }
+      })
+    },
     getData(): WowData {
       return get({ subscribe })
     },

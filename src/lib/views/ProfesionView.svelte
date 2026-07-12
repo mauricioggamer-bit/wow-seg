@@ -21,7 +21,7 @@
   let filterNone = $state(false)
   let profType = $state<'todas' | 'recoleccion' | 'artesania'>('todas')
   let profSlot = $state<'ambas' | 'primera' | 'segunda'>('ambas')
-  let showMotivos = $state(false)
+  let showMotivos = $state(dataStore.getUIPref('showMotivosProf', false))
 
   let editingMotivoChar = $state<string | null>(null)
   let editingMotivoProf = $state<string | null>(null)
@@ -297,7 +297,7 @@
         <label class="filter-check"><input type="checkbox" bind:checked={filterNone} /> None</label>
       </div>
       <div class="prof-filter-group">
-        <label class="filter-check"><input type="checkbox" bind:checked={showMotivos} /> Ver motivos</label>
+        <label class="filter-check"><input type="checkbox" bind:checked={showMotivos} onchange={() => dataStore.setUIPref('showMotivosProf', showMotivos)} /> Ver motivos</label>
       </div>
     </div>
 

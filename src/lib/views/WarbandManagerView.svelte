@@ -12,7 +12,7 @@
   let newWbName = $state('')
   let showReorder = $state(false)
   let reorderList = $state<string[]>([])
-  let showMotivos = $state(false)
+  let showMotivos = $state(dataStore.getUIPref('showMotivosWb', false))
   let editingMotivo = $state<Record<string, string>>({})
 
   let allChars = $derived(
@@ -182,7 +182,7 @@
 
   <div class="wm-main-col">
     <label class="wm-toggle-motivos">
-      <input type="checkbox" bind:checked={showMotivos} />
+      <input type="checkbox" bind:checked={showMotivos} onchange={() => dataStore.setUIPref('showMotivosWb', showMotivos)} />
       <span>Ver motivos</span>
     </label>
     <div class="wm-wbs-col">

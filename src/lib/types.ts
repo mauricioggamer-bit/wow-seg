@@ -88,6 +88,7 @@ export interface WowData {
   personajes: Personaje[]
   warbands: Warband[]
   keybinds?: Record<string, string>
+  uiPrefs?: Record<string, boolean>
   profesionOrden?: string[]
   strategicConfig?: {
     indexes?: StrategicIndex[]

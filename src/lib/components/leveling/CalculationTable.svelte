@@ -112,6 +112,7 @@
         <th>#</th>
         <th>Personaje</th>
         <th>Nivel</th>
+        <th class="lvl-col-tarea">Tarea max</th>
         <th class="lvl-col-tw">Timeways</th>
         {#if viewMode !== 'to90'}
           <th class="lvl-col-80">→80 Dungs</th>
@@ -149,6 +150,11 @@
                 <button class="lvl-tw-btn" onclick={() => { startEditNivel(r.nombre); editing!.value = Math.min(90, r.nivel + 1) }} disabled={r.nivel >= 90}>+</button>
               {/if}
             </div>
+          </td>
+          <td class="lvl-num lvl-col-tarea" class:lvl-col-tarea-warn={r.maxTareaNivel != null && r.nivel < r.maxTareaNivel}>
+            {#if r.maxTareaNivel != null}
+              {r.maxTareaNivel}
+            {/if}
           </td>
           <td class="lvl-tw-cell" onclick={(e) => e.stopPropagation()}>
             {#if editing?.nombre === r.nombre && editing?.field === 'timeways'}
@@ -274,6 +280,8 @@
   .lvl-col-80 { border-right: 1px solid rgba(255,255,255,0.06); }
   .lvl-col-90 { border-left: 1px solid rgba(255,255,255,0.06); }
   .lvl-col-tw { border-left: 1px solid rgba(255,255,255,0.06); border-right: 1px solid rgba(255,255,255,0.06); }
+  .lvl-col-tarea { border-left: 1px solid rgba(255,255,255,0.06); min-width: 28px; max-width: 40px; }
+  .lvl-col-tarea-warn { color: var(--horde, #f97316); font-weight: 700; }
   .lvl-table td {
     padding: 3px 6px;
     border-bottom: 1px solid var(--border-subtle);

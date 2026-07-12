@@ -248,10 +248,12 @@
         const sv = calculateStrategicValue(p, config, personajes, count90)
         const to80 = getTo80Values(r.context.character.nivel, r.history)
         const objetivo = r.context.character.objetivo
+        const maxTareaNivel = Math.max(0, ...p.tareas.map(t => t.nivelRecomendado ?? 0)) || undefined
         return {
           nombre: cr.nombre,
           clase: r.context.character.clase,
           nivel: r.context.character.nivel,
+          maxTareaNivel,
           objetivo,
           xpTo80: to80.xp,
           dungeonsTo80: to80.dungeons,

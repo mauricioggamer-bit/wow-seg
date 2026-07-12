@@ -155,6 +155,7 @@ export interface LevelingResult {
   nombre: string
   clase: string
   nivel: number
+  maxTareaNivel?: number
   objetivo: number
   xpTo80: number
   dungeonsTo80: number

@@ -14,8 +14,6 @@
     onSelect?: (nombre: string) => void
   } = $props()
 
-  let viewMode = $state<'both' | 'to80' | 'to90'>('to90')
-
   let filterName = $state('')
   let filterLevel = $state('')
 
@@ -29,20 +27,6 @@
       return true
     })
   )
-
-  const COL_KEY = 'wowseg_lvl_view_mode'
-  function loadViewMode(): 'both' | 'to80' | 'to90' {
-    try {
-      const v = localStorage.getItem(COL_KEY)
-      if (v === 'both' || v === 'to80' || v === 'to90') return v
-    } catch { /* empty */ }
-    return 'to90'
-  }
-  viewMode = loadViewMode()
-  function setViewMode(m: 'both' | 'to80' | 'to90') {
-    viewMode = m
-    try { localStorage.setItem(COL_KEY, m) } catch { /* empty */ }
-  }
 
   let editing = $state<{nombre: string; field: 'timeways' | 'nivel'; value: number} | null>(null)
   let originalValue = $state<number>(0)
@@ -96,117 +80,98 @@
   }
 </script>
 
-<div class="lvl-table-wrap">
-  <div class="lvl-table-toolbar">
-    <div class="lvl-view-toggle">
-      <button class="lvl-view-btn" class:active={viewMode === 'to80'} onclick={() => setViewMode('to80')}>→80</button>
-      <button class="lvl-view-btn" class:active={viewMode === 'both'} onclick={() => setViewMode('both')}>Ambos</button>
-      <button class="lvl-view-btn" class:active={viewMode === 'to90'} onclick={() => setViewMode('to90')}>→90</button>
-      <input type="text" class="lvl-filter-input" placeholder="Nombre…" bind:value={filterName} />
-      <input type="text" class="lvl-filter-input lvl-filter-nivel" placeholder="Nivel" bind:value={filterLevel} />
+  <div class="lvl-table-wrap">
+    <div class="lvl-table-toolbar">
+      <div class="lvl-view-toggle">
+        <input type="text" class="lvl-filter-input" placeholder="Nombre…" bind:value={filterName} />
+        <input type="text" class="lvl-filter-input lvl-filter-nivel" placeholder="Nivel" bind:value={filterLevel} />
+      </div>
     </div>
-  </div>
 
-  <table class="lvl-table">
-    <thead>
-      <tr>
-        <th>#</th>
-        <th>Personaje</th>
-        <th>Nivel</th>
-        <th class="lvl-col-tarea">Tarea max</th>
-        <th class="lvl-col-tw">Timeways</th>
-        {#if viewMode !== 'to90'}
-          <th class="lvl-col-80">→80 Dungs</th>
-          <th class="lvl-col-80">→80 Horas</th>
-        {/if}
-        {#if viewMode !== 'to80'}
-          <th class="lvl-col-90">XP rest.</th>
-          <th class="lvl-col-90">→Obj Dungs</th>
-          <th class="lvl-col-90">→Obj Horas</th>
-        {/if}
-        <th>XP/h</th>
-        <th>ROI</th>
-        <th>Estratégico</th>
-      </tr>
-    </thead>
-    <tbody>
-      {#each filteredResults as r, i (r.nombre)}
-        <tr class:done={r.doneObjetivo} class:done80={r.done80 && !r.doneObjetivo} onclick={() => onSelect?.(r.nombre)}>
-          <td class="lvl-priority">{i + 1}</td>
-          <td class="lvl-char">
-            <span class="lvl-char-name">{r.nombre}</span>
-            <span class="lvl-char-class" style="color: {clsClass(r.clase)}">{r.clase}</span>
-          </td>
-          <td class="lvl-num">
-            <div class="lvl-tw-cell" onclick={(e) => e.stopPropagation()}>
-              {#if editing?.nombre === r.nombre && editing?.field === 'nivel'}
-                <button class="lvl-tw-btn" onclick={() => adjustEdit(-1)} disabled={editing.value <= 1}>−</button>
-                <span class="lvl-tw-val">{editing.value}</span>
-                <button class="lvl-tw-btn" onclick={() => adjustEdit(1)} disabled={editing.value >= 90}>+</button>
+    <table class="lvl-table">
+      <thead>
+        <tr>
+          <th>#</th>
+          <th>Personaje</th>
+          <th>Nivel</th>
+          <th class="lvl-col-tarea">Tarea max</th>
+          <th class="lvl-col-tw">Timeways</th>
+          <th class="lvl-col-obj">→Obj Dungs</th>
+          <th class="lvl-col-obj">→Obj Horas</th>
+          <th>XP/h</th>
+          <th>Estratégico</th>
+        </tr>
+      </thead>
+      <tbody>
+        {#each filteredResults as r, i (r.nombre)}
+          <tr class:done={r.doneObjetivo} onclick={() => onSelect?.(r.nombre)}>
+            <td class="lvl-priority">{i + 1}</td>
+            <td class="lvl-char">
+              <span class="lvl-char-name">{r.nombre}</span>
+              <span class="lvl-char-class" style="color: {clsClass(r.clase)}">{r.clase}</span>
+            </td>
+            <td class="lvl-num">
+              <div class="lvl-tw-cell" onclick={(e) => e.stopPropagation()}>
+                {#if editing?.nombre === r.nombre && editing?.field === 'nivel'}
+                  <button class="lvl-tw-btn" onclick={() => adjustEdit(-1)} disabled={editing.value <= 1}>−</button>
+                  <span class="lvl-tw-val">{editing.value}</span>
+                  <button class="lvl-tw-btn" onclick={() => adjustEdit(1)} disabled={editing.value >= 90}>+</button>
+                  <button class="lvl-edit-yes" onclick={confirmEdit}>✓</button>
+                  <button class="lvl-edit-no" onclick={cancelEdit}>✗</button>
+                {:else}
+                  <button class="lvl-tw-btn" onclick={() => { startEditNivel(r.nombre); editing!.value = Math.max(1, r.nivel - 1) }} disabled={r.nivel <= 1}>−</button>
+                  <span class="lvl-clickable" onclick={() => startEditNivel(r.nombre)}>{r.nivel}</span>
+                  <button class="lvl-tw-btn" onclick={() => { startEditNivel(r.nombre); editing!.value = Math.min(90, r.nivel + 1) }} disabled={r.nivel >= 90}>+</button>
+                {/if}
+              </div>
+            </td>
+            <td class="lvl-num lvl-col-tarea" class:lvl-col-tarea-warn={r.maxTareaNivel != null && r.nivel < r.maxTareaNivel}>
+              {#if r.maxTareaNivel != null}
+                {r.maxTareaNivel}
+              {/if}
+            </td>
+            <td class="lvl-tw-cell" onclick={(e) => e.stopPropagation()}>
+              {#if editing?.nombre === r.nombre && editing?.field === 'timeways'}
+                <button class="lvl-tw-btn" onclick={() => adjustEdit(-5)} disabled={editing.value <= 0}>−</button>
+                <span class="lvl-tw-val">+{editing.value}%</span>
+                <button class="lvl-tw-btn" onclick={() => adjustEdit(5)} disabled={editing.value >= 30}>+</button>
                 <button class="lvl-edit-yes" onclick={confirmEdit}>✓</button>
                 <button class="lvl-edit-no" onclick={cancelEdit}>✗</button>
               {:else}
-                <button class="lvl-tw-btn" onclick={() => { startEditNivel(r.nombre); editing!.value = Math.max(1, r.nivel - 1) }} disabled={r.nivel <= 1}>−</button>
-                <span class="lvl-clickable" onclick={() => startEditNivel(r.nombre)}>{r.nivel}</span>
-                <button class="lvl-tw-btn" onclick={() => { startEditNivel(r.nombre); editing!.value = Math.min(90, r.nivel + 1) }} disabled={r.nivel >= 90}>+</button>
+                <button class="lvl-tw-btn" onclick={() => { startEditTimeways(r.nombre); editing!.value = Math.max(0, getTimewaysPct(r.nombre) - 5) }} disabled={getTimewaysPct(r.nombre) <= 0}>−</button>
+                <span class="lvl-clickable" onclick={() => startEditTimeways(r.nombre)}>+{getTimewaysPct(r.nombre)}%</span>
+                <button class="lvl-tw-btn" onclick={() => { startEditTimeways(r.nombre); editing!.value = Math.min(30, getTimewaysPct(r.nombre) + 5) }} disabled={getTimewaysPct(r.nombre) >= 30}>+</button>
               {/if}
-            </div>
-          </td>
-          <td class="lvl-num lvl-col-tarea" class:lvl-col-tarea-warn={r.maxTareaNivel != null && r.nivel < r.maxTareaNivel}>
-            {#if r.maxTareaNivel != null}
-              {r.maxTareaNivel}
-            {/if}
-          </td>
-          <td class="lvl-tw-cell" onclick={(e) => e.stopPropagation()}>
-            {#if editing?.nombre === r.nombre && editing?.field === 'timeways'}
-              <button class="lvl-tw-btn" onclick={() => adjustEdit(-5)} disabled={editing.value <= 0}>−</button>
-              <span class="lvl-tw-val">+{editing.value}%</span>
-              <button class="lvl-tw-btn" onclick={() => adjustEdit(5)} disabled={editing.value >= 30}>+</button>
-              <button class="lvl-edit-yes" onclick={confirmEdit}>✓</button>
-              <button class="lvl-edit-no" onclick={cancelEdit}>✗</button>
-            {:else}
-              <button class="lvl-tw-btn" onclick={() => { startEditTimeways(r.nombre); editing!.value = Math.max(0, getTimewaysPct(r.nombre) - 5) }} disabled={getTimewaysPct(r.nombre) <= 0}>−</button>
-              <span class="lvl-clickable" onclick={() => startEditTimeways(r.nombre)}>+{getTimewaysPct(r.nombre)}%</span>
-              <button class="lvl-tw-btn" onclick={() => { startEditTimeways(r.nombre); editing!.value = Math.min(30, getTimewaysPct(r.nombre) + 5) }} disabled={getTimewaysPct(r.nombre) >= 30}>+</button>
-            {/if}
-          </td>
-          {#if viewMode !== 'to90'}
-            <td class="lvl-num lvl-col-80">{r.done80 ? '✓' : r.dungeonsTo80 || '✓'}</td>
-            <td class="lvl-num lvl-col-80">{r.done80 ? '✓' : formatHours(r.timeTo80)}</td>
-          {/if}
-          {#if viewMode !== 'to80'}
-            <td class="lvl-num lvl-col-90">{r.doneObjetivo ? '✓' : r.xpTo90 > 0 ? formatNumber(r.xpTo90) : '✓'}</td>
-            <td class="lvl-num lvl-col-90">{r.doneObjetivo ? '✓' : r.dungeonsTo90 || '✓'}</td>
-            <td class="lvl-num lvl-col-90">{r.doneObjetivo ? '✓' : formatHours(r.timeTo90)}</td>
-          {/if}
-          <td class="lvl-num">{r.xpPerHour > 0 ? formatNumber(r.xpPerHour) : '—'}</td>
-          <td class="lvl-num">{r.roi > 0 ? `+${formatHours(r.roi)}` : '—'}</td>
-          <td class="lvl-strat-cell">
-            <div class="lvl-strat-trigger">
-              <span class="lvl-stars">{starString(r.strategicStars)}</span>
-              <div class="lvl-strat-tip">
-                <div class="lvl-tip-score">
-                  <span class="lvl-tip-score-bar">
-                    <span class="lvl-tip-score-fill" style="width: {r.strategicScore}%"></span>
-                  </span>
-                  <span class="lvl-tip-score-val">{r.strategicScore}%</span>
+            </td>
+            <td class="lvl-num lvl-col-obj">{r.doneObjetivo ? '✓' : r.dungeonsTo90 || '✓'}</td>
+            <td class="lvl-num lvl-col-obj">{r.doneObjetivo ? '✓' : formatHours(r.timeTo90)}</td>
+            <td class="lvl-num">{r.xpPerHour > 0 ? formatNumber(r.xpPerHour) : '—'}</td>
+            <td class="lvl-strat-cell">
+              <div class="lvl-strat-trigger">
+                <span class="lvl-stars">{starString(r.strategicStars)}</span>
+                <div class="lvl-strat-tip">
+                  <div class="lvl-tip-score">
+                    <span class="lvl-tip-score-bar">
+                      <span class="lvl-tip-score-fill" style="width: {r.strategicScore}%"></span>
+                    </span>
+                    <span class="lvl-tip-score-val">{r.strategicScore}%</span>
+                  </div>
+                  {#if r.warbandImpact > 0}
+                    <div class="lvl-tip-impact">Warband impact: +{r.warbandImpact}%</div>
+                  {/if}
+                  <ul class="lvl-tip-reasons">
+                    {#each parseReasons(r.strategicText) as reason}
+                      <li>{reason}</li>
+                    {/each}
+                  </ul>
                 </div>
-                {#if r.warbandImpact > 0}
-                  <div class="lvl-tip-impact">Warband impact: +{r.warbandImpact}%</div>
-                {/if}
-                <ul class="lvl-tip-reasons">
-                  {#each parseReasons(r.strategicText) as reason}
-                    <li>{reason}</li>
-                  {/each}
-                </ul>
               </div>
-            </div>
-          </td>
-        </tr>
-      {/each}
-    </tbody>
-  </table>
-</div>
+            </td>
+          </tr>
+        {/each}
+      </tbody>
+    </table>
+  </div>
 
 <style>
   .lvl-table-wrap {
@@ -245,23 +210,6 @@
     width: 48px;
     text-align: center;
   }
-  .lvl-view-btn {
-    background: var(--bg-soft, rgba(0,0,0,0.3));
-    border: 1px solid var(--border-subtle);
-    border-radius: var(--r-sm);
-    padding: 2px 8px;
-    font-size: 0.5rem;
-    color: var(--text-muted);
-    cursor: pointer;
-    font-family: var(--font-heading);
-    text-transform: uppercase;
-    letter-spacing: 0.05em;
-  }
-  .lvl-view-btn.active {
-    background: var(--gold);
-    color: #000;
-    border-color: var(--gold);
-  }
   .lvl-table {
     width: 100%;
     border-collapse: collapse;
@@ -278,9 +226,8 @@
     border-bottom: 1px solid var(--border-subtle);
     white-space: nowrap;
   }
-  .lvl-col-80 { border-right: 1px solid rgba(255,255,255,0.06); }
-  .lvl-col-90 { border-left: 1px solid rgba(255,255,255,0.06); }
   .lvl-col-tw { border-left: 1px solid rgba(255,255,255,0.06); border-right: 1px solid rgba(255,255,255,0.06); }
+  .lvl-col-obj { border-left: 1px solid rgba(255,255,255,0.06); }
   .lvl-col-tarea { border-left: 1px solid rgba(255,255,255,0.06); min-width: 28px; max-width: 40px; }
   .lvl-col-tarea-warn { color: var(--horde, #f97316); font-weight: 700; }
   .lvl-table td {
@@ -298,9 +245,6 @@
   }
   .lvl-table tr.done {
     opacity: 0.4;
-  }
-  .lvl-table tr.done80 {
-    opacity: 0.6;
   }
   .lvl-priority {
     color: var(--gold);

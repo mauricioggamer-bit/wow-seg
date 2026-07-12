@@ -167,7 +167,6 @@ export interface LevelingResult {
   done80: boolean
   done90: boolean
   doneObjetivo: boolean
-  roi: number
   strategicStars: number
   strategicText: string
   strategicScore: number

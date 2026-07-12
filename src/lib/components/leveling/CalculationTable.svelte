@@ -130,18 +130,20 @@
                 {r.maxTareaNivel}
               {/if}
             </td>
-            <td class="lvl-tw-cell lvl-col-tw" onclick={(e) => e.stopPropagation()}>
-              {#if editing?.nombre === r.nombre && editing?.field === 'timeways'}
-                <button class="lvl-tw-btn" onclick={() => adjustEdit(-5)} disabled={editing.value <= 0}>−</button>
-                <span class="lvl-tw-val">+{editing.value}%</span>
-                <button class="lvl-tw-btn" onclick={() => adjustEdit(5)} disabled={editing.value >= 30}>+</button>
-                <button class="lvl-edit-yes" onclick={confirmEdit}>✓</button>
-                <button class="lvl-edit-no" onclick={cancelEdit}>✗</button>
-              {:else}
-                <button class="lvl-tw-btn" onclick={() => { startEditTimeways(r.nombre); editing!.value = Math.max(0, getTimewaysPct(r.nombre) - 5) }} disabled={getTimewaysPct(r.nombre) <= 0}>−</button>
-                <span class="lvl-clickable" onclick={() => startEditTimeways(r.nombre)}>+{getTimewaysPct(r.nombre)}%</span>
-                <button class="lvl-tw-btn" onclick={() => { startEditTimeways(r.nombre); editing!.value = Math.min(30, getTimewaysPct(r.nombre) + 5) }} disabled={getTimewaysPct(r.nombre) >= 30}>+</button>
-              {/if}
+            <td class="lvl-col-tw" onclick={(e) => e.stopPropagation()}>
+              <div class="lvl-tw-cell">
+                {#if editing?.nombre === r.nombre && editing?.field === 'timeways'}
+                  <button class="lvl-tw-btn" onclick={() => adjustEdit(-5)} disabled={editing.value <= 0}>−</button>
+                  <span class="lvl-tw-val">+{editing.value}%</span>
+                  <button class="lvl-tw-btn" onclick={() => adjustEdit(5)} disabled={editing.value >= 30}>+</button>
+                  <button class="lvl-edit-yes" onclick={confirmEdit}>✓</button>
+                  <button class="lvl-edit-no" onclick={cancelEdit}>✗</button>
+                {:else}
+                  <button class="lvl-tw-btn" onclick={() => { startEditTimeways(r.nombre); editing!.value = Math.max(0, getTimewaysPct(r.nombre) - 5) }} disabled={getTimewaysPct(r.nombre) <= 0}>−</button>
+                  <span class="lvl-clickable" onclick={() => startEditTimeways(r.nombre)}>+{getTimewaysPct(r.nombre)}%</span>
+                  <button class="lvl-tw-btn" onclick={() => { startEditTimeways(r.nombre); editing!.value = Math.min(30, getTimewaysPct(r.nombre) + 5) }} disabled={getTimewaysPct(r.nombre) >= 30}>+</button>
+                {/if}
+              </div>
             </td>
             <td class="lvl-num lvl-col-obj">{r.doneObjetivo ? '✓' : r.dungeonsTo90 || '✓'}</td>
             <td class="lvl-num lvl-col-obj">{r.doneObjetivo ? '✓' : formatHours(r.timeTo90)}</td>

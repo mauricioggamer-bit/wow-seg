@@ -93,6 +93,7 @@ export interface WowData {
     values?: Record<string, number>
     componentWeights?: Record<string, number>
     params?: Record<string, number>
+    expansionLevels?: Record<string, number>
   }
 }
 

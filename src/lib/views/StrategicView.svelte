@@ -1,7 +1,7 @@
 <script lang="ts">
   import { dataStore } from '../stores/data'
   import { levelingStore } from '../stores/leveling'
-  import { CLASS_MAP, PERS_RACE_INFO, STRATEGIC_COMPONENTS } from '../constants'
+  import { EXPANSIONS, EXPANSION_RECOMMENDED_LEVEL, CLASS_MAP, PERS_RACE_INFO, STRATEGIC_COMPONENTS } from '../constants'
   import { PROFESIONES } from '../constants/profesiones'
   import VentajaList from '../components/strategic/VentajaList.svelte'
   import VentajaDetail from '../components/strategic/VentajaDetail.svelte'
@@ -57,6 +57,21 @@
   let selectedVentaja = $derived(indexes.find(i => i.id === selectedVentajaId) ?? null)
 
   let categoryModalOpen = $state(false)
+
+  function assignExpansionLevels() {
+    const personajes = dataStore.getPersonajes()
+    for (const p of personajes) {
+      if (!p.tareas) continue
+      for (const t of p.tareas) {
+        if (t.expansion) {
+          const level = dataStore.getExpansionLevel(t.expansion, EXPANSION_RECOMMENDED_LEVEL[t.expansion] ?? 90)
+          if (t.nivelRecomendado !== level) {
+            dataStore.updateTarea(p.nombre, t.id, { nivelRecomendado: level })
+          }
+        }
+      }
+    }
+  }
   const MATRIX_TABS = new Set(['class', 'race', 'profession', 'warband'])
   let categoryModalEntityType = $derived(
     MATRIX_TABS.has(tab) ? (tab as 'class' | 'race' | 'profession' | 'warband') : undefined
@@ -169,6 +184,28 @@
           {/each}
         </tbody>
       </table>
+    </div>
+
+    <div class="sv-exp-section">
+      <h4 class="sv-params-title">Niveles de expansión</h4>
+      <div class="sv-exp-grid">
+        {#each EXPANSIONS as exp}
+          <div class="sv-exp-row">
+            <span class="sv-param-label">{exp.nombre}</span>
+            <input type="number" min="1" max="200"
+              value={dataStore.getExpansionLevel(exp.id, EXPANSION_RECOMMENDED_LEVEL[exp.id] ?? 90)}
+              onchange={(e) => {
+                const v = parseInt(e.currentTarget.value)
+                if (!isNaN(v) && v >= 1) dataStore.setExpansionLevel(exp.id, v)
+              }}
+              class="sv-input" />
+            <span class="sv-default">Default: {EXPANSION_RECOMMENDED_LEVEL[exp.id] ?? 90}</span>
+          </div>
+        {/each}
+      </div>
+      <button class="sv-btn-add" onclick={assignExpansionLevels}>
+        Asignar nivel de expansión a tareas
+      </button>
     </div>
   {/if}
 </div>
@@ -364,4 +401,7 @@
     margin: 0;
     padding: 2px 0;
   }
+  :global(.sv-exp-section) { margin-top: 16px; margin-bottom: 12px; }
+  :global(.sv-exp-grid) { display: flex; flex-direction: column; gap: 6px; margin-bottom: 10px; }
+  :global(.sv-exp-row) { display: flex; align-items: center; gap: 8px; font-size: 0.6rem; padding: 4px 6px; border: 1px solid var(--border-subtle); border-radius: var(--r-sm); }
 </style>

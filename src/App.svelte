@@ -316,7 +316,7 @@
   }
 
   function defaultLevelFor(expId: string): number | null {
-    return EXPANSION_RECOMMENDED_LEVEL[expId] ?? null
+    return dataStore.getExpansionLevel(expId, EXPANSION_RECOMMENDED_LEVEL[expId] ?? 90) ?? null
   }
 
   function setNewTipoContenido(t: TipoContenido) {

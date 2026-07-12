@@ -683,6 +683,31 @@ addTarea(nombrePersonaje: string, tarea: { nombre: string; tipoContenido?: TipoC
         return { ...d }
       })
     },
+    getExpansionLevel(expId: string, defaultVal: number): number {
+      return get({ subscribe }).strategicConfig?.expansionLevels?.[expId] ?? defaultVal
+    },
+    setExpansionLevel(expId: string, value: number) {
+      update(d => {
+        const strategicConfig = { ...(d.strategicConfig ?? {}) }
+        strategicConfig.expansionLevels = { ...(strategicConfig.expansionLevels ?? {}), [expId]: value }
+        d.strategicConfig = strategicConfig
+        saveData(d)
+        return { ...d }
+      })
+    },
+    resetExpansionLevel(expId: string) {
+      update(d => {
+        if (d.strategicConfig?.expansionLevels) {
+          const strategicConfig = { ...d.strategicConfig }
+          const levels = { ...strategicConfig.expansionLevels }
+          delete levels[expId]
+          strategicConfig.expansionLevels = levels
+          d.strategicConfig = strategicConfig
+          saveData(d)
+        }
+        return { ...d }
+      })
+    },
   }
 
   return store

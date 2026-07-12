@@ -364,27 +364,27 @@
                     >{expAbbr(exp.id)}</button>
                   {/each}
                 </div>
-                {#if showMotivos}
-                  {#if editingMotivoChar === c.nombre && editingMotivoProf === prof.id}
-                    <textarea
-                      class="prof-motivo-input"
-                      rows="3"
-                      maxlength="200"
-                      bind:value={editingMotivoValue}
-                      onkeydown={(e) => { if (e.key === 'Escape') cancelEditMotivo(); }}
-                    ></textarea>
-                    <button class="prof-motivo-btn prof-motivo-ok" onclick={saveMotivo} title="Guardar">✓</button>
-                    <button class="prof-motivo-btn prof-motivo-cancel" onclick={cancelEditMotivo} title="Cancelar">✗</button>
-                  {:else}
-                    <span
-                      class="prof-motivo-text"
-                      class:prof-motivo-empty={!slot?.motivo}
-                      onclick={() => startEditMotivo(c.nombre, prof.id)}
-                      title="Editar motivo"
-                    >{slot?.motivo || 'Añadir motivo'}</span>
-                  {/if}
-                {/if}
               </div>
+              {#if showMotivos}
+                {#if editingMotivoChar === c.nombre && editingMotivoProf === prof.id}
+                  <textarea
+                    class="prof-motivo-input"
+                    rows="3"
+                    maxlength="200"
+                    bind:value={editingMotivoValue}
+                    onkeydown={(e) => { if (e.key === 'Escape') cancelEditMotivo(); }}
+                  ></textarea>
+                  <button class="prof-motivo-btn prof-motivo-ok" onclick={saveMotivo} title="Guardar">✓</button>
+                  <button class="prof-motivo-btn prof-motivo-cancel" onclick={cancelEditMotivo} title="Cancelar">✗</button>
+                {:else}
+                  <span
+                    class="prof-motivo-text"
+                    class:prof-motivo-empty={!slot?.motivo}
+                    onclick={() => startEditMotivo(c.nombre, prof.id)}
+                    title="Editar motivo"
+                  >{slot?.motivo || 'Añadir motivo'}</span>
+                {/if}
+              {/if}
             {:else}
               <div class="text-xs text-muted prof-empty">Arrastra personajes aquí</div>
             {/each}
@@ -700,8 +700,7 @@
     padding: 1px 4px;
     border: 1px solid transparent;
     border-radius: 3px;
-    flex-shrink: 0;
-    max-width: 140px;
+    width: 100%;
     display: -webkit-box;
     -webkit-line-clamp: 2;
     -webkit-box-orient: vertical;

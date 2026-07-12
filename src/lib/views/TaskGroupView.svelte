@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { uiStore } from '../stores/ui'
+  import { uiStore, currentWarband } from '../stores/ui'
   import { dataStore, personajesStore } from '../stores/data'
   import { expNombre } from '../constants/wowContent'
 
@@ -18,8 +18,10 @@
   let activeFilter = $state('')
   let showDone = $state(false)
 
+  let activeWarband = $derived($currentWarband && $currentWarband !== '' ? $currentWarband : null)
+
   let items = $derived.by(() => {
-    const all: Array<Record<string, any>> = []
+    let all: Array<Record<string, any>> = []
     for (const p of $personajesStore) {
       if (!p.planeado_usar) continue
       for (const t of p.tareas) {
@@ -37,6 +39,9 @@
         if (!showDone && t.hecho) continue
         all.push({ ...t, _origen: 'tarea', personaje: p.nombre, clase: p.clase, warband: p.warband, nivel: p.nivel, faccion: p.faccion })
       }
+    }
+    if (activeWarband) {
+      all = all.filter(i => i.warband === activeWarband)
     }
     return all
   })

@@ -353,6 +353,17 @@
                   onclick={() => openCharEdit(c.nombre)}
                   title="Editar personaje"
                 >✏️</button>
+                <div class="prof-exp-row">
+                  {#each EXPANSIONS as exp}
+                    {@const done = slot?.completadas?.includes(exp.id)}
+                    <button
+                      class="prof-exp-dot"
+                      class:done={done}
+                      title={exp.nombre}
+                      onclick={() => toggleExp(c.nombre, prof.id, exp.id)}
+                    >{expAbbr(exp.id)}</button>
+                  {/each}
+                </div>
                 {#if showMotivos}
                   {#if editingMotivoChar === c.nombre && editingMotivoProf === prof.id}
                     <input
@@ -373,17 +384,6 @@
                     >{slot?.motivo || 'Añadir motivo'}</span>
                   {/if}
                 {/if}
-                <div class="prof-exp-row">
-                  {#each EXPANSIONS as exp}
-                    {@const done = slot?.completadas?.includes(exp.id)}
-                    <button
-                      class="prof-exp-dot"
-                      class:done={done}
-                      title={exp.nombre}
-                      onclick={() => toggleExp(c.nombre, prof.id, exp.id)}
-                    >{expAbbr(exp.id)}</button>
-                  {/each}
-                </div>
               </div>
             {:else}
               <div class="text-xs text-muted prof-empty">Arrastra personajes aquí</div>

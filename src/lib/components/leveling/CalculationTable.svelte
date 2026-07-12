@@ -130,7 +130,7 @@
                 {r.maxTareaNivel}
               {/if}
             </td>
-            <td class="lvl-tw-cell" onclick={(e) => e.stopPropagation()}>
+            <td class="lvl-tw-cell lvl-col-tw" onclick={(e) => e.stopPropagation()}>
               {#if editing?.nombre === r.nombre && editing?.field === 'timeways'}
                 <button class="lvl-tw-btn" onclick={() => adjustEdit(-5)} disabled={editing.value <= 0}>−</button>
                 <span class="lvl-tw-val">+{editing.value}%</span>
@@ -226,7 +226,7 @@
     border-bottom: 1px solid var(--border-subtle);
     white-space: nowrap;
   }
-  .lvl-col-tw { border-left: 1px solid rgba(255,255,255,0.06); border-right: 1px solid rgba(255,255,255,0.06); }
+  .lvl-col-tw { border-left: 1px solid rgba(255,255,255,0.06); }
   .lvl-col-obj { border-left: 1px solid rgba(255,255,255,0.06); }
   .lvl-col-tarea { border-left: 1px solid rgba(255,255,255,0.06); min-width: 28px; max-width: 40px; }
   .lvl-col-tarea-warn { color: var(--horde, #f97316); font-weight: 700; }

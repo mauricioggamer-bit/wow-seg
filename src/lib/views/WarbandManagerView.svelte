@@ -540,9 +540,13 @@
     padding: 1px 4px;
     border-radius: var(--r-sm, 4px);
     flex: 1;
+    font-size: 0.5rem;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    line-clamp: 2;
     overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
+    line-height: 1.3;
   }
   .wm-motivo-text:hover {
     background: var(--bg-hover, #333);

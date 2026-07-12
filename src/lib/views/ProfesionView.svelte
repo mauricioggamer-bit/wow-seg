@@ -694,17 +694,20 @@
     margin-top: 10px;
   }
   .prof-motivo-text {
-    font-size: 0.55rem;
+    font-size: 0.5rem;
     color: var(--text-muted, #888);
     cursor: pointer;
     padding: 1px 4px;
     border: 1px solid transparent;
     border-radius: 3px;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    max-width: 120px;
     flex-shrink: 0;
+    max-width: 140px;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    line-clamp: 2;
+    overflow: hidden;
+    line-height: 1.3;
   }
   .prof-motivo-text:hover {
     border-color: var(--border-subtle, #444);

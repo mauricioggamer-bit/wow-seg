@@ -30,7 +30,8 @@ function normalizeProfesiones(raw: any): ProfesionSlot[] {
         const completadas = Array.isArray(slot.completadas) ? slot.completadas.filter((x: any) => typeof x === 'string') : []
         let rol: 'main' | 'cd' | undefined = slot.rol === 'main' || slot.rol === 'cd' ? slot.rol : undefined
         if (!rol && slot.esMainCrafter === true) rol = 'main'
-        arr.push({ id, completadas, rol })
+        const motivo = typeof slot.motivo === 'string' ? slot.motivo : undefined
+        arr.push({ id, completadas, rol, motivo })
       } else if (typeof slot === 'string' && slot) {
         arr.push({ id: PROFESION_IDS.has(slot) ? slot : '', completadas: [] })
       } else {
@@ -110,7 +111,7 @@ export function initSeed(): WowData {
 
 const VALID_PERSONAJE_KEYS = new Set([
   'nombre', 'clase', 'nivel', 'faccion', 'raza', 'reino', 'warband',
-  'expansion_por_defecto', 'parecidos', 'profesiones',
+  'motivoWarband', 'expansion_por_defecto', 'parecidos', 'profesiones',
   'planeado_usar', 'descripcion', 'objetivoNivel', 'timewaysPct', 'tareas',
 ])
 

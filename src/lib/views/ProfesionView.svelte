@@ -21,6 +21,11 @@
   let filterNone = $state(false)
   let profType = $state<'todas' | 'recoleccion' | 'artesania'>('todas')
   let profSlot = $state<'ambas' | 'primera' | 'segunda'>('ambas')
+  let showMotivos = $state(false)
+
+  let editingMotivoChar = $state<string | null>(null)
+  let editingMotivoProf = $state<string | null>(null)
+  let editingMotivoValue = $state('')
 
   const RECOLECCION_IDS = new Set(['mineria', 'herboristeria', 'desuello'])
 
@@ -194,6 +199,39 @@
     reorderList[idx] = reorderList[swap]
     reorderList[swap] = tmp
   }
+
+  function startEditMotivo(charName: string, profId: string) {
+    const c = allChars.find(x => x.nombre === charName)
+    if (!c) return
+    const slot = (c.profesiones ?? []).find(s => s.id === profId)
+    editingMotivoChar = charName
+    editingMotivoProf = profId
+    editingMotivoValue = slot?.motivo ?? ''
+  }
+
+  function saveMotivo() {
+    if (!editingMotivoChar || !editingMotivoProf) return
+    const c = allChars.find(x => x.nombre === editingMotivoChar)
+    if (!c) return
+    const slots = c.profesiones ?? []
+    const slotIdx = slots.findIndex(s => s.id === editingMotivoProf)
+    if (slotIdx < 0) return
+    const base: ProfesionSlot[] = [
+      { ...(slots[0] ?? { id: '', completadas: [] }) },
+      { ...(slots[1] ?? { id: '', completadas: [] }) },
+    ]
+    base[slotIdx] = { ...base[slotIdx], motivo: editingMotivoValue.trim() || undefined }
+    dataStore.updatePersonaje(editingMotivoChar, { profesiones: base })
+    editingMotivoChar = null
+    editingMotivoProf = null
+    editingMotivoValue = ''
+  }
+
+  function cancelEditMotivo() {
+    editingMotivoChar = null
+    editingMotivoProf = null
+    editingMotivoValue = ''
+  }
 </script>
 
 <div class="prof-layout">
@@ -258,6 +296,9 @@
         <label class="filter-check"><input type="checkbox" bind:checked={filterCD} /> CD</label>
         <label class="filter-check"><input type="checkbox" bind:checked={filterNone} /> None</label>
       </div>
+      <div class="prof-filter-group">
+        <label class="filter-check"><input type="checkbox" bind:checked={showMotivos} /> Ver motivos</label>
+      </div>
     </div>
 
     <div class="prof-grid">
@@ -312,6 +353,26 @@
                   onclick={() => openCharEdit(c.nombre)}
                   title="Editar personaje"
                 >✏️</button>
+                {#if showMotivos}
+                  {#if editingMotivoChar === c.nombre && editingMotivoProf === prof.id}
+                    <input
+                      class="prof-motivo-input"
+                      type="text"
+                      maxlength="200"
+                      bind:value={editingMotivoValue}
+                      onkeydown={(e) => { if (e.key === 'Enter') saveMotivo(); if (e.key === 'Escape') cancelEditMotivo(); }}
+                    />
+                    <button class="prof-motivo-btn prof-motivo-ok" onclick={saveMotivo} title="Guardar">✓</button>
+                    <button class="prof-motivo-btn prof-motivo-cancel" onclick={cancelEditMotivo} title="Cancelar">✗</button>
+                  {:else}
+                    <span
+                      class="prof-motivo-text"
+                      class:prof-motivo-empty={!slot?.motivo}
+                      onclick={() => startEditMotivo(c.nombre, prof.id)}
+                      title="Editar motivo"
+                    >{slot?.motivo || 'Añadir motivo'}</span>
+                  {/if}
+                {/if}
                 <div class="prof-exp-row">
                   {#each EXPANSIONS as exp}
                     {@const done = slot?.completadas?.includes(exp.id)}
@@ -631,5 +692,54 @@
     gap: 6px;
     justify-content: flex-end;
     margin-top: 10px;
+  }
+  .prof-motivo-text {
+    font-size: 0.55rem;
+    color: var(--text-muted, #888);
+    cursor: pointer;
+    padding: 1px 4px;
+    border: 1px solid transparent;
+    border-radius: 3px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 120px;
+    flex-shrink: 0;
+  }
+  .prof-motivo-text:hover {
+    border-color: var(--border-subtle, #444);
+  }
+  .prof-motivo-empty {
+    opacity: 0.4;
+    font-style: italic;
+  }
+  .prof-motivo-input {
+    font-size: 0.55rem;
+    padding: 2px 4px;
+    border: 1px solid var(--border, #555);
+    border-radius: 3px;
+    background: var(--input-bg, #2a2a2a);
+    color: var(--text-primary, #e0e0e0);
+    max-width: 120px;
+    flex-shrink: 0;
+  }
+  .prof-motivo-btn {
+    background: transparent;
+    border: 1px solid var(--border-subtle, #444);
+    border-radius: 3px;
+    color: var(--text-primary, #e0e0e0);
+    cursor: pointer;
+    font-size: 0.5rem;
+    padding: 1px 4px;
+    line-height: 1.2;
+    flex-shrink: 0;
+  }
+  .prof-motivo-ok:hover {
+    border-color: #4caf50;
+    color: #4caf50;
+  }
+  .prof-motivo-cancel:hover {
+    border-color: #f44336;
+    color: #f44336;
   }
 </style>

@@ -27,6 +27,7 @@ export interface ProfesionSlot {
   completadas: string[]
   esMainCrafter?: boolean
   rol?: 'main' | 'cd'
+  motivo?: string
 }
 
 export interface Personaje {

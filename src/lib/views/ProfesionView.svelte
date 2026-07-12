@@ -366,13 +366,13 @@
                 </div>
                 {#if showMotivos}
                   {#if editingMotivoChar === c.nombre && editingMotivoProf === prof.id}
-                    <input
+                    <textarea
                       class="prof-motivo-input"
-                      type="text"
+                      rows="3"
                       maxlength="200"
                       bind:value={editingMotivoValue}
-                      onkeydown={(e) => { if (e.key === 'Enter') saveMotivo(); if (e.key === 'Escape') cancelEditMotivo(); }}
-                    />
+                      onkeydown={(e) => { if (e.key === 'Escape') cancelEditMotivo(); }}
+                    ></textarea>
                     <button class="prof-motivo-btn prof-motivo-ok" onclick={saveMotivo} title="Guardar">✓</button>
                     <button class="prof-motivo-btn prof-motivo-cancel" onclick={cancelEditMotivo} title="Cancelar">✗</button>
                   {:else}
@@ -717,14 +717,15 @@
     font-style: italic;
   }
   .prof-motivo-input {
-    font-size: 0.55rem;
+    font-size: 0.5rem;
     padding: 2px 4px;
     border: 1px solid var(--border, #555);
     border-radius: 3px;
     background: var(--input-bg, #2a2a2a);
     color: var(--text-primary, #e0e0e0);
-    max-width: 120px;
-    flex-shrink: 0;
+    width: 100%;
+    resize: none;
+    line-height: 1.3;
   }
   .prof-motivo-btn {
     background: transparent;

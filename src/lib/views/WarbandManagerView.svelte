@@ -162,9 +162,10 @@
           {#if showMotivos}
             <div class="wm-chip-motivo">
               {#if editingMotivo[c.nombre] !== undefined}
-                <input type="text" maxlength="200" bind:value={editingMotivo[c.nombre]}
-                  onkeydown={(e) => { if (e.key === 'Enter') saveMotivo(c.nombre); if (e.key === 'Escape') cancelEditMotivo(c.nombre) }}
-                  autofocus />
+                <textarea rows="3" maxlength="200" bind:value={editingMotivo[c.nombre]}
+                  onkeydown={(e) => { if (e.key === 'Escape') cancelEditMotivo(c.nombre) }}
+                  autofocus
+                ></textarea>
                 <button class="wm-motivo-btn" onclick={() => saveMotivo(c.nombre)} title="Guardar">✓</button>
                 <button class="wm-motivo-btn" onclick={() => cancelEditMotivo(c.nombre)} title="Cancelar">✗</button>
               {:else}
@@ -260,9 +261,10 @@
                 {#if showMotivos}
                   <div class="wm-chip-motivo-inline">
                     {#if editingMotivo[c.nombre] !== undefined}
-                      <input type="text" maxlength="200" bind:value={editingMotivo[c.nombre]}
-                        onkeydown={(e) => { if (e.key === 'Enter') saveMotivo(c.nombre); if (e.key === 'Escape') cancelEditMotivo(c.nombre) }}
-                        autofocus />
+                      <textarea rows="3" maxlength="200" bind:value={editingMotivo[c.nombre]}
+                        onkeydown={(e) => { if (e.key === 'Escape') cancelEditMotivo(c.nombre) }}
+                        autofocus
+                      ></textarea>
                       <button class="wm-motivo-btn" onclick={() => saveMotivo(c.nombre)} title="Guardar">✓</button>
                       <button class="wm-motivo-btn" onclick={() => cancelEditMotivo(c.nombre)} title="Cancelar">✗</button>
                     {:else}
@@ -552,17 +554,19 @@
     background: var(--bg-hover, #333);
     color: var(--text-primary, #e0e0e0);
   }
-  .wm-chip-motivo input,
-  .wm-chip-motivo-inline input {
+  .wm-chip-motivo textarea,
+  .wm-chip-motivo-inline textarea {
     flex: 1;
-    font-size: 0.55rem;
+    font-size: 0.5rem;
     background: var(--input-bg, #2a2a2a);
     border: 1px solid var(--gold, #d4af37);
     border-radius: var(--r-sm, 4px);
-    padding: 1px 4px;
+    padding: 2px 4px;
     color: var(--text-primary, #e0e0e0);
     outline: none;
     min-width: 0;
+    resize: none;
+    line-height: 1.3;
   }
   .wm-motivo-btn {
     font-size: 0.5rem;

@@ -47,6 +47,7 @@
     const next = { ...overrides, [overrideLevel]: overrideXp }
     overrides = next
     saveXpOverrides(next)
+    dataStore.save()
     rebuildXpCurve()
     overrideLevel = 0
     overrideXp = 0
@@ -57,12 +58,14 @@
     delete next[lvl]
     overrides = next
     saveXpOverrides(next)
+    dataStore.save()
     rebuildXpCurve()
   }
 
   function clearAllOverrides() {
     overrides = {}
     clearXpOverrides()
+    dataStore.save()
     rebuildXpCurve()
   }
 </script>

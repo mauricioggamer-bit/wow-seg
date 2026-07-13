@@ -7,6 +7,7 @@
     getDungeonXpForLevel,
     DUNGEON_XP_TABLE,
   } from '../../constants/experience'
+  import { dataStore } from '../../stores/data'
   import Modal from './Modal.svelte'
 
   let { open = $bindable(false) }: { open?: boolean } = $props()
@@ -38,6 +39,7 @@
       const next = { ...overrides, [editingLevel]: val }
       overrides = next
       saveDungeonXpOverrides(next)
+      dataStore.save()
       rebuildDungeonXpCurve()
     }
     editingLevel = null
@@ -54,12 +56,14 @@
     delete next[level]
     overrides = next
     saveDungeonXpOverrides(next)
+    dataStore.save()
     rebuildDungeonXpCurve()
   }
 
   function clearAll() {
     overrides = {}
     clearDungeonXpOverrides()
+    dataStore.save()
     rebuildDungeonXpCurve()
   }
 

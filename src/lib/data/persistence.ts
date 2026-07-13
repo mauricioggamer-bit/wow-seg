@@ -252,6 +252,32 @@ export function normalizeData(data: WowData): WowData {
   data._meta.total_personajes = data.personajes.length
   data._meta.total_activos = data.personajes.filter(p => p.planeado_usar).length
 
+  const d = data as any
+  try {
+    const lcRaw = storage.getItem('wowseg_leveling_config')
+    if (lcRaw) {
+      try { d.levelingConfig = JSON.parse(lcRaw) } catch { /* empty */ }
+    } else if (d.levelingConfig) {
+      try { storage.setItem('wowseg_leveling_config', JSON.stringify(d.levelingConfig)) } catch { /* empty */ }
+    }
+  } catch { /* empty */ }
+  try {
+    const xpRaw = storage.getItem('wowseg_xp_overrides')
+    if (xpRaw) {
+      try { d.xpOverrides = JSON.parse(xpRaw) } catch { /* empty */ }
+    } else if (d.xpOverrides) {
+      try { storage.setItem('wowseg_xp_overrides', JSON.stringify(d.xpOverrides)) } catch { /* empty */ }
+    }
+  } catch { /* empty */ }
+  try {
+    const dxpRaw = storage.getItem('wowseg_dungeon_xp_overrides')
+    if (dxpRaw) {
+      try { d.dungeonXpOverrides = JSON.parse(dxpRaw) } catch { /* empty */ }
+    } else if (d.dungeonXpOverrides) {
+      try { storage.setItem('wowseg_dungeon_xp_overrides', JSON.stringify(d.dungeonXpOverrides)) } catch { /* empty */ }
+    }
+  } catch { /* empty */ }
+
   return data
 }
 
@@ -292,7 +318,20 @@ function mergeSeed(data: WowData): WowData {
 }
 
 export function saveData(data: WowData): void {
-  storage.setItem(STORAGE_KEY, JSON.stringify(data))
+  const d = data as any
+  try {
+    const lc = storage.getItem('wowseg_leveling_config')
+    if (lc) d.levelingConfig = JSON.parse(lc)
+  } catch { /* empty */ }
+  try {
+    const xp = storage.getItem('wowseg_xp_overrides')
+    if (xp) d.xpOverrides = JSON.parse(xp)
+  } catch { /* empty */ }
+  try {
+    const dxp = storage.getItem('wowseg_dungeon_xp_overrides')
+    if (dxp) d.dungeonXpOverrides = JSON.parse(dxp)
+  } catch { /* empty */ }
+  storage.setItem(STORAGE_KEY, JSON.stringify(d))
   if (data._meta?.ultimo_reset_semanal) {
     storage.setItem(RESET_KEY, data._meta.ultimo_reset_semanal)
   }
@@ -348,7 +387,20 @@ export function importJSON(jsonStr: string): WowData {
 }
 
 export function exportJSON(data: WowData): string {
-  return JSON.stringify(data, null, 2)
+  const d = { ...data } as any
+  try {
+    const lc = storage.getItem('wowseg_leveling_config')
+    if (lc) d.levelingConfig = JSON.parse(lc)
+  } catch { /* empty */ }
+  try {
+    const xp = storage.getItem('wowseg_xp_overrides')
+    if (xp) d.xpOverrides = JSON.parse(xp)
+  } catch { /* empty */ }
+  try {
+    const dxp = storage.getItem('wowseg_dungeon_xp_overrides')
+    if (dxp) d.dungeonXpOverrides = JSON.parse(dxp)
+  } catch { /* empty */ }
+  return JSON.stringify(d, null, 2)
 }
 
 export function exportPersonajesJSON(data: WowData): string {

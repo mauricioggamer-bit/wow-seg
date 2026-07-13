@@ -1,5 +1,6 @@
 import { writable, get } from 'svelte/store'
 import type { LevelingConfig, CustomBuff } from '../types'
+import { dataStore } from './data'
 
 const STORAGE_KEY = 'wowseg_leveling_config'
 
@@ -43,17 +44,20 @@ function createLevelingStore() {
       update(c => {
         const next = { ...c, ...partial }
         saveConfig(next)
+        dataStore.save()
         return next
       })
     },
     setConfig(config: LevelingConfig) {
       saveConfig(config)
+      dataStore.save()
       set(config)
     },
     addCustomBuff(buff: CustomBuff) {
       update(c => {
         const next = { ...c, customBuffs: [...c.customBuffs, buff] }
         saveConfig(next)
+        dataStore.save()
         return next
       })
     },
@@ -64,6 +68,7 @@ function createLevelingStore() {
           customBuffs: c.customBuffs.map(b => b.id === id ? { ...b, ...partial } : b),
         }
         saveConfig(next)
+        dataStore.save()
         return next
       })
     },
@@ -71,12 +76,14 @@ function createLevelingStore() {
       update(c => {
         const next = { ...c, customBuffs: c.customBuffs.filter(b => b.id !== id) }
         saveConfig(next)
+        dataStore.save()
         return next
       })
     },
     reset() {
       const config = { ...DEFAULT_CONFIG }
       saveConfig(config)
+      dataStore.save()
       set(config)
     },
   }

@@ -98,6 +98,9 @@ export interface WowData {
     params?: Record<string, number>
     expansionLevels?: Record<string, number>
   }
+  levelingConfig?: LevelingConfig
+  xpOverrides?: Record<number, number>
+  dungeonXpOverrides?: Record<number, number>
 }
 
 export interface Stats {

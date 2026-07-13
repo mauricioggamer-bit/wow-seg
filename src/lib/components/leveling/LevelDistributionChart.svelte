@@ -63,7 +63,11 @@
     })
   )
 
-  let maxCount = $derived(Math.max(1, ...bucketData.map(b => b.total)))
+  let maxCount = $derived(
+    Math.max(1, ...BUCKETS.map(b =>
+      filtered.filter(p => p.nivel >= b.levelMin && p.nivel <= b.levelMax).length
+    ))
+  )
 
   const MARGIN = { top: 20, right: 20, bottom: 40, left: 50 }
   const CHART_W = 700

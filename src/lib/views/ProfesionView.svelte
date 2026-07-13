@@ -2,6 +2,7 @@
   import { personajesStore, dataStore } from '../stores/data'
   import { currentWarband } from '../stores/ui'
   import { clsClass } from '../constants'
+  import { getSessionPref, setSessionPref } from '../stores/sessionPrefs'
   import { PROFESIONES, profesionIcon } from '../constants/profesiones'
   import { EXPANSIONS } from '../constants'
   import type { ProfesionSlot } from '../types'
@@ -21,7 +22,7 @@
   let filterNone = $state(false)
   let profType = $state<'todas' | 'recoleccion' | 'artesania'>('todas')
   let profSlot = $state<'ambas' | 'primera' | 'segunda'>('ambas')
-  let showMotivos = $state(dataStore.getUIPref('showMotivosProf', false))
+  let showMotivos = $state(getSessionPref('showMotivosProf'))
 
   let editingMotivoChar = $state<string | null>(null)
   let editingMotivoProf = $state<string | null>(null)
@@ -297,7 +298,7 @@
         <label class="filter-check"><input type="checkbox" bind:checked={filterNone} /> None</label>
       </div>
       <div class="prof-filter-group">
-        <label class="filter-check"><input type="checkbox" bind:checked={showMotivos} onchange={() => dataStore.setUIPref('showMotivosProf', showMotivos)} /> Ver motivos</label>
+        <label class="filter-check"><input type="checkbox" bind:checked={showMotivos} onchange={() => setSessionPref('showMotivosProf', showMotivos)} /> Ver motivos</label>
       </div>
     </div>
 

@@ -1,6 +1,7 @@
 <script lang="ts">
   import { personajesStore, dataStore } from '../stores/data'
   import { uiStore, currentWarband } from '../stores/ui'
+  import { getSessionPref, setSessionPref } from '../stores/sessionPrefs'
 
   function toast(msg: string) { uiStore.setToast(msg) }
   import { CLASS_MAP, PERS_CLASS_ICONS, PERS_CLASS_COLORS } from '../constants'
@@ -8,7 +9,9 @@
   let editing = $state<Record<string, string[]>>({})
   let descBuffer = $state<Record<string, string>>({})
   let filterText = $state('')
-  let showSinDesc = $state(false)
+  let showSinDesc = $state(getSessionPref('sinDesc'))
+  let showSinRep1 = $state(getSessionPref('sinRep1'))
+  let showSinRep2 = $state(getSessionPref('sinRep2'))
 
   let activeWarband = $derived($currentWarband && $currentWarband !== '' ? $currentWarband : null)
 
@@ -19,6 +22,8 @@
   let sorted = $derived(
     [...scoped]
       .filter(c => !showSinDesc || !c.descripcion)
+      .filter(c => !showSinRep1 || !c.parecidos?.[0])
+      .filter(c => !showSinRep2 || !c.parecidos?.[1])
       .filter(c => !filterText || c.nombre.toLowerCase().includes(filterText.toLowerCase()) || (c.clase || '').toLowerCase().includes(filterText.toLowerCase()) || (c.raza || '').toLowerCase().includes(filterText.toLowerCase()))
       .sort((a, b) => a.nombre.localeCompare(b.nombre))
   )
@@ -96,7 +101,9 @@
   <div class="fantasia-editor">
     <div class="fantasia-editor-header">
       <span class="fantasia-editor-title">✏️ {activeWarband ? activeWarband : 'Todas'} ({sorted.length})</span>
-      <label class="fantasia-toggle"><input type="checkbox" bind:checked={showSinDesc} /> Sin descripción</label>
+      <label class="fantasia-toggle"><input type="checkbox" bind:checked={showSinDesc} onchange={() => setSessionPref('sinDesc', showSinDesc)} /> Sin descripción</label>
+      <label class="fantasia-toggle"><input type="checkbox" bind:checked={showSinRep1} onchange={() => setSessionPref('sinRep1', showSinRep1)} /> Sin rep. 1</label>
+      <label class="fantasia-toggle"><input type="checkbox" bind:checked={showSinRep2} onchange={() => setSessionPref('sinRep2', showSinRep2)} /> Sin rep. 2</label>
       <input class="fantasia-search" type="text" placeholder="Filtrar personajes..." bind:value={filterText} />
     </div>
     <div class="fantasia-list">

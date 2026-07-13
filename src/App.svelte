@@ -74,8 +74,7 @@
 
   $effect(() => {
     if ($authStore.authenticated && !$uiStore.warbandInitialized) {
-      const wbs = [...$warbandsStore].sort((a, b) => (a.orden ?? 0) - (b.orden ?? 0))
-      if (wbs.length > 0) uiStore.selectWarband(wbs[0].nombre)
+      uiStore.selectWarband($uiStore.currentWarband ?? null)
     }
   })
 

@@ -2,6 +2,7 @@
   import { personajesStore, warbandsStore, dataStore } from '../stores/data'
   import { clsClass } from '../constants'
   import Dialog from '../components/Dialog.svelte'
+  import { getSessionPref, setSessionPref } from '../stores/sessionPrefs'
 
   let { openCharEdit }: { openCharEdit: (name: string) => void } = $props()
 
@@ -12,7 +13,7 @@
   let newWbName = $state('')
   let showReorder = $state(false)
   let reorderList = $state<string[]>([])
-  let showMotivos = $state(dataStore.getUIPref('showMotivosWb', false))
+  let showMotivos = $state(getSessionPref('showMotivosWb'))
   let editingMotivo = $state<Record<string, string>>({})
 
   let allChars = $derived(
@@ -182,7 +183,7 @@
 
   <div class="wm-main-col">
     <label class="wm-toggle-motivos">
-      <input type="checkbox" bind:checked={showMotivos} onchange={() => dataStore.setUIPref('showMotivosWb', showMotivos)} />
+      <input type="checkbox" bind:checked={showMotivos} onchange={() => setSessionPref('showMotivosWb', showMotivos)} />
       <span>Ver motivos</span>
     </label>
     <div class="wm-wbs-col">

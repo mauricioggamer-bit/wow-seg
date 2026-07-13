@@ -135,7 +135,7 @@
       <text
         x={node.x} y={node.y}
         text-anchor="middle" dominant-baseline="middle"
-        fill="#fff" font-size="6"
+        fill="#fff" font-size="8"
         pointer-events="none"
       >{node.icon}</text>
 
@@ -146,7 +146,7 @@
         y={node.ly + 3}
         text-anchor={node.labelAnchor}
         fill="#e0e0e0"
-        font-size="5.5"
+        font-size="7.5"
       >{node.nombre}</text>
     {/each}
   </svg>
@@ -181,7 +181,7 @@
     pointer-events: none;
     white-space: nowrap;
     box-shadow: 0 4px 16px rgba(0,0,0,0.5);
-    font-size: 0.55rem;
+    font-size: 0.65rem;
     color: var(--text-secondary, #aaa);
   }
 </style>

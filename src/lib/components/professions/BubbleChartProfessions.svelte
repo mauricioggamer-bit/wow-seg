@@ -91,16 +91,16 @@
     <line x1={MARGIN.left} y1={yPos(avgY)} x2={MARGIN.left + CHART_W} y2={yPos(avgY)} stroke="#888" stroke-width="0.5" stroke-dasharray="3,3" />
 
     <!-- quadrant labels -->
-    <text x={MARGIN.left + 4} y={yPos(avgY) - 4} fill="#d4af37" font-size="5.5" opacity="0.7">Alta prioridad</text>
-    <text x={MARGIN.left + CHART_W - 2} y={yPos(avgY) - 4} text-anchor="end" fill="#888" font-size="5.5" opacity="0.7">Priorizar roleo</text>
-    <text x={MARGIN.left + 4} y={MARGIN.top + CHART_H - 2} fill="#888" font-size="5.5" opacity="0.7">Baja prioridad</text>
-    <text x={MARGIN.left + CHART_W - 2} y={MARGIN.top + CHART_H - 2} text-anchor="end" fill="#888" font-size="5.5" opacity="0.7">Saturada</text>
+    <text x={MARGIN.left + 4} y={yPos(avgY) - 4} fill="#d4af37" font-size="7.5" opacity="0.7">Alta prioridad</text>
+    <text x={MARGIN.left + CHART_W - 2} y={yPos(avgY) - 4} text-anchor="end" fill="#888" font-size="7.5" opacity="0.7">Priorizar roleo</text>
+    <text x={MARGIN.left + 4} y={MARGIN.top + CHART_H - 2} fill="#888" font-size="7.5" opacity="0.7">Baja prioridad</text>
+    <text x={MARGIN.left + CHART_W - 2} y={MARGIN.top + CHART_H - 2} text-anchor="end" fill="#888" font-size="7.5" opacity="0.7">Saturada</text>
 
     <!-- axis labels -->
-    <text x={MARGIN.left + CHART_W / 2} y={MARGIN.top + CHART_H + 14} text-anchor="middle" fill="#aaa" font-size="6">
+    <text x={MARGIN.left + CHART_W / 2} y={MARGIN.top + CHART_H + 14} text-anchor="middle" fill="#aaa" font-size="8">
       {hasValues ? 'Frecuencia en roster' : 'Frecuencia (cantidad de pj)'}
     </text>
-    <text x={0} y={MARGIN.top + CHART_H / 2} text-anchor="middle" fill="#aaa" font-size="6" transform="rotate(-90, 10, {MARGIN.top + CHART_H / 2})">
+    <text x={0} y={MARGIN.top + CHART_H / 2} text-anchor="middle" fill="#aaa" font-size="8" transform="rotate(-90, 10, {MARGIN.top + CHART_H / 2})">
       {hasValues ? 'Valor estratégico promedio' : 'Main crafters'}
     </text>
 
@@ -122,7 +122,7 @@
         <text
           x={cx} y={cy}
           text-anchor="middle" dominant-baseline="middle"
-          fill="#fff" font-size="5.5"
+          fill="#fff" font-size="7.5"
           pointer-events="none"
         >{p.icon}</text>
       {/if}
@@ -157,7 +157,7 @@
     pointer-events: none;
     white-space: nowrap;
     box-shadow: 0 4px 16px rgba(0,0,0,0.5);
-    font-size: 0.55rem;
+    font-size: 0.65rem;
     color: var(--text-secondary, #aaa);
   }
 </style>

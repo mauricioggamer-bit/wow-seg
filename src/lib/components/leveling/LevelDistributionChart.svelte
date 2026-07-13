@@ -110,13 +110,13 @@
         <line x1={MARGIN.left} y1={MARGIN.top} x2={MARGIN.left} y2={MARGIN.top + CHART_H} stroke="var(--border-subtle)" stroke-width="1" />
         <line x1={MARGIN.left} y1={MARGIN.top + CHART_H} x2={MARGIN.left + CHART_W} y2={MARGIN.top + CHART_H} stroke="var(--border-subtle)" stroke-width="1" />
 
-        <text x={MARGIN.left - 8} y={yPos(0)} text-anchor="end" dominant-baseline="middle" fill="#fff" font-size="9">0</text>
-        <text x={MARGIN.left - 8} y={yPos(Math.ceil(maxCount / 2))} text-anchor="end" dominant-baseline="middle" fill="#fff" font-size="9">{Math.ceil(maxCount / 2)}</text>
-        <text x={MARGIN.left - 8} y={yPos(maxCount)} text-anchor="end" dominant-baseline="middle" fill="#fff" font-size="9">{maxCount}</text>
+        <text x={MARGIN.left - 8} y={yPos(0)} text-anchor="end" dominant-baseline="middle" fill="#fff" font-size="11">0</text>
+        <text x={MARGIN.left - 8} y={yPos(Math.ceil(maxCount / 2))} text-anchor="end" dominant-baseline="middle" fill="#fff" font-size="11">{Math.ceil(maxCount / 2)}</text>
+        <text x={MARGIN.left - 8} y={yPos(maxCount)} text-anchor="end" dominant-baseline="middle" fill="#fff" font-size="11">{maxCount}</text>
 
         {#each bucketData as b, i}
           {@const bx = MARGIN.left + i * barWidth}
-          <text x={bx + barWidth / 2} y={MARGIN.top + CHART_H + 14} text-anchor="middle" fill="#fff" font-size="7">{b.label}</text>
+          <text x={bx + barWidth / 2} y={MARGIN.top + CHART_H + 14} text-anchor="middle" fill="#fff" font-size="9">{b.label}</text>
           {#each b.segments as seg}
             <rect
               x={bx + 1}
@@ -181,7 +181,7 @@
     flex-wrap: wrap;
   }
   .ldc-range-label {
-    font-size: 0.6rem;
+    font-size: 0.7rem;
     color: var(--text-secondary);
     font-family: var(--font-heading);
   }
@@ -191,7 +191,7 @@
     border: 1px solid var(--border-subtle);
     border-radius: var(--r-sm);
     padding: 2px 4px;
-    font-size: 0.65rem;
+    font-size: 0.75rem;
     color: #fff;
     text-align: center;
     outline: none;
@@ -213,7 +213,7 @@
   }
   .ldc-range-sep {
     color: var(--text-muted);
-    font-size: 0.65rem;
+    font-size: 0.75rem;
   }
   .ldc-chart-wrap {
     position: relative;
@@ -238,7 +238,7 @@
   }
   .ldc-tt-header {
     font-family: var(--font-heading);
-    font-size: 0.65rem;
+    font-size: 0.75rem;
     font-weight: 600;
     margin-bottom: 3px;
   }
@@ -247,20 +247,20 @@
     overflow-y: auto;
   }
   .ldc-tt-name {
-    font-size: 0.55rem;
+    font-size: 0.65rem;
     color: var(--text-secondary);
     padding: 1px 0;
   }
   .ldc-empty {
     text-align: center;
     color: var(--text-dim);
-    font-size: 0.65rem;
+    font-size: 0.75rem;
     font-style: italic;
     padding: 20px 0;
   }
   .ldc-total {
     text-align: center;
     color: var(--text-muted);
-    font-size: 0.55rem;
+    font-size: 0.65rem;
   }
 </style>

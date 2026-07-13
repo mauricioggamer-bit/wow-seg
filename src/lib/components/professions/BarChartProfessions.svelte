@@ -84,13 +84,13 @@
       />
       <text
         x={xPos(avgLine)} y={MARGIN.top + rows * (BAR_H + GAP) + 16}
-        text-anchor="middle" fill="#d4af37" font-size="7"
+        text-anchor="middle" fill="#d4af37" font-size="9"
       >Prom. {avgLabel}</text>
     {/if}
 
     {#each sorted as p, i}
       {@const y = barY(i)}
-      <text x={MARGIN.left - 4} y={y + BAR_H / 2} text-anchor="end" dominant-baseline="middle" fill="#e0e0e0" font-size="7">
+      <text x={MARGIN.left - 4} y={y + BAR_H / 2} text-anchor="end" dominant-baseline="middle" fill="#e0e0e0" font-size="9">
         {p.icon} {p.nombre}
       </text>
 
@@ -134,7 +134,7 @@
         />
       </g>
 
-      <text x={MARGIN.left + CHART_W + 4} y={y + BAR_H / 2} dominant-baseline="middle" fill="#888" font-size="7" text-anchor="start">
+      <text x={MARGIN.left + CHART_W + 4} y={y + BAR_H / 2} dominant-baseline="middle" fill="#888" font-size="9" text-anchor="start">
         {p.count}
       </text>
     {/each}
@@ -172,11 +172,11 @@
     pointer-events: none;
     white-space: nowrap;
     box-shadow: 0 4px 16px rgba(0,0,0,0.5);
-    font-size: 0.6rem;
+    font-size: 0.7rem;
   }
   .bc-tt-header {
     font-family: var(--font-heading);
-    font-size: 0.65rem;
+    font-size: 0.75rem;
     font-weight: 600;
     color: var(--gold, #d4af37);
     margin-bottom: 3px;

@@ -87,7 +87,7 @@
         y={HEADER_H - 3}
         text-anchor="middle"
         fill="#e0e0e0"
-        font-size="6"
+        font-size="8"
       >{prof.icon}</text>
     {/each}
 
@@ -100,7 +100,7 @@
         y={gy + 8}
         text-anchor="end"
         fill={PERS_CLASS_COLORS[classKey(group.clase)] || '#888'}
-        font-size="6"
+        font-size="8"
         font-weight="700"
       >{group.clase}</text>
 
@@ -111,7 +111,7 @@
           text-anchor="end"
           dominant-baseline="middle"
           fill={PERS_CLASS_COLORS[classKey(c.clase)] || '#aaa'}
-          font-size="5.5"
+          font-size="7.5"
         >{c.nombre}</text>
 
         {#each sortedProfs as prof, ci}
@@ -161,7 +161,7 @@
     pointer-events: none;
     white-space: nowrap;
     box-shadow: 0 4px 16px rgba(0,0,0,0.5);
-    font-size: 0.55rem;
+    font-size: 0.65rem;
     color: var(--text-secondary, #aaa);
   }
 </style>

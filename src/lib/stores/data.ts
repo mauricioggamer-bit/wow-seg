@@ -2,6 +2,7 @@ import { writable, derived, get } from 'svelte/store'
 import type { WowData, Personaje, Warband, Stats, ProfesionSlot, Tarea } from '../types'
 import type { TipoContenido } from '../constants/wowContent'
 import type { ExportSection } from '../types'
+import type { OpieRing, OpieSlice } from '../opie/types'
 import { loadData, saveData, normalizeData, computeStats as computeStatsFn, exportJSON as exportJSONFn, exportPersonajesJSON as exportPersonajesJSONFn, exportFullBackup as exportFullBackupFn, initSeed as initSeedFn, exportSections as exportSectionsFn, importSections as importSectionsFn } from '../data/persistence'
 import { checkWeeklyReset, resetDailyTasks } from '../data/weekly-reset'
 import { getKeybindString as getKeybindStringFn, keybindKey } from '../data/keybindDefaults'
@@ -726,6 +727,133 @@ addTarea(nombrePersonaje: string, tarea: { nombre: string; tipoContenido?: TipoC
         return { ...d }
       })
     },
+
+    getOpieRings(): OpieRing[] {
+      return get({ subscribe }).opieRings ?? []
+    },
+    getOpieRing(id: string): OpieRing | undefined {
+      return (get({ subscribe }).opieRings ?? []).find(r => r.id === id)
+    },
+    addOpieRing(ring: Omit<OpieRing, 'id'> & { id?: string }): string {
+      const id = ring.id ?? `opie-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`
+      update(d => {
+        d.opieRings = [...(d.opieRings ?? []), { ...ring, id }]
+        saveData(d)
+        return { ...d }
+      })
+      return id
+    },
+    updateOpieRing(id: string, updates: Partial<OpieRing>) {
+      update(d => {
+        const rings = d.opieRings ?? []
+        const idx = rings.findIndex(r => r.id === id)
+        if (idx === -1) return d
+        const newRings = [...rings]
+        newRings[idx] = { ...newRings[idx], ...updates, id }
+        d.opieRings = newRings
+        saveData(d)
+        return { ...d }
+      })
+    },
+    deleteOpieRing(id: string) {
+      update(d => {
+        d.opieRings = (d.opieRings ?? []).filter(r => r.id !== id)
+        saveData(d)
+        return { ...d }
+      })
+    },
+    reorderOpieRings(orderedIds: string[]) {
+      update(d => {
+        const rings = d.opieRings ?? []
+        const byId = new Map(rings.map(r => [r.id, r]))
+        const reordered: OpieRing[] = []
+        for (const id of orderedIds) {
+          const r = byId.get(id)
+          if (r) reordered.push(r)
+        }
+        for (const r of rings) if (!orderedIds.includes(r.id)) reordered.push(r)
+        d.opieRings = reordered
+        saveData(d)
+        return { ...d }
+      })
+    },
+    renameOpieRing(id: string, newName: string): boolean {
+      let ok = true
+      update(d => {
+        const rings = d.opieRings ?? []
+        const idx = rings.findIndex(r => r.id === id)
+        if (idx === -1) { ok = false; return d }
+        const oldName = rings[idx].name
+        d.opieRings = rings.map(r => {
+          if (r.id === id) return { ...r, name: newName }
+          if (r.slices.some(s => s.type === 'ring' && s.arg === oldName)) {
+            return { ...r, slices: r.slices.map(s => (s.type === 'ring' && s.arg === oldName) ? { ...s, arg: newName } : s) }
+          }
+          return r
+        })
+        saveData(d)
+        return { ...d }
+      })
+      return ok
+    },
+    addOpieSlice(ringId: string, slice: OpieSlice) {
+      update(d => {
+        const rings = d.opieRings ?? []
+        const idx = rings.findIndex(r => r.id === ringId)
+        if (idx === -1) return d
+        const newRings = [...rings]
+        newRings[idx] = { ...newRings[idx], slices: [...newRings[idx].slices, slice] }
+        d.opieRings = newRings
+        saveData(d)
+        return { ...d }
+      })
+    },
+    updateOpieSlice(ringId: string, sliceIndex: number, updates: Partial<OpieSlice>) {
+      update(d => {
+        const rings = d.opieRings ?? []
+        const idx = rings.findIndex(r => r.id === ringId)
+        if (idx === -1) return d
+        const ring = rings[idx]
+        if (sliceIndex < 0 || sliceIndex >= ring.slices.length) return d
+        const newSlices = [...ring.slices]
+        newSlices[sliceIndex] = { ...newSlices[sliceIndex], ...updates }
+        const newRings = [...rings]
+        newRings[idx] = { ...ring, slices: newSlices }
+        d.opieRings = newRings
+        saveData(d)
+        return { ...d }
+      })
+    },
+    deleteOpieSlice(ringId: string, sliceIndex: number) {
+      update(d => {
+        const rings = d.opieRings ?? []
+        const idx = rings.findIndex(r => r.id === ringId)
+        if (idx === -1) return d
+        const ring = rings[idx]
+        const newRings = [...rings]
+        newRings[idx] = { ...ring, slices: ring.slices.filter((_, i) => i !== sliceIndex) }
+        d.opieRings = newRings
+        saveData(d)
+        return { ...d }
+      })
+    },
+    reorderOpieSlices(ringId: string, fromIndex: number, toIndex: number) {
+      update(d => {
+        const rings = d.opieRings ?? []
+        const idx = rings.findIndex(r => r.id === ringId)
+        if (idx === -1) return d
+        const ring = rings[idx]
+        const newSlices = [...ring.slices]
+        const [moved] = newSlices.splice(fromIndex, 1)
+        if (moved === undefined) return d
+        newSlices.splice(toIndex, 0, moved)
+        const newRings = [...rings]
+        newRings[idx] = { ...ring, slices: newSlices }
+        d.opieRings = newRings
+        saveData(d)
+        return { ...d }
+      })
+    },
   }
 
   if (typeof window !== 'undefined') {
@@ -747,4 +875,5 @@ export const statsStore = derived(dataStore, $data => computeStatsFn($data))
 export const personajesStore = derived(dataStore, $data => $data.personajes)
 export const warbandsStore = derived(dataStore, $data => $data.warbands)
 export const keybindsStore = derived(dataStore, $data => $data.keybinds ?? {})
+export const opieRingsStore = derived(dataStore, $data => $data.opieRings ?? [])
 

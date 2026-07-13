@@ -1,4 +1,5 @@
 import type { TipoContenido } from './constants/wowContent'
+import type { OpieRing } from './opie/types'
 
 export interface Tarea {
   id: string
@@ -101,6 +102,7 @@ export interface WowData {
   levelingConfig?: LevelingConfig
   xpOverrides?: Record<number, number>
   dungeonXpOverrides?: Record<number, number>
+  opieRings?: OpieRing[]
 }
 
 export interface Stats {
@@ -114,7 +116,7 @@ export interface Stats {
   dailyDone: number
 }
 
-export type ViewType = 'warband' | 'tareas' | 'tasks' | 'personajes' | 'mapa' | 'fantasia' | 'profesion' | 'keybinds' | 'leveling' | 'warband-manager' | 'estrategia'
+export type ViewType = 'warband' | 'tareas' | 'tasks' | 'personajes' | 'mapa' | 'fantasia' | 'profesion' | 'keybinds' | 'leveling' | 'warband-manager' | 'estrategia' | 'opie'
 export type ThemeType = 'dark' | 'light'
 export type FontSizeType = 'small' | 'medium' | 'large' | 'xlarge'
 export type AuthDuration = '10min' | '1hora' | '8horas' | '1semana' | 'siempre'
@@ -301,6 +303,7 @@ export type ExportSection =
   | 'warbands'
   | 'keybinds'
   | 'config_leveling'
+  | 'opie_rings'
 
 export interface ExportPayload {
   _exportType: 'wowseg_export'

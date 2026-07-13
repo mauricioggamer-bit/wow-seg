@@ -4,7 +4,7 @@ import { dataStore } from './data'
 
 const VIEW_STORAGE_KEY = 'wowseg_current_view'
 const WARBAND_STORAGE_KEY = 'wowseg_current_warband'
-const VALID_VIEWS: ViewType[] = ['warband', 'tareas', 'tasks', 'personajes', 'mapa', 'fantasia', 'profesion', 'keybinds', 'leveling', 'warband-manager', 'estrategia']
+const VALID_VIEWS: ViewType[] = ['warband', 'tareas', 'tasks', 'personajes', 'mapa', 'fantasia', 'profesion', 'keybinds', 'leveling', 'warband-manager', 'estrategia', 'opie']
 
 function loadStoredView(): ViewType {
   try {

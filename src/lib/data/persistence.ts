@@ -1,4 +1,5 @@
 import type { WowData, Stats, BackupData, ProfesionSlot, Personaje, ExportSection, ExportPayload } from '../types'
+import type { OpieRing, OpieSlice } from '../opie/types'
 import { SEED_DATA } from './seed'
 import { checkWeeklyReset } from './weekly-reset'
 import { PROFESIONES } from '../constants/profesiones'
@@ -41,6 +42,41 @@ function normalizeProfesiones(raw: any): ProfesionSlot[] {
   }
   while (arr.length < 2) arr.push({ id: '', completadas: [] })
   return arr.slice(0, 2)
+}
+
+function normalizeOpieSlice(raw: any): OpieSlice {
+  const slice: OpieSlice = { type: typeof raw?.type === 'string' ? raw.type : '' }
+  if (raw?.arg !== undefined) slice.arg = raw.arg
+  if (typeof raw?.flags === 'number') slice.flags = raw.flags
+  if (raw?.icon !== undefined) slice.icon = raw.icon
+  if (typeof raw?.show === 'string') slice.show = raw.show
+  if (typeof raw?.color === 'string') slice.color = raw.color
+  if (typeof raw?.embed === 'boolean') slice.embed = raw.embed
+  if (typeof raw?.rotationMode === 'string') slice.rotationMode = raw.rotationMode
+  if (typeof raw?.fastClick === 'boolean') slice.fastClick = raw.fastClick
+  if (raw?.extra && typeof raw.extra === 'object') slice.extra = raw.extra
+  return slice
+}
+
+function normalizeOpieRings(raw: any): OpieRing[] {
+  if (!Array.isArray(raw)) return []
+  return raw
+    .filter((r) => r && typeof r === 'object')
+    .map((r, i): OpieRing => ({
+      id: typeof r.id === 'string' && r.id ? r.id : `opie-legacy-${i}`,
+      name: typeof r.name === 'string' && r.name ? r.name : `Anillo ${i + 1}`,
+      hotkey: typeof r.hotkey === 'string' ? r.hotkey : undefined,
+      limit: typeof r.limit === 'string' ? r.limit : undefined,
+      internal: typeof r.internal === 'boolean' ? r.internal : undefined,
+      embed: typeof r.embed === 'boolean' ? r.embed : undefined,
+      onOpen: typeof r.onOpen === 'number' ? r.onOpen : undefined,
+      noOpportunisticCA: typeof r.noOpportunisticCA === 'boolean' ? r.noOpportunisticCA : undefined,
+      noPersistentCA: typeof r.noPersistentCA === 'boolean' ? r.noPersistentCA : undefined,
+      skipSpecs: Array.isArray(r.skipSpecs) ? r.skipSpecs.filter((s: any) => typeof s === 'string') : undefined,
+      slices: Array.isArray(r.slices) ? r.slices.map(normalizeOpieSlice) : [],
+      extra: r.extra && typeof r.extra === 'object' ? r.extra : undefined,
+      orden: typeof r.orden === 'number' ? r.orden : undefined,
+    }))
 }
 
 function normalizeTagsEstrategicos(raw: any): { id: string; texto: string; puntos: number }[] {
@@ -124,6 +160,7 @@ const VALID_TAREA_KEYS = new Set([
 export function normalizeData(data: WowData): WowData {
   if (!data.warbands) data.warbands = []
   if (!data.keybinds) data.keybinds = {}
+  data.opieRings = normalizeOpieRings(data.opieRings)
   if (!data._meta) data._meta = {
     version: '2',
     descripcion: '',
@@ -466,6 +503,9 @@ export function exportSections(data: WowData, sections: ExportSection[]): string
   if (sections.includes('config_leveling')) {
     payload.data._meta = data._meta
   }
+  if (sections.includes('opie_rings')) {
+    payload.data.opieRings = data.opieRings
+  }
 
   return JSON.stringify(payload, null, 2)
 }
@@ -514,6 +554,9 @@ export function importSections(jsonStr: string, current: WowData): WowData {
     }
     if (sections.includes('config_leveling')) {
       result._meta = { ...result._meta, ...incoming._meta }
+    }
+    if (sections.includes('opie_rings')) {
+      result.opieRings = incoming.opieRings ?? []
     }
 
     return normalizeData(result)

@@ -19,6 +19,7 @@
   import LevelingView from './lib/views/LevelingView.svelte'
   import WarbandManagerView from './lib/views/WarbandManagerView.svelte'
   import StrategicView from './lib/views/StrategicView.svelte'
+  import OpieView from './lib/views/OpieView.svelte'
   import EntityAssignments from './lib/components/strategic/EntityAssignments.svelte'
   import { authStore } from './lib/stores/auth'
   import { uiStore } from './lib/stores/ui'
@@ -94,7 +95,7 @@
   let importText = $state('')
   let importResult = $state<'idle' | 'success' | 'error'>('idle')
   let importErrorMsg = $state('')
-  let exportSectionsState = $state<ExportSection[]>(['personajes', 'nombres_fantasia', 'profesiones', 'tareas', 'warbands', 'keybinds', 'config_leveling'])
+  let exportSectionsState = $state<ExportSection[]>(['personajes', 'nombres_fantasia', 'profesiones', 'tareas', 'warbands', 'keybinds', 'config_leveling', 'opie_rings'])
   let exportSelectAll = $state(true)
   let copied = $state(false)
 
@@ -106,6 +107,7 @@
     { key: 'warbands', label: 'Warbands' },
     { key: 'keybinds', label: 'Keybinds' },
     { key: 'config_leveling', label: 'Config leveling' },
+    { key: 'opie_rings', label: 'Anillos OPie' },
   ]
 
   function handleExportCopy() {
@@ -520,6 +522,8 @@
               <WarbandManagerView {openCharEdit} />
             {:else if $uiStore.currentView === 'estrategia'}
               <StrategicView {openCharEdit} />
+            {:else if $uiStore.currentView === 'opie'}
+              <OpieView />
             {/if}
           </div>
         {/key}

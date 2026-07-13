@@ -203,8 +203,8 @@
     editCharDescripcion = c.descripcion || ''
     const rawProf = c.profesiones ?? []
     editCharProfesiones = [
-      { id: rawProf[0]?.id ?? '', completadas: Array.isArray(rawProf[0]?.completadas) ? [...rawProf[0].completadas] : [] },
-      { id: rawProf[1]?.id ?? '', completadas: Array.isArray(rawProf[1]?.completadas) ? [...rawProf[1].completadas] : [] },
+      { id: rawProf[0]?.id ?? '', completadas: Array.isArray(rawProf[0]?.completadas) ? [...rawProf[0].completadas] : [], rol: rawProf[0]?.rol, motivo: rawProf[0]?.motivo },
+      { id: rawProf[1]?.id ?? '', completadas: Array.isArray(rawProf[1]?.completadas) ? [...rawProf[1].completadas] : [], rol: rawProf[1]?.rol, motivo: rawProf[1]?.motivo },
     ]
     uiStore.openModal('CharEdit')
   }

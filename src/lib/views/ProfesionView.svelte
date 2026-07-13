@@ -137,7 +137,7 @@
       { ...(c.profesiones?.[0] ?? { id: '', completadas: [] }) },
       { ...(c.profesiones?.[1] ?? { id: '', completadas: [] }) },
     ]
-    base[slotIdx] = { id: profId, completadas: base[slotIdx]?.completadas ?? [] }
+    base[slotIdx] = { ...base[slotIdx], id: profId, completadas: base[slotIdx]?.completadas ?? [] }
     if (slotIdx === 0 && base[1]?.id === profId) base[1] = { id: '', completadas: [] }
     if (slotIdx === 1 && base[0]?.id === profId) base[0] = { id: '', completadas: [] }
     dataStore.updatePersonaje(charName, { profesiones: base })

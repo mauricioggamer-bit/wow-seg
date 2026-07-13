@@ -139,7 +139,7 @@ function createGistStore() {
     persistConfig()
   }
 
-  function connect(gistId: string, token: string, fileName?: string) {
+  async function connect(gistId: string, token: string, fileName?: string) {
     sessionStorage.setItem(TOKEN_KEY, token)
     localStorage.setItem(TOKEN_KEY, token)
     update(s => ({
@@ -148,7 +148,7 @@ function createGistStore() {
       connected: true,
     }))
     persistConfig()
-    doSync(true)
+    await doSync(true)
     update(s => ({ ...s, status: { text: 'Conectado y sincronizado', tone: 'ok' as const } }))
   }
 

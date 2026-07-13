@@ -318,7 +318,7 @@ function mergeSeed(data: WowData): WowData {
 }
 
 export function saveData(data: WowData): void {
-  const d = data as any
+  const d: any = { ...data }
   try {
     const lc = storage.getItem('wowseg_leveling_config')
     if (lc) d.levelingConfig = JSON.parse(lc)

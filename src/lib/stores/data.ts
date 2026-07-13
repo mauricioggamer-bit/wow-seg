@@ -258,6 +258,12 @@ addTarea(nombrePersonaje: string, tarea: { nombre: string; tipoContenido?: TipoC
         d.warbands = d.warbands.map(wb => ({ ...wb, personajes: wb.personajes.filter(n => n !== nombre) }))
         d._meta.total_personajes = d.personajes.length
         d._meta.total_activos = d.personajes.filter(p => p.planeado_usar).length
+        if (d.strategicConfig?.values) {
+          const prefix = `personaje:${nombre}:`
+          for (const key of Object.keys(d.strategicConfig.values)) {
+            if (key.startsWith(prefix)) delete d.strategicConfig.values[key]
+          }
+        }
         saveData(d)
         return { ...d }
       })
@@ -720,6 +726,17 @@ addTarea(nombrePersonaje: string, tarea: { nombre: string; tipoContenido?: TipoC
         return { ...d }
       })
     },
+  }
+
+  if (typeof window !== 'undefined') {
+    window.addEventListener('storage', (e: StorageEvent) => {
+      if (e.key === 'wowseg_data' && e.newValue) {
+        try {
+          const parsed = JSON.parse(e.newValue)
+          set(normalizeData(parsed))
+        } catch { /* ignore malformed cross-tab data */ }
+      }
+    })
   }
 
   return store

@@ -7,10 +7,12 @@
   import { EXPANSIONS } from '../constants'
   import type { ProfesionSlot } from '../types'
   import Dialog from '../components/Dialog.svelte'
+  import ProfessionChartsModal from '../components/professions/ProfessionChartsModal.svelte'
 
   let { openCharEdit }: { openCharEdit: (name: string) => void } = $props()
 
   let dragOverProf = $state<string | null>(null)
+  let showCharts = $state(false)
 
   // reorder
   let showReorder = $state(false)
@@ -275,7 +277,10 @@
           Todos los personajes
         {/if}
       </span>
-      <button class="wow-btn wow-btn-sm" onclick={openReorder}>⚙️ Orden</button>
+      <div class="prof-grid-actions">
+        <button class="wow-btn wow-btn-sm" onclick={openReorder}>⚙️ Orden</button>
+        <button class="wow-btn wow-btn-sm" onclick={() => showCharts = true}>📊 Análisis</button>
+      </div>
     </div>
 
     <div class="prof-filters">
@@ -415,6 +420,16 @@
   </div>
 </Dialog>
 
+<ProfessionChartsModal
+  bind:show={showCharts}
+  personajes={scopedChars}
+  {profType}
+  {profSlot}
+  {filterMain}
+  {filterCD}
+  {filterNone}
+/>
+
 <style>
   .prof-layout {
     display: grid;
@@ -467,6 +482,10 @@
     align-items: center;
     justify-content: space-between;
     padding: 0 2px;
+  }
+  .prof-grid-actions {
+    display: flex;
+    gap: 4px;
   }
   .prof-filters {
     display: flex;

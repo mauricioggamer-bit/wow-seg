@@ -15,11 +15,13 @@
   import DungeonXpModal from '../components/leveling/DungeonXpModal.svelte'
   import ConfigPanel from '../components/leveling/ConfigPanel.svelte'
   import CalculationTable from '../components/leveling/CalculationTable.svelte'
+  import LevelDistributionChart from '../components/leveling/LevelDistributionChart.svelte'
 
   let { openCharEdit }: { openCharEdit?: (name: string) => void } = $props()
 
   let showConfig = $state(false)
   let showDungeonXp = $state(false)
+  let showLevelChart = $state(false)
   let selectedChar = $state<string | null>(null)
 
   let activeWarband = $derived($currentWarband && $currentWarband !== '' ? $currentWarband : null)
@@ -126,6 +128,7 @@
 
   function toggleConfig() { showConfig = !showConfig }
   function toggleDungeonXp() { showDungeonXp = !showDungeonXp }
+  function toggleLevelChart() { showLevelChart = !showLevelChart }
   function selectChar(nombre: string) { selectedChar = selectedChar === nombre ? null : nombre }
   function closeDrawer() { selectedChar = null }
 
@@ -183,6 +186,7 @@
     </div>
     <div class="lvl-toolbar">
       <button class="wow-btn wow-btn-sm" onclick={toggleDungeonXp}>🏰 XP Mazmorra</button>
+      <button class="wow-btn wow-btn-sm" onclick={toggleLevelChart}>📊 Gráficos</button>
       <button class="wow-btn wow-btn-sm" onclick={toggleConfig}>{showConfig ? '✕ Cerrar' : '⚙ Config'}</button>
     </div>
   </div>
@@ -195,6 +199,8 @@
 </Modal>
 
 <DungeonXpModal bind:open={showDungeonXp} />
+
+<LevelDistributionChart bind:open={showLevelChart} personajes={$personajesStore} />
 
   <DetailDrawer
     open={drawerOpen}

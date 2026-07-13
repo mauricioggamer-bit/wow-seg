@@ -18,7 +18,7 @@
 </script>
 
 <div class="opie-view">
-  <RingImportExportPanel />
+  <RingImportExportPanel onImported={selectRing} />
   <RingMap {selectedId} onSelect={selectRing} />
   <div class="opie-columns">
     <RingList {selectedId} onSelect={selectRing} />

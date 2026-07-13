@@ -8,8 +8,10 @@
     raw: string
     ring?: OpieRing
     error?: string
-    imported?: boolean
+    savedAs?: 'created' | 'overwritten'
   }
+
+  let { onImported }: { onImported?: (id: string) => void } = $props()
 
   let open = $state(true)
   let pasteText = $state('')
@@ -19,6 +21,10 @@
   function newId(): string {
     idCounter += 1
     return `opie-${Date.now()}-${idCounter}-${Math.random().toString(36).slice(2, 6)}`
+  }
+
+  function existingByName(name: string) {
+    return $opieRingsStore.find(r => r.name === name)
   }
 
   function decode() {
@@ -31,35 +37,36 @@
       uiStore.setStatus('No se encontró ningún string oetohH7 en el texto pegado.', 'error')
       return
     }
+
+    let lastSavedId: string | null = null
+    let created = 0
+    let overwritten = 0
+
     decoded = chunks.map((raw): DecodedEntry => {
       const result = decodeRingString(raw, newId)
       if ('error' in result) return { raw, error: result.error }
-      return { raw, ring: result.ring }
+
+      const existing = existingByName(result.ring.name)
+      if (existing) {
+        dataStore.updateOpieRing(existing.id, { ...result.ring, id: existing.id })
+        lastSavedId = existing.id
+        overwritten += 1
+        return { raw, ring: result.ring, savedAs: 'overwritten' }
+      }
+      const id = dataStore.addOpieRing({ ...result.ring, id: undefined })
+      lastSavedId = id
+      created += 1
+      return { raw, ring: result.ring, savedAs: 'created' }
     })
-    const ok = decoded.filter(d => d.ring).length
-    uiStore.setStatus(`${ok} anillo(s) decodificado(s) correctamente${decoded.length - ok ? `, ${decoded.length - ok} con error.` : '.'}`, ok === decoded.length ? 'ok' : 'error')
-  }
 
-  function existingByName(name: string) {
-    return $opieRingsStore.find(r => r.name === name)
-  }
+    const failed = decoded.length - created - overwritten
+    const parts = []
+    if (created) parts.push(`${created} creado(s)`)
+    if (overwritten) parts.push(`${overwritten} sobrescrito(s)`)
+    if (failed) parts.push(`${failed} con error`)
+    uiStore.setStatus(parts.join(', ') + '.', failed ? 'error' : 'ok')
 
-  function importAsNew(entry: DecodedEntry) {
-    if (!entry.ring) return
-    dataStore.addOpieRing({ ...entry.ring, id: undefined })
-    entry.imported = true
-    decoded = [...decoded]
-    uiStore.setStatus(`"${entry.ring.name}" importado como anillo nuevo.`, 'ok')
-  }
-
-  function overwrite(entry: DecodedEntry) {
-    if (!entry.ring) return
-    const existing = existingByName(entry.ring.name)
-    if (!existing) return
-    dataStore.updateOpieRing(existing.id, { ...entry.ring, id: existing.id })
-    entry.imported = true
-    decoded = [...decoded]
-    uiStore.setStatus(`"${entry.ring.name}" sobrescrito.`, 'ok')
+    if (lastSavedId) onImported?.(lastSavedId)
   }
 
   function clear() {
@@ -92,16 +99,12 @@
               {#if entry.error}
                 <span class="ie-err">✗ {entry.error}</span>
               {:else if entry.ring}
-                {@const existing = existingByName(entry.ring.name)}
                 <span class="ie-name">{entry.ring.name}</span>
                 <span class="ie-meta">{entry.ring.slices.length} slice(s)</span>
-                {#if entry.imported}
-                  <span class="ie-ok">✓ importado</span>
-                {:else if existing}
-                  <button class="wow-btn wow-btn-sm wow-btn-danger" onclick={() => overwrite(entry)}>Sobrescribir "{existing.name}"</button>
-                  <button class="wow-btn wow-btn-sm" onclick={() => importAsNew(entry)}>Importar como nuevo</button>
+                {#if entry.savedAs === 'overwritten'}
+                  <span class="ie-ok">✓ sobrescrito</span>
                 {:else}
-                  <button class="wow-btn wow-btn-sm wow-btn-primary" onclick={() => importAsNew(entry)}>Importar</button>
+                  <span class="ie-ok">✓ creado</span>
                 {/if}
               {/if}
             </div>

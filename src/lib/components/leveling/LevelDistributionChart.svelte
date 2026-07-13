@@ -116,13 +116,13 @@
         <line x1={MARGIN.left} y1={MARGIN.top} x2={MARGIN.left} y2={MARGIN.top + CHART_H} stroke="var(--border-subtle)" stroke-width="1" />
         <line x1={MARGIN.left} y1={MARGIN.top + CHART_H} x2={MARGIN.left + CHART_W} y2={MARGIN.top + CHART_H} stroke="var(--border-subtle)" stroke-width="1" />
 
-        <text x={MARGIN.left - 8} y={yPos(0)} text-anchor="end" dominant-baseline="middle" fill="var(--text-dim)" font-size="9">0</text>
-        <text x={MARGIN.left - 8} y={yPos(Math.ceil(maxCount / 2))} text-anchor="end" dominant-baseline="middle" fill="var(--text-dim)" font-size="9">{Math.ceil(maxCount / 2)}</text>
-        <text x={MARGIN.left - 8} y={yPos(maxCount)} text-anchor="end" dominant-baseline="middle" fill="var(--text-dim)" font-size="9">{maxCount}</text>
+        <text x={MARGIN.left - 8} y={yPos(0)} text-anchor="end" dominant-baseline="middle" fill="#fff" font-size="9">0</text>
+        <text x={MARGIN.left - 8} y={yPos(Math.ceil(maxCount / 2))} text-anchor="end" dominant-baseline="middle" fill="#fff" font-size="9">{Math.ceil(maxCount / 2)}</text>
+        <text x={MARGIN.left - 8} y={yPos(maxCount)} text-anchor="end" dominant-baseline="middle" fill="#fff" font-size="9">{maxCount}</text>
 
         {#each bucketData as b, i}
           {@const bx = MARGIN.left + i * barWidth}
-          <text x={bx + barWidth / 2} y={MARGIN.top + CHART_H + 14} text-anchor="middle" fill="var(--text-dim)" font-size="7">{b.label}</text>
+          <text x={bx + barWidth / 2} y={MARGIN.top + CHART_H + 14} text-anchor="middle" fill="#fff" font-size="7">{b.label}</text>
           {#each b.segments as seg}
             <rect
               x={bx + 1}

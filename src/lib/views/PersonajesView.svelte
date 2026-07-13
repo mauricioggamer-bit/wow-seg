@@ -2,6 +2,7 @@
   import { personajesStore, dataStore } from '../stores/data'
   import { uiStore } from '../stores/ui'
   import { CLASS_MAP, PERS_RACE_INFO, PERS_CLASS_ICONS, PERS_CLASS_COLORS, PERS_RACES_BY_COLUMN } from '../constants'
+  import PersonajesChartsModal from '../components/personajes/PersonajesChartsModal.svelte'
 
   let { openCharEdit, openNewChar }: { openCharEdit?: (name: string) => void; openNewChar?: () => void } = $props()
 
@@ -14,6 +15,7 @@
   let persSelectedChar = $state<string | null>(null)
   let persHideNotPlanned = $state(true)
   let persSearchText = $state('')
+  let showCharts = $state(false)
 
   let classEntries = $derived.by(() => {
     const deduped: Array<{ label: string; key: string }> = []
@@ -114,11 +116,6 @@
     persSearchText = ''
   }
 
-  function closePersonajes() {
-    resetPersAll()
-    uiStore.setView('warband')
-  }
-
   function editSelectedPersonaje() {
     if (!persSelectedChar) return
     uiStore.openModal('CharEdit')
@@ -182,6 +179,10 @@
     {/each}
 
     <div id="pers-panel-center">
+      <div id="pers-action-bar">
+        <button class="pers-action-btn" onclick={() => { if (openNewChar) openNewChar() }}>✚ NUEVO</button>
+        <button class="pers-action-btn" onclick={() => showCharts = true}>📊 GRÁFICOS</button>
+      </div>
       <div id="pers-filter-bar">
         <input
           type="text"
@@ -350,29 +351,7 @@
     {/each}
   </div>
 
-  <div id="pers-footer">
-    <button class="pers-foot-btn" onclick={closePersonajes}>◄ VOLVER</button>
-    <div class="pers-realm-info">
-      Raganaros Realm · PvP · <span class="pers-realm-ping">⬤ 44ms</span>
-      <br>Personaje: <span id="pers-selected-label" style="color:var(--gold)">
-        {persSelectedChar
-          ? (() => { const c = $personajesStore.find(p => p.nombre === persSelectedChar); return c ? `${c.nombre} (Nv.${c.nivel} ${c.raza})` : persSelectedChar })()
-          : '—'
-        }
-      </span>
-    </div>
-    <div style="display:flex;gap:4px">
-      <button
-        class="pers-foot-btn"
-        onclick={() => { if (openNewChar) openNewChar() }}
-      >✚ NUEVO</button>
-      <button
-        class="pers-foot-btn primary"
-        disabled={!persSelectedChar}
-        onclick={() => { if (persSelectedChar && openCharEdit) openCharEdit(persSelectedChar) }}
-      >EDITAR ►</button>
-    </div>
-  </div>
+  <PersonajesChartsModal bind:show={showCharts} personajes={filteredChars} />
 </div>
 
 <style>
@@ -402,6 +381,9 @@
   .pers-race-name { color:var(--gold); font-size:11px; line-height:1.3; }
   .pers-race-type { color:var(--text-muted); font-size:10px; }
   #pers-panel-center { flex:1; display:flex; flex-direction:column; position:relative; }
+  #pers-action-bar { display:flex; align-items:center; gap:4px; padding:4px 10px; background:rgba(10,5,0,0.6); border-bottom:1px solid var(--border-subtle); flex-shrink:0; }
+  .pers-action-btn { background:linear-gradient(180deg,#2a1500,#170900); border:1px solid #7a4a10; color:var(--gold-light); font-family:inherit; font-size:0.5rem; letter-spacing:1px; padding:3px 12px; cursor:pointer; border-radius:2px; transition:all 0.15s; }
+  .pers-action-btn:hover { background:linear-gradient(180deg,#3a2000,#1f0e00); border-color:var(--gold); }
   #pers-filter-bar { position:relative; z-index:2; display:flex; align-items:center; justify-content:center; gap:6px; padding:5px 8px; background:rgba(10,5,0,0.53); border-bottom:1px solid var(--border-subtle); flex-shrink:0; flex-wrap:wrap; }
   .pers-filter-label { color:var(--text-muted); font-size:0.45rem; margin-right:2px; }
   .pers-filter-chip { border:1px solid var(--border-main); background:none; color:var(--gold-dim); font-family:inherit; font-size:0.45rem; padding:2px 7px; cursor:pointer; border-radius:1px; letter-spacing:0.5px; transition:all 0.12s; }
@@ -454,14 +436,6 @@
   .pers-class-btn.active { background:rgba(42,21,0,0.6); border-color:var(--gold); color:var(--gold-light); }
   .pers-cbtn-icon { font-size:0.65rem; line-height:1; }
   .pers-cbtn-label { font-size:0.4rem; letter-spacing:0.3px; }
-  #pers-footer { display:flex; justify-content:space-between; align-items:center; padding:5px 14px; background:linear-gradient(0deg,#100800,#0a0500); border-top:1px solid var(--border-main); flex-shrink:0; }
-  .pers-foot-btn { background:linear-gradient(180deg,#2a1500,#170900); border:1px solid #7a4a10; color:var(--gold-light); font-family:inherit; font-size:0.55rem; letter-spacing:1px; padding:5px 18px; cursor:pointer; border-radius:2px; transition:all 0.15s; }
-  .pers-foot-btn:hover { background:linear-gradient(180deg,#3a2000,#1f0e00); border-color:var(--gold); }
-  .pers-foot-btn:disabled { opacity:0.3; pointer-events:none; }
-  .pers-foot-btn.primary { border-color:#c8a84b; background:linear-gradient(180deg,#3a2800,#1f1200); }
-  .pers-foot-btn.primary:hover { background:linear-gradient(180deg,#5a3a00,#2a1800); box-shadow:0 0 10px var(--gold-dim); }
-  .pers-realm-info { color:var(--text-muted); font-size:0.45rem; text-align:center; line-height:1.6; }
-  .pers-realm-ping { color:#44cc44; }
   #pers-stats { display:flex; gap:8px; padding:6px 10px; background:linear-gradient(180deg,rgba(10,5,0,0.6),rgba(6,3,0,0.85)); border-top:1px solid var(--border-subtle); flex-shrink:0; }
   .pers-stats-group { flex:1; min-width:180px; display:flex; flex-direction:column; gap:3px; }
   .pers-stats-title { font-size:0.5rem; font-weight:bold; letter-spacing:2px; text-align:center; padding-bottom:2px; border-bottom:1px solid var(--border-subtle); }

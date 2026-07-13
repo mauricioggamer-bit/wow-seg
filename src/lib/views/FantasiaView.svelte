@@ -12,6 +12,7 @@
   let showSinDesc = $state(getSessionPref('sinDesc'))
   let showSinRep1 = $state(getSessionPref('sinRep1'))
   let showSinRep2 = $state(getSessionPref('sinRep2'))
+  let showNoActivos = $state(false)
 
   let activeWarband = $derived($currentWarband && $currentWarband !== '' ? $currentWarband : null)
 
@@ -21,29 +22,13 @@
 
   let sorted = $derived(
     [...scoped]
+      .filter(c => showNoActivos || c.planeado_usar)
       .filter(c => !showSinDesc || !c.descripcion)
       .filter(c => !showSinRep1 || !c.parecidos?.[0])
       .filter(c => !showSinRep2 || !c.parecidos?.[1])
       .filter(c => !filterText || c.nombre.toLowerCase().includes(filterText.toLowerCase()) || (c.clase || '').toLowerCase().includes(filterText.toLowerCase()) || (c.raza || '').toLowerCase().includes(filterText.toLowerCase()))
       .sort((a, b) => a.nombre.localeCompare(b.nombre))
   )
-
-  let raceCounts = $derived.by(() => {
-    const m: Record<string, number> = {}
-    for (const c of scoped) {
-      m[c.raza] = (m[c.raza] || 0) + 1
-    }
-    return Object.entries(m).sort((a, b) => b[1] - a[1])
-  })
-
-  let classCounts = $derived.by(() => {
-    const m: Record<string, number> = {}
-    for (const c of scoped) {
-      const key = c.clase
-      m[key] = (m[key] || 0) + 1
-    }
-    return Object.entries(m).sort((a, b) => b[1] - a[1])
-  })
 
   function saveParecido(charName: string) {
     const vals = editing[charName] !== undefined ? editing[charName] : []
@@ -70,40 +55,13 @@
 </script>
 
 <div class="fantasia-panel">
-  <div class="fantasia-counters">
-    <div class="fantasia-counter-col">
-      <div class="fantasia-counter-title">🌍 Razas</div>
-      <div class="fantasia-counter-list">
-        {#each raceCounts as [race, count]}
-          <div class="fantasia-counter-row">
-            <span class="fantasia-counter-label">{race}</span>
-            <span class="fantasia-counter-num">{count}</span>
-          </div>
-        {/each}
-      </div>
-    </div>
-    <div class="fantasia-counter-col">
-      <div class="fantasia-counter-title">⚔️ Clases</div>
-      <div class="fantasia-counter-list">
-        {#each classCounts as [cls, count]}
-          {@const key = CLASS_MAP[cls] || 'warrior'}
-          {@const color = PERS_CLASS_COLORS[key] || '#c9a84c'}
-          <div class="fantasia-counter-row">
-            <span class="fantasia-counter-icon">{PERS_CLASS_ICONS[key] || '?'}</span>
-            <span class="fantasia-counter-label" style="color:{color}">{cls}</span>
-            <span class="fantasia-counter-num">{count}</span>
-          </div>
-        {/each}
-      </div>
-    </div>
-  </div>
-
   <div class="fantasia-editor">
     <div class="fantasia-editor-header">
       <span class="fantasia-editor-title">✏️ {activeWarband ? activeWarband : 'Todas'} ({sorted.length})</span>
       <label class="fantasia-toggle"><input type="checkbox" bind:checked={showSinDesc} onchange={() => setSessionPref('sinDesc', showSinDesc)} /> Sin descripción</label>
       <label class="fantasia-toggle"><input type="checkbox" bind:checked={showSinRep1} onchange={() => setSessionPref('sinRep1', showSinRep1)} /> Sin rep. 1</label>
       <label class="fantasia-toggle"><input type="checkbox" bind:checked={showSinRep2} onchange={() => setSessionPref('sinRep2', showSinRep2)} /> Sin rep. 2</label>
+      <label class="fantasia-toggle"><input type="checkbox" bind:checked={showNoActivos} /> No activos</label>
       <input class="fantasia-search" type="text" placeholder="Filtrar personajes..." bind:value={filterText} />
     </div>
     <div class="fantasia-list">
@@ -147,15 +105,7 @@
 </div>
 
 <style>
-  .fantasia-panel { display:flex; gap:10px; height:calc(100vh - 100px); margin-top:6px; border:1px solid var(--border-subtle); border-radius:var(--r-md); overflow:hidden; background:var(--bg-base); }
-  .fantasia-counters { width:220px; flex-shrink:0; display:flex; flex-direction:column; gap:8px; padding:10px; background:var(--bg-soft); border-right:1px solid var(--border-subtle); overflow-y:auto; }
-  .fantasia-counter-title { font-size:0.6rem; font-weight:700; color:var(--gold-light); text-transform:uppercase; letter-spacing:1px; margin-bottom:4px; padding-bottom:3px; border-bottom:1px solid var(--border-subtle); }
-  .fantasia-counter-list { display:flex; flex-direction:column; gap:1px; }
-  .fantasia-counter-row { display:flex; align-items:center; gap:4px; padding:2px 4px; font-size:0.5rem; color:var(--text-secondary); }
-  .fantasia-counter-row:hover { background:var(--bg-raised); border-radius:2px; }
-  .fantasia-counter-icon { font-size:0.65rem; width:16px; text-align:center; }
-  .fantasia-counter-label { flex:1; }
-  .fantasia-counter-num { color:var(--gold); font-weight:700; font-size:0.55rem; min-width:20px; text-align:right; }
+  .fantasia-panel { height:calc(100vh - 100px); margin-top:6px; border:1px solid var(--border-subtle); border-radius:var(--r-md); overflow:hidden; background:var(--bg-base); display:flex; flex-direction:column; }
   .fantasia-editor { flex:1; display:flex; flex-direction:column; overflow:hidden; }
   .fantasia-editor-header { display:flex; align-items:center; gap:8px; padding:6px 10px; border-bottom:1px solid var(--border-subtle); flex-shrink:0; }
   .fantasia-editor-title { font-size:0.6rem; color:var(--gold-light); font-weight:700; text-transform:uppercase; letter-spacing:1px; }
@@ -178,5 +128,5 @@
   .fantasia-row-desc { width:100%; background:var(--input-bg); border:1px dashed var(--border-subtle); border-radius:var(--r-sm); padding:2px 6px; color:var(--text-muted); font-size:0.45rem; font-family:var(--font-body); }
   .fantasia-row-desc:focus { outline:none; border-color:var(--gold-dim); border-style:solid; }
   .fantasia-row-desc::placeholder { color:var(--text-dim); }
-  @media (max-width:768px) { .fantasia-counters { display:none; } .fantasia-row-name { min-width:80px; } .fantasia-row-info { display:none; } }
+  @media (max-width:768px) { .fantasia-row-name { min-width:80px; } .fantasia-row-info { display:none; } }
 </style>

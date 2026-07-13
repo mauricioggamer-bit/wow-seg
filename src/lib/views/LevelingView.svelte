@@ -200,7 +200,7 @@
 
 <DungeonXpModal bind:open={showDungeonXp} />
 
-<LevelDistributionChart bind:open={showLevelChart} personajes={$personajesStore} />
+<LevelDistributionChart bind:open={showLevelChart} personajes={personajes} />
 
   <DetailDrawer
     open={drawerOpen}

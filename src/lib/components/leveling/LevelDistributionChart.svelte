@@ -195,9 +195,16 @@
     color: #fff;
     text-align: center;
     outline: none;
+    -moz-appearance: textfield;
+    appearance: textfield;
   }
   .ldc-num:focus {
     border-color: var(--gold, #d4af37);
+  }
+  .ldc-num::-webkit-inner-spin-button,
+  .ldc-num::-webkit-outer-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
   }
   .ldc-range {
     width: 80px;

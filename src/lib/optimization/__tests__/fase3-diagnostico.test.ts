@@ -17,6 +17,7 @@ const config: LevelingConfig = {
   warMode: false,
   warModeTarget: 'both',
   customBuffs: [],
+  objetivoSinTareas: 90,
 }
 
 const weights: ObjectiveWeights = {

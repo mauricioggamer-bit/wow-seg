@@ -10,6 +10,7 @@ const DEFAULT_CONFIG: LevelingConfig = {
   warMode: false,
   warModeTarget: 'both',
   customBuffs: [],
+  objetivoSinTareas: 90,
   patronSemanal: { lunes: 1.5, martes: 1.5, miercoles: 1.5, jueves: 1.5, viernes: 1.5, sabado: 5, domingo: 5 },
 }
 

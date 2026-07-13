@@ -25,6 +25,7 @@ const defaultConfig: LevelingConfig = {
   warMode: false,
   warModeTarget: 'both',
   customBuffs: [],
+  objetivoSinTareas: 90,
 }
 
 describe('generateNaiveStrategies', () => {

@@ -59,12 +59,12 @@ function computeAchievableXp(
   maxTimewaysPct: number,
   count90: number,
 ): number {
-  const pendientes = roster.filter(p => p.planeado_usar && p.nivel < getObjetivoFromTareas(p.tareas))
+  const pendientes = roster.filter(p => p.planeado_usar && p.nivel < getObjetivoFromTareas(p.tareas, undefined, config?.objetivoSinTareas))
   if (pendientes.length === 0) return 500_000_000
   if (maxTiempoTotal <= 0) return 1
 
   const candidates = pendientes.map(p => {
-    const objetivo = getObjetivoFromTareas(p.tareas)
+    const objetivo = getObjetivoFromTareas(p.tareas, undefined, config?.objetivoSinTareas)
     const xpPerDungeon = getEffectiveXpPerDungeon(config, p.nivel, count90, maxTimewaysPct)
     const hoursPerDungeon = config.duracionDungeon / 60
     const xpPerHour = hoursPerDungeon > 0 ? xpPerDungeon / hoursPerDungeon : 0
@@ -95,7 +95,7 @@ export function computeNormalizationCaps(
   fechaLimite: Date,
   patronSemanal?: PatronSemanal,
 ): NormalizationCaps {
-  const pendientes = roster.filter(p => p.planeado_usar && p.nivel < getObjetivoFromTareas(p.tareas))
+  const pendientes = roster.filter(p => p.planeado_usar && p.nivel < getObjetivoFromTareas(p.tareas, undefined, config?.objetivoSinTareas))
   const totalPendientes = pendientes.length
   const semanas = computediasHastaLimite(fechaInicio, fechaLimite)
 

@@ -20,7 +20,7 @@ export function generateNaiveStrategies(
   roster: Personaje[],
   config?: LevelingConfig,
 ): Strategy[] {
-  const pending = roster.filter(p => p.planeado_usar && p.nivel < getObjetivoFromTareas(p.tareas))
+  const pending = roster.filter(p => p.planeado_usar && p.nivel < getObjetivoFromTareas(p.tareas, undefined, config?.objetivoSinTareas))
   if (pending.length === 0) return []
 
   const strategies: Strategy[] = []
@@ -34,6 +34,7 @@ export function generateNaiveStrategies(
     warMode: false,
     warModeTarget: 'both',
     customBuffs: [],
+    objetivoSinTareas: 90,
   }
 
   const plan = optimize(roster, defaultConfig, initialCount90)

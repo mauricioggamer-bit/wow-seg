@@ -149,6 +149,7 @@ export interface LevelingConfig {
   warModeTarget: 'monsters' | 'reward' | 'both'
   customBuffs: CustomBuff[]
   patronSemanal?: PatronSemanal
+  objetivoSinTareas: number
 }
 
 export interface LevelingResult {

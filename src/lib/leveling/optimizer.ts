@@ -17,7 +17,8 @@ export function optimize(
   config: LevelingConfig,
   initialCount90: number,
 ): OptimizationPlan {
-  const pending = personajes.filter(p => p.planeado_usar && p.nivel < getObjetivoFromTareas(p.tareas))
+  const objetivoSinTareas = dataStore.getStrategicParam('objetivoSinTareas', 90)
+  const pending = personajes.filter(p => p.planeado_usar && p.nivel < getObjetivoFromTareas(p.tareas, undefined, objetivoSinTareas))
   if (pending.length === 0) {
     return { entries: [], optimizedTime: 0, baselineTime: 0, timeSaved: 0, order: [] }
   }
@@ -77,7 +78,7 @@ export function optimize(
 
     const chosen = remaining[best.idx]
     const calc = calculateForCharacter(chosen, config, currentCount90)
-    const objetivo = getObjetivoFromTareas(chosen.tareas)
+    const objetivo = getObjetivoFromTareas(chosen.tareas, undefined, objetivoSinTareas)
 
     const willReachObjetivo = chosen.nivel < objetivo
     const buffBefore = Math.min(currentCount90 * 5, 25)
@@ -120,7 +121,7 @@ export function optimize(
     remaining.splice(best.idx, 1)
   }
 
-  const timeSaved = Math.max(0, baselineTime - recomputeOptimizedTime(pending, config, initialCount90, order))
+  const timeSaved = Math.max(0, baselineTime - recomputeOptimizedTime(pending, config, initialCount90, order, objetivoSinTareas))
 
   return {
     entries: order,
@@ -136,6 +137,7 @@ function recomputeOptimizedTime(
   config: LevelingConfig,
   initialCount90: number,
   order: OptimizationEntry[],
+  objetivoSinTareas: number,
 ): number {
   let count90 = initialCount90
   let total = 0
@@ -144,7 +146,7 @@ function recomputeOptimizedTime(
     if (!p) continue
     const calc = calculateForCharacter(p, config, count90)
     total += calc.timeHours
-    const objetivo = getObjetivoFromTareas(p.tareas)
+    const objetivo = getObjetivoFromTareas(p.tareas, undefined, objetivoSinTareas)
     if (p.nivel < objetivo && objetivo >= 90) {
       count90 += 1
     }

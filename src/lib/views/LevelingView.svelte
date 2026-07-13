@@ -40,12 +40,13 @@
       clase: p.clase,
       nivel: p.nivel,
       xp: 0,
-      objetivo: getObjetivoFromTareas(p.tareas, nivelMaximo),
+      objetivo: getObjetivoFromTareas(p.tareas, nivelMaximo, objetivoSinTareas),
       timewaysPct: p.timewaysPct ?? 0,
     }))
   )
 
   let nivelMaximo = $derived(Math.min(dataStore.getStrategicParam('nivelMaximo', 90) || MAX_LEVEL, MAX_LEVEL))
+  let objetivoSinTareas = $derived(dataStore.getStrategicParam('objetivoSinTareas', 90))
   let ignoreDone = $derived(dataStore.getStrategicParam('ignoreDone', 0) === 1)
 
   let scenario = $derived<SimulationScenario>({

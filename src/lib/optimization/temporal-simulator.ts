@@ -77,7 +77,7 @@ export function runTemporalSimulation(
       if (dec.accion === 'saltear') continue
       const st = charState.get(dec.personaje.nombre)
       if (!st || st.done) continue
-      const objetivo = getObjetivoFromTareas(dec.personaje.tareas)
+      const objetivo = getObjetivoFromTareas(dec.personaje.tareas, undefined, config?.objetivoSinTareas)
       const targetLevel = dec.accion === 'subir-a-90' ? objetivo : 80
       if (st.nivel >= targetLevel) {
         st.done = true
@@ -91,7 +91,7 @@ export function runTemporalSimulation(
 
     const dec = targetDecision
     const st = charState.get(dec.personaje.nombre)!
-    const objetivo = getObjetivoFromTareas(dec.personaje.tareas)
+    const objetivo = getObjetivoFromTareas(dec.personaje.tareas, undefined, config?.objetivoSinTareas)
     const targetLevel = dec.accion === 'subir-a-90' ? objetivo : 80
     day.personajeActivo = dec.personaje.nombre
     const timewaysPct = dec.personaje.timewaysPct ?? 0

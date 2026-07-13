@@ -26,8 +26,9 @@
   } = $props()
 
   let nivelMaximo = $derived(Math.min(dataStore.getStrategicParam('nivelMaximo', 90) || MAX_LEVEL, MAX_LEVEL))
+  let objetivoSinTareas = $derived(dataStore.getStrategicParam('objetivoSinTareas', 90))
   let ignoreDone = $derived(dataStore.getStrategicParam('ignoreDone', 0) === 1)
-  let objetivo = $derived(getObjetivoFromTareas(personaje.tareas, nivelMaximo))
+  let objetivo = $derived(getObjetivoFromTareas(personaje.tareas, nivelMaximo, objetivoSinTareas))
 
   let simChar = $derived({
     nombre: personaje.nombre,

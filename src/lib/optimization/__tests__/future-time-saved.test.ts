@@ -10,6 +10,7 @@ const defaultConfig: LevelingConfig = {
   warMode: false,
   warModeTarget: 'both',
   customBuffs: [],
+  objetivoSinTareas: 90,
 }
 
 function makePersonaje(overrides: Partial<Personaje> = {}): Personaje {

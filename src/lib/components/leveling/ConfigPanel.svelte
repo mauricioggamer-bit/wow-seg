@@ -1,9 +1,11 @@
 <script lang="ts">
   import { levelingStore } from '../../stores/leveling'
+  import { dataStore } from '../../stores/data'
   import type { CustomBuff } from '../../types'
   import { saveXpOverrides, clearXpOverrides, getXpOverrides, rebuildXpCurve, getDungeonXpForLevel } from '../../constants/experience'
 
   let config = $derived($levelingStore)
+  let objetivoSinTareas = $derived(dataStore.getStrategicParam('objetivoSinTareas', 90))
 
   let newBuffName = $state('')
   let newBuffPct = $state(10)
@@ -124,6 +126,15 @@
         <option value={opt} selected={config.warbandMentor080 === opt}>{opt}%</option>
       {/each}
     </select>
+  </div>
+
+  <div class="lvl-config-section">
+    <div class="lvl-config-title">Objetivo sin tareas</div>
+    <label class="lvl-config-inline">
+      <input type="number" value={objetivoSinTareas} min="10" max="90"
+        oninput={(e) => dataStore.setStrategicParam('objetivoSinTareas', parseInt(e.currentTarget.value) || 90)} />
+      <span class="lvl-config-unit">nivel</span>
+    </label>
   </div>
 
   <div class="lvl-config-section">

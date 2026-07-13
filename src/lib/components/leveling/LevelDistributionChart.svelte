@@ -10,37 +10,32 @@
     personajes?: { nombre: string; clase: string; nivel: number }[]
   } = $props()
 
-  let levelFilter = $state<'all' | '1-30' | '31-60' | '61-90' | '80-90'>('all')
+  let levelMin = $state(1)
+  let levelMax = $state(90)
+
+  $effect(() => {
+    if (levelMin > levelMax) levelMax = levelMin
+  })
   let tooltip = $state<{ x: number; y: number; clase: string; count: number; names: string[] } | null>(null)
 
-  const BUCKETS = Array.from({ length: 18 }, (_, i) => {
+  const ALL_BUCKETS = Array.from({ length: 18 }, (_, i) => {
     const min = i * 5 + 1
     const max = Math.min(min + 4, 90)
     return { levelMin: min, levelMax: max, label: `${min}-${max}` }
   })
 
-  const FILTERS: { key: typeof levelFilter; label: string }[] = [
-    { key: 'all', label: 'Todos' },
-    { key: '1-30', label: '1-30' },
-    { key: '31-60', label: '31-60' },
-    { key: '61-90', label: '61-90' },
-    { key: '80-90', label: '80-90' },
-  ]
+  let buckets = $derived(
+    ALL_BUCKETS.filter(b => b.levelMax >= levelMin && b.levelMin <= levelMax)
+  )
 
-  function levelInRange(nivel: number): boolean {
-    if (levelFilter === 'all') return true
-    const [lo, hi] = levelFilter.split('-').map(Number)
-    return nivel >= lo && nivel <= hi
-  }
-
-  let filtered = $derived(personajes.filter(p => levelInRange(p.nivel)))
+  let filtered = $derived(personajes.filter(p => p.nivel >= levelMin && p.nivel <= levelMax))
 
   function classKey(clase: string): string {
     return CLASS_MAP[clase] || 'warrior'
   }
 
   let bucketData = $derived(
-    BUCKETS.map(b => {
+    buckets.map(b => {
       const chars = filtered.filter(p => p.nivel >= b.levelMin && p.nivel <= b.levelMax)
       const byClass = new Map<string, { count: number; names: string[] }>()
       for (const c of chars) {
@@ -64,7 +59,7 @@
   )
 
   let maxCount = $derived(
-    Math.max(1, ...BUCKETS.map(b =>
+    Math.max(1, ...buckets.map(b =>
       filtered.filter(p => p.nivel >= b.levelMin && p.nivel <= b.levelMax).length
     ))
   )
@@ -75,7 +70,7 @@
   const VIEWBOX_W = CHART_W + MARGIN.left + MARGIN.right
   const VIEWBOX_H = CHART_H + MARGIN.top + MARGIN.bottom
 
-  let barWidth = $derived((CHART_W - 4) / BUCKETS.length)
+  let barWidth = $derived(buckets.length > 0 ? (CHART_W - 4) / buckets.length : CHART_W)
 
   function yPos(count: number): number {
     return MARGIN.top + CHART_H - (count / maxCount) * CHART_H
@@ -102,13 +97,12 @@
 <Modal bind:open title="Distribución de niveles">
   <div class="ldc-container">
     <div class="ldc-filters">
-      {#each FILTERS as f}
-        <button
-          class="ldc-filter-btn"
-          class:active={levelFilter === f.key}
-          onclick={() => { levelFilter = f.key; tooltip = null }}
-        >{f.label}</button>
-      {/each}
+      <label class="ldc-range-label">Nivel:</label>
+      <input type="range" min="1" max="90" bind:value={levelMin} class="ldc-range" />
+      <input type="number" min="1" max="90" bind:value={levelMin} class="ldc-num" />
+      <span class="ldc-range-sep">—</span>
+      <input type="number" min="1" max="90" bind:value={levelMax} class="ldc-num" />
+      <input type="range" min="1" max="90" bind:value={levelMax} class="ldc-range" />
     </div>
 
     <div class="ldc-chart-wrap" style="position:relative">
@@ -186,24 +180,33 @@
     gap: 4px;
     flex-wrap: wrap;
   }
-  .ldc-filter-btn {
-    background: var(--bg-soft, rgba(0,0,0,0.3));
+  .ldc-range-label {
+    font-size: 0.6rem;
+    color: var(--text-secondary);
+    font-family: var(--font-heading);
+  }
+  .ldc-num {
+    width: 40px;
+    background: var(--input-bg, #2a2a2a);
     border: 1px solid var(--border-subtle);
     border-radius: var(--r-sm);
-    padding: 3px 10px;
-    font-size: 0.6rem;
-    color: var(--text-muted);
+    padding: 2px 4px;
+    font-size: 0.65rem;
+    color: #fff;
+    text-align: center;
+    outline: none;
+  }
+  .ldc-num:focus {
+    border-color: var(--gold, #d4af37);
+  }
+  .ldc-range {
+    width: 80px;
+    accent-color: var(--gold, #d4af37);
     cursor: pointer;
-    font-family: var(--font-heading);
-    transition: background 0.12s, color 0.12s;
   }
-  .ldc-filter-btn.active {
-    background: var(--gold, #d4af37);
-    color: #000;
-    border-color: var(--gold);
-  }
-  .ldc-filter-btn:hover:not(.active) {
-    background: var(--bg-hover, #333);
+  .ldc-range-sep {
+    color: var(--text-muted);
+    font-size: 0.65rem;
   }
   .ldc-chart-wrap {
     position: relative;

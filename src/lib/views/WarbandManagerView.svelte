@@ -152,7 +152,7 @@
             role="button"
             tabindex="0"
           >
-            <span class="wm-chip-name {clsClass(c.clase)}">{c.nombre}</span>
+            <span class="wm-chip-name {clsClass(c.clase)}">{c.nombre} ({c.nivel})</span>
             <button
               class="wow-btn wow-btn-icon wm-chip-edit"
               onclick={() => openCharEdit(c.nombre)}
@@ -251,7 +251,7 @@
                   role="button"
                   tabindex="0"
                 >
-                  <span class="wm-chip-name {clsClass(c.clase)}">{c.nombre}</span>
+                  <span class="wm-chip-name {clsClass(c.clase)}">{c.nombre} ({c.nivel})</span>
                   <button
                     class="wow-btn wow-btn-icon wm-chip-edit"
                     onclick={() => openCharEdit(c.nombre)}

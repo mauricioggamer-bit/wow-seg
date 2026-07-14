@@ -280,6 +280,7 @@
                     <button class="wow-btn wow-btn-sm" onclick={() => openPicker(i)}>Elegir…</button>
                   </div>
                 {:else if slice.type === 'ring'}
+                  {@const targetId = ringSliceTargetId(slice.arg)}
                   <div class="re-arg-row">
                     <select
                       value={slice.arg ?? ''}
@@ -290,11 +291,11 @@
                         <option value={name}>{name}</option>
                       {/each}
                     </select>
-                    {#if ringSliceTargetId(slice.arg)}
+                    {#if targetId}
                       <button
                         class="wow-btn wow-btn-sm"
                         title="Ir a este anillo"
-                        onclick={() => onNavigateToRing?.(ringSliceTargetId(slice.arg))}
+                        onclick={() => onNavigateToRing?.(targetId)}
                       >Ir →</button>
                     {/if}
                   </div>

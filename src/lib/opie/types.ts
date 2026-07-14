@@ -10,6 +10,9 @@ export type SliceActionType =
   | 'opie.databroker.launcher'
   | 'imptext'
   | 'quest'
+  | 'specset'
+  | 'raidmark'
+  | 'worldmark'
 
 export interface OpieSlice {
   type: SliceActionType

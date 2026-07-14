@@ -25,6 +25,9 @@
     { value: 'opie.databroker.launcher', label: 'Databroker' },
     { value: 'imptext', label: 'Texto de macro' },
     { value: 'quest', label: 'Misión' },
+    { value: 'specset', label: 'Especialización' },
+    { value: 'raidmark', label: 'Marcador de objetivo' },
+    { value: 'worldmark', label: 'Marcador de mundo' },
   ]
 
   const SPELL_LIKE = new Set(['spell', 'mount', 'toy'])

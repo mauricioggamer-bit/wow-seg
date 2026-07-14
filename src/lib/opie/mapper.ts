@@ -135,12 +135,25 @@ export function decodeRingString(raw: string, newId: () => string): { rings: Opi
   const root = result.value as RawTable
   const rings: OpieRing[] = []
 
+  // A "ring" slice's `arg` is a bundle *reference key* (see `GetRingSnapshot`/
+  // `GetSnapshotRing` in CustomRings.lua: `m[sn] = copy(RK_RingDesc[sn])`,
+  // keyed by the target ring's real name at export time — but the game's
+  // own string-dictionary compression can rewrite that key to something
+  // shorter/unrelated on the wire, e.g. "RingMounts" or a truncated
+  // "arthstones" instead of "Master Ring: Hearthstones"). The bundled
+  // ring's own `name` field is unaffected and always the real display name,
+  // so we map key -> real name here and rewrite every "ring" slice below —
+  // otherwise nested-ring references silently point at nothing.
+  const bundleKeyToName: Record<string, string> = {}
+
   const bundle = root._bundle
   if (bundle && typeof bundle === 'object') {
     for (const key of Object.keys(bundle as Record<string, unknown>)) {
       const entry = (bundle as Record<string, unknown>)[key]
       if (!entry || typeof entry !== 'object') continue // `0` = self-reference marker, nothing extra to unpack
-      rings.push(toOpieRing(entry, newId()))
+      const subRing = toOpieRing(entry, newId())
+      bundleKeyToName[key] = subRing.name
+      rings.push(subRing)
     }
   }
 
@@ -150,6 +163,16 @@ export function decodeRingString(raw: string, newId: () => string): { rings: Opi
     if (Object.keys(rootRing.extra).length === 0) delete rootRing.extra
   }
   rings.unshift(rootRing)
+
+  if (Object.keys(bundleKeyToName).length) {
+    for (const r of rings) {
+      for (const slice of r.slices) {
+        if (slice.type === 'ring' && typeof slice.arg === 'string' && bundleKeyToName[slice.arg]) {
+          slice.arg = bundleKeyToName[slice.arg]
+        }
+      }
+    }
+  }
 
   return { rings }
 }

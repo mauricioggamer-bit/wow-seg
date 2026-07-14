@@ -102,6 +102,24 @@ describe('OPie mapper', () => {
     expect(hearthstones?.slices).toHaveLength(32)
     const root = result.rings.find((r) => r.name === 'Master Ring')
     expect(root?.extra?._bundle).toBeUndefined() // unpacked, not duplicated as raw data
+
+    // Root's "ring" slices reference bundle keys (e.g. "RingMounts"), not the
+    // bundled ring's real display name — those must be rewritten so nested
+    // rings actually resolve to something the app knows about. ("CommonTrades"
+    // has no matching _bundle entry — that target ring wasn't included in
+    // this snapshot at all, e.g. because it isn't a `.save`d ring — so it's
+    // left as-is; there's nothing to resolve it to.)
+    const mountsSlice = root!.slices.find((s) => s.arg === 'RingMounts' || s.arg === 'Master Ring: Mounts')
+    expect(mountsSlice?.arg).toBe('Master Ring: Mounts')
+    const unresolvable = root!.slices.find((s) => s.type === 'ring' && s.arg === 'CommonTrades')
+    expect(unresolvable).toBeDefined()
+
+    // "Master Ring: Travel" nests "Master Ring: Hearthstones" too, via a
+    // bundle key that decodes as a truncated "arthstones" — must also be
+    // rewritten to the real name, not left dangling.
+    const travel = result.rings.find((r) => r.name === 'Master Ring: Travel')
+    const travelRingArgs = travel?.slices.filter((s) => s.type === 'ring').map((s) => s.arg)
+    expect(travelRingArgs).toContain('Master Ring: Hearthstones')
   })
 
   it('infers type from a bare `id` field (OPie\'s SLICE_ACTIONID_TYPE shorthand)', () => {

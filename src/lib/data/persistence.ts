@@ -45,8 +45,31 @@ function normalizeProfesiones(raw: any): ProfesionSlot[] {
 }
 
 function normalizeOpieSlice(raw: any): OpieSlice {
-  const slice: OpieSlice = { type: typeof raw?.type === 'string' ? raw.type : '' }
-  if (raw?.arg !== undefined) slice.arg = raw.arg
+  let type: string = typeof raw?.type === 'string' ? raw.type : ''
+  let arg = raw?.arg
+  let extra = raw?.extra && typeof raw.extra === 'object' ? { ...raw.extra } : undefined
+
+  // Heals slices imported before the mapper learned OPie's SLICE_ACTIONID_TYPE
+  // shorthand (a bare `id` field with no explicit type — see mapper.ts) —
+  // those were persisted as `{ type: '', extra: { id } }` and showed up as
+  // an invisible "(vacío)" row. Re-infer the type from what's already stored.
+  if (!type && arg === undefined && extra && 'id' in extra) {
+    const rawId = extra.id
+    if (typeof rawId === 'number') {
+      type = 'spell'
+      arg = rawId
+    } else if (typeof rawId === 'string') {
+      type = 'imptext'
+      arg = rawId
+    }
+    if (type) {
+      const { id: _id, ...rest } = extra
+      extra = Object.keys(rest).length ? rest : undefined
+    }
+  }
+
+  const slice: OpieSlice = { type: type as OpieSlice['type'] }
+  if (arg !== undefined) slice.arg = arg
   if (typeof raw?.flags === 'number') slice.flags = raw.flags
   if (raw?.icon !== undefined) slice.icon = raw.icon
   if (typeof raw?.show === 'string') slice.show = raw.show
@@ -54,7 +77,7 @@ function normalizeOpieSlice(raw: any): OpieSlice {
   if (typeof raw?.embed === 'boolean') slice.embed = raw.embed
   if (typeof raw?.rotationMode === 'string') slice.rotationMode = raw.rotationMode
   if (typeof raw?.fastClick === 'boolean') slice.fastClick = raw.fastClick
-  if (raw?.extra && typeof raw.extra === 'object') slice.extra = raw.extra
+  if (extra) slice.extra = extra
   return slice
 }
 

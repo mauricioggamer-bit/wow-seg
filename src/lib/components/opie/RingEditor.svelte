@@ -3,10 +3,12 @@
   import { uiStore } from '../../stores/ui'
   import { encodeRing } from '../../opie/mapper'
   import { getSpellInfo } from '../../keybinds/spellService'
+  import { getItemInfo } from '../../opie/itemService'
+  import type { SpellInfo } from '../../keybinds/types'
   import type { OpieSlice, SliceActionType } from '../../opie/types'
   import SpellPickerModal from './SpellPickerModal.svelte'
 
-  let { ringId }: { ringId: string } = $props()
+  let { ringId, onNavigateToRing }: { ringId: string; onNavigateToRing?: (id: string) => void } = $props()
 
   let ring = $derived($opieRingsStore.find(r => r.id === ringId))
   let allRingNames = $derived($opieRingsStore.filter(r => r.id !== ringId).map(r => r.name))
@@ -27,6 +29,14 @@
 
   const SPELL_LIKE = new Set(['spell', 'mount', 'toy'])
   const TEXT_LIKE = new Set(['macro', 'imptext'])
+  // toys share WoW's item namespace (not the spell namespace), so their
+  // name/icon come from itemService, not spellService — see itemService.ts.
+  const PREVIEW_RESOLVER: Record<string, (id: number) => SpellInfo> = {
+    spell: getSpellInfo,
+    mount: getSpellInfo,
+    toy: getItemInfo,
+    item: getItemInfo,
+  }
 
   let pickerForSlice = $state<number | null>(null)
   let showJson = $state(false)
@@ -139,6 +149,19 @@
 
   function argIsSpellLike(type: SliceActionType) {
     return SPELL_LIKE.has(type)
+  }
+
+  function previewInfo(type: SliceActionType, arg: string | number | undefined): SpellInfo | null {
+    const resolver = PREVIEW_RESOLVER[type]
+    if (!resolver || arg === undefined) return null
+    const id = Number(arg)
+    if (!id || isNaN(id)) return null
+    return resolver(id)
+  }
+
+  function ringSliceTargetId(name: string | number | undefined): string | undefined {
+    if (typeof name !== 'string' || !name) return undefined
+    return $opieRingsStore.find((r) => r.name === name)?.id
   }
 </script>
 
@@ -256,23 +279,25 @@
                     />
                     <button class="wow-btn wow-btn-sm" onclick={() => openPicker(i)}>Elegir…</button>
                   </div>
-                  {#if slice.arg}
-                    {@const info = getSpellInfo(Number(slice.arg))}
-                    <div class="re-preview">
-                      {#if info.iconUrl}<img src={info.iconUrl} alt={info.name} />{/if}
-                      <span>{info.name}</span>
-                    </div>
-                  {/if}
                 {:else if slice.type === 'ring'}
-                  <select
-                    value={slice.arg ?? ''}
-                    onchange={(e) => updateSlice(i, { arg: e.currentTarget.value })}
-                  >
-                    <option value="">(elegir anillo)</option>
-                    {#each allRingNames as name}
-                      <option value={name}>{name}</option>
-                    {/each}
-                  </select>
+                  <div class="re-arg-row">
+                    <select
+                      value={slice.arg ?? ''}
+                      onchange={(e) => updateSlice(i, { arg: e.currentTarget.value })}
+                    >
+                      <option value="">(elegir anillo)</option>
+                      {#each allRingNames as name}
+                        <option value={name}>{name}</option>
+                      {/each}
+                    </select>
+                    {#if ringSliceTargetId(slice.arg)}
+                      <button
+                        class="wow-btn wow-btn-sm"
+                        title="Ir a este anillo"
+                        onclick={() => onNavigateToRing?.(ringSliceTargetId(slice.arg))}
+                      >Ir →</button>
+                    {/if}
+                  </div>
                 {:else if TEXT_LIKE.has(slice.type)}
                   <textarea
                     rows="2"
@@ -291,6 +316,15 @@
                       updateSlice(i, { arg: v !== '' && !isNaN(num) ? num : v })
                     }}
                   />
+                {/if}
+                {#if PREVIEW_RESOLVER[slice.type]}
+                  {@const info = previewInfo(slice.type, slice.arg)}
+                  {#if info}
+                    <div class="re-preview">
+                      {#if info.iconUrl}<img src={info.iconUrl} alt={info.name} />{/if}
+                      <span>{info.name}</span>
+                    </div>
+                  {/if}
                 {/if}
               </td>
               <td>

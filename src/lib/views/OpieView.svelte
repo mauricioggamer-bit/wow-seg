@@ -23,7 +23,7 @@
   <div class="opie-columns">
     <RingList {selectedId} onSelect={selectRing} />
     {#if selectedId}
-      <RingEditor ringId={selectedId} />
+      <RingEditor ringId={selectedId} onNavigateToRing={selectRing} />
     {:else}
       <div class="opie-empty wow-panel">
         <div class="wow-panel-body">Creá un anillo para empezar.</div>

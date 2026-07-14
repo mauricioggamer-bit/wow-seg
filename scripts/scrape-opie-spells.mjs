@@ -4,20 +4,16 @@ import { dirname, resolve } from 'path'
 
 const __dirname = dirname(fileURLToPath(import.meta.url))
 const ROOT = resolve(__dirname, '..')
-const jsonPath = resolve(ROOT, 'src/lib/data/itemDb.json')
+const jsonPath = resolve(ROOT, 'src/lib/data/spellDb.json')
 
-// IDs seen so far in rings imported from the game (item + toy slices share
-// the item namespace in WoW). Extend this list — or pass a JSON file of
-// {type, arg} slices / plain ids as argv[2] — whenever new rings reference
-// ids not yet in itemDb.json.
+// Additional spell/mount IDs seen in imported OPie rings that weren't part
+// of the original keybind-derived spellDb.json (scripts/scrape-spells.mjs
+// rebuilds that file from scratch from keybindDefaults.ts, so it can't be
+// used to top up ids from other sources — this script merges instead).
 const SEED_IDS = [
-  6948, 48933, 54452, 64488, 87215, 92738, 93672, 110560, 112059, 136849,
-  140192, 141605, 142542, 144339, 151652, 156833, 163045, 165669, 165670,
-  166746, 166747, 166779, 168807, 168808, 168907, 172179, 172924, 180290,
-  182773, 183716, 184353, 188952, 190196, 190237, 193588, 194885, 200630,
-  206195, 206268, 208704, 209035, 210455, 210975, 212337, 217930, 221966,
-  228940, 235016, 236687, 245970, 246565, 250411, 253629, 257736, 263489,
-  263933, 264367, 265100,
+  407, 460, 974, 1126, 1459, 2823, 3408, 5761, 6673, 21562, 33757, 52127,
+  150544, 192106, 315584, 318038, 364342, 381637, 381664, 408233, 431280,
+  433568, 433583, 436854, 460905, 474750,
 ]
 
 function idsFromArgv() {
@@ -30,7 +26,7 @@ function idsFromArgv() {
     if (typeof entry === 'number') { ids.add(entry); continue }
     const slices = entry.slices ?? (Array.isArray(entry) ? entry : [])
     for (const s of slices) {
-      if ((s.type === 'item' || s.type === 'toy') && s.arg !== undefined) {
+      if ((s.type === 'spell' || s.type === 'mount') && s.arg !== undefined) {
         const id = Number(s.arg)
         if (!isNaN(id)) ids.add(id)
       }
@@ -40,10 +36,10 @@ function idsFromArgv() {
 }
 
 const allIds = [...new Set([...SEED_IDS, ...idsFromArgv()])]
-console.log(`Scraping ${allIds.length} item IDs`)
+console.log(`Scraping ${allIds.length} spell/mount IDs`)
 
-async function fetchItem(id, retries = 2) {
-  const url = `https://www.wowdb.com/api/item/${id}`
+async function fetchSpell(id, retries = 2) {
+  const url = `https://wowdb.com/api/spell/${id}`
   for (let attempt = 0; attempt <= retries; attempt++) {
     try {
       const res = await fetch(url, {
@@ -75,7 +71,7 @@ let failed = 0
 
 for (const id of allIds) {
   if (results[id]) { done++; continue } // already scraped, skip re-fetch
-  const data = await fetchItem(id)
+  const data = await fetchSpell(id)
   if (data) results[id] = data
   else failed++
   done++
@@ -89,5 +85,5 @@ for (const id of Object.keys(results).sort((a, b) => parseInt(a) - parseInt(b)))
 }
 writeFileSync(jsonPath, JSON.stringify(output, null, 0))
 
-console.log(`\nWritten ${Object.keys(output).length} entries to itemDb.json`)
+console.log(`\nWritten ${Object.keys(output).length} entries to spellDb.json`)
 console.log(`Failed: ${failed}`)

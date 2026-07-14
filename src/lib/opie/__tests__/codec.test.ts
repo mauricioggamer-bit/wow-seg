@@ -104,6 +104,26 @@ describe('OPie mapper', () => {
     expect(root?.extra?._bundle).toBeUndefined() // unpacked, not duplicated as raw data
   })
 
+  it('infers type from a bare `id` field (OPie\'s SLICE_ACTIONID_TYPE shorthand)', () => {
+    // Real "Master Ring: Toys" export — two of its slices have no explicit
+    // [type, id] pair, only a bare numeric `id` (Lua: SLICE_ACTIONID_TYPE
+    // maps a numeric id to "spell"). Before this fix these decoded to
+    // `{ type: '' }` with the id silently stuck in `extra`, showing up as
+    // an empty, unpickable row in the editor.
+    const TOYS_STRING = `oetohH7 QWNJA8r q4GOqwt oy92T32 q4WsH1T 32q4it3 2Vq4FM9 1T3330q wr291y4 30qw0jy 1y4qq3G B1T32qq q1L1T32 q4X711T 32q4KBE 1T32qq0 Kj1T323 ywMaste r06Ring 0B06Toy s91341V w18scv9 4.`
+    let idCounter = 0
+    const result = decodeRingString(TOYS_STRING, () => `ring-${idCounter++}`)
+    expect('rings' in result).toBe(true)
+    if (!('rings' in result)) return
+    const ring = result.rings[0]
+    expect(ring.name).toBe('Master Ring: Toys')
+    const inferredSpellSlices = ring.slices.filter((s) => s.type === 'spell')
+    expect(inferredSpellSlices.length).toBeGreaterThanOrEqual(2)
+    expect(inferredSpellSlices.map((s) => s.arg)).toEqual(expect.arrayContaining([431280, 460905]))
+    // Must not also be duplicated as raw extra data.
+    for (const s of inferredSpellSlices) expect(s.extra?.id).toBeUndefined()
+  })
+
   it('splitInputStrings splits multiple pasted ring strings', () => {
     const one = encodeRing({ id: 'a', name: 'A', slices: [{ type: 'spell', arg: 1 }] })
     const two = encodeRing({ id: 'b', name: 'B', slices: [{ type: 'spell', arg: 2 }] })

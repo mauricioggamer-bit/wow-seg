@@ -20,9 +20,25 @@ const RING_KNOWN_KEYS = [
 function toOpieSlice(raw: unknown): OpieSlice {
   if (!raw || typeof raw !== 'object') return { type: '' }
   const arr = raw as RawTable
-  const type = (arr[0] ?? '') as SliceActionType
-  const arg = arr[1] as string | number | undefined
+  let type = (arr[0] ?? '') as SliceActionType
+  let arg = arr[1] as string | number | undefined
   const flags = arr[2] as number | undefined
+
+  // OPie shorthand (see SLICE_ACTIONID_TYPE in CustomRings.lua): a slice with
+  // no explicit type and a bare `id` field infers its type from the id's Lua
+  // type — a number means "spell", a string means "imptext" (macro text).
+  // Bundled/default rings authored via AddDefaultRing/SetExternalRing use
+  // this form instead of the explicit [type, id] positional pair.
+  if (!type && arr.id !== undefined) {
+    if (typeof arr.id === 'number') {
+      type = 'spell'
+      arg = arr.id
+    } else if (typeof arr.id === 'string') {
+      type = 'imptext'
+      arg = arr.id
+    }
+  }
+
   const slice: OpieSlice = { type }
   if (arg !== undefined) slice.arg = arg
   if (typeof flags === 'number') slice.flags = flags
@@ -30,6 +46,7 @@ function toOpieSlice(raw: unknown): OpieSlice {
   const extra: Record<string, unknown> = {}
   for (const key of Object.keys(arr)) {
     if (/^\d+$/.test(key)) continue // positions 0/1/2 already handled above
+    if (key === 'id' && arg === arr.id) continue // folded into arg above, don't duplicate
     if (key === 'icon') slice.icon = arr.icon as string | number
     else if (key === 'show') slice.show = arr.show as string
     else if (key === 'c') slice.color = arr.c as string

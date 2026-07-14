@@ -101,13 +101,40 @@ function toRawRing(ring: OpieRing): unknown {
   return arr
 }
 
-export function decodeRingString(raw: string, newId: () => string): { ring: OpieRing } | { error: string } {
+/**
+ * Decodes a ring snapshot string. A single string can describe more than one
+ * ring: OPie's "share ring" can bundle other named rings it nests into inline
+ * (the `_bundle` table — see `GetRingSnapshot`/`GetSnapshotRing` in
+ * CustomRings.lua). We unpack every bundled ring into its own `OpieRing` so
+ * they all show up as separate, editable entries instead of being buried as
+ * opaque data on the root ring.
+ */
+export function decodeRingString(raw: string, newId: () => string): { rings: OpieRing[] } | { error: string } {
   const result = unserializeRing(raw)
   if ('error' in result) return { error: result.error }
   if (!Array.isArray(result.value)) {
     return { error: 'Formato inesperado: el string no representa un anillo (se esperaba una lista de slices).' }
   }
-  return { ring: toOpieRing(result.value, newId()) }
+  const root = result.value as RawTable
+  const rings: OpieRing[] = []
+
+  const bundle = root._bundle
+  if (bundle && typeof bundle === 'object') {
+    for (const key of Object.keys(bundle as Record<string, unknown>)) {
+      const entry = (bundle as Record<string, unknown>)[key]
+      if (!entry || typeof entry !== 'object') continue // `0` = self-reference marker, nothing extra to unpack
+      rings.push(toOpieRing(entry, newId()))
+    }
+  }
+
+  const rootRing = toOpieRing(root, newId())
+  if (rootRing.extra) {
+    delete rootRing.extra['_bundle'] // already unpacked above, don't duplicate/stale-copy it
+    if (Object.keys(rootRing.extra).length === 0) delete rootRing.extra
+  }
+  rings.unshift(rootRing)
+
+  return { rings }
 }
 
 export function encodeRing(ring: OpieRing, sign?: string): { value: string } | { error: string } {

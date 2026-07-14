@@ -4,11 +4,15 @@
   import { decodeRingString, splitInputStrings } from '../../opie/mapper'
   import type { OpieRing } from '../../opie/types'
 
+  interface SavedRing {
+    ring: OpieRing
+    savedAs: 'created' | 'overwritten'
+  }
+
   interface DecodedEntry {
     raw: string
-    ring?: OpieRing
+    rings?: SavedRing[]
     error?: string
-    savedAs?: 'created' | 'overwritten'
   }
 
   let { onImported }: { onImported?: (id: string) => void } = $props()
@@ -46,24 +50,30 @@
       const result = decodeRingString(raw, newId)
       if ('error' in result) return { raw, error: result.error }
 
-      const existing = existingByName(result.ring.name)
-      if (existing) {
-        dataStore.updateOpieRing(existing.id, { ...result.ring, id: existing.id })
-        lastSavedId = existing.id
-        overwritten += 1
-        return { raw, ring: result.ring, savedAs: 'overwritten' }
-      }
-      const id = dataStore.addOpieRing({ ...result.ring, id: undefined })
-      lastSavedId = id
-      created += 1
-      return { raw, ring: result.ring, savedAs: 'created' }
+      // A single string can bundle more than one named ring (OPie's
+      // "share ring" nests referenced rings inline) — save every one of
+      // them, not just the root.
+      const saved: SavedRing[] = result.rings.map((ring) => {
+        const existing = existingByName(ring.name)
+        if (existing) {
+          dataStore.updateOpieRing(existing.id, { ...ring, id: existing.id })
+          lastSavedId = existing.id
+          overwritten += 1
+          return { ring, savedAs: 'overwritten' as const }
+        }
+        const id = dataStore.addOpieRing({ ...ring, id: undefined })
+        lastSavedId = id
+        created += 1
+        return { ring, savedAs: 'created' as const }
+      })
+      return { raw, rings: saved }
     })
 
-    const failed = decoded.length - created - overwritten
+    const failed = decoded.filter((d) => d.error).length
     const parts = []
-    if (created) parts.push(`${created} creado(s)`)
+    if (created) parts.push(`${created} anillo(s) creado(s)`)
     if (overwritten) parts.push(`${overwritten} sobrescrito(s)`)
-    if (failed) parts.push(`${failed} con error`)
+    if (failed) parts.push(`${failed} string(s) con error`)
     uiStore.setStatus(parts.join(', ') + '.', failed ? 'error' : 'ok')
 
     if (lastSavedId) onImported?.(lastSavedId)
@@ -95,19 +105,23 @@
       {#if decoded.length}
         <div class="ie-results">
           {#each decoded as entry, i (i)}
-            <div class="ie-entry">
-              {#if entry.error}
+            {#if entry.error}
+              <div class="ie-entry">
                 <span class="ie-err">✗ {entry.error}</span>
-              {:else if entry.ring}
-                <span class="ie-name">{entry.ring.name}</span>
-                <span class="ie-meta">{entry.ring.slices.length} slice(s)</span>
-                {#if entry.savedAs === 'overwritten'}
-                  <span class="ie-ok">✓ sobrescrito</span>
-                {:else}
-                  <span class="ie-ok">✓ creado</span>
-                {/if}
-              {/if}
-            </div>
+              </div>
+            {:else if entry.rings}
+              {#each entry.rings as saved, j (j)}
+                <div class="ie-entry">
+                  <span class="ie-name">{saved.ring.name}</span>
+                  <span class="ie-meta">{saved.ring.slices.length} slice(s)</span>
+                  {#if saved.savedAs === 'overwritten'}
+                    <span class="ie-ok">✓ sobrescrito</span>
+                  {:else}
+                    <span class="ie-ok">✓ creado</span>
+                  {/if}
+                </div>
+              {/each}
+            {/if}
           {/each}
         </div>
       {/if}

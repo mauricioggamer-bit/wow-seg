@@ -201,6 +201,8 @@
             <td class="lvl-num lvl-col-tarea" class:lvl-col-tarea-warn={r.maxTareaNivel != null && r.nivel < r.maxTareaNivel}>
               {#if r.maxTareaNivel != null}
                 {r.maxTareaNivel}
+              {:else}
+                <span class="lvl-no-tarea-icon" title="Sin tarea de nivel — objetivo automático {r.objetivo}">⚡</span>
               {/if}
             </td>
             <td class="lvl-col-tw" onclick={(e) => e.stopPropagation()}>
@@ -289,6 +291,7 @@
   .lvl-col-obj { border-left: 1px solid rgba(255,255,255,0.06); }
   .lvl-col-tarea { border-left: 1px solid rgba(255,255,255,0.06); min-width: 28px; max-width: 40px; }
   .lvl-col-tarea-warn { color: var(--horde, #f97316); font-weight: 700; }
+  .lvl-no-tarea-icon { cursor: help; opacity: 0.5; font-size: 0.55rem; }
   .lvl-table td {
     padding: 3px 6px;
     border-bottom: 1px solid var(--border-subtle);

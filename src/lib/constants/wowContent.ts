@@ -20,7 +20,7 @@ export interface WorldBossEntry {
   expansion: string
 }
 
-export type TipoContenido = 'descripcion' | 'mazmorra' | 'raid' | 'worldboss'
+export type TipoContenido = 'descripcion' | 'mazmorra' | 'raid' | 'worldboss' | 'profesion' | 'leveling'
 
 const expNombre = (id: string): string =>
   EXPANSIONS.find(e => e.id === id)?.nombre ?? id

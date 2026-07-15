@@ -31,7 +31,7 @@
   import { startSync } from './lib/stores/supabaseSync'
   import { EXPANSIONS, EXPANSION_RECOMMENDED_LEVEL, PERS_RACE_INFO, CLASS_MAP } from './lib/constants'
   import { DUNGEON_EXPANSION_IDS, RAID_EXPANSION_IDS, WORLDBOSS_EXPANSION_IDS, dungeonsForExpansion, raidsForExpansion, worldBossesForExpansion, expNombre } from './lib/constants/wowContent'
-  import { PROFESIONES } from './lib/constants/profesiones'
+  import { PROFESIONES, cooldownsForProfesion } from './lib/constants/profesiones'
   import type { TipoContenido, DungeonDifficulty, RaidDifficulty } from './lib/constants/wowContent'
   import { fade } from 'svelte/transition'
   import type { Tarea, ProfesionSlot, ViewType, ExportSection, AccountTaskStatus } from './lib/types'
@@ -165,6 +165,10 @@
   let editTaskOrden = $state(0)
   let editTaskPuntos = $state(0)
   let editTaskNivelRecomendado = $state<number | null>(null)
+  let editTaskProfesion = $state('')
+  let editTaskCooldownProfesion = $state('')
+  let editTaskPersonaje = $derived($personajesStore.find(p => p.nombre === editTaskChar))
+  let editTaskProfesiones = $derived(editTaskPersonaje?.profesiones?.filter(p => p.id).map(p => p.id) || [])
 
   let newTaskChar = $state('')
   let newTaskNombre = $state('')
@@ -178,6 +182,10 @@
   let newTaskRecompensa = $state('')
   let newTaskPuntos = $state(0)
   let newTaskNivelRecomendado = $state<number | null>(null)
+  let newTaskProfesion = $state('')
+  let newTaskCooldownProfesion = $state('')
+  let newTaskPersonaje = $derived($personajesStore.find(p => p.nombre === newTaskChar))
+  let newTaskProfesiones = $derived(newTaskPersonaje?.profesiones?.filter(p => p.id).map(p => p.id) || [])
 
   let pendingAccountTaskId = $state('')
   let pendingAccountCharName = $state('')
@@ -262,20 +270,23 @@
     editTaskOrden = t.orden ?? 0
     editTaskPuntos = t.puntos ?? 0
     editTaskNivelRecomendado = t.nivelRecomendado ?? null
+    editTaskProfesion = t.profesion || ''
+    editTaskCooldownProfesion = t.cooldownProfesion || ''
     uiStore.openModal('TaskEdit')
   }
 
   function saveTaskEdit() {
-    const finalNombre = editTaskTipoContenido === 'descripcion'
+    const isFreeText = editTaskTipoContenido === 'descripcion' || editTaskTipoContenido === 'profesion' || editTaskTipoContenido === 'leveling'
+    const finalNombre = isFreeText
       ? editTaskNombre.trim()
       : editTaskContenidoNombre
     if (!finalNombre) return
     dataStore.updateTarea(editTaskChar, editTaskId, {
       nombre: finalNombre,
       tipoContenido: editTaskTipoContenido,
-      contenidoExpansion: editTaskTipoContenido === 'descripcion' ? '' : editTaskExpansion,
+      contenidoExpansion: isFreeText ? '' : editTaskExpansion,
       contenidoDificultad: (editTaskTipoContenido === 'mazmorra' || editTaskTipoContenido === 'raid') ? editTaskDificultad : '',
-      expansion: editTaskTipoContenido === 'descripcion' ? editTaskExpansion : '',
+      expansion: isFreeText ? editTaskExpansion : '',
       nivelRecomendado: editTaskNivelRecomendado ?? undefined,
       prioridad: parseInt(editTaskPrioridad) as 1 | 2 | 3,
       tiempo_min: editTaskTiempo,
@@ -283,6 +294,8 @@
       recompensa: editTaskRecompensa || undefined,
       orden: editTaskOrden,
       puntos: editTaskPuntos,
+      profesion: editTaskProfesion || undefined,
+      cooldownProfesion: editTaskCooldownProfesion || undefined,
     })
     uiStore.closeModal()
   }
@@ -300,26 +313,31 @@
     newTaskRecompensa = ''
     newTaskPuntos = 0
     newTaskNivelRecomendado = null
+    newTaskProfesion = ''
+    newTaskCooldownProfesion = ''
     uiStore.openModal('TaskNew')
   }
 
   function saveTaskNew() {
-    const finalNombre = newTaskTipoContenido === 'descripcion'
+    const isFreeText = newTaskTipoContenido === 'descripcion' || newTaskTipoContenido === 'profesion' || newTaskTipoContenido === 'leveling'
+    const finalNombre = isFreeText
       ? newTaskNombre.trim()
       : newTaskContenidoNombre
     if (!finalNombre) return
     dataStore.addTarea(newTaskChar, {
       nombre: finalNombre,
       tipoContenido: newTaskTipoContenido,
-      contenidoExpansion: newTaskTipoContenido === 'descripcion' ? '' : newTaskExpansion,
+      contenidoExpansion: isFreeText ? '' : newTaskExpansion,
       contenidoDificultad: (newTaskTipoContenido === 'mazmorra' || newTaskTipoContenido === 'raid') ? newTaskDificultad : '',
-      expansion: newTaskTipoContenido === 'descripcion' ? newTaskExpansion : '',
+      expansion: isFreeText ? newTaskExpansion : '',
       nivelRecomendado: newTaskNivelRecomendado ?? undefined,
       prioridad: parseInt(newTaskPrioridad),
       tiempo_min: newTaskTiempo,
       cooldown: newTaskCooldown,
       recompensa: newTaskRecompensa || '',
       puntos: newTaskPuntos,
+      profesion: newTaskProfesion || undefined,
+      cooldownProfesion: newTaskCooldownProfesion || undefined,
     })
     uiStore.closeModal()
   }
@@ -354,7 +372,10 @@
     newTaskDificultad = ''
     newTaskContenidoNombre = ''
     newTaskNivelRecomendado = null
-    if (t === 'descripcion') { newTaskNombre = ''; return }
+    newTaskProfesion = ''
+    newTaskCooldownProfesion = ''
+    const isFreeText = t === 'descripcion' || t === 'profesion' || t === 'leveling'
+    if (isFreeText) { newTaskNombre = ''; return }
     if (t === 'mazmorra') newTaskExpansion = DUNGEON_EXPANSION_IDS[0] ?? ''
     else if (t === 'raid') newTaskExpansion = RAID_EXPANSION_IDS[0] ?? ''
     else if (t === 'worldboss') newTaskExpansion = WORLDBOSS_EXPANSION_IDS[0] ?? ''
@@ -367,7 +388,10 @@
     editTaskDificultad = ''
     editTaskContenidoNombre = ''
     editTaskNivelRecomendado = null
-    if (t === 'descripcion') return
+    editTaskProfesion = ''
+    editTaskCooldownProfesion = ''
+    const isFreeText = t === 'descripcion' || t === 'profesion' || t === 'leveling'
+    if (isFreeText) return
     if (t === 'mazmorra') editTaskExpansion = DUNGEON_EXPANSION_IDS[0] ?? ''
     else if (t === 'raid') editTaskExpansion = RAID_EXPANSION_IDS[0] ?? ''
     else if (t === 'worldboss') editTaskExpansion = WORLDBOSS_EXPANSION_IDS[0] ?? ''
@@ -885,8 +909,10 @@
             <label><input type="radio" name="editTipoContenido" checked={editTaskTipoContenido==='mazmorra'} onclick={() => setEditTipoContenido('mazmorra')} /> Mazmorra</label>
             <label><input type="radio" name="editTipoContenido" checked={editTaskTipoContenido==='raid'} onclick={() => setEditTipoContenido('raid')} /> Raid</label>
             <label><input type="radio" name="editTipoContenido" checked={editTaskTipoContenido==='worldboss'} onclick={() => setEditTipoContenido('worldboss')} /> Jefe del mundo</label>
+            <label><input type="radio" name="editTipoContenido" checked={editTaskTipoContenido==='profesion'} onclick={() => setEditTipoContenido('profesion')} /> Profesión</label>
+            <label><input type="radio" name="editTipoContenido" checked={editTaskTipoContenido==='leveling'} onclick={() => setEditTipoContenido('leveling')} /> Subida de nivel</label>
           </div>
-          {#if editTaskTipoContenido === 'descripcion'}
+          {#if editTaskTipoContenido === 'descripcion' || editTaskTipoContenido === 'profesion' || editTaskTipoContenido === 'leveling'}
             <div style="margin-top:6px;display:grid;grid-template-columns:1fr 1fr;gap:6px">
               <div class="form-group" style="margin:0;grid-column:1/-1">
                 <label style="font-size:0.7rem">Nombre</label>
@@ -904,6 +930,29 @@
                 <input type="number" min="1" max={nivelMaximo} value={editTaskNivelRecomendado ?? ''}
                   oninput={(e) => editTaskNivelRecomendado = e.currentTarget.value === '' ? null : parseInt(e.currentTarget.value)} />
               </div>
+              {#if editTaskTipoContenido === 'profesion'}
+                <div class="form-group" style="margin:0">
+                  <label style="font-size:0.7rem">Profesión</label>
+                  <select bind:value={editTaskProfesion} onchange={() => editTaskCooldownProfesion = ''}>
+                    <option value="">Seleccionar...</option>
+                    {#each editTaskProfesiones as profId}
+                      {@const prof = PROFESIONES.find(p => p.id === profId)}
+                      {#if prof}<option value={prof.id}>{prof.icon} {prof.nombre}</option>{/if}
+                    {/each}
+                  </select>
+                </div>
+                {#if editTaskProfesion}
+                  <div class="form-group" style="margin:0;grid-column:1/-1">
+                    <label style="font-size:0.7rem">Cooldown</label>
+                    <select bind:value={editTaskCooldownProfesion}>
+                      <option value="">Seleccionar...</option>
+                      {#each cooldownsForProfesion(editTaskProfesion) as cd}
+                        <option value={cd.id}>{cd.nombre}</option>
+                      {/each}
+                    </select>
+                  </div>
+                {/if}
+              {/if}
             </div>
           {:else}
             <div style="margin-top:6px;display:grid;grid-template-columns:1fr 1fr;gap:6px">
@@ -1003,8 +1052,10 @@
             <label><input type="radio" name="newTipoContenido" checked={newTaskTipoContenido==='mazmorra'} onclick={() => setNewTipoContenido('mazmorra')} /> Mazmorra</label>
             <label><input type="radio" name="newTipoContenido" checked={newTaskTipoContenido==='raid'} onclick={() => setNewTipoContenido('raid')} /> Raid</label>
             <label><input type="radio" name="newTipoContenido" checked={newTaskTipoContenido==='worldboss'} onclick={() => setNewTipoContenido('worldboss')} /> Jefe del mundo</label>
+            <label><input type="radio" name="newTipoContenido" checked={newTaskTipoContenido==='profesion'} onclick={() => setNewTipoContenido('profesion')} /> Profesión</label>
+            <label><input type="radio" name="newTipoContenido" checked={newTaskTipoContenido==='leveling'} onclick={() => setNewTipoContenido('leveling')} /> Subida de nivel</label>
           </div>
-          {#if newTaskTipoContenido === 'descripcion'}
+          {#if newTaskTipoContenido === 'descripcion' || newTaskTipoContenido === 'profesion' || newTaskTipoContenido === 'leveling'}
             <div style="margin-top:6px;display:grid;grid-template-columns:1fr 1fr;gap:6px">
               <div class="form-group" style="margin:0;grid-column:1/-1">
                 <label style="font-size:0.7rem">Nombre</label>
@@ -1022,6 +1073,29 @@
                 <input type="number" min="1" max={nivelMaximo} value={newTaskNivelRecomendado ?? ''}
                   oninput={(e) => newTaskNivelRecomendado = e.currentTarget.value === '' ? null : parseInt(e.currentTarget.value)} />
               </div>
+              {#if newTaskTipoContenido === 'profesion'}
+                <div class="form-group" style="margin:0">
+                  <label style="font-size:0.7rem">Profesión</label>
+                  <select bind:value={newTaskProfesion} onchange={() => newTaskCooldownProfesion = ''}>
+                    <option value="">Seleccionar...</option>
+                    {#each newTaskProfesiones as profId}
+                      {@const prof = PROFESIONES.find(p => p.id === profId)}
+                      {#if prof}<option value={prof.id}>{prof.icon} {prof.nombre}</option>{/if}
+                    {/each}
+                  </select>
+                </div>
+                {#if newTaskProfesion}
+                  <div class="form-group" style="margin:0;grid-column:1/-1">
+                    <label style="font-size:0.7rem">Cooldown</label>
+                    <select bind:value={newTaskCooldownProfesion}>
+                      <option value="">Seleccionar...</option>
+                      {#each cooldownsForProfesion(newTaskProfesion) as cd}
+                        <option value={cd.id}>{cd.nombre}</option>
+                      {/each}
+                    </select>
+                  </div>
+                {/if}
+              {/if}
             </div>
           {:else}
             <div style="margin-top:6px;display:grid;grid-template-columns:1fr 1fr;gap:6px">

@@ -1,6 +1,9 @@
 <script lang="ts">
   import { personajesStore, warbandsStore, dataStore } from '../stores/data'
+  import { levelingStore } from '../stores/leveling'
   import { clsClass } from '../constants'
+  import { MAX_LEVEL } from '../constants/experience'
+  import { getObjetivoFromTareas } from '../leveling/objetivo'
   import Dialog from '../components/Dialog.svelte'
   import { getSessionPref, setSessionPref } from '../stores/sessionPrefs'
 
@@ -21,6 +24,10 @@
   let allChars = $derived(
     [...$personajesStore].sort((a, b) => a.nombre.localeCompare(b.nombre))
   )
+
+  function getCharObjetivo(c: { tareas: { nivelRecomendado?: number }[] }): number {
+    return getObjetivoFromTareas(c.tareas as any, MAX_LEVEL, $levelingStore.objetivoSinTareas)
+  }
 
   let wbList = $derived(
     $warbandsStore.filter(w => w.nombre !== 'nada').sort((a, b) => (a.orden ?? 0) - (b.orden ?? 0))
@@ -173,7 +180,14 @@
             role="button"
             tabindex="0"
           >
-            <span class="wm-chip-name {clsClass(c.clase)}">{c.nombre} ({c.nivel})</span>
+            <span class="wm-chip-name {clsClass(c.clase)}">
+              {c.nombre}
+              {#if c.nivel < getCharObjetivo(c)}
+                <span class="wm-chip-obj">({c.nivel}→{getCharObjetivo(c)})</span>
+              {:else}
+                <span class="wm-chip-obj">({c.nivel})</span>
+              {/if}
+            </span>
             <button
               class="wow-btn wow-btn-icon wm-chip-edit"
               onclick={() => openCharEdit(c.nombre)}
@@ -294,7 +308,14 @@
                   role="button"
                   tabindex="0"
                 >
-                  <span class="wm-chip-name {clsClass(c.clase)}">{c.nombre} ({c.nivel})</span>
+                  <span class="wm-chip-name {clsClass(c.clase)}">
+                    {c.nombre}
+                    {#if c.nivel < getCharObjetivo(c)}
+                      <span class="wm-chip-obj">({c.nivel}→{getCharObjetivo(c)})</span>
+                    {:else}
+                      <span class="wm-chip-obj">({c.nivel})</span>
+                    {/if}
+                  </span>
                   <button
                     class="wow-btn wow-btn-icon wm-chip-edit"
                     onclick={() => openCharEdit(c.nombre)}
@@ -537,6 +558,11 @@
     flex: 1;
     font-weight: 500;
     min-width: 0;
+  }
+  .wm-chip-obj {
+    font-weight: 400;
+    opacity: 0.7;
+    font-size: 0.6rem;
   }
   .wm-chip-edit {
     font-size: 0.55rem !important;

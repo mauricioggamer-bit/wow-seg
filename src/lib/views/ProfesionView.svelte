@@ -96,6 +96,12 @@
         return false
       })
     }
+    chars.sort((a, b) => {
+      const rolA = (a.profesiones ?? []).find(s => s.id === profId)?.rol ?? 'none'
+      const rolB = (b.profesiones ?? []).find(s => s.id === profId)?.rol ?? 'none'
+      const order = { main: 0, cd: 1, none: 2 }
+      return (order[rolA] ?? 2) - (order[rolB] ?? 2)
+    })
     return chars
   }
 
@@ -326,9 +332,10 @@
             <span class="prof-card-icon">{profesionIcon(prof.id)}</span>
             <span class="prof-card-name">{prof.nombre}</span>
             <span class="prof-card-counts">
-              {#if mainCount > 0}<span class="rol-badge rol-badge-main" title="Main">{mainCount}⭐</span>{/if}
-              {#if cdCount > 0}<span class="rol-badge rol-badge-cd" title="Cooldown">{cdCount}⏱️</span>{/if}
-              <span class="text-xs text-muted">{chars.length}</span>
+              <span class="rol-badge rol-badge-main" title="Main">⭐{mainCount}</span>
+              <span class="rol-badge rol-badge-cd" title="Cooldown">⏱️{cdCount}</span>
+              <span class="rol-badge rol-badge-none" title="Resto">{chars.length - mainCount - cdCount}</span>
+              <span class="text-xs text-muted">({chars.length})</span>
             </span>
           </div>
           <div class="prof-card-body">
@@ -581,6 +588,10 @@
   .rol-badge-cd {
     background: #3a7bd5;
     color: #fff;
+  }
+  .rol-badge-none {
+    background: var(--border-subtle, #3a3a3a);
+    color: var(--text-muted, #888);
   }
   .prof-card-body {
     display: flex;

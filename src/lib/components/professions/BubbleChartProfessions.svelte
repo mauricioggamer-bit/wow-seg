@@ -1,6 +1,7 @@
 <script lang="ts">
   import type { ProfCount } from './profession-charts-data'
   import { RECOLECCION_IDS } from './profession-charts-data'
+  import ChartLegend from '../ChartLegend.svelte'
 
   let {
     profCounts,
@@ -12,9 +13,9 @@
     totalChars: number
   } = $props()
 
-  const MARGIN = { top: 20, right: 20, bottom: 28, left: 36 }
-  const CHART_W = 480
-  const CHART_H = 320
+  const MARGIN = { top: 20, right: 30, bottom: 32, left: 42 }
+  const CHART_W = 575
+  const CHART_H = 385
   const SVG_W = CHART_W + MARGIN.left + MARGIN.right
   const SVG_H = CHART_H + MARGIN.top + MARGIN.bottom
 
@@ -52,6 +53,37 @@
     return esRecoleccion ? '#4caf50' : '#ff9800'
   }
 
+  interface Bubble {
+    p: ProfCount
+    cx: number
+    cy: number
+    r: number
+  }
+
+  let bubbles = $derived.by<Bubble[]>(() => {
+    const list = profCounts.map(p => ({
+      p,
+      cx: xPos(p.count),
+      cy: yPos(hasValues ? (profAvgValues[p.id] ?? 0) : p.mains),
+      r: bubbleR(p.mains),
+    }))
+    for (let i = 1; i < list.length; i++) {
+      for (let j = 0; j < i; j++) {
+        const a = list[i]
+        const b = list[j]
+        const dx = a.cx - b.cx
+        const dy = a.cy - b.cy
+        const dist = Math.sqrt(dx * dx + dy * dy)
+        const minDist = a.r + b.r
+        if (dist < minDist) {
+          const dir = i % 2 === 0 ? 1 : -1
+          a.cy += dir * (minDist - dist + 2)
+        }
+      }
+    }
+    return list
+  })
+
   interface Tooltip {
     x: number
     y: number
@@ -80,51 +112,59 @@
   }
 </script>
 
+<ChartLegend items={[
+  { color: '#4caf50', label: 'Recolección' },
+  { color: '#ff9800', label: 'Artesanía' },
+]} />
+
 <div class="bb-wrap" style="position:relative">
   <svg bind:this={svgEl} viewBox="0 0 {SVG_W} {SVG_H}" class="bb-svg">
     <!-- axes -->
     <line x1={MARGIN.left} y1={MARGIN.top} x2={MARGIN.left} y2={MARGIN.top + CHART_H} stroke="var(--border-subtle, #444)" stroke-width="1" />
     <line x1={MARGIN.left} y1={MARGIN.top + CHART_H} x2={MARGIN.left + CHART_W} y2={MARGIN.top + CHART_H} stroke="var(--border-subtle, #444)" stroke-width="1" />
 
-    <!-- quadrant lines -->
-    <line x1={xPos(avgX)} y1={MARGIN.top} x2={xPos(avgX)} y2={MARGIN.top + CHART_H} stroke="#888" stroke-width="0.5" stroke-dasharray="3,3" />
-    <line x1={MARGIN.left} y1={yPos(avgY)} x2={MARGIN.left + CHART_W} y2={yPos(avgY)} stroke="#888" stroke-width="0.5" stroke-dasharray="3,3" />
+    {#if hasValues}
+      <!-- quadrant lines -->
+      <line x1={xPos(avgX)} y1={MARGIN.top} x2={xPos(avgX)} y2={MARGIN.top + CHART_H} stroke="#888" stroke-width="0.5" stroke-dasharray="3,3" />
+      <line x1={MARGIN.left} y1={yPos(avgY)} x2={MARGIN.left + CHART_W} y2={yPos(avgY)} stroke="#888" stroke-width="0.5" stroke-dasharray="3,3" />
 
-    <!-- quadrant labels -->
-    <text x={MARGIN.left + 4} y={yPos(avgY) - 4} fill="#d4af37" font-size="7.5" opacity="0.7">Alta prioridad</text>
-    <text x={MARGIN.left + CHART_W - 2} y={yPos(avgY) - 4} text-anchor="end" fill="#888" font-size="7.5" opacity="0.7">Priorizar roleo</text>
-    <text x={MARGIN.left + 4} y={MARGIN.top + CHART_H - 2} fill="#888" font-size="7.5" opacity="0.7">Baja prioridad</text>
-    <text x={MARGIN.left + CHART_W - 2} y={MARGIN.top + CHART_H - 2} text-anchor="end" fill="#888" font-size="7.5" opacity="0.7">Saturada</text>
+      <!-- quadrant labels -->
+      <rect x={MARGIN.left + 2} y={yPos(avgY) - 15} width="86" height="14" fill="#000" opacity="0.4" rx="2" />
+      <text x={MARGIN.left + 4} y={yPos(avgY) - 4} fill="#d4af37" font-size="11" opacity="0.95">Alta prioridad</text>
+      <rect x={MARGIN.left + CHART_W - 94} y={yPos(avgY) - 15} width="92" height="14" fill="#000" opacity="0.4" rx="2" />
+      <text x={MARGIN.left + CHART_W - 2} y={yPos(avgY) - 4} text-anchor="end" fill="#ccc" font-size="11" opacity="0.95">Priorizar roleo</text>
+      <rect x={MARGIN.left + 2} y={MARGIN.top + CHART_H - 13} width="86" height="14" fill="#000" opacity="0.4" rx="2" />
+      <text x={MARGIN.left + 4} y={MARGIN.top + CHART_H - 2} fill="#ccc" font-size="11" opacity="0.95">Baja prioridad</text>
+      <rect x={MARGIN.left + CHART_W - 52} y={MARGIN.top + CHART_H - 13} width="50" height="14" fill="#000" opacity="0.4" rx="2" />
+      <text x={MARGIN.left + CHART_W - 2} y={MARGIN.top + CHART_H - 2} text-anchor="end" fill="#ccc" font-size="11" opacity="0.95">Saturada</text>
+    {/if}
 
     <!-- axis labels -->
-    <text x={MARGIN.left + CHART_W / 2} y={MARGIN.top + CHART_H + 14} text-anchor="middle" fill="#aaa" font-size="8">
+    <text x={MARGIN.left + CHART_W / 2} y={MARGIN.top + CHART_H + 16} text-anchor="middle" fill="#aaa" font-size="11">
       {hasValues ? 'Frecuencia en roster' : 'Frecuencia (cantidad de pj)'}
     </text>
-    <text x={0} y={MARGIN.top + CHART_H / 2} text-anchor="middle" fill="#aaa" font-size="8" transform="rotate(-90, 10, {MARGIN.top + CHART_H / 2})">
+    <text x={0} y={MARGIN.top + CHART_H / 2} text-anchor="middle" fill="#aaa" font-size="11" transform="rotate(-90, 12, {MARGIN.top + CHART_H / 2})">
       {hasValues ? 'Valor estratégico promedio' : 'Main crafters'}
     </text>
 
     <!-- bubbles -->
-    {#each profCounts as p}
-      {@const cx = xPos(p.count)}
-      {@const cy = yPos(hasValues ? (profAvgValues[p.id] ?? 0) : p.mains)}
-      {@const r = bubbleR(p.mains)}
+    {#each bubbles as b}
       <circle
-        cx={cx} cy={cy} r={r}
-        fill={fillColor(p.esRecoleccion)}
+        cx={b.cx} cy={b.cy} r={b.r}
+        fill={fillColor(b.p.esRecoleccion)}
         opacity="0.75"
         stroke="#1a1a1a" stroke-width="1"
         style="cursor:pointer"
-        onmouseenter={(e) => showBubbleTooltip(e, p)}
+        onmouseenter={(e) => showBubbleTooltip(e, b.p)}
         onmouseleave={hideTooltip}
       />
-      {#if r > 8}
+      {#if b.r > 8}
         <text
-          x={cx} y={cy}
+          x={b.cx} y={b.cy}
           text-anchor="middle" dominant-baseline="middle"
-          fill="#fff" font-size="7.5"
+          fill="#fff" font-size="10"
           pointer-events="none"
-        >{p.icon}</text>
+        >{b.p.icon}</text>
       {/if}
     {/each}
   </svg>
@@ -139,11 +179,12 @@
 <style>
   .bb-wrap {
     width: 100%;
-    overflow: visible;
+    overflow-x: auto;
   }
   .bb-svg {
     width: 100%;
     height: auto;
+    min-width: 480px;
     display: block;
   }
   .bb-tooltip {

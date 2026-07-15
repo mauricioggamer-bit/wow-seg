@@ -3,6 +3,7 @@
   import { PROFESIONES } from '../../constants/profesiones'
   import { computeCharProfMatrix, sortByClass, classKey, PERS_CLASS_COLORS } from './profession-charts-data'
   import type { CharProfCell } from './profession-charts-data'
+  import ChartLegend from '../ChartLegend.svelte'
 
   let {
     personajes,
@@ -34,15 +35,20 @@
     return [...map.entries()].map(([clase, chars]) => ({ clase, chars }))
   })
 
-  const CELL = 16
+  const CELL = 18
   const GAP = 1
-  const LABEL_W = 110
-  const COL_H = 18
-  const HEADER_H = 14
-  const GROUP_GAP = 4
+  const LABEL_W = 130
+  const COL_H = 20
+  const HEADER_H = 16
+  const GROUP_GAP = 5
+  const GROUP_HEADER_H = 12
 
   function groupH(chars: Personaje[]): number {
-    return chars.length * COL_H + GROUP_GAP
+    return GROUP_HEADER_H + chars.length * COL_H + GROUP_GAP
+  }
+
+  function truncateName(s: string, max = 12): string {
+    return s.length > max ? s.slice(0, max - 1) + '…' : s
   }
 
   function cellColor(cell: CharProfCell | null): string {
@@ -66,7 +72,7 @@
 
   let tooltip = $state<Tooltip | null>(null)
 
-  let svgH = $derived(HEADER_H + groups.reduce((s, g) => s + g.chars.length * COL_H + GROUP_GAP, 0) + 10)
+  let svgH = $derived(HEADER_H + groups.reduce((s, g) => s + GROUP_HEADER_H + g.chars.length * COL_H + GROUP_GAP, 0) + 10)
 
   function showCellTooltip(e: MouseEvent, text: string) {
     const rect = (e.currentTarget as SVGRectElement).getBoundingClientRect()
@@ -78,47 +84,53 @@
   }
 </script>
 
+<ChartLegend items={[
+  { color: '#d4af37', label: 'Main' },
+  { color: '#3a7bd5', label: 'CD' },
+  { color: '#555', label: 'Sin rol' },
+]} />
+
 <div class="hm-wrap" style="position:relative">
   <svg viewBox="0 0 {LABEL_W + sortedProfs.length * (CELL + GAP) + 12} {svgH}" class="hm-svg">
     <!-- column headers -->
     {#each sortedProfs as prof, ci}
       <text
         x={LABEL_W + ci * (CELL + GAP) + CELL / 2}
-        y={HEADER_H - 3}
+        y={HEADER_H - 5}
         text-anchor="middle"
         fill="#e0e0e0"
-        font-size="8"
-      >{prof.icon}</text>
+        font-size="10"
+      ><title>{prof.nombre}</title>{prof.icon}</text>
     {/each}
 
     <!-- rows grouped by class -->
   {#each groups as group}
       {@const groupIdx = groups.indexOf(group)}
-      {@const gy = HEADER_H + groups.slice(0, groupIdx).reduce((s, g) => s + g.chars.length * COL_H + GROUP_GAP, 0)}
+      {@const gy = HEADER_H + groups.slice(0, groupIdx).reduce((s, g) => s + GROUP_HEADER_H + g.chars.length * COL_H + GROUP_GAP, 0)}
       <text
         x={LABEL_W - 2}
         y={gy + 8}
         text-anchor="end"
         fill={PERS_CLASS_COLORS[classKey(group.clase)] || '#888'}
-        font-size="8"
+        font-size="11"
         font-weight="700"
       >{group.clase}</text>
 
       {#each group.chars as c, ri}
         <text
           x={LABEL_W - 4}
-          y={gy + ri * COL_H + COL_H / 2 + 1}
+          y={gy + GROUP_HEADER_H + ri * COL_H + COL_H / 2 + 1}
           text-anchor="end"
           dominant-baseline="middle"
           fill={PERS_CLASS_COLORS[classKey(c.clase)] || '#aaa'}
-          font-size="7.5"
-        >{c.nombre}</text>
+          font-size="10"
+        ><title>{c.nombre}</title>{truncateName(c.nombre)}</text>
 
         {#each sortedProfs as prof, ci}
           {@const cell = matrix[c.nombre]?.[prof.id] ?? null}
           <rect
             x={LABEL_W + ci * (CELL + GAP)}
-            y={gy + ri * COL_H}
+            y={gy + GROUP_HEADER_H + ri * COL_H}
             width={CELL}
             height={CELL}
             fill={cellColor(cell)}

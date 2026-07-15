@@ -7,11 +7,11 @@
 
   let data = $derived(computeLevelClassMatrix(personajes))
 
-  const CELL = 16
-  const GAP = 1
-  const LABEL_W = 46
-  const HEADER_H = 16
-  const SVG_W = 580
+  const CELL = 26
+  const GAP = 2
+  const LABEL_W = 70
+  const HEADER_H = 55
+  const SVG_W = 870
 
   function maxCount(): number {
     let m = 0
@@ -49,11 +49,12 @@
 <div class="lc-wrap" style="position:relative">
   <svg viewBox="0 0 {SVG_W} {svgH}" class="lc-svg">
     {#each data.classes as ck, ci}
-      <text x={LABEL_W + ci * (CELL + GAP) + CELL / 2} y={HEADER_H - 4} text-anchor="middle" fill={PERS_CLASS_COLORS[ck] || '#e0e0e0'} font-size="7">{ck}</text>
+      {@const hx = LABEL_W + ci * (CELL + GAP) + CELL / 2}
+      <text x={hx} y={HEADER_H - 4} text-anchor="start" fill={PERS_CLASS_COLORS[ck] || '#e0e0e0'} font-size="11" transform="rotate(-45, {hx}, {HEADER_H - 4})">{ck}</text>
     {/each}
 
     {#each data.buckets as bucket, ri}
-      <text x={LABEL_W - 4} y={HEADER_H + ri * (CELL + GAP) + CELL / 2 + 1} text-anchor="end" dominant-baseline="middle" fill="#e0e0e0" font-size="6.5">{bucket.label}</text>
+      <text x={LABEL_W - 4} y={HEADER_H + ri * (CELL + GAP) + CELL / 2 + 1} text-anchor="end" dominant-baseline="middle" fill="#e0e0e0" font-size="10">{bucket.label}</text>
 
       {#each data.classes as ck, ci}
         {@const cell = data.matrix[bucket.label]?.[ck]}
@@ -67,7 +68,7 @@
           onmouseleave={hideTt}
         />
         {#if cell && cell.count > 0}
-          <text x={LABEL_W + ci * (CELL + GAP) + CELL / 2} y={HEADER_H + ri * (CELL + GAP) + CELL / 2 + 1} text-anchor="middle" dominant-baseline="middle" fill={cell.count > 1 ? '#1a1a1a' : '#e0e0e0'} font-size="5.5">
+          <text x={LABEL_W + ci * (CELL + GAP) + CELL / 2} y={HEADER_H + ri * (CELL + GAP) + CELL / 2 + 1} text-anchor="middle" dominant-baseline="middle" fill={cell.count > 1 ? '#1a1a1a' : '#e0e0e0'} font-size="9.5">
             {cell.count}
           </text>
         {/if}
@@ -83,5 +84,5 @@
 <style>
   .lc-wrap { width: 100%; overflow-x: auto; overflow-y: auto; max-height: 420px; }
   .lc-svg { display: block; }
-  .lc-tooltip { position: fixed; transform: translate(-50%, -100%); background: var(--bg-panel, #1a1a1a); border: 1px solid var(--gold, #d4af37); border-radius: var(--r-sm); padding: 4px 8px; z-index: 1100; pointer-events: none; white-space: nowrap; box-shadow: 0 4px 16px rgba(0,0,0,0.5); font-size: 0.55rem; color: var(--text-secondary, #aaa); }
+  .lc-tooltip { position: fixed; transform: translate(-50%, -100%); background: var(--bg-panel, #1a1a1a); border: 1px solid var(--gold, #d4af37); border-radius: var(--r-sm); padding: 4px 8px; z-index: 1100; pointer-events: none; white-space: nowrap; box-shadow: 0 4px 16px rgba(0,0,0,0.5); font-size: 0.65rem; color: var(--text-secondary, #aaa); }
 </style>

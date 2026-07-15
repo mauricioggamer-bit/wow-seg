@@ -1,5 +1,6 @@
 <script lang="ts">
   import type { ProfCount } from './profession-charts-data'
+  import ChartLegend from '../ChartLegend.svelte'
 
   let {
     profCounts,
@@ -9,12 +10,12 @@
     totalChars: number
   } = $props()
 
-  const BAR_H = 24
-  const GAP = 6
-  const LABEL_W = 130
-  const COUNT_W = 40
-  const CHART_W = 420
-  const MARGIN = { top: 10, right: 10, bottom: 24, left: LABEL_W, right2: COUNT_W + 10 }
+  const BAR_H = 28
+  const GAP = 8
+  const LABEL_W = 150
+  const COUNT_W = 48
+  const CHART_W = 500
+  const MARGIN = { top: 10, right: 28, bottom: 28, left: LABEL_W, right2: COUNT_W + 10 }
   let svgW = $derived(MARGIN.left + CHART_W + MARGIN.right2)
   let rows = $derived(profCounts.length)
   let svgH = $derived(MARGIN.top + rows * (BAR_H + GAP) + MARGIN.bottom)
@@ -36,6 +37,10 @@
 
   function barY(i: number): number {
     return MARGIN.top + i * (BAR_H + GAP)
+  }
+
+  function truncateName(s: string, max = 16): string {
+    return s.length > max ? s.slice(0, max - 1) + '…' : s
   }
 
   interface Tooltip {
@@ -71,6 +76,12 @@
   }
 </script>
 
+<ChartLegend items={[
+  { color: '#d4af37', label: 'Main' },
+  { color: '#3a7bd5', label: 'CD' },
+  { color: '#555', label: 'Sin rol' },
+]} />
+
 <div class="bc-wrap" style="position:relative">
   <svg viewBox="0 0 {svgW} {svgH}" class="bc-svg">
     {#if avgLine > 0}
@@ -84,14 +95,14 @@
       />
       <text
         x={xPos(avgLine)} y={MARGIN.top + rows * (BAR_H + GAP) + 16}
-        text-anchor="middle" fill="#d4af37" font-size="9"
+        text-anchor="middle" fill="#d4af37" font-size="11"
       >Prom. {avgLabel}</text>
     {/if}
 
     {#each sorted as p, i}
       {@const y = barY(i)}
-      <text x={MARGIN.left - 4} y={y + BAR_H / 2} text-anchor="end" dominant-baseline="middle" fill="#e0e0e0" font-size="9">
-        {p.icon} {p.nombre}
+      <text x={MARGIN.left - 4} y={y + BAR_H / 2} text-anchor="end" dominant-baseline="middle" fill="#e0e0e0" font-size="11">
+        <title>{p.nombre}</title>{p.icon} {truncateName(p.nombre)}
       </text>
 
       <g>
@@ -134,7 +145,7 @@
         />
       </g>
 
-      <text x={MARGIN.left + CHART_W + 4} y={y + BAR_H / 2} dominant-baseline="middle" fill="#888" font-size="9" text-anchor="start">
+      <text x={MARGIN.left + CHART_W + 8} y={y + BAR_H / 2} dominant-baseline="middle" fill="#888" font-size="11" text-anchor="start">
         {p.count}
       </text>
     {/each}
@@ -154,11 +165,12 @@
 <style>
   .bc-wrap {
     width: 100%;
-    overflow: visible;
+    overflow-x: auto;
   }
   .bc-svg {
     width: 100%;
     height: auto;
+    min-width: 480px;
     display: block;
   }
   .bc-tooltip {

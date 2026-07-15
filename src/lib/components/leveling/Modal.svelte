@@ -57,7 +57,7 @@
     background: var(--bg-panel, #1a1a1a);
     border: 1px solid var(--gold, #d4af37);
     border-radius: var(--r-md, 6px);
-    width: min(720px, 96vw);
+    width: min(1080px, 95vw);
     max-height: 86vh;
     display: flex;
     flex-direction: column;

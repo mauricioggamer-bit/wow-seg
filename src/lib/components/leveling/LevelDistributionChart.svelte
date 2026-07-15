@@ -64,9 +64,9 @@
     ))
   )
 
-  const MARGIN = { top: 20, right: 20, bottom: 40, left: 50 }
-  const CHART_W = 700
-  const CHART_H = 310
+  const MARGIN = { top: 20, right: 30, bottom: 40, left: 55 }
+  const CHART_W = 820
+  const CHART_H = 370
   const VIEWBOX_W = CHART_W + MARGIN.left + MARGIN.right
   const VIEWBOX_H = CHART_H + MARGIN.top + MARGIN.bottom
 
@@ -116,7 +116,7 @@
 
         {#each bucketData as b, i}
           {@const bx = MARGIN.left + i * barWidth}
-          <text x={bx + barWidth / 2} y={MARGIN.top + CHART_H + 14} text-anchor="middle" fill="#fff" font-size="9">{b.label}</text>
+          <text x={bx + barWidth / 2} y={MARGIN.top + CHART_H + 16} text-anchor="middle" fill="#fff" font-size="11">{b.label}</text>
           {#each b.segments as seg}
             <rect
               x={bx + 1}
@@ -217,11 +217,12 @@
   }
   .ldc-chart-wrap {
     position: relative;
-    overflow: visible;
+    overflow-x: auto;
   }
   .ldc-svg {
     width: 100%;
     height: auto;
+    min-width: 700px;
     display: block;
   }
   .ldc-tooltip {

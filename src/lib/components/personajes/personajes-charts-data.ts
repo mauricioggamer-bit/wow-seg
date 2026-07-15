@@ -1,16 +1,12 @@
 import type { Personaje } from '../../types'
-import { PERS_RACE_INFO, CLASS_MAP } from '../../constants'
+import { PERS_RACE_INFO, CLASS_MAP, PERS_CLASS_COLORS } from '../../constants'
+
+export { PERS_CLASS_COLORS }
 
 export const CLASS_ORDER: Record<string, number> = {
   warrior: 0, paladin: 1, hunter: 2, rogue: 3,
   priest: 4, dk: 5, shaman: 6, mage: 7,
   warlock: 8, monk: 9, druid: 10, dh: 11, evoker: 12,
-}
-
-export const PERS_CLASS_COLORS: Record<string, string> = {
-  warrior: '#c69b3a', paladin: '#f48cba', hunter: '#aad372', rogue: '#fff569',
-  priest: '#ffffff', dk: '#c41e3a', shaman: '#0070dd', mage: '#3fc7eb',
-  warlock: '#8788ee', monk: '#00ff96', druid: '#ff7c0a', dh: '#a330c9', evoker: '#33937f',
 }
 
 export function classKey(clase: string): string {
@@ -128,6 +124,11 @@ export function computeFactionClassCounts(chars: Personaje[]): FactionClassEntry
       total: counts.alliance + counts.horde,
     }))
     .sort((a, b) => b.total - a.total || a.clase.localeCompare(b.clase))
+}
+
+export const FACTION_COLORS: Record<string, string> = {
+  Alianza: '#4a9eff',
+  Horda: '#cc3300',
 }
 
 export const RACE_FACTION: Record<string, string> = {

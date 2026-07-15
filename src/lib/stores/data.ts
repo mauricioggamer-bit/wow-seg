@@ -1,5 +1,5 @@
 import { writable, derived, get } from 'svelte/store'
-import type { WowData, Personaje, Warband, Stats, ProfesionSlot, Tarea } from '../types'
+import type { WowData, Personaje, Warband, Stats, ProfesionSlot, Tarea, AccountTask, AccountTaskStatus } from '../types'
 import type { TipoContenido } from '../constants/wowContent'
 import type { ExportSection } from '../types'
 import type { OpieRing, OpieSlice } from '../opie/types'
@@ -850,6 +850,77 @@ addTarea(nombrePersonaje: string, tarea: { nombre: string; tipoContenido?: TipoC
         const newRings = [...rings]
         newRings[idx] = { ...ring, slices: newSlices }
         d.opieRings = newRings
+        saveData(d)
+        return { ...d }
+      })
+    },
+    getAccountTasks(): AccountTask[] {
+      return get({ subscribe }).accountTasks ?? []
+    },
+    addAccountTask(nombre: string): string {
+      const id = 'at' + Date.now()
+      update(d => {
+        const tasks = d.accountTasks ?? []
+        const personajes = d.personajes
+        const entries = personajes.map(p => ({
+          nombrePersonaje: p.nombre,
+          estado: 'incompleto' as AccountTaskStatus,
+        }))
+        const maxOrden = tasks.reduce((m, t) => Math.max(m, t.orden ?? 0), -1)
+        d.accountTasks = [...tasks, { id, nombre, entries, orden: maxOrden + 1 }]
+        saveData(d)
+        return { ...d }
+      })
+      return id
+    },
+    deleteAccountTask(id: string) {
+      update(d => {
+        d.accountTasks = (d.accountTasks ?? []).filter(t => t.id !== id)
+        saveData(d)
+        return { ...d }
+      })
+    },
+    renameAccountTask(id: string, nombre: string) {
+      update(d => {
+        d.accountTasks = (d.accountTasks ?? []).map(t =>
+          t.id === id ? { ...t, nombre } : t
+        )
+        saveData(d)
+        return { ...d }
+      })
+    },
+    setAccountTaskStatus(taskId: string, charName: string, estado: AccountTaskStatus, motivo?: string) {
+      update(d => {
+        d.accountTasks = (d.accountTasks ?? []).map(t =>
+          t.id === taskId
+            ? {
+                ...t,
+                entries: (() => {
+                  const idx = t.entries.findIndex(e => e.nombrePersonaje === charName)
+                  if (idx !== -1) {
+                    return t.entries.map(e =>
+                      e.nombrePersonaje === charName
+                        ? { ...e, estado, motivo: motivo ?? (estado === 'incompleto' ? undefined : e.motivo), fecha: estado !== 'incompleto' ? new Date().toISOString() : undefined }
+                        : e
+                    )
+                  }
+                  return [...t.entries, { nombrePersonaje: charName, estado, motivo, fecha: estado !== 'incompleto' ? new Date().toISOString() : undefined }]
+                })()
+              }
+            : t
+        )
+        saveData(d)
+        return { ...d }
+      })
+    },
+    reorderAccountTasks(ids: string[]) {
+      update(d => {
+        const tasks = d.accountTasks ?? []
+        const reordered = ids.map((id, i) => {
+          const t = tasks.find(t => t.id === id)
+          return t ? { ...t, orden: i } : null
+        }).filter(Boolean) as AccountTask[]
+        d.accountTasks = reordered
         saveData(d)
         return { ...d }
       })

@@ -213,6 +213,7 @@ export function normalizeData(data: WowData): WowData {
   }
   if (!data.strategicConfig.values) data.strategicConfig.values = {}
   if (!data.strategicConfig.componentWeights) data.strategicConfig.componentWeights = {}
+  if (!data.accountTasks) data.accountTasks = []
 
   // Migration: professionValue → profesionesCompletas (Jul 2026)
   if (data.strategicConfig.componentWeights.professionValue > 0) {
@@ -529,6 +530,9 @@ export function exportSections(data: WowData, sections: ExportSection[]): string
   if (sections.includes('opie_rings')) {
     payload.data.opieRings = data.opieRings
   }
+  if (sections.includes('account-tasks')) {
+    payload.data.accountTasks = data.accountTasks
+  }
 
   return JSON.stringify(payload, null, 2)
 }
@@ -580,6 +584,9 @@ export function importSections(jsonStr: string, current: WowData): WowData {
     }
     if (sections.includes('opie_rings')) {
       result.opieRings = incoming.opieRings ?? []
+    }
+    if (sections.includes('account-tasks')) {
+      result.accountTasks = incoming.accountTasks ?? []
     }
 
     return normalizeData(result)

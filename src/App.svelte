@@ -20,6 +20,7 @@
   import WarbandManagerView from './lib/views/WarbandManagerView.svelte'
   import StrategicView from './lib/views/StrategicView.svelte'
   import OpieView from './lib/views/OpieView.svelte'
+  import AccountTasksView from './lib/views/AccountTasksView.svelte'
   import EntityAssignments from './lib/components/strategic/EntityAssignments.svelte'
   import { authStore } from './lib/stores/auth'
   import { uiStore } from './lib/stores/ui'
@@ -33,7 +34,7 @@
   import { PROFESIONES } from './lib/constants/profesiones'
   import type { TipoContenido, DungeonDifficulty, RaidDifficulty } from './lib/constants/wowContent'
   import { fade } from 'svelte/transition'
-  import type { Tarea, ProfesionSlot, ViewType, ExportSection } from './lib/types'
+  import type { Tarea, ProfesionSlot, ViewType, ExportSection, AccountTaskStatus } from './lib/types'
   import { MAX_LEVEL } from './lib/constants/experience'
 
   let charOpts = $derived($personajesStore.map(p => p.nombre))
@@ -53,7 +54,7 @@
   })
 
   const VIEW_KEYS: Record<string, string> = {
-    '1': 'warband', '2': 'tareas',
+    '1': 'warband', '2': 'tareas', '3': 'account-tasks',
     '4': 'tasks', '6': 'personajes',
     '7': 'mapa', '8': 'fantasia', '9': 'profesion',
     '0': 'leveling',
@@ -177,6 +178,12 @@
   let newTaskRecompensa = $state('')
   let newTaskPuntos = $state(0)
   let newTaskNivelRecomendado = $state<number | null>(null)
+
+  let pendingAccountTaskId = $state('')
+  let pendingAccountCharName = $state('')
+  let pendingAccountTaskNombre = $state('')
+  let pendingAccountReason = $state('')
+  let pendingAccountStatus = $state<AccountTaskStatus>('luego')
 
   let isNewChar = $state(false)
 
@@ -314,6 +321,26 @@
       recompensa: newTaskRecompensa || '',
       puntos: newTaskPuntos,
     })
+    uiStore.closeModal()
+  }
+
+  function requestAccountTaskReason(taskId: string, charName: string, estado: AccountTaskStatus) {
+    const tasks = dataStore.getAccountTasks()
+    const task = tasks.find(t => t.id === taskId)
+    pendingAccountTaskId = taskId
+    pendingAccountCharName = charName
+    pendingAccountTaskNombre = task?.nombre ?? ''
+    pendingAccountReason = ''
+    pendingAccountStatus = estado
+    if (estado === 'luego') {
+      uiStore.openModal('AccountTaskLuegoMotivo')
+    } else {
+      uiStore.openModal('AccountTaskPasaMotivo')
+    }
+  }
+
+  function confirmAccountTaskReason() {
+    dataStore.setAccountTaskStatus(pendingAccountTaskId, pendingAccountCharName, pendingAccountStatus, pendingAccountReason.trim() || undefined)
     uiStore.closeModal()
   }
 
@@ -524,6 +551,8 @@
               <StrategicView {openCharEdit} />
             {:else if $uiStore.currentView === 'opie'}
               <OpieView />
+            {:else if $uiStore.currentView === 'account-tasks'}
+              <AccountTasksView onRequestLuegoMotivo={(taskId, charName) => requestAccountTaskReason(taskId, charName, 'luego')} onRequestPasaMotivo={(taskId, charName) => requestAccountTaskReason(taskId, charName, 'pasa')} />
             {/if}
           </div>
         {/key}
@@ -1069,6 +1098,40 @@
       <div class="modal-footer">
         <button class="wow-btn" onclick={() => uiStore.closeModal()}>Cancelar</button>
         <button class="wow-btn wow-btn-primary" onclick={saveTaskNew}>Asignar</button>
+      </div>
+    {/snippet}
+  </Dialog>
+
+  <!-- Modal: Motivo "Luego" (tarea de cuenta) -->
+  <Dialog show={$uiStore.activeModal === 'AccountTaskLuegoMotivo'} title="¿Por qué lo dejas para luego?" onclose={() => uiStore.closeModal()}>
+    {#snippet children()}
+      <p style="font-size:0.55rem;color:var(--text-muted);margin:0 0 8px">
+        Tarea: <strong>{pendingAccountTaskNombre}</strong> · Personaje: <strong>{pendingAccountCharName}</strong>
+      </p>
+      <div class="form-group">
+        <label>Motivo</label>
+        <textarea bind:value={pendingAccountReason} placeholder="¿Por qué pospones esta tarea?" rows="3" style="width:100%;background:var(--input-bg);border:1px solid var(--border-subtle);border-radius:var(--r-sm);padding:4px 6px;color:var(--text-primary);font-size:0.55rem;font-family:inherit;resize:vertical"></textarea>
+      </div>
+      <div class="modal-footer">
+        <button class="wow-btn" onclick={() => uiStore.closeModal()}>Cancelar</button>
+        <button class="wow-btn wow-btn-primary" onclick={confirmAccountTaskReason}>Guardar</button>
+      </div>
+    {/snippet}
+  </Dialog>
+
+  <!-- Modal: Motivo "Pasa" (tarea de cuenta) -->
+  <Dialog show={$uiStore.activeModal === 'AccountTaskPasaMotivo'} title="¿Por qué pasas esta tarea?" onclose={() => uiStore.closeModal()}>
+    {#snippet children()}
+      <p style="font-size:0.55rem;color:var(--text-muted);margin:0 0 8px">
+        Tarea: <strong>{pendingAccountTaskNombre}</strong> · Personaje: <strong>{pendingAccountCharName}</strong>
+      </p>
+      <div class="form-group">
+        <label>Motivo</label>
+        <textarea bind:value={pendingAccountReason} placeholder="¿Por qué descartas esta tarea para este personaje?" rows="3" style="width:100%;background:var(--input-bg);border:1px solid var(--border-subtle);border-radius:var(--r-sm);padding:4px 6px;color:var(--text-primary);font-size:0.55rem;font-family:inherit;resize:vertical"></textarea>
+      </div>
+      <div class="modal-footer">
+        <button class="wow-btn" onclick={() => uiStore.closeModal()}>Cancelar</button>
+        <button class="wow-btn wow-btn-primary" onclick={confirmAccountTaskReason}>Guardar</button>
       </div>
     {/snippet}
   </Dialog>

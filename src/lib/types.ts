@@ -103,6 +103,7 @@ export interface WowData {
   xpOverrides?: Record<number, number>
   dungeonXpOverrides?: Record<number, number>
   opieRings?: OpieRing[]
+  accountTasks?: AccountTask[]
 }
 
 export interface Stats {
@@ -116,7 +117,23 @@ export interface Stats {
   dailyDone: number
 }
 
-export type ViewType = 'warband' | 'tareas' | 'tasks' | 'personajes' | 'mapa' | 'fantasia' | 'profesion' | 'keybinds' | 'leveling' | 'warband-manager' | 'estrategia' | 'opie'
+export type AccountTaskStatus = 'incompleto' | 'completo' | 'luego' | 'pasa'
+
+export interface AccountTaskEntry {
+  nombrePersonaje: string
+  estado: AccountTaskStatus
+  motivo?: string
+  fecha?: string
+}
+
+export interface AccountTask {
+  id: string
+  nombre: string
+  entries: AccountTaskEntry[]
+  orden?: number
+}
+
+export type ViewType = 'warband' | 'tareas' | 'tasks' | 'personajes' | 'mapa' | 'fantasia' | 'profesion' | 'keybinds' | 'leveling' | 'warband-manager' | 'estrategia' | 'opie' | 'account-tasks'
 export type ThemeType = 'dark' | 'light'
 export type FontSizeType = 'small' | 'medium' | 'large' | 'xlarge'
 export type AuthDuration = '10min' | '1hora' | '8horas' | '1semana' | 'siempre'
@@ -304,6 +321,7 @@ export type ExportSection =
   | 'keybinds'
   | 'config_leveling'
   | 'opie_rings'
+  | 'account-tasks'
 
 export interface ExportPayload {
   _exportType: 'wowseg_export'

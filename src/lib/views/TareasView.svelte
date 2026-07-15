@@ -122,8 +122,8 @@
   .tf-label input[type="checkbox"] { width:12px; height:12px; }
   .tf-level { width:36px; padding:1px 3px; font-size:0.5rem; border:1px solid var(--border-subtle); border-radius:var(--r-sm); background:var(--input-bg); color:var(--text-primary); }
   .tf-level::-webkit-outer-spin-button,
-  .tf-level::-webkit-inner-spin-button { -webkit-appearance:none; margin:0; }
-  .tf-level[type="number"] { -moz-appearance:textfield; }
+  .tf-level::-webkit-inner-spin-button { -webkit-appearance:none; appearance:none; margin:0; }
+  .tf-level[type="number"] { -moz-appearance:textfield; appearance:textfield; }
   .tareas-search:focus { outline:none; border-color:var(--gold-dim); }
   .tareas-search::placeholder { color:var(--text-dim); }
   :global(.tareas-panel > .vl-container) { padding: 4px 8px; flex: 1; }

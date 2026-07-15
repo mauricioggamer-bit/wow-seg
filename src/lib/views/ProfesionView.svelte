@@ -25,6 +25,8 @@
   let profType = $state<'todas' | 'recoleccion' | 'artesania'>('todas')
   let profSlot = $state<'ambas' | 'primera' | 'segunda'>('ambas')
   let showMotivos = $state(getSessionPref('showMotivosProf'))
+  let showExpansions = $state(getSessionPref('showExpansionsProf'))
+  $effect(() => { setSessionPref('showExpansionsProf', showExpansions) })
 
   let editingMotivoChar = $state<string | null>(null)
   let editingMotivoProf = $state<string | null>(null)
@@ -304,6 +306,7 @@
       </div>
       <div class="prof-filter-group">
         <label class="filter-check"><input type="checkbox" bind:checked={showMotivos} onchange={() => setSessionPref('showMotivosProf', showMotivos)} /> Ver motivos</label>
+        <label class="filter-check"><input type="checkbox" bind:checked={showExpansions} onchange={() => setSessionPref('showExpansionsProf', showExpansions)} /> Ver expansiones</label>
       </div>
     </div>
 
@@ -359,17 +362,19 @@
                   onclick={() => openCharEdit(c.nombre)}
                   title="Editar personaje"
                 >✏️</button>
-                <div class="prof-exp-row">
-                  {#each EXPANSIONS as exp}
-                    {@const done = slot?.completadas?.includes(exp.id)}
-                    <button
-                      class="prof-exp-dot"
-                      class:done={done}
-                      title={exp.nombre}
-                      onclick={() => toggleExp(c.nombre, prof.id, exp.id)}
-                    >{expAbbr(exp.id)}</button>
-                  {/each}
-                </div>
+                {#if showExpansions}
+                  <div class="prof-exp-row">
+                    {#each EXPANSIONS as exp}
+                      {@const done = slot?.completadas?.includes(exp.id)}
+                      <button
+                        class="prof-exp-dot"
+                        class:done={done}
+                        title={exp.nombre}
+                        onclick={() => toggleExp(c.nombre, prof.id, exp.id)}
+                      >{expAbbr(exp.id)}</button>
+                    {/each}
+                  </div>
+                {/if}
               </div>
               {#if showMotivos}
                 {#if editingMotivoChar === c.nombre && editingMotivoProf === prof.id}

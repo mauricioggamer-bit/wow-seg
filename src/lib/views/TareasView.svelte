@@ -41,7 +41,7 @@
           const lvl = parseInt(levelFilter, 10)
           if (!isNaN(lvl) && c.nivel !== lvl) return false
         }
-        if (!showNoTasks && c.tareas.length === 0) return false
+        if (showNoTasks ? c.tareas.length !== 0 : c.tareas.length === 0) return false
         return true
       })
       .filter(c => !filterText || c.nombre.toLowerCase().includes(filterText.toLowerCase()) || (c.clase || '').toLowerCase().includes(filterText.toLowerCase()) || (c.raza || '').toLowerCase().includes(filterText.toLowerCase()))
@@ -121,6 +121,9 @@
   .tf-label { display:flex; align-items:center; gap:3px; font-size:0.5rem; cursor:pointer; user-select:none; white-space:nowrap; }
   .tf-label input[type="checkbox"] { width:12px; height:12px; }
   .tf-level { width:36px; padding:1px 3px; font-size:0.5rem; border:1px solid var(--border-subtle); border-radius:var(--r-sm); background:var(--input-bg); color:var(--text-primary); }
+  .tf-level::-webkit-outer-spin-button,
+  .tf-level::-webkit-inner-spin-button { -webkit-appearance:none; margin:0; }
+  .tf-level[type="number"] { -moz-appearance:textfield; }
   .tareas-search:focus { outline:none; border-color:var(--gold-dim); }
   .tareas-search::placeholder { color:var(--text-dim); }
   :global(.tareas-panel > .vl-container) { padding: 4px 8px; flex: 1; }

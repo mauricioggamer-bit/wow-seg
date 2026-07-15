@@ -8,11 +8,17 @@
     filterOptions,
     panel = false,
     openTaskEdit,
+    showNoTasks = false,
+    showInactive = false,
+    levelFilter = '',
   }: {
     filterType: 'prioridad' | 'tiempo'
     filterOptions: { key: string; label: string }[]
     panel?: boolean
     openTaskEdit?: (char: string, taskId: string) => void
+    showNoTasks?: boolean
+    showInactive?: boolean
+    levelFilter?: string
   } = $props()
 
   let activeFilter = $state('')
@@ -23,7 +29,12 @@
   let items = $derived.by(() => {
     let all: Array<Record<string, any>> = []
     for (const p of $personajesStore) {
-      if (!p.planeado_usar) continue
+      if (!showInactive && !p.planeado_usar) continue
+      if (levelFilter) {
+        const lvl = parseInt(levelFilter, 10)
+        if (!isNaN(lvl) && p.nivel !== lvl) continue
+      }
+      let hasTasks = false
       for (const t of p.tareas) {
         if (filterType === 'prioridad' && activeFilter && t.prioridad !== Number(activeFilter)) continue
         if (filterType === 'tiempo' && activeFilter) {
@@ -37,7 +48,25 @@
           if (fn && !fn(t.tiempo_min)) continue
         }
         if (!showDone && t.hecho) continue
+        hasTasks = true
         all.push({ ...t, _origen: 'tarea', personaje: p.nombre, clase: p.clase, warband: p.warband, nivel: p.nivel, faccion: p.faccion })
+      }
+      if (!hasTasks && showNoTasks) {
+        all.push({
+          _origen: 'sin_tareas',
+          personaje: p.nombre,
+          clase: p.clase,
+          warband: p.warband,
+          nivel: p.nivel,
+          faccion: p.faccion,
+          id: `sin-tareas-${p.nombre}`,
+          nombre: '— Sin tareas',
+          prioridad: 0,
+          tiempo_min: 0,
+          cooldown: '',
+          hecho: false,
+          recompensa: '',
+        })
       }
     }
     if (activeWarband) {
@@ -57,6 +86,8 @@
   })
 
   let totalDone = $derived(items.filter(i => i.hecho).length)
+  let totalItems = $derived(items.length)
+  let sinTareasCount = $derived(items.filter(i => i._origen === 'sin_tareas').length)
 </script>
 
 <div class="dash-minimal" class:panel-mode={panel} style={panel ? 'max-width:none;margin:0' : ''}>
@@ -73,7 +104,12 @@
     <label style="font-size:0.55rem;display:flex;align-items:center;gap:2px;margin-left:4px">
       <input type="checkbox" bind:checked={showDone} /> Hechas
     </label>
-    <span class="text-xs text-muted" style="margin-left:8px">{totalDone}/{items.length} ítems</span>
+    <span class="text-xs text-muted" style="margin-left:8px">
+      {totalDone}/{totalItems} ítems
+      {#if sinTareasCount > 0}
+        <span class="text-xs text-muted">(+{sinTareasCount} sin tareas)</span>
+      {/if}
+    </span>
   </div>
 
   {#each Object.entries(grouped) as [wb, tareas]}
@@ -86,37 +122,46 @@
         {#each tareas as t}
           {@const expId = t.contenidoExpansion || t.expansion}
           <div class="task-item" class:dones={t.hecho} style="padding:4px 6px">
-            <input
-              type="checkbox" class="task-check"
-              checked={t.hecho}
-              onchange={() => dataStore.toggleTarea(t.personaje, t.id)}
-              style="width:14px;height:14px"
-            />
-            <div class="task-info">
-              <div class="task-name" style="font-size:0.75rem">
-                <span class="text-xs" style="color:var(--gold);font-weight:600">{t.personaje}</span> {t.nombre}
+            {#if t._origen === 'sin_tareas'}
+              <div class="task-info" style="flex:1">
+                <div class="task-name" style="font-size:0.75rem">
+                  <span class="text-xs" style="color:var(--gold);font-weight:600">{t.personaje}</span>
+                  <span class="text-xs text-muted">— Sin tareas</span>
+                </div>
               </div>
-              <div class="task-meta" style="font-size:0.6rem">
-                {#if expId}
-                  <span class="tag-badge">{expNombre(expId)}</span>
-                {/if}
-                <span class="task-priority priority-{t.prioridad}">P{t.prioridad}</span>
-                <span>{t.tiempo_min}min</span>
-                <span>{t.cooldown}</span>
-                {#if t.recompensa}
-                  <span class="task-reward">{t.recompensa}</span>
-                {/if}
-                {#if t._origen === 'mision'}
-                  <span class="text-xs" style="color:var(--blue-dim)">misión</span>
-                {/if}
+            {:else}
+              <input
+                type="checkbox" class="task-check"
+                checked={t.hecho}
+                onchange={() => dataStore.toggleTarea(t.personaje, t.id)}
+                style="width:14px;height:14px"
+              />
+              <div class="task-info">
+                <div class="task-name" style="font-size:0.75rem">
+                  <span class="text-xs" style="color:var(--gold);font-weight:600">{t.personaje}</span> {t.nombre}
+                </div>
+                <div class="task-meta" style="font-size:0.6rem">
+                  {#if expId}
+                    <span class="tag-badge">{expNombre(expId)}</span>
+                  {/if}
+                  <span class="task-priority priority-{t.prioridad}">P{t.prioridad}</span>
+                  <span>{t.tiempo_min}min</span>
+                  <span>{t.cooldown}</span>
+                  {#if t.recompensa}
+                    <span class="task-reward">{t.recompensa}</span>
+                  {/if}
+                  {#if t._origen === 'mision'}
+                    <span class="text-xs" style="color:var(--blue-dim)">misión</span>
+                  {/if}
+                </div>
               </div>
-            </div>
-            <div style="display:flex;gap:2px;align-items:center;flex-shrink:0">
-              <button onclick={() => { if (openTaskEdit) openTaskEdit(t.personaje, t.id) }} title="Editar"
-                style="background:none;border:none;cursor:pointer;font-size:0.65rem;padding:0 2px">✏️</button>
-              <button onclick={() => { if (confirm('¿Eliminar tarea?')) dataStore.deleteTarea(t.personaje, t.id) }} title="Eliminar"
-                style="background:none;border:none;cursor:pointer;font-size:0.65rem;padding:0 2px">🗑️</button>
-            </div>
+              <div style="display:flex;gap:2px;align-items:center;flex-shrink:0">
+                <button onclick={() => { if (openTaskEdit) openTaskEdit(t.personaje, t.id) }} title="Editar"
+                  style="background:none;border:none;cursor:pointer;font-size:0.65rem;padding:0 2px">✏️</button>
+                <button onclick={() => { if (confirm('¿Eliminar tarea?')) dataStore.deleteTarea(t.personaje, t.id) }} title="Eliminar"
+                  style="background:none;border:none;cursor:pointer;font-size:0.65rem;padding:0 2px">🗑️</button>
+              </div>
+            {/if}
           </div>
         {/each}
       </div>

@@ -1,28 +1,34 @@
 <script lang="ts">
   import { searchSpells, getSpellInfo } from '../../keybinds/spellService'
+  import { searchItems, getItemInfo } from '../../opie/itemService'
   import type { SpellInfo } from '../../keybinds/types'
 
   let {
     selectedId,
+    mode = 'spell',
     onSelect,
     onClose,
   }: {
     selectedId?: number
+    mode?: 'spell' | 'item'
     onSelect: (id: number, info: SpellInfo) => void
     onClose: () => void
   } = $props()
 
+  let search = $derived(mode === 'item' ? searchItems : searchSpells)
+  let resolve = $derived(mode === 'item' ? getItemInfo : getSpellInfo)
+
   let query = $state('')
   let results = $state<SpellInfo[]>([])
 
-  let currentInfo = $derived(selectedId ? getSpellInfo(selectedId) : null)
+  let currentInfo = $derived(selectedId ? resolve(selectedId) : null)
 
   $effect(() => {
-    results = searchSpells(query, 30)
+    results = search(query, 30)
   })
 
   function pick(id: number) {
-    onSelect(id, getSpellInfo(id))
+    onSelect(id, resolve(id))
     onClose()
   }
 </script>
@@ -36,14 +42,14 @@
 >
   <div class="modal-content spell-picker" onclick={(e) => e.stopPropagation()} role="presentation">
     <div class="modal-header">
-      <h3>Elegir hechizo</h3>
+      <h3>{mode === 'item' ? 'Elegir objeto/juguete' : 'Elegir hechizo'}</h3>
       <button class="modal-close" onclick={onClose}>✕</button>
     </div>
     <div class="modal-body">
       <input
         type="text"
         class="sp-search"
-        placeholder="Buscar hechizo por nombre..."
+        placeholder={mode === 'item' ? 'Buscar objeto/juguete por nombre...' : 'Buscar hechizo por nombre...'}
         bind:value={query}
       />
       {#if currentInfo}

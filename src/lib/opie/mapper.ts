@@ -8,13 +8,13 @@
  * lose ring names/hotkeys/etc. on reload.
  */
 import { defaultSign, serializeRing, unserializeRing } from './codec'
-import type { OpieRing, OpieSlice, SliceActionType } from './types'
+import type { OpieRing, OpieSlice, RingRotationMode, SliceActionType } from './types'
 
 type RawTable = Record<string, unknown> & unknown[]
 
 const RING_KNOWN_KEYS = [
   'name', 'hotkey', 'limit', 'internal', 'embed', 'onOpen',
-  'noOpportunisticCA', 'noPersistentCA', 'skipSpecs',
+  'noOpportunisticCA', 'noPersistentCA', 'skipSpecs', 'offset',
 ]
 
 function toOpieSlice(raw: unknown): OpieSlice {
@@ -48,10 +48,11 @@ function toOpieSlice(raw: unknown): OpieSlice {
     if (/^\d+$/.test(key)) continue // positions 0/1/2 already handled above
     if (key === 'id' && arg === arr.id) continue // folded into arg above, don't duplicate
     if (key === 'icon') slice.icon = arr.icon as string | number
+    else if (key === 'label') slice.label = arr.label as string
     else if (key === 'show') slice.show = arr.show as string
     else if (key === 'c') slice.color = arr.c as string
     else if (key === 'embed') slice.embed = arr.embed as boolean
-    else if (key === 'rotationMode') slice.rotationMode = arr.rotationMode as string
+    else if (key === 'rotationMode') slice.rotationMode = arr.rotationMode as RingRotationMode
     else if (key === 'fastClick') slice.fastClick = arr.fastClick as boolean
     else extra[key] = arr[key]
   }
@@ -65,6 +66,7 @@ function toRawSlice(slice: OpieSlice): unknown {
   if (slice.arg !== undefined) arr[1] = slice.arg
   if (slice.flags !== undefined) arr[2] = slice.flags
   if (slice.icon !== undefined) arr.icon = slice.icon
+  if (slice.label !== undefined) arr.label = slice.label
   if (slice.show !== undefined) arr.show = slice.show
   if (slice.color !== undefined) arr.c = slice.color
   if (slice.embed !== undefined) arr.embed = slice.embed
@@ -92,6 +94,7 @@ function toOpieRing(raw: unknown, id: string): OpieRing {
   if (arr.noOpportunisticCA !== undefined) ring.noOpportunisticCA = arr.noOpportunisticCA as boolean
   if (arr.noPersistentCA !== undefined) ring.noPersistentCA = arr.noPersistentCA as boolean
   if (arr.skipSpecs !== undefined) ring.skipSpecs = arr.skipSpecs as string[]
+  if (arr.offset !== undefined) ring.offset = arr.offset as number
 
   const extra: Record<string, unknown> = {}
   for (const key of Object.keys(arr)) {
@@ -114,6 +117,7 @@ function toRawRing(ring: OpieRing): unknown {
   if (ring.noOpportunisticCA !== undefined) arr.noOpportunisticCA = ring.noOpportunisticCA
   if (ring.noPersistentCA !== undefined) arr.noPersistentCA = ring.noPersistentCA
   if (ring.skipSpecs !== undefined) arr.skipSpecs = ring.skipSpecs
+  if (ring.offset !== undefined) arr.offset = ring.offset
   if (ring.extra) Object.assign(arr, ring.extra)
   return arr
 }

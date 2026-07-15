@@ -154,3 +154,86 @@ describe('OPie mapper', () => {
     expect(parts[1].startsWith('oetohH7')).toBe(true)
   })
 })
+
+describe('slice type round-tripping', () => {
+  function roundTrip(ring: OpieRing) {
+    const encoded = encodeRing(ring)
+    expect('value' in encoded).toBe(true)
+    if (!('value' in encoded)) throw new Error('encode failed')
+    let idCounter = 0
+    const decoded = decodeRingString(encoded.value, () => `ring-${idCounter++}`)
+    expect('rings' in decoded).toBe(true)
+    if (!('rings' in decoded)) throw new Error('decode failed')
+    return decoded.rings[0]
+  }
+
+  const cases: { type: OpieRing['slices'][number]['type']; arg: string | number; flags?: number }[] = [
+    { type: 'item', arg: 12345, flags: 5 },
+    { type: 'macro', arg: 'MyMacroName' },
+    { type: 'toy', arg: 98765 },
+    { type: 'mount', arg: 55554 },
+    { type: 'extrabutton', arg: 1 },
+    { type: 'opie.databroker.launcher', arg: 'SomeAddon', flags: 8 },
+    { type: 'quest', arg: 12345 },
+    { type: 'specset', arg: 1 },
+    { type: 'raidmark', arg: 3 },
+    { type: 'worldmark', arg: 0 },
+    { type: 'peq', arg: 'trinket1' },
+    { type: 'uipanel', arg: 'spellbook' },
+    { type: 'housing', arg: 'match' },
+  ]
+
+  for (const c of cases) {
+    it(`round-trips a "${c.type}" slice`, () => {
+      const ring: OpieRing = {
+        id: 'r1',
+        name: `Test ${c.type}`,
+        slices: [{ type: c.type, arg: c.arg, flags: c.flags }],
+      }
+      const decoded = roundTrip(ring)
+      expect(decoded.slices).toHaveLength(1)
+      expect(decoded.slices[0].type).toBe(c.type)
+      expect(decoded.slices[0].arg).toBe(c.arg)
+      if (c.flags !== undefined) expect(decoded.slices[0].flags).toBe(c.flags)
+    })
+  }
+
+  it('round-trips label/show/color/fastClick/rotationMode together on a ring-type slice', () => {
+    const ring: OpieRing = {
+      id: 'r1',
+      name: 'Test combo',
+      slices: [
+        {
+          type: 'ring',
+          arg: 'Otro Anillo',
+          label: 'Custom',
+          show: '[combat] hide',
+          color: 'FF0000',
+          fastClick: true,
+          rotationMode: 'jump',
+        },
+      ],
+    }
+    const decoded = roundTrip(ring)
+    expect(decoded.slices[0]).toMatchObject({
+      type: 'ring',
+      arg: 'Otro Anillo',
+      label: 'Custom',
+      show: '[combat] hide',
+      color: 'FF0000',
+      fastClick: true,
+      rotationMode: 'jump',
+    })
+  })
+
+  it('round-trips ring-level offset (rotation)', () => {
+    const ring: OpieRing = {
+      id: 'r1',
+      name: 'Test offset',
+      offset: 195,
+      slices: [{ type: 'spell', arg: 133 }],
+    }
+    const decoded = roundTrip(ring)
+    expect(decoded.offset).toBe(195)
+  })
+})

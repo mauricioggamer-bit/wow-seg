@@ -5,7 +5,7 @@
   import { getSpellInfo } from '../../keybinds/spellService'
   import { getItemInfo } from '../../opie/itemService'
   import type { SpellInfo } from '../../keybinds/types'
-  import type { OpieSlice, SliceActionType } from '../../opie/types'
+  import type { OpieSlice, SliceActionType, RingRotationMode } from '../../opie/types'
   import SpellPickerModal from './SpellPickerModal.svelte'
 
   let { ringId, onNavigateToRing }: { ringId: string; onNavigateToRing?: (id: string) => void } = $props()
@@ -28,10 +28,16 @@
     { value: 'specset', label: 'Especialización' },
     { value: 'raidmark', label: 'Marcador de objetivo' },
     { value: 'worldmark', label: 'Marcador de mundo' },
+    { value: 'peq', label: 'Slot de equipo' },
+    { value: 'uipanel', label: 'Panel de interfaz' },
+    { value: 'housing', label: 'Vivienda' },
   ]
 
-  const SPELL_LIKE = new Set(['spell', 'mount', 'toy'])
+  const SPELL_LIKE = new Set(['spell', 'mount', 'toy', 'item'])
+  const ITEM_NAMESPACE = new Set(['toy', 'item'])
   const TEXT_LIKE = new Set(['macro', 'imptext'])
+  const FIXED_NUMERIC_ENUM = new Set(['raidmark', 'worldmark'])
+  const FIXED_TOKEN_ENUM = new Set(['uipanel', 'peq', 'housing'])
   // toys share WoW's item namespace (not the spell namespace), so their
   // name/icon come from itemService, not spellService — see itemService.ts.
   const PREVIEW_RESOLVER: Record<string, (id: number) => SpellInfo> = {
@@ -41,7 +47,71 @@
     item: getItemInfo,
   }
 
+  const ROTATION_OPTIONS: { value: string; label: string }[] = [
+    { value: '', label: 'No personalizado' },
+    { value: 'embed', label: 'Embeber slices de este anillo' },
+    { value: 'cycle', label: 'Ciclar' },
+    { value: 'shuffle', label: 'Aleatorio al usar' },
+    { value: 'random', label: 'Aleatorio al mostrar' },
+    { value: 'reset', label: 'Reiniciar al mostrar' },
+    { value: 'jump', label: 'Slice de salto' },
+  ]
+
+  const FLAG_DEFS: Record<string, { bit: number; label: string }[]> = {
+    item: [
+      { bit: 1, label: 'Mostrar aunque no esté disponible' },
+      { bit: 2, label: 'Usar también objetos con el mismo nombre' },
+      { bit: 4, label: 'Solo mostrar si está equipado' },
+    ],
+    macro: [{ bit: 1, label: 'Mostrar aunque no esté disponible' }],
+    extrabutton: [{ bit: 1, label: 'Mostrar aunque no esté disponible' }],
+    toy: [{ bit: 1, label: 'Mostrar aunque no esté disponible' }],
+    'opie.databroker.launcher': [{ bit: 8, label: 'Simular clic derecho' }],
+  }
+
+  const RAIDMARK_OPTIONS = [
+    { value: '0', label: 'Ninguno' },
+    { value: '1', label: '1 — Estrella' },
+    { value: '2', label: '2 — Círculo' },
+    { value: '3', label: '3 — Diamante' },
+    { value: '4', label: '4 — Triángulo' },
+    { value: '5', label: '5 — Luna' },
+    { value: '6', label: '6 — Cuadrado' },
+    { value: '7', label: '7 — Cruz' },
+    { value: '8', label: '8 — Calavera' },
+  ]
+  const WORLDMARK_OPTIONS = [
+    { value: '0', label: 'Ninguno (borrar todos)' },
+    { value: '1', label: '1' }, { value: '2', label: '2' }, { value: '3', label: '3' },
+    { value: '4', label: '4' }, { value: '5', label: '5' }, { value: '6', label: '6' },
+    { value: '7', label: '7' }, { value: '8', label: '8' },
+  ]
+  const UIPANEL_OPTIONS = [
+    'character', 'reputation', 'currency', 'spellbook', 'talents', 'profs', 'achievements',
+    'quests', 'groupfinder', 'collections', 'adventureguide', 'guild', 'map', 'vault', 'social',
+    'calendar', 'macro', 'options', 'gamemenu',
+  ].map((v) => ({ value: v, label: v }))
+  const PEQ_OPTIONS = [
+    'head', 'neck', 'shoulders', 'back', 'chest', 'tabard', 'shirt', 'wrist', 'hands', 'waist',
+    'legs', 'feet', 'finger1', 'finger2', 'trinket1', 'trinket2',
+  ].map((v) => ({ value: v, label: v }))
+  const HOUSING_OPTIONS = [
+    { value: 'return', label: 'return' },
+    { value: 'match', label: 'match' },
+    { value: 'cross', label: 'cross' },
+    { value: 'elwynn', label: "elwynn (Founder's Point)" },
+    { value: 'durotar', label: 'durotar (Razorwind Shores)' },
+  ]
+  const FIXED_ENUM_OPTIONS: Record<string, { value: string; label: string }[]> = {
+    raidmark: RAIDMARK_OPTIONS,
+    worldmark: WORLDMARK_OPTIONS,
+    uipanel: UIPANEL_OPTIONS,
+    peq: PEQ_OPTIONS,
+    housing: HOUSING_OPTIONS,
+  }
+
   let pickerForSlice = $state<number | null>(null)
+  let expandedSlice = $state<number | null>(null)
   let showJson = $state(false)
   let jsonText = $state('')
   let jsonError = $state('')
@@ -50,6 +120,7 @@
   $effect(() => {
     ringId
     pickerForSlice = null
+    expandedSlice = null
     showJson = false
     jsonText = ''
     jsonError = ''
@@ -166,6 +237,40 @@
     if (typeof name !== 'string' || !name) return undefined
     return $opieRingsStore.find((r) => r.name === name)?.id
   }
+
+  function ringDisplayMode(slice: OpieSlice): string {
+    if (slice.embed) return 'embed'
+    return slice.rotationMode ?? ''
+  }
+
+  function onRingDisplayModeChange(i: number, value: string) {
+    if (value === 'embed') updateSlice(i, { embed: true, rotationMode: undefined })
+    else if (value === '') updateSlice(i, { embed: undefined, rotationMode: undefined })
+    else updateSlice(i, { embed: undefined, rotationMode: value as RingRotationMode })
+  }
+
+  function hasFlag(flags: number | undefined, bit: number): boolean {
+    return !!(flags && (flags & bit))
+  }
+
+  function toggleFlag(i: number, current: number | undefined, bit: number, checked: boolean) {
+    const base = current ?? 0
+    const next = checked ? base | bit : base & ~bit
+    updateSlice(i, { flags: next === 0 ? undefined : next })
+  }
+
+  function skipSpecsText(specs: string[] | undefined): string {
+    return (specs ?? []).join(',')
+  }
+
+  function onSkipSpecsChange(value: string) {
+    const arr = value.split(',').map((s) => s.trim()).filter(Boolean)
+    updateField({ skipSpecs: arr.length ? arr : undefined })
+  }
+
+  function colorHex(color: string | undefined): string {
+    return `#${(color ?? '000000').padStart(6, '0')}`
+  }
 </script>
 
 {#if ring}
@@ -217,6 +322,54 @@
             onchange={(e) => updateField({ embed: e.currentTarget.checked || undefined })}
           />
           <span>Embeber en otros anillos por defecto</span>
+        </label>
+        <label class="re-field re-checkbox">
+          <input
+            type="checkbox"
+            checked={ring.onOpen === 1}
+            onchange={(e) => updateField({ onOpen: e.currentTarget.checked ? 1 : undefined })}
+          />
+          <span>Usar el primer slice al abrir</span>
+        </label>
+        <label class="re-field re-checkbox">
+          <input
+            type="checkbox"
+            checked={!ring.noOpportunisticCA}
+            onchange={(e) => {
+              const checked = e.currentTarget.checked
+              updateField({ noOpportunisticCA: checked ? undefined : true, noPersistentCA: checked ? undefined : true })
+            }}
+          />
+          <span>Preseleccionar acción rápida</span>
+        </label>
+        <label class="re-field re-checkbox">
+          <input
+            type="checkbox"
+            checked={!!ring.internal}
+            onchange={(e) => updateField({ internal: e.currentTarget.checked || undefined })}
+          />
+          <span>Ocultar este anillo</span>
+        </label>
+        <label class="re-field">
+          <span>Especializaciones a saltar</span>
+          <input
+            type="text"
+            value={skipSpecsText(ring.skipSpecs)}
+            placeholder="p.ej. 1,3"
+            title="Índices de especialización separados por coma (1-4)"
+            onchange={(e) => onSkipSpecsChange(e.currentTarget.value)}
+          />
+        </label>
+        <label class="re-field">
+          <span>Rotación ({ring.offset ?? 0}°)</span>
+          <input
+            type="range"
+            min="0"
+            max="345"
+            step="15"
+            value={ring.offset ?? 0}
+            onchange={(e) => updateField({ offset: Number(e.currentTarget.value) || undefined })}
+          />
         </label>
       </div>
 
@@ -302,6 +455,15 @@
                       >Ir →</button>
                     {/if}
                   </div>
+                  <select
+                    class="re-rotation-select"
+                    value={ringDisplayMode(slice)}
+                    onchange={(e) => onRingDisplayModeChange(i, e.currentTarget.value)}
+                  >
+                    {#each ROTATION_OPTIONS as opt}
+                      <option value={opt.value}>{opt.label}</option>
+                    {/each}
+                  </select>
                 {:else if TEXT_LIKE.has(slice.type)}
                   <textarea
                     rows="2"
@@ -309,6 +471,25 @@
                     placeholder="texto del macro / comando"
                     onchange={(e) => updateSlice(i, { arg: e.currentTarget.value })}
                   ></textarea>
+                {:else if FIXED_NUMERIC_ENUM.has(slice.type)}
+                  <select
+                    value={String(slice.arg ?? 0)}
+                    onchange={(e) => updateSlice(i, { arg: Number(e.currentTarget.value) })}
+                  >
+                    {#each FIXED_ENUM_OPTIONS[slice.type] as opt}
+                      <option value={opt.value}>{opt.label}</option>
+                    {/each}
+                  </select>
+                {:else if FIXED_TOKEN_ENUM.has(slice.type)}
+                  <select
+                    value={slice.arg ?? ''}
+                    onchange={(e) => updateSlice(i, { arg: e.currentTarget.value })}
+                  >
+                    <option value="">(elegir)</option>
+                    {#each FIXED_ENUM_OPTIONS[slice.type] as opt}
+                      <option value={opt.value}>{opt.label}</option>
+                    {/each}
+                  </select>
                 {:else}
                   <input
                     type="text"
@@ -352,11 +533,84 @@
                 />
               </td>
               <td class="re-actions">
+                <button
+                  class="wow-btn wow-btn-sm"
+                  title="Más opciones"
+                  class:active={expandedSlice === i}
+                  onclick={() => (expandedSlice = expandedSlice === i ? null : i)}
+                >⚙</button>
                 <button class="wow-btn wow-btn-sm" title="Subir" onclick={() => moveSlice(i, -1)}>↑</button>
                 <button class="wow-btn wow-btn-sm" title="Bajar" onclick={() => moveSlice(i, 1)}>↓</button>
                 <button class="wow-btn wow-btn-sm wow-btn-danger" title="Eliminar" onclick={() => deleteSlice(i)}>✕</button>
               </td>
             </tr>
+            {#if expandedSlice === i}
+              <tr class="re-advanced-row">
+                <td></td>
+                <td colspan="5">
+                  <div class="re-advanced">
+                    <label class="re-field">
+                      <span>Etiqueta</span>
+                      <input
+                        type="text"
+                        value={slice.label ?? ''}
+                        placeholder="texto corto override"
+                        onchange={(e) => updateSlice(i, { label: e.currentTarget.value || undefined })}
+                      />
+                    </label>
+                    <label class="re-field">
+                      <span>Condición (show)</span>
+                      <input
+                        type="text"
+                        value={slice.show ?? ''}
+                        placeholder="[combat] hide; [mod] show"
+                        title="Condición cruda de visibilidad — se guarda y exporta tal cual, no se evalúa en vivo acá."
+                        onchange={(e) => updateSlice(i, { show: e.currentTarget.value || undefined })}
+                      />
+                    </label>
+                    <label class="re-field">
+                      <span>Color</span>
+                      <div class="re-color-row">
+                        <input
+                          type="color"
+                          value={colorHex(slice.color)}
+                          onchange={(e) => updateSlice(i, { color: e.currentTarget.value.replace('#', '').toUpperCase() })}
+                        />
+                        <input
+                          type="text"
+                          value={slice.color ?? ''}
+                          placeholder="RRGGBB"
+                          onchange={(e) => updateSlice(i, { color: e.currentTarget.value.replace('#', '').toUpperCase() || undefined })}
+                        />
+                      </div>
+                    </label>
+                    <label class="re-field re-checkbox">
+                      <input
+                        type="checkbox"
+                        checked={!!slice.fastClick}
+                        onchange={(e) => updateSlice(i, { fastClick: e.currentTarget.checked || undefined })}
+                      />
+                      <span>Permitir como acción rápida</span>
+                    </label>
+                    {#if FLAG_DEFS[slice.type]}
+                      <div class="re-flag-checks">
+                        <span class="re-flags-label">Flags</span>
+                        {#each FLAG_DEFS[slice.type] as f}
+                          <label class="re-field re-checkbox">
+                            <input
+                              type="checkbox"
+                              checked={hasFlag(slice.flags, f.bit)}
+                              onchange={(e) => toggleFlag(i, slice.flags, f.bit, e.currentTarget.checked)}
+                            />
+                            <span>{f.label}</span>
+                          </label>
+                        {/each}
+                      </div>
+                    {/if}
+                  </div>
+                </td>
+              </tr>
+            {/if}
           {:else}
             <tr><td colspan="6" class="re-empty">Sin slices. Agregá uno abajo.</td></tr>
           {/each}
@@ -396,6 +650,7 @@
   {#if pickerForSlice !== null}
     <SpellPickerModal
       selectedId={typeof ring.slices[pickerForSlice]?.arg === 'number' ? ring.slices[pickerForSlice].arg as number : undefined}
+      mode={ITEM_NAMESPACE.has(ring.slices[pickerForSlice]?.type ?? '') ? 'item' : 'spell'}
       onSelect={onSpellSelected}
       onClose={() => (pickerForSlice = null)}
     />
@@ -580,5 +835,48 @@
   .re-export-err {
     color: var(--horde, #c5365a);
     font-size: 0.6rem;
+  }
+  .re-rotation-select {
+    margin-top: 4px;
+  }
+  .re-actions button.active {
+    border-color: var(--gold);
+    color: var(--gold-light);
+  }
+  .re-advanced-row td {
+    border-bottom: 1px solid var(--border-subtle);
+    padding: 4px 6px 8px;
+    background: rgba(0, 0, 0, 0.15);
+  }
+  .re-advanced {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    align-items: flex-end;
+  }
+  .re-advanced .re-field {
+    min-width: 130px;
+  }
+  .re-color-row {
+    display: flex;
+    gap: 4px;
+    align-items: center;
+  }
+  .re-color-row input[type='color'] {
+    width: 28px;
+    height: 22px;
+    padding: 1px 2px;
+  }
+  .re-flag-checks {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    align-items: center;
+  }
+  .re-flags-label {
+    font-size: 0.55rem;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
   }
 </style>

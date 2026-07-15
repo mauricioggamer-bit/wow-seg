@@ -1,7 +1,7 @@
 <script lang="ts">
   import { dataStore, personajesStore } from '../stores/data'
   import { currentWarband } from '../stores/ui'
-  import { clsClass, PERS_CLASS_COLORS, CLASS_MAP } from '../constants'
+  import { PERS_CLASS_COLORS, CLASS_MAP } from '../constants'
   import type { AccountTask, AccountTaskStatus } from '../types'
 
   let { onRequestLuegoMotivo, onRequestPasaMotivo }: {
@@ -12,6 +12,7 @@
   let newTaskName = $state('')
   let editingId = $state<string | null>(null)
   let editName = $state('')
+  let transposed = $state(false)
 
   let activeWarband = $derived($currentWarband && $currentWarband !== '' ? $currentWarband : null)
 
@@ -23,8 +24,9 @@
     [...scoped].sort((a, b) => a.nombre.localeCompare(b.nombre))
   )
 
+  let allTasks = $derived($dataStore.accountTasks ?? [])
   let tasks = $derived(
-    [...(dataStore.getAccountTasks())].sort((a, b) => (a.orden ?? 0) - (b.orden ?? 0))
+    [...allTasks].sort((a, b) => (a.orden ?? 0) - (b.orden ?? 0))
   )
 
   function getEntry(task: AccountTask, charName: string): AccountTaskStatus {
@@ -108,49 +110,87 @@
         onkeydown={(e) => e.key === 'Enter' && addTask()} />
       <button class="wow-btn wow-btn-sm wow-btn-primary" onclick={addTask} disabled={!newTaskName.trim()}>+ Añadir</button>
     </div>
+    <button class="wow-btn wow-btn-sm at-toggle" onclick={() => transposed = !transposed}>
+      {transposed ? '↔ Normal' : '↕ Transponer'}
+    </button>
   </div>
 
   <div class="at-table-wrap">
-    <table class="at-table">
-      <thead>
-        <tr>
-          <th class="at-th at-th-task">Tarea</th>
+    {#if !transposed}
+      <!-- Normal: filas = tareas, columnas = personajes -->
+      <table class="at-table">
+        <thead>
+          <tr>
+            <th class="at-th at-th-task">Tarea</th>
+            {#each sorted as c}
+              {@const clsKey = CLASS_MAP[c.clase] || 'warrior'}
+              {@const color = PERS_CLASS_COLORS[clsKey] || '#c9a84c'}
+              <th class="at-th at-th-char" style="color:{color}">{c.nombre}</th>
+            {/each}
+          </tr>
+        </thead>
+        <tbody>
+          {#each tasks as task (task.id)}
+            <tr>
+              <td class="at-td at-td-task">
+                {#if editingId === task.id}
+                  <input type="text" class="at-edit-input" bind:value={editName}
+                    onkeydown={(e) => { if (e.key === 'Enter') saveEdit(task.id); if (e.key === 'Escape') editingId = null }}
+                    onblur={() => saveEdit(task.id)} />
+                {:else}
+                  <span class="at-task-name">{task.nombre}</span>
+                  <div class="at-task-actions">
+                    <button class="at-btn-icon" title="Renombrar" onclick={() => startEdit(task.id, task.nombre)}>✏️</button>
+                    <button class="at-btn-icon" title="Eliminar" onclick={() => deleteTask(task.id, task.nombre)}>🗑️</button>
+                  </div>
+                {/if}
+              </td>
+              {#each sorted as c}
+                {@const status = getEntry(task, c.nombre)}
+                {@const motivo = getMotivo(task, c.nombre)}
+                <td class="at-td at-td-cell"
+                  title="{c.nombre}: {STATUS_LABELS[status]}{motivo ? ` — ${motivo}` : ''}"
+                  onclick={() => cycleStatus(task.id, c.nombre, status)}>
+                  <span class="at-status {STATUS_CLASSES[status]}">{STATUS_ICONS[status]}</span>
+                </td>
+              {/each}
+            </tr>
+          {/each}
+        </tbody>
+      </table>
+    {:else}
+      <!-- Transpuesto: filas = personajes, columnas = tareas -->
+      <table class="at-table">
+        <thead>
+          <tr>
+            <th class="at-th at-th-task">Personaje</th>
+            {#each tasks as task (task.id)}
+              <th class="at-th at-th-char">{task.nombre}</th>
+            {/each}
+          </tr>
+        </thead>
+        <tbody>
           {#each sorted as c}
             {@const clsKey = CLASS_MAP[c.clase] || 'warrior'}
             {@const color = PERS_CLASS_COLORS[clsKey] || '#c9a84c'}
-            <th class="at-th at-th-char" style="color:{color}">{c.nombre}</th>
-          {/each}
-        </tr>
-      </thead>
-      <tbody>
-        {#each tasks as task (task.id)}
-          <tr>
-            <td class="at-td at-td-task">
-              {#if editingId === task.id}
-                <input type="text" class="at-edit-input" bind:value={editName}
-                  onkeydown={(e) => { if (e.key === 'Enter') saveEdit(task.id); if (e.key === 'Escape') editingId = null }}
-                  onblur={() => saveEdit(task.id)} />
-              {:else}
-                <span class="at-task-name">{task.nombre}</span>
-                <div class="at-task-actions">
-                  <button class="at-btn-icon" title="Renombrar" onclick={() => startEdit(task.id, task.nombre)}>✏️</button>
-                  <button class="at-btn-icon" title="Eliminar" onclick={() => deleteTask(task.id, task.nombre)}>🗑️</button>
-                </div>
-              {/if}
-            </td>
-            {#each sorted as c}
-              {@const status = getEntry(task, c.nombre)}
-              {@const motivo = getMotivo(task, c.nombre)}
-              <td class="at-td at-td-cell"
-                title="{c.nombre}: {STATUS_LABELS[status]}{motivo ? ` — ${motivo}` : ''}"
-                onclick={() => cycleStatus(task.id, c.nombre, status)}>
-                <span class="at-status {STATUS_CLASSES[status]}">{STATUS_ICONS[status]}</span>
+            <tr>
+              <td class="at-td at-td-task" style="color:{color}">
+                <span class="at-task-name">{c.nombre}</span>
               </td>
-            {/each}
-          </tr>
-        {/each}
-      </tbody>
-    </table>
+              {#each tasks as task (task.id)}
+                {@const status = getEntry(task, c.nombre)}
+                {@const motivo = getMotivo(task, c.nombre)}
+                <td class="at-td at-td-cell"
+                  title="{c.nombre}: {STATUS_LABELS[status]}{motivo ? ` — ${motivo}` : ''}"
+                  onclick={() => cycleStatus(task.id, c.nombre, status)}>
+                  <span class="at-status {STATUS_CLASSES[status]}">{STATUS_ICONS[status]}</span>
+                </td>
+              {/each}
+            </tr>
+          {/each}
+        </tbody>
+      </table>
+    {/if}
     {#if tasks.length === 0}
       <div class="at-empty">No hay tareas de cuenta. Añade una arriba.</div>
     {/if}
@@ -205,6 +245,10 @@
     border-color: var(--gold-dim);
   }
   .at-input::placeholder { color: var(--text-dim); }
+  .at-toggle {
+    flex-shrink: 0;
+    font-size: 0.5rem;
+  }
   .at-table-wrap {
     overflow: auto;
     flex: 1;
@@ -230,13 +274,16 @@
   }
   .at-th-task {
     text-align: left;
-    min-width: 180px;
+    min-width: 140px;
     left: 0;
     z-index: 2;
   }
   .at-th-char {
     text-align: center;
     min-width: 70px;
+    max-width: 120px;
+    overflow: hidden;
+    text-overflow: ellipsis;
   }
   .at-td {
     padding: 3px 6px;
@@ -251,6 +298,9 @@
     display: flex;
     align-items: center;
     gap: 4px;
+    font-weight: 600;
+    font-size: 0.5rem;
+    white-space: nowrap;
   }
   .at-td-cell {
     text-align: center;

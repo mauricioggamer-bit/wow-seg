@@ -392,6 +392,13 @@ addTarea(nombrePersonaje: string, tarea: { nombre: string; tipoContenido?: TipoC
         return { ...d }
       })
     },
+    updateWarbandDescripcion(nombre: string, descripcion: string | undefined) {
+      update(d => {
+        d.warbands = d.warbands.map(w => w.nombre === nombre ? { ...w, descripcion: descripcion || undefined } : w)
+        saveData(d)
+        return { ...d }
+      })
+    },
     deleteWarband(name: string) {
       update(d => {
         const exists = d.warbands.some(w => w.nombre === name)

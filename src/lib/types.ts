@@ -55,6 +55,7 @@ export interface Warband {
   personajes: string[]
   orden?: number
   objetivoNivel?: number
+  descripcion?: string
 }
 
 export interface Meta {

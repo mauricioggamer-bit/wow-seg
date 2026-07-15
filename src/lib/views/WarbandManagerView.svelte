@@ -14,7 +14,9 @@
   let showReorder = $state(false)
   let reorderList = $state<string[]>([])
   let showMotivos = $state(getSessionPref('showMotivosWb'))
+  let showDescripciones = $state(getSessionPref('showDescripcionesWb'))
   let editingMotivo = $state<Record<string, string>>({})
+  let editingWbDesc = $state<Record<string, string>>({})
 
   let allChars = $derived(
     [...$personajesStore].sort((a, b) => a.nombre.localeCompare(b.nombre))
@@ -127,6 +129,24 @@
     delete next[charName]
     editingMotivo = next
   }
+
+  function startEditWbDesc(wbName: string, current: string) {
+    editingWbDesc = { ...editingWbDesc, [wbName]: current }
+  }
+
+  function saveWbDesc(wbName: string) {
+    const draft = editingWbDesc[wbName]
+    dataStore.updateWarbandDescripcion(wbName, draft?.trim() || undefined)
+    const next = { ...editingWbDesc }
+    delete next[wbName]
+    editingWbDesc = next
+  }
+
+  function cancelEditWbDesc(wbName: string) {
+    const next = { ...editingWbDesc }
+    delete next[wbName]
+    editingWbDesc = next
+  }
 </script>
 
 <div class="wm-layout">
@@ -182,10 +202,16 @@
   </div>
 
   <div class="wm-main-col">
-    <label class="wm-toggle-motivos">
-      <input type="checkbox" bind:checked={showMotivos} onchange={() => setSessionPref('showMotivosWb', showMotivos)} />
-      <span>Ver motivos</span>
-    </label>
+    <div class="wm-toggles">
+      <label class="wm-toggle">
+        <input type="checkbox" bind:checked={showMotivos} onchange={() => setSessionPref('showMotivosWb', showMotivos)} />
+        <span>Ver motivos</span>
+      </label>
+      <label class="wm-toggle">
+        <input type="checkbox" bind:checked={showDescripciones} onchange={() => setSessionPref('showDescripcionesWb', showDescripciones)} />
+        <span>Ver descripciones</span>
+      </label>
+    </div>
     <div class="wm-wbs-col">
     <div class="wm-create-wb">
       <input
@@ -243,6 +269,22 @@
                 >🗑️</button>
               </div>
             </div>
+            {#if showDescripciones}
+              <div class="wm-wb-desc">
+                {#if editingWbDesc[wb.nombre] !== undefined}
+                  <textarea rows="2" bind:value={editingWbDesc[wb.nombre]}
+                    onkeydown={(e) => { if (e.key === 'Escape') cancelEditWbDesc(wb.nombre) }}
+                    autofocus
+                  ></textarea>
+                  <button class="wm-motivo-btn" onclick={() => saveWbDesc(wb.nombre)} title="Guardar">✓</button>
+                  <button class="wm-motivo-btn" onclick={() => cancelEditWbDesc(wb.nombre)} title="Cancelar">✗</button>
+                {:else}
+                  <span class="wm-desc-text" onclick={() => startEditWbDesc(wb.nombre, wb.descripcion ?? '')} title="Editar descripción">
+                    {wb.descripcion || '(sin descripción)'}
+                  </span>
+                {/if}
+              </div>
+            {/if}
             <div class="wm-wb-body">
               {#each getCharsInWb(wb.nombre) as c (c.nombre)}
                 <div
@@ -511,17 +553,58 @@
     flex-direction: column;
     gap: 6px;
   }
-  .wm-toggle-motivos {
+  .wm-toggles {
+    display: flex;
+    gap: 12px;
+  }
+  .wm-toggle {
     display: flex;
     align-items: center;
-    gap: 6px;
-    font-size: 0.6rem;
+    gap: 4px;
+    font-size: 0.55rem;
     color: var(--text-secondary);
     cursor: pointer;
     user-select: none;
   }
-  .wm-toggle-motivos input {
+  .wm-toggle input {
     accent-color: var(--gold, #d4af37);
+  }
+  .wm-wb-desc {
+    padding: 4px 10px;
+    border-bottom: 1px solid var(--border-subtle, #2a2a2a);
+    display: flex;
+    align-items: flex-start;
+    gap: 3px;
+    font-size: 0.5rem;
+  }
+  .wm-wb-desc textarea {
+    flex: 1;
+    font-size: 0.5rem;
+    background: var(--input-bg, #2a2a2a);
+    border: 1px solid var(--gold, #d4af37);
+    border-radius: var(--r-sm, 4px);
+    padding: 2px 4px;
+    color: var(--text-primary, #e0e0e0);
+    outline: none;
+    min-width: 0;
+    resize: none;
+    line-height: 1.3;
+    font-family: inherit;
+  }
+  .wm-desc-text {
+    flex: 1;
+    color: var(--text-muted, #888);
+    cursor: pointer;
+    padding: 1px 4px;
+    border-radius: var(--r-sm, 4px);
+    font-size: 0.5rem;
+    line-height: 1.3;
+    white-space: pre-wrap;
+    word-break: break-word;
+  }
+  .wm-desc-text:hover {
+    background: var(--bg-hover, #333);
+    color: var(--text-primary, #e0e0e0);
   }
   .wm-chip-motivo {
     display: flex;
@@ -544,12 +627,9 @@
     border-radius: var(--r-sm, 4px);
     flex: 1;
     font-size: 0.5rem;
-    display: -webkit-box;
-    -webkit-line-clamp: 2;
-    -webkit-box-orient: vertical;
-    line-clamp: 2;
-    overflow: hidden;
     line-height: 1.3;
+    white-space: pre-wrap;
+    word-break: break-word;
   }
   .wm-motivo-text:hover {
     background: var(--bg-hover, #333);

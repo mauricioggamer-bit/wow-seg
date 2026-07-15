@@ -6,6 +6,8 @@
   import { getItemInfo } from '../../opie/itemService'
   import type { SpellInfo } from '../../keybinds/types'
   import type { OpieSlice, SliceActionType, RingRotationMode } from '../../opie/types'
+  import { CLASS_SPECS } from '../../opie/specTable'
+  import { parseSkipSpecs, applySkipSpecs } from '../../opie/specConditional'
   import SpellPickerModal from './SpellPickerModal.svelte'
 
   let { ringId, onNavigateToRing }: { ringId: string; onNavigateToRing?: (id: string) => void } = $props()
@@ -259,13 +261,22 @@
     updateSlice(i, { flags: next === 0 ? undefined : next })
   }
 
-  function skipSpecsText(specs: string[] | undefined): string {
-    return (specs ?? []).join(',')
+  function ringSkipSpecIds(specs: string[] | undefined): number[] {
+    return (specs ?? []).map(Number).filter((n) => !isNaN(n))
   }
 
-  function onSkipSpecsChange(value: string) {
-    const arr = value.split(',').map((s) => s.trim()).filter(Boolean)
-    updateField({ skipSpecs: arr.length ? arr : undefined })
+  function selectedSpecIds(e: Event): number[] {
+    const select = e.currentTarget as HTMLSelectElement
+    return Array.from(select.selectedOptions).map((o) => Number(o.value))
+  }
+
+  function onRingSkipSpecsChange(e: Event) {
+    const ids = selectedSpecIds(e)
+    updateField({ skipSpecs: ids.length ? ids.map(String) : undefined })
+  }
+
+  function onSliceSkipSpecsChange(i: number, show: string | undefined, e: Event) {
+    updateSlice(i, { show: applySkipSpecs(show, selectedSpecIds(e)) })
   }
 
   function colorHex(color: string | undefined): string {
@@ -352,13 +363,15 @@
         </label>
         <label class="re-field">
           <span>Especializaciones a saltar</span>
-          <input
-            type="text"
-            value={skipSpecsText(ring.skipSpecs)}
-            placeholder="p.ej. 1,3"
-            title="Índices de especialización separados por coma (1-4)"
-            onchange={(e) => onSkipSpecsChange(e.currentTarget.value)}
-          />
+          <select multiple size="4" class="re-spec-select" onchange={onRingSkipSpecsChange}>
+            {#each CLASS_SPECS as c}
+              <optgroup label={c.className}>
+                {#each c.specs as s}
+                  <option value={s.id} selected={ringSkipSpecIds(ring.skipSpecs).includes(s.id)}>{s.name}</option>
+                {/each}
+              </optgroup>
+            {/each}
+          </select>
         </label>
         <label class="re-field">
           <span>Rotación ({ring.offset ?? 0}°)</span>
@@ -591,6 +604,23 @@
                         onchange={(e) => updateSlice(i, { fastClick: e.currentTarget.checked || undefined })}
                       />
                       <span>Permitir como acción rápida</span>
+                    </label>
+                    <label class="re-field">
+                      <span>Ocultar para estas specs</span>
+                      <select
+                        multiple
+                        size="4"
+                        class="re-spec-select"
+                        onchange={(e) => onSliceSkipSpecsChange(i, slice.show, e)}
+                      >
+                        {#each CLASS_SPECS as c}
+                          <optgroup label={c.className}>
+                            {#each c.specs as s}
+                              <option value={s.id} selected={parseSkipSpecs(slice.show).includes(s.id)}>{s.name}</option>
+                            {/each}
+                          </optgroup>
+                        {/each}
+                      </select>
                     </label>
                     {#if FLAG_DEFS[slice.type]}
                       <div class="re-flag-checks">
@@ -878,5 +908,9 @@
     color: var(--text-muted);
     text-transform: uppercase;
     letter-spacing: 0.05em;
+  }
+  .re-spec-select {
+    min-width: 160px;
+    font-size: 0.55rem !important;
   }
 </style>

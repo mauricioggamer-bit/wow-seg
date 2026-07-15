@@ -12,7 +12,12 @@
   let newTaskName = $state('')
   let editingId = $state<string | null>(null)
   let editName = $state('')
-  let transposed = $state(false)
+  let transposed = $state(dataStore.getUIPref('accountTasksTransposed', false))
+
+  function toggleTransposed() {
+    transposed = !transposed
+    dataStore.setUIPref('accountTasksTransposed', transposed)
+  }
 
   let activeWarband = $derived($currentWarband && $currentWarband !== '' ? $currentWarband : null)
 
@@ -110,7 +115,7 @@
         onkeydown={(e) => e.key === 'Enter' && addTask()} />
       <button class="wow-btn wow-btn-sm wow-btn-primary" onclick={addTask} disabled={!newTaskName.trim()}>+ Añadir</button>
     </div>
-    <button class="wow-btn wow-btn-sm at-toggle" onclick={() => transposed = !transposed}>
+    <button class="wow-btn wow-btn-sm at-toggle" onclick={toggleTransposed}>
       {transposed ? '↔ Normal' : '↕ Transponer'}
     </button>
   </div>
@@ -163,9 +168,9 @@
       <table class="at-table">
         <thead>
           <tr>
-            <th class="at-th at-th-task">Personaje</th>
+            <th class="at-th at-th-char-label">Personaje</th>
             {#each tasks as task (task.id)}
-              <th class="at-th at-th-char">{task.nombre}</th>
+              <th class="at-th at-th-task-col" title={task.nombre}>{task.nombre}</th>
             {/each}
           </tr>
         </thead>
@@ -174,8 +179,8 @@
             {@const clsKey = CLASS_MAP[c.clase] || 'warrior'}
             {@const color = PERS_CLASS_COLORS[clsKey] || '#c9a84c'}
             <tr>
-              <td class="at-td at-td-task" style="color:{color}">
-                <span class="at-task-name">{c.nombre}</span>
+              <td class="at-td at-td-char-label" style="color:{color}">
+                <span class="at-char-name">{c.nombre}</span>
               </td>
               {#each tasks as task (task.id)}
                 {@const status = getEntry(task, c.nombre)}
@@ -285,6 +290,25 @@
     overflow: hidden;
     text-overflow: ellipsis;
   }
+  .at-th-char-label {
+    text-align: left;
+    min-width: 80px;
+    max-width: 100px;
+    left: 0;
+    z-index: 2;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .at-th-task-col {
+    text-align: center;
+    min-width: 44px;
+    max-width: 72px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    font-size: 0.38rem;
+    padding: 3px 1px;
+    white-space: nowrap;
+  }
   .at-td {
     padding: 3px 6px;
     border-bottom: 1px solid var(--border-subtle);
@@ -301,6 +325,23 @@
     font-weight: 600;
     font-size: 0.5rem;
     white-space: nowrap;
+  }
+  .at-td-char-label {
+    position: sticky;
+    left: 0;
+    background: var(--bg-base);
+    z-index: 1;
+    font-weight: 600;
+    font-size: 0.45rem;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 100px;
+  }
+  .at-char-name {
+    display: block;
+    overflow: hidden;
+    text-overflow: ellipsis;
   }
   .at-td-cell {
     text-align: center;

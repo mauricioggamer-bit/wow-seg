@@ -3,6 +3,7 @@
   import { uiStore, currentWarband } from '../stores/ui'
   import { clsClass, CLASS_MAP, PERS_CLASS_ICONS, PERS_CLASS_COLORS } from '../constants'
   import VirtualList from '../components/VirtualList.svelte'
+  import { getSessionPref, setSessionPref } from '../stores/sessionPrefs'
 
   let { openTaskEdit, openTaskNew }: {
     openTaskEdit?: (charName: string, taskId: string) => void
@@ -18,6 +19,14 @@
     return () => clearTimeout(debounceTimer)
   })
 
+  let showNoTasks = $state(getSessionPref('tareas_sinTareas'))
+  $effect(() => { setSessionPref('tareas_sinTareas', showNoTasks) })
+
+  let showInactive = $state(getSessionPref('tareas_noActivos'))
+  $effect(() => { setSessionPref('tareas_noActivos', showInactive) })
+
+  let levelFilter = $state('')
+
   let activeWarband = $derived($currentWarband && $currentWarband !== '' ? $currentWarband : null)
 
   let scoped = $derived(
@@ -26,6 +35,15 @@
 
   let sorted = $derived(
     [...scoped]
+      .filter(c => {
+        if (!showInactive && !c.planeado_usar) return false
+        if (levelFilter) {
+          const lvl = parseInt(levelFilter, 10)
+          if (!isNaN(lvl) && c.nivel !== lvl) return false
+        }
+        if (!showNoTasks && c.tareas.length === 0) return false
+        return true
+      })
       .filter(c => !filterText || c.nombre.toLowerCase().includes(filterText.toLowerCase()) || (c.clase || '').toLowerCase().includes(filterText.toLowerCase()) || (c.raza || '').toLowerCase().includes(filterText.toLowerCase()))
       .sort((a, b) => a.nombre.localeCompare(b.nombre))
   )
@@ -42,6 +60,17 @@
   <div class="tareas-header">
     <span class="tareas-title">✅ {activeWarband ? activeWarband : 'Todas'} ({sorted.length})</span>
     <input class="tareas-search" type="text" placeholder="Filtrar personajes..." bind:value={filterInput} />
+    <div class="tareas-filters">
+      <label class="tf-label">
+        <input type="checkbox" bind:checked={showNoTasks} /> Sin tareas
+      </label>
+      <label class="tf-label">
+        <input type="checkbox" bind:checked={showInactive} /> No activos
+      </label>
+      <label class="tf-label">
+        Nv: <input type="number" min="1" max="80" bind:value={levelFilter} class="tf-level" placeholder="—" />
+      </label>
+    </div>
   </div>
   <VirtualList items={sorted} itemHeight={48}>
     {#snippet children(c, _i)}
@@ -85,9 +114,13 @@
 
 <style>
   .tareas-panel { display:flex; flex-direction:column; height:calc(100vh - 100px); margin-top:6px; border:1px solid var(--border-subtle); border-radius:var(--r-md); overflow:hidden; background:var(--bg-base); }
-  .tareas-header { display:flex; align-items:center; gap:8px; padding:6px 10px; border-bottom:1px solid var(--border-subtle); flex-shrink:0; }
+  .tareas-header { display:flex; align-items:center; gap:8px; padding:6px 10px; border-bottom:1px solid var(--border-subtle); flex-shrink:0; flex-wrap:wrap; }
   .tareas-title { font-size:0.6rem; color:var(--gold-light); font-weight:700; text-transform:uppercase; letter-spacing:1px; }
   .tareas-search { background:var(--input-bg); border:1px solid var(--border-subtle); border-radius:var(--r-sm); padding:3px 8px; color:var(--text-primary); font-size:0.5rem; font-family:var(--font-body); width:180px; }
+  .tareas-filters { display:flex; align-items:center; gap:6px; margin-left:auto; flex-wrap:wrap; }
+  .tf-label { display:flex; align-items:center; gap:3px; font-size:0.5rem; cursor:pointer; user-select:none; white-space:nowrap; }
+  .tf-label input[type="checkbox"] { width:12px; height:12px; }
+  .tf-level { width:36px; padding:1px 3px; font-size:0.5rem; border:1px solid var(--border-subtle); border-radius:var(--r-sm); background:var(--input-bg); color:var(--text-primary); }
   .tareas-search:focus { outline:none; border-color:var(--gold-dim); }
   .tareas-search::placeholder { color:var(--text-dim); }
   :global(.tareas-panel > .vl-container) { padding: 4px 8px; flex: 1; }

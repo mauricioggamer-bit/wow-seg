@@ -305,15 +305,15 @@
       {#if totalSlots > 0}
         <div class="prof-bar-row">
           <div class="prof-bar-labels">
-            <span class="prof-bar-label prof-bar-label-reco">🟢 Recolección {recoSlots} ({recoPct.toFixed(0)}%)</span>
-            <span class="prof-bar-label prof-bar-label-art">🔵 Artesanía {artSlots} ({artPct.toFixed(0)}%)</span>
+            <span class="prof-bar-label prof-bar-label-reco">Recolección {recoSlots} ({recoPct.toFixed(0)}%)</span>
+            <span class="prof-bar-label prof-bar-label-art">Artesanía {artSlots} ({artPct.toFixed(0)}%)</span>
           </div>
           <div class="prof-bar-track">
             <div class="prof-bar-fill prof-bar-fill-reco" style="width: {recoPct}%">
-              {#if recoPct > 10}<span class="prof-bar-text">🟢 {recoPct.toFixed(0)}%</span>{/if}
+              {#if recoPct > 10}<span class="prof-bar-text">{recoPct.toFixed(0)}%</span>{/if}
             </div>
             <div class="prof-bar-fill prof-bar-fill-art" style="width: {artPct}%">
-              {#if artPct > 10}<span class="prof-bar-text">🔵 {artPct.toFixed(0)}%</span>{/if}
+              {#if artPct > 10}<span class="prof-bar-text">{artPct.toFixed(0)}%</span>{/if}
             </div>
           </div>
         </div>
@@ -342,9 +342,39 @@
               {/each}
             </div>
           </div>
-        {:else}
+          {:else}
           <div class="prof-bar-row prof-bar-row-sub">
             <span class="text-xs text-muted">Sin profesiones de recolección</span>
+          </div>
+        {/if}
+        {#if artSlots > 0}
+          <div class="prof-bar-row prof-bar-row-sub">
+            <div class="prof-bar-labels">
+              {#each PROFESIONES.filter(p => !recoleccionIds.has(p.id)) as prof, i}
+                {@const count = allChars.reduce((s, c) => s + (c.profesiones ?? []).filter(sl => sl.id === prof.id).length, 0)}
+                {#if count > 0}
+                  <span class="prof-bar-label prof-bar-label-sub">
+                    <span class="prof-bar-dot" style="background: {BAR_COLORS[i % BAR_COLORS.length]}"></span>
+                    {prof.nombre} {count} ({(count / artSlots * 100).toFixed(0)}%)
+                  </span>
+                {/if}
+              {/each}
+            </div>
+            <div class="prof-bar-track">
+              {#each PROFESIONES.filter(p => !recoleccionIds.has(p.id)) as prof, i}
+                {@const count = allChars.reduce((s, c) => s + (c.profesiones ?? []).filter(sl => sl.id === prof.id).length, 0)}
+                {#if count > 0}
+                  {@const pct = count / artSlots * 100}
+                  <div class="prof-bar-fill" style="width: {pct.toFixed(1)}%; background: {BAR_COLORS[i % BAR_COLORS.length]}">
+                    {#if pct > 10}<span class="prof-bar-text">{prof.nombre} {pct.toFixed(0)}%</span>{/if}
+                  </div>
+                {/if}
+              {/each}
+            </div>
+          </div>
+        {:else}
+          <div class="prof-bar-row prof-bar-row-sub">
+            <span class="text-xs text-muted">Sin profesiones de artesanía</span>
           </div>
         {/if}
       {:else}

@@ -316,10 +316,13 @@
         {#if recoSlots > 0}
           <div class="prof-bar-row prof-bar-row-sub">
             <div class="prof-bar-labels">
-              {#each PROFESIONES.filter(p => recoleccionIds.has(p.id)) as prof}
+              {#each PROFESIONES.filter(p => recoleccionIds.has(p.id)) as prof, i}
                 {@const count = allChars.reduce((s, c) => s + (c.profesiones ?? []).filter(sl => sl.id === prof.id).length, 0)}
                 {#if count > 0}
-                  <span class="prof-bar-label prof-bar-label-sub">{prof.icon} {prof.nombre} {count} ({(count / recoSlots * 100).toFixed(0)}%)</span>
+                  <span class="prof-bar-label prof-bar-label-sub">
+                    <span class="prof-bar-dot" style="background: {BAR_COLORS[i % BAR_COLORS.length]}"></span>
+                    {prof.icon} {prof.nombre} {count} ({(count / recoSlots * 100).toFixed(0)}%)
+                  </span>
                 {/if}
               {/each}
             </div>
@@ -835,6 +838,17 @@
 
   .prof-bar-label {
     font-weight: 600;
+    display: flex;
+    align-items: center;
+    gap: 3px;
+  }
+
+  .prof-bar-dot {
+    display: inline-block;
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    flex-shrink: 0;
   }
 
   .prof-bar-label-reco { color: #4caf50; }

@@ -310,10 +310,10 @@
           </div>
           <div class="prof-bar-track">
             <div class="prof-bar-fill prof-bar-fill-reco" style="width: {recoPct}%">
-              {#if recoPct > 12}<span class="prof-bar-text">🟢 {recoPct.toFixed(0)}%</span>{/if}
+              {#if recoPct > 10}<span class="prof-bar-text">🟢 {recoPct.toFixed(0)}%</span>{/if}
             </div>
             <div class="prof-bar-fill prof-bar-fill-art" style="width: {artPct}%">
-              {#if artPct > 12}<span class="prof-bar-text">🔵 {artPct.toFixed(0)}%</span>{/if}
+              {#if artPct > 10}<span class="prof-bar-text">🔵 {artPct.toFixed(0)}%</span>{/if}
             </div>
           </div>
         </div>
@@ -325,7 +325,7 @@
                 {#if count > 0}
                   <span class="prof-bar-label prof-bar-label-sub">
                     <span class="prof-bar-dot" style="background: {BAR_COLORS[i % BAR_COLORS.length]}"></span>
-                    {prof.icon} {prof.nombre} {count} ({(count / recoSlots * 100).toFixed(0)}%)
+                    {prof.nombre} {count} ({(count / recoSlots * 100).toFixed(0)}%)
                   </span>
                 {/if}
               {/each}
@@ -336,7 +336,7 @@
                 {#if count > 0}
                   {@const pct = count / recoSlots * 100}
                   <div class="prof-bar-fill" style="width: {pct.toFixed(1)}%; background: {BAR_COLORS[i % BAR_COLORS.length]}">
-                    {#if pct > 12}<span class="prof-bar-text">{prof.icon} {pct.toFixed(0)}%</span>{/if}
+                    {#if pct > 10}<span class="prof-bar-text">{prof.nombre} {pct.toFixed(0)}%</span>{/if}
                   </div>
                 {/if}
               {/each}
@@ -864,8 +864,8 @@
 
   .prof-bar-track {
     display: flex;
-    height: 10px;
-    border-radius: 5px;
+    height: 22px;
+    border-radius: 11px;
     overflow: hidden;
     background: var(--input-bg, #2a2a2a);
     border: 1px solid var(--border-subtle, #3a3a3a);
@@ -881,14 +881,12 @@
   }
 
   .prof-bar-text {
-    font-size: 0.45rem;
+    font-size: 0.5rem;
     font-weight: 700;
     color: rgba(255,255,255,0.9);
     text-shadow: 0 1px 2px rgba(0,0,0,0.5);
     white-space: nowrap;
     overflow: hidden;
-    text-overflow: ellipsis;
-    line-height: 1;
   }
 
   .prof-bar-fill-reco { background: #4caf50; }

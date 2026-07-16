@@ -35,12 +35,13 @@
     $warbandsStore.filter(w => w.nombre !== 'nada').sort((a, b) => (a.orden ?? 0) - (b.orden ?? 0))
   )
 
-  let nadaChars = $derived.by(() => {
-    const nada = allChars.filter(c => c.warband === 'nada')
-    const filtered = nada.filter(c => showInactive || c.planeado_usar)
-    if (filtered.length > 0) return filtered
-    return nada
-  })
+  let visibleWbList = $derived(
+    wbList.filter(w => allChars.some(c => c.warband === w.nombre && (showInactive || c.planeado_usar)))
+  )
+
+  let nadaChars = $derived(
+    allChars.filter(c => c.warband === 'nada' && (showInactive || c.planeado_usar))
+  )
 
   function handleDragStart(e: DragEvent, charName: string) {
     if (e.dataTransfer) {
@@ -97,10 +98,7 @@
   }
 
   function getCharsInWb(wbName: string) {
-    const wbChars = allChars.filter(c => c.warband === wbName)
-    const filtered = wbChars.filter(c => showInactive || c.planeado_usar)
-    if (filtered.length > 0) return filtered
-    return wbChars
+    return allChars.filter(c => c.warband === wbName && (showInactive || c.planeado_usar))
   }
 
   function openReorder() {
@@ -254,7 +252,7 @@
       <div class="empty-state"><p>No hay warbands creados</p></div>
     {:else}
       <div class="wm-wbs">
-        {#each wbList as wb (wb.nombre)}
+        {#each visibleWbList as wb (wb.nombre)}
           <div
             class="wm-wb"
             class:drag-over={dragOverWb === wb.nombre}

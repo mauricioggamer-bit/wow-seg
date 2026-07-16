@@ -309,8 +309,12 @@
             <span class="prof-bar-label prof-bar-label-art">🔵 Artesanía {artSlots} ({artPct.toFixed(0)}%)</span>
           </div>
           <div class="prof-bar-track">
-            <div class="prof-bar-fill prof-bar-fill-reco" style="width: {recoPct}%"></div>
-            <div class="prof-bar-fill prof-bar-fill-art" style="width: {artPct}%"></div>
+            <div class="prof-bar-fill prof-bar-fill-reco" style="width: {recoPct}%">
+              {#if recoPct > 12}<span class="prof-bar-text">🟢 {recoPct.toFixed(0)}%</span>{/if}
+            </div>
+            <div class="prof-bar-fill prof-bar-fill-art" style="width: {artPct}%">
+              {#if artPct > 12}<span class="prof-bar-text">🔵 {artPct.toFixed(0)}%</span>{/if}
+            </div>
           </div>
         </div>
         {#if recoSlots > 0}
@@ -330,7 +334,10 @@
               {#each PROFESIONES.filter(p => recoleccionIds.has(p.id)) as prof, i}
                 {@const count = allChars.reduce((s, c) => s + (c.profesiones ?? []).filter(sl => sl.id === prof.id).length, 0)}
                 {#if count > 0}
-                  <div class="prof-bar-fill" style="width: {(count / recoSlots * 100).toFixed(1)}%; background: {BAR_COLORS[i % BAR_COLORS.length]}"></div>
+                  {@const pct = count / recoSlots * 100}
+                  <div class="prof-bar-fill" style="width: {pct.toFixed(1)}%; background: {BAR_COLORS[i % BAR_COLORS.length]}">
+                    {#if pct > 12}<span class="prof-bar-text">{prof.icon} {pct.toFixed(0)}%</span>{/if}
+                  </div>
                 {/if}
               {/each}
             </div>
@@ -866,7 +873,22 @@
 
   .prof-bar-fill {
     height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
     transition: width 0.2s ease;
+  }
+
+  .prof-bar-text {
+    font-size: 0.45rem;
+    font-weight: 700;
+    color: rgba(255,255,255,0.9);
+    text-shadow: 0 1px 2px rgba(0,0,0,0.5);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    line-height: 1;
   }
 
   .prof-bar-fill-reco { background: #4caf50; }

@@ -529,6 +529,21 @@ addTarea(nombrePersonaje: string, tarea: { nombre: string; tipoContenido?: TipoC
       })
     },
 
+    getProfesionTipo(profId: string): 'recoleccion' | 'artesania' {
+      const d = get({ subscribe })
+      if (d.profesionTipo?.[profId]) return d.profesionTipo[profId]
+      const DEFAULT_RECO = new Set(['mineria', 'herboristeria', 'desuello'])
+      return DEFAULT_RECO.has(profId) ? 'recoleccion' : 'artesania'
+    },
+
+    setProfesionTipo(profId: string, tipo: 'recoleccion' | 'artesania') {
+      update(d => {
+        d = { ...d, profesionTipo: { ...(d.profesionTipo ?? {}), [profId]: tipo } }
+        saveData(d)
+        return d
+      })
+    },
+
     getStrategicConfig() {
       return get({ subscribe }).strategicConfig ?? {}
     },

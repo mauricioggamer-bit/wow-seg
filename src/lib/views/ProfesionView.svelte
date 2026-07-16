@@ -32,7 +32,9 @@
   let editingMotivoProf = $state<string | null>(null)
   let editingMotivoValue = $state('')
 
-  const RECOLECCION_IDS = new Set(['mineria', 'herboristeria', 'desuello'])
+  let recoleccionIds = $derived(new Set(
+    PROFESIONES.filter(p => dataStore.getProfesionTipo(p.id) === 'recoleccion').map(p => p.id)
+  ))
 
   let activeWarband = $derived(
     $currentWarband && $currentWarband !== '' ? $currentWarband : null
@@ -69,13 +71,19 @@
     [...PROFESIONES].sort((a, b) => profOrden.indexOf(a.id) - profOrden.indexOf(b.id))
   )
 
+  let totalSlots = $derived(allChars.reduce((s, c) => s + (c.profesiones ?? []).filter(sl => sl.id).length, 0))
+  let recoSlots = $derived(allChars.reduce((s, c) => s + (c.profesiones ?? []).filter(sl => sl.id && recoleccionIds.has(sl.id)).length, 0))
+  let artSlots = $derived(totalSlots - recoSlots)
+  let recoPct = $derived(totalSlots > 0 ? (recoSlots / totalSlots * 100) : 0)
+  let artPct = $derived(totalSlots > 0 ? (artSlots / totalSlots * 100) : 0)
+
   let filteredProfesiones = $derived(
     profType === 'todas'
       ? sortedProfesiones
       : sortedProfesiones.filter(p =>
           profType === 'recoleccion'
-            ? RECOLECCION_IDS.has(p.id)
-            : !RECOLECCION_IDS.has(p.id)
+            ? recoleccionIds.has(p.id)
+            : !recoleccionIds.has(p.id)
         )
   )
 
@@ -291,6 +299,49 @@
       </div>
     </div>
 
+    <div class="prof-bars">
+      {#if totalSlots > 0}
+        <div class="prof-bar-row">
+          <div class="prof-bar-labels">
+            <span class="prof-bar-label prof-bar-label-reco">🟢 Recolección {recoSlots} ({recoPct.toFixed(0)}%)</span>
+            <span class="prof-bar-label prof-bar-label-art">🔵 Artesanía {artSlots} ({artPct.toFixed(0)}%)</span>
+          </div>
+          <div class="prof-bar-track">
+            <div class="prof-bar-fill prof-bar-fill-reco" style="width: {recoPct}%"></div>
+            <div class="prof-bar-fill prof-bar-fill-art" style="width: {artPct}%"></div>
+          </div>
+        </div>
+        {#if recoSlots > 0}
+          <div class="prof-bar-row prof-bar-row-sub">
+            <div class="prof-bar-labels">
+              {#each PROFESIONES.filter(p => recoleccionIds.has(p.id)) as prof}
+                {@const count = allChars.reduce((s, c) => s + (c.profesiones ?? []).filter(sl => sl.id === prof.id).length, 0)}
+                {#if count > 0}
+                  <span class="prof-bar-label prof-bar-label-sub">{prof.icon} {prof.nombre} {count} ({(count / recoSlots * 100).toFixed(0)}%)</span>
+                {/if}
+              {/each}
+            </div>
+            <div class="prof-bar-track">
+              {#each PROFESIONES.filter(p => recoleccionIds.has(p.id)) as prof}
+                {@const count = allChars.reduce((s, c) => s + (c.profesiones ?? []).filter(sl => sl.id === prof.id).length, 0)}
+                {#if count > 0}
+                  <div class="prof-bar-fill prof-bar-sub-{prof.id}" style="width: {(count / recoSlots * 100).toFixed(1)}%"></div>
+                {/if}
+              {/each}
+            </div>
+          </div>
+        {:else}
+          <div class="prof-bar-row prof-bar-row-sub">
+            <span class="text-xs text-muted">Sin profesiones de recolección</span>
+          </div>
+        {/if}
+      {:else}
+        <div class="prof-bar-row">
+          <span class="text-xs text-muted">Sin profesiones asignadas</span>
+        </div>
+      {/if}
+    </div>
+
     <div class="prof-filters">
       <div class="prof-filter-group">
         <span class="filter-label">Tipo:</span>
@@ -413,12 +464,22 @@
   </div>
 </div>
 
-<Dialog show={showReorder} title="Orden de profesiones" onclose={() => showReorder = false}>
+<Dialog show={showReorder} title="Orden y tipo de profesiones" onclose={() => showReorder = false}>
   <div class="reorder-list">
     {#each reorderList as id, i}
       {@const info = PROFESIONES.find(p => p.id === id)}
+      {@const tipo = dataStore.getProfesionTipo(id)}
       <div class="reorder-item">
         <span class="reorder-item-info">{profesionIcon(id)} {info?.nombre ?? id}</span>
+        <select
+          class="prof-tipo-select"
+          value={tipo}
+          onchange={(e) => dataStore.setProfesionTipo(id, (e.target as HTMLSelectElement).value as 'recoleccion' | 'artesania')}
+          onclick={(e) => e.stopPropagation()}
+        >
+          <option value="recoleccion">Recolección</option>
+          <option value="artesania">Artesanía</option>
+        </select>
         <div class="reorder-item-arrows">
           <button class="wow-btn wow-btn-icon" disabled={i === 0} onclick={() => moveReorderItem(i, -1)}>↑</button>
           <button class="wow-btn wow-btn-icon" disabled={i === reorderList.length - 1} onclick={() => moveReorderItem(i, 1)}>↓</button>
@@ -729,6 +790,74 @@
     justify-content: flex-end;
     margin-top: 10px;
   }
+
+  .prof-tipo-select {
+    font-size: 0.55rem;
+    padding: 1px 4px;
+    border: 1px solid var(--border-subtle, #444);
+    border-radius: 3px;
+    background: var(--input-bg, #2a2a2a);
+    color: var(--text-primary, #e0e0e0);
+    cursor: pointer;
+    flex-shrink: 0;
+  }
+
+  .prof-bars {
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+    padding: 6px 8px;
+    background: var(--bg-elevated, #1e1e1e);
+    border: 1px solid var(--border, #333);
+    border-radius: var(--r-md, 6px);
+  }
+
+  .prof-bar-row {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+  }
+
+  .prof-bar-row-sub {
+    margin-top: 2px;
+    padding-top: 3px;
+    border-top: 1px solid var(--border-subtle, #2a2a2a);
+  }
+
+  .prof-bar-labels {
+    display: flex;
+    gap: 8px;
+    font-size: 0.5rem;
+    flex-wrap: wrap;
+  }
+
+  .prof-bar-label {
+    font-weight: 600;
+  }
+
+  .prof-bar-label-reco { color: #4caf50; }
+  .prof-bar-label-art { color: #42a5f5; }
+  .prof-bar-label-sub { color: var(--text-muted, #888); }
+
+  .prof-bar-track {
+    display: flex;
+    height: 10px;
+    border-radius: 5px;
+    overflow: hidden;
+    background: var(--input-bg, #2a2a2a);
+    border: 1px solid var(--border-subtle, #3a3a3a);
+  }
+
+  .prof-bar-fill {
+    height: 100%;
+    transition: width 0.2s ease;
+  }
+
+  .prof-bar-fill-reco { background: #4caf50; }
+  .prof-bar-fill-art { background: #42a5f5; }
+  .prof-bar-sub-mineria { background: #8d6e63; }
+  .prof-bar-sub-herboristeria { background: #66bb6a; }
+  .prof-bar-sub-desuello { background: #ffa726; }
   .prof-motivo-text {
     font-size: 0.5rem;
     color: var(--text-muted, #888);

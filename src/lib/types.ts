@@ -94,6 +94,7 @@ export interface WowData {
   keybinds?: Record<string, string>
   uiPrefs?: Record<string, boolean>
   profesionOrden?: string[]
+  profesionTipo?: Record<string, 'recoleccion' | 'artesania'>
   strategicConfig?: {
     indexes?: StrategicIndex[]
     categories?: StrategicCategory[]

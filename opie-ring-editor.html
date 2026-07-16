@@ -1,0 +1,1430 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>OPie Ring Editor</title>
+<style>
+  :root{
+    --bg:#15130f;
+    --bg2:#1c1a14;
+    --panel:#221f18;
+    --panel2:#2a2619;
+    --line:#3a3424;
+    --gold:#c9a24b;
+    --gold-bright:#e8c469;
+    --text:#e9e3d0;
+    --text-dim:#a89f87;
+    --danger:#b6543f;
+    --ok:#6f9b5c;
+    --mono: 'JetBrains Mono','Consolas',monospace;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0;
+    background:
+      radial-gradient(ellipse at top left, #241f14 0%, transparent 60%),
+      var(--bg);
+    color:var(--text);
+    font-family:Georgia, 'Iowan Old Style', serif;
+    min-height:100vh;
+  }
+  header{
+    padding:28px 32px 18px;
+    border-bottom:1px solid var(--line);
+    background:linear-gradient(180deg, var(--bg2), transparent);
+  }
+  header h1{
+    margin:0;
+    font-size:26px;
+    letter-spacing:.5px;
+    color:var(--gold-bright);
+    font-weight:600;
+  }
+  header h1 .ring{
+    display:inline-block;
+    width:11px;height:11px;
+    border:2px solid var(--gold);
+    border-radius:50%;
+    margin-right:10px;
+    vertical-align:2px;
+  }
+  header p{
+    margin:6px 0 0;
+    color:var(--text-dim);
+    font-size:13.5px;
+    max-width:760px;
+    line-height:1.5;
+  }
+  main{
+    max-width:1180px;
+    margin:0 auto;
+    padding:28px 32px 80px;
+  }
+  .card{
+    background:var(--panel);
+    border:1px solid var(--line);
+    border-radius:6px;
+    padding:20px;
+    margin-bottom:22px;
+  }
+  .card h2{
+    margin:0 0 14px;
+    font-size:15px;
+    text-transform:uppercase;
+    letter-spacing:1.4px;
+    color:var(--gold);
+    font-family: system-ui, sans-serif;
+    font-weight:600;
+  }
+  textarea{
+    width:100%;
+    background:var(--bg2);
+    border:1px solid var(--line);
+    color:var(--text);
+    font-family:var(--mono);
+    font-size:12.5px;
+    line-height:1.5;
+    padding:12px;
+    border-radius:4px;
+    resize:vertical;
+  }
+  #importBox{height:120px;}
+  .row{display:flex; gap:10px; align-items:center; flex-wrap:wrap;}
+  button{
+    font-family: system-ui, sans-serif;
+    background:var(--panel2);
+    border:1px solid var(--line);
+    color:var(--text);
+    padding:9px 16px;
+    border-radius:4px;
+    cursor:pointer;
+    font-size:13px;
+    font-weight:500;
+    letter-spacing:.2px;
+    transition:border-color .15s, color .15s;
+  }
+  button:hover{border-color:var(--gold); color:var(--gold-bright);}
+  button.primary{
+    background:linear-gradient(180deg,#3a3220,#2a2414);
+    border-color:var(--gold);
+    color:var(--gold-bright);
+  }
+  button.primary:hover{ background:linear-gradient(180deg,#453b26,#332c19); }
+  button.danger{color:#e2a396;}
+  button.danger:hover{border-color:var(--danger); color:#f2b6a9;}
+  button.small{padding:5px 10px; font-size:12px;}
+  #status{
+    font-family: system-ui, sans-serif;
+    font-size:12.5px;
+    margin-top:10px;
+    color:var(--text-dim);
+    min-height:18px;
+  }
+  #status.err{color:#e2a396;}
+  #status.ok{color:var(--ok);}
+
+  .ringCard{
+    background:var(--panel2);
+    border:1px solid var(--line);
+    border-radius:6px;
+    margin-bottom:16px;
+    overflow:hidden;
+  }
+  .ringHead{
+    display:flex; align-items:center; gap:12px;
+    padding:12px 16px;
+    background:#26221a;
+    border-bottom:1px solid var(--line);
+    cursor:pointer;
+  }
+  .ringHead .chev{color:var(--gold); font-size:11px; width:12px;}
+  .ringHead .title{font-size:15px; color:var(--gold-bright); flex:1;}
+  .ringHead .meta{font-family:var(--mono); font-size:11.5px; color:var(--text-dim);}
+  .ringBody{padding:16px; display:none;}
+  .ringBody.open{display:block;}
+
+  .fieldGrid{
+    display:grid;
+    grid-template-columns:repeat(auto-fit,minmax(220px,1fr));
+    gap:12px;
+    margin-bottom:16px;
+  }
+  label{
+    display:block;
+    font-family: system-ui, sans-serif;
+    font-size:11px;
+    text-transform:uppercase;
+    letter-spacing:.8px;
+    color:var(--text-dim);
+    margin-bottom:5px;
+  }
+  input[type=text], input[type=number], select{
+    width:100%;
+    background:var(--bg2);
+    border:1px solid var(--line);
+    color:var(--text);
+    padding:8px 9px;
+    border-radius:4px;
+    font-family:var(--mono);
+    font-size:13px;
+  }
+  input:focus, select:focus, textarea:focus{outline:1px solid var(--gold);}
+
+  table.slices{width:100%; border-collapse:collapse; font-size:12.5px;}
+  table.slices th{
+    text-align:left;
+    font-family:system-ui,sans-serif;
+    font-size:10.5px;
+    text-transform:uppercase;
+    letter-spacing:.7px;
+    color:var(--text-dim);
+    padding:6px 6px;
+    border-bottom:1px solid var(--line);
+  }
+  table.slices td{
+    padding:5px 6px;
+    border-bottom:1px solid #2f2b1f;
+    vertical-align:middle;
+  }
+  table.slices tr:hover td{background:#2c2818;}
+  table.slices input, table.slices select{padding:6px 7px; font-size:12.5px;}
+  .idx-col{color:var(--text-dim); font-family:var(--mono); width:26px;}
+  .actions-col{white-space:nowrap; width:1%;}
+  .actions-col button{padding:4px 7px; font-size:11px; margin-right:3px;}
+
+  .radialWrap{
+    display:flex; align-items:center; gap:24px;
+    margin-bottom:18px;
+    padding:14px;
+    background:var(--bg2);
+    border:1px solid var(--line);
+    border-radius:6px;
+  }
+  .radial{
+    position:relative;
+    width:220px; height:220px;
+    flex:0 0 auto;
+  }
+  .radial::before{
+    content:'';
+    position:absolute; inset:0;
+    border:1px dashed #4a4330;
+    border-radius:50%;
+  }
+  .radial-slot{
+    position:absolute;
+    width:40px; height:40px;
+    margin:-20px 0 0 -20px;
+    border:1px solid var(--gold);
+    border-radius:6px;
+    background:var(--panel2);
+    display:flex; align-items:center; justify-content:center;
+    font-family:var(--mono); font-size:10.5px; color:var(--gold-bright);
+    cursor:grab;
+    text-align:center;
+    line-height:1.15;
+    padding:2px;
+    user-select:none;
+  }
+  .radial-slot.empty{ border-style:dashed; color:var(--text-dim); border-color:var(--line); }
+  .radial-slot.dragover{ outline:2px solid var(--gold-bright); }
+  .radial-slot.dragging{ opacity:.35; }
+  .radialHint{ color:var(--text-dim); font-size:12.5px; line-height:1.6; max-width:320px; }
+  .radialHint b{color:var(--gold);}
+  .macroText{
+    width:100%; min-height:70px;
+    background:var(--bg2); border:1px solid var(--line); color:var(--text);
+    font-family:var(--mono); font-size:12px; border-radius:4px; padding:8px;
+  }
+  .jsonToggle{margin-top:14px;}
+  .jsonBox{display:none; margin-top:10px;}
+  .jsonBox.open{display:block;}
+  .jsonBox textarea{height:260px;}
+
+  .exportItem{
+    background:var(--bg2);
+    border:1px solid var(--line);
+    border-radius:5px;
+    padding:10px 12px;
+    margin-bottom:10px;
+  }
+  .exportItem .lbl{
+    font-family:system-ui,sans-serif;font-size:11px;color:var(--text-dim);
+    text-transform:uppercase; letter-spacing:.7px; margin-bottom:6px;
+    display:flex; justify-content:space-between; align-items:center;
+  }
+  .exportItem textarea{height:64px; font-size:11.5px;}
+
+  .hint{color:var(--text-dim); font-size:12px; line-height:1.5; margin:6px 0 0;}
+  .empty-msg{color:var(--text-dim); font-size:13px; padding:20px 0; text-align:center;}
+  code{background:#000a; padding:1px 5px; border-radius:3px; font-size:12px;}
+
+  /* ---- Mapa de anillos (grafo de anidamiento) ---- */
+  #mapCard .hint{margin-bottom:10px;}
+  .mapWrap{
+    position:relative;
+    width:100%; height:620px;
+    background:var(--bg2);
+    border:1px solid var(--line);
+    border-radius:6px;
+    overflow:auto;
+    resize:vertical;
+  }
+  .mapWrap svg{position:absolute; left:0; top:0;}
+  .mapEdge{stroke:var(--gold); stroke-width:1.6; fill:none; opacity:.75; cursor:pointer;}
+  .mapEdge:hover{stroke:#f2d98a; opacity:1; stroke-width:2.4;}
+  .mapEdgeGhost{stroke:var(--text-dim); stroke-dasharray:4 3;}
+  .mapLinkPreview{stroke:var(--gold-bright); stroke-width:1.6; stroke-dasharray:5 4; fill:none; pointer-events:none;}
+  .mapNode{
+    position:absolute;
+    min-width:140px; max-width:170px;
+    background:var(--panel2);
+    border:1px solid var(--gold);
+    border-radius:8px;
+    padding:9px 11px 10px;
+    cursor:grab;
+    user-select:none;
+    box-shadow:0 2px 8px #0006;
+    font-family:system-ui,sans-serif;
+  }
+  .mapNode:active{cursor:grabbing;}
+  .mapNode.ghost{border-style:dashed; border-color:var(--text-dim); background:#231f17;}
+  .mapNode .n-title{color:var(--gold-bright); font-size:13px; font-weight:600; margin-bottom:2px; word-break:break-word;}
+  .mapNode.ghost .n-title{color:var(--text-dim);}
+  .mapNode .n-meta{color:var(--text-dim); font-size:10.5px; font-family:var(--mono);}
+  .mapNode .n-actions{margin-top:6px; display:flex; gap:5px;}
+  .mapNode .n-actions button{padding:3px 6px; font-size:10.5px;}
+  .mapNode .n-handle{
+    position:absolute; right:-8px; top:50%; margin-top:-8px;
+    width:16px; height:16px; border-radius:50%;
+    background:var(--gold); border:2px solid var(--bg2);
+    cursor:crosshair;
+  }
+  .mapNode .n-handle:hover{background:var(--gold-bright);}
+  .mapToolbar{display:flex; gap:10px; align-items:center; margin-bottom:10px; flex-wrap:wrap;}
+  .mapToolbar .hint{margin:0; flex:1 1 260px;}
+
+  /* ---- Selector de hechizos ---- */
+  .modalOverlay{
+    display:none; position:fixed; inset:0; background:#0009; z-index:50;
+    align-items:flex-start; justify-content:center; padding:6vh 20px;
+  }
+  .modalOverlay.open{display:flex;}
+  .modalBox{
+    background:var(--panel); border:1px solid var(--gold); border-radius:8px;
+    width:100%; max-width:560px; max-height:82vh; display:flex; flex-direction:column;
+    box-shadow:0 10px 40px #000a;
+  }
+  .modalHead{
+    display:flex; align-items:center; justify-content:space-between;
+    padding:14px 18px; border-bottom:1px solid var(--line);
+  }
+  .modalHead h3{margin:0; font-size:14px; color:var(--gold-bright); font-family:system-ui,sans-serif; text-transform:uppercase; letter-spacing:1px;}
+  .modalHead button{padding:4px 9px;}
+  .modalBody{padding:14px 18px; overflow-y:auto;}
+  .modalSearch{width:100%; margin-bottom:10px;}
+  .spellRow{
+    display:flex; align-items:center; gap:10px;
+    padding:7px 8px; border-radius:5px; cursor:pointer;
+    border:1px solid transparent;
+  }
+  .spellRow:hover{background:var(--panel2); border-color:var(--line);}
+  .spellRow img{width:26px; height:26px; border-radius:4px; border:1px solid var(--line); background:#000;}
+  .spellRow .sp-icon-fallback{
+    width:26px; height:26px; border-radius:4px; border:1px solid var(--line);
+    display:flex; align-items:center; justify-content:center; font-size:10px; color:var(--text-dim); background:#000;
+  }
+  .spellRow .sp-name{font-size:13px; flex:1;}
+  .spellRow .sp-id{font-family:var(--mono); font-size:11px; color:var(--text-dim);}
+  .addSpellForm{
+    margin-top:12px; padding-top:12px; border-top:1px dashed var(--line);
+    display:grid; grid-template-columns:110px 1fr auto; gap:8px; align-items:end;
+  }
+  .addSpellForm label{grid-column:1/-1; margin-bottom:-2px;}
+  .sl-preview{
+    display:inline-flex; align-items:center; gap:6px; margin-top:6px; font-size:11.5px; color:var(--text-dim);
+    font-family:system-ui,sans-serif;
+  }
+  .sl-preview img{width:18px; height:18px; border-radius:3px; border:1px solid var(--line);}
+  .sl-arg-row{display:flex; gap:6px; align-items:center;}
+  .sl-arg-row input{flex:1;}
+  .sl-arg-row button{padding:6px 8px; font-size:11px; white-space:nowrap;}
+</style>
+</head>
+<body>
+
+<header>
+  <h1><span class="ring"></span>OPie Ring Editor</h1>
+  <p>Pega uno o más strings de importación de anillos de OPie (los que empiezan con <code>oetohH7</code>).
+     Se decodifican con el mismo formato que usa el addon internamente, podés editarlos acá, y volver a
+     generar el string para pegarlo de nuevo en el juego (New Ring → Import snapshot).</p>
+</header>
+
+<main>
+
+  <div class="card">
+    <h2>1. Importar</h2>
+    <textarea id="importBox" placeholder="Pegá acá uno o varios strings oetohH7... (podés pegar el bloque entero, con saltos de línea y espacios, se limpia solo)"></textarea>
+    <div class="row" style="margin-top:12px;">
+      <button class="primary" id="btnDecode">Decodificar</button>
+      <button id="btnClear">Limpiar</button>
+      <button id="btnSample">Cargar ejemplo</button>
+    </div>
+    <div id="status"></div>
+  </div>
+
+  <div class="card" id="mapCard" style="display:none;">
+    <h2>2. Mapa de anillos (anidamiento)</h2>
+    <div class="mapToolbar">
+      <button class="small primary" id="btnNewRing">+ Nuevo anillo</button>
+      <button class="small" id="btnReflowMap">Reorganizar</button>
+      <p class="hint">Arrastrá los cuadros para acomodarlos (el lienzo tiene scroll si hay muchos anillos). Arrastrá desde el <b>punto dorado</b> de un anillo hasta
+        otro para anidarlo (crea un slice tipo <code>ring</code>). Click en una flecha para borrar esa relación.
+        Los cuadros punteados son anillos referenciados que todavía no existen en esta importación.</p>
+    </div>
+    <div class="mapWrap" id="mapWrap">
+      <svg id="mapSvg"></svg>
+    </div>
+  </div>
+
+  <div class="card" id="ringsCard" style="display:none;">
+    <h2>3. Editar anillos</h2>
+    <div id="ringsList"></div>
+  </div>
+
+  <div class="card" id="exportCard" style="display:none;">
+    <h2>4. Exportar</h2>
+    <div class="row" style="margin-bottom:14px;">
+      <button class="primary" id="btnExportAll">Generar strings actualizados</button>
+    </div>
+    <div id="exportList"></div>
+  </div>
+
+</main>
+
+<div class="modalOverlay" id="spellModal">
+  <div class="modalBox">
+    <div class="modalHead">
+      <h3>Elegir hechizo</h3>
+      <button class="small" id="btnCloseSpellModal">Cerrar ✕</button>
+    </div>
+    <div class="modalBody">
+      <input type="text" class="modalSearch" id="spellSearch" placeholder="Buscar en tu lista local por nombre o ID...">
+      <div id="spellList"></div>
+      <div class="addSpellForm">
+        <label style="grid-column:1/-1;">Agregar hechizo a tu lista local (se guarda en este navegador)</label>
+        <input type="text" id="newSpellId" placeholder="Spell ID">
+        <input type="text" id="newSpellName" placeholder="Nombre (o dejalo vacío y tocá Buscar)">
+        <button class="small" id="btnLookupSpell">Buscar en Wowhead</button>
+      </div>
+      <div class="row" style="margin-top:8px;">
+        <button class="small primary" id="btnAddSpell">+ Agregar a la lista</button>
+        <span class="hint" id="spellLookupStatus"></span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+/* =========================================================================
+   OPie ring (de)serialization codec.
+   Faithful re-implementation of the `local serialize, unserialize do ... end`
+   block found in OPie's CustomRings.lua (the same format used by the
+   in-game "New Ring… → Import snapshot" box).
+   ========================================================================= */
+const OPieCodec = (function(){
+  const ALPHABET = "01234qwertyuiopasdfghjklzxcvbnm5678QWERTYUIOPASDFGHJKLZXCVBNM9";
+  const sigN = ALPHABET.length; // 62
+
+  const sigT = {}; // index(0..61) -> char
+  const sigC = {}; // char -> index (kept separate from sigT to avoid numeric/string key collisions)
+  const sigB = {}; // charCode -> index
+  for (let i = 0; i < sigN; i++) {
+    const c = ALPHABET[i];
+    sigT[i] = c;
+    sigC[c] = i;
+    sigB[c.charCodeAt(0)] = i;
+  }
+
+  const defaultSign = "oetohH7";
+  const FIELD_NAMES = ["name", "hotkey", "offset", "noOpportunisticCA", "noPersistentCA",
+    "internal", "limit", "id", "skipSpecs", "caption", "icon", "show"];
+
+  function buildRT() {
+    const rt = new Map();
+    rt.set(1, true);
+    rt.set(2, false);
+    FIELD_NAMES.forEach((name, idx) => rt.set(3 + idx, name));
+    return rt;
+  }
+  function buildRegMap() {
+    const reg = new Map();
+    FIELD_NAMES.forEach((name, idx) => reg.set(name, 3 + idx));
+    return reg;
+  }
+
+  function nenc(v, b) {
+    let out = "";
+    let val = v;
+    for (let i = 0; i < b; i++) {
+      const v1 = val % sigN;
+      out = sigT[v1] + out;
+      val = (val - v1) / sigN;
+    }
+    if (val !== 0) throw new Error("numeric overflow");
+    return out;
+  }
+  function ndec(pri, pos1, l) {
+    let r = 0;
+    for (let i = 0; i < l; i++) {
+      r = r * sigN + sigB[pri.charCodeAt(pos1 - 1 + i)];
+    }
+    return r;
+  }
+
+  const CENC_M = sigN - 1;
+  function cenc(code) {
+    const hi = Math.floor(code / CENC_M);
+    const lo = code % CENC_M;
+    return sigT[hi] + sigT[lo];
+  }
+  function cdec(cChar, lChar) {
+    return String.fromCharCode(sigC[cChar] * CENC_M + sigC[lChar]);
+  }
+
+  function checksum(s) {
+    const MOD = 17592186044399;
+    let h = (134217689 * s.length) % MOD;
+    const p2 = sigN * sigN, p3 = sigN * sigN * sigN;
+    for (let i = 0; i < s.length; i += 4) {
+      const a = sigC[s[i]];
+      const b = (s[i + 1] !== undefined ? sigC[s[i + 1]] : 0) * sigN;
+      const c = (s[i + 2] !== undefined ? sigC[s[i + 2]] : 0) * p2;
+      const d = (s[i + 3] !== undefined ? sigC[s[i + 3]] : 0) * p3;
+      h = (h * 211 + a + b + c + d) % MOD;
+    }
+    return h % 3298534883309;
+  }
+
+  function frexp(value) {
+    if (value === 0 || !isFinite(value)) return [value, 0];
+    const data = new DataView(new ArrayBuffer(8));
+    data.setFloat64(0, value);
+    let bits = (data.getUint32(0) >>> 20) & 0x7ff;
+    if (bits === 0) {
+      data.setFloat64(0, value * Math.pow(2, 64));
+      bits = ((data.getUint32(0) >>> 20) & 0x7ff) - 64;
+    }
+    const exponent = bits - 1022;
+    const mantissa = value * Math.pow(2, -exponent);
+    return [mantissa, exponent];
+  }
+
+  const PASSTHROUGH_RE = /[a-zA-Z5-8]/;
+  function escapeStr(v) {
+    let out = "";
+    for (let i = 0; i < v.length; i++) {
+      const ch = v[i];
+      const code = v.charCodeAt(i);
+      if (code <= 255 && PASSTHROUGH_RE.test(ch)) out += ch;
+      else out += cenc(code & 0xff);
+    }
+    return out;
+  }
+  function unescapeStr(raw) {
+    return raw.replace(/[0-4]./g, (m) => cdec(m[0], m[1]));
+  }
+
+  function venc(v, t, reg) {
+    if (typeof v === "string" && reg.has(v)) {
+      t.push(sigT[1] + sigT[reg.get(v)]);
+      return t;
+    }
+    if (Array.isArray(v)) {
+      const n = Math.min(sigN - 1, v.length);
+      for (let i = n; i >= 1; i--) venc(v[i - 1] === undefined ? null : v[i - 1], t, reg);
+      t.push(sigT[3] + sigT[n]);
+      for (const key of Object.keys(v)) {
+        if (/^\d+$/.test(key)) {
+          const luaIdx = Number(key) + 1;
+          if (luaIdx >= 1 && luaIdx <= n) continue;
+          venc(v[key], t, reg);
+          venc(luaIdx, t, reg);
+          t.push(sigT[4]);
+        } else if (key !== "length" && v[key] !== undefined) {
+          venc(v[key], t, reg);
+          venc(key, t, reg);
+          t.push(sigT[4]);
+        }
+      }
+      return t;
+    }
+    if (typeof v === "number") {
+      if (Number.isInteger(v) && v >= -1000000 && v < 13776336) {
+        t.push(sigT[5] + nenc(v + 1000000, 4));
+      } else {
+        let [f, e] = frexp(v);
+        if (e < -1070) { f = f / 2; e = e + 1; }
+        const opChar = f < 0 ? sigT[14] : sigT[13];
+        const mant = Math.round(f * Math.pow(2, 53) * (f < 0 ? -1 : 1));
+        t.push(opChar + nenc(e + 1499, 2) + nenc(mant, 9));
+      }
+      return t;
+    }
+    if (typeof v === "string") {
+      t.push(sigT[6] + escapeStr(v) + "9");
+      return t;
+    }
+    if (v === true) { t.push(sigT[1] + sigT[1]); return t; }
+    if (v === false) { t.push(sigT[1] + sigT[2]); return t; }
+    t.push(sigT[1] + sigT[0]);
+    return t;
+  }
+
+  function tenc(t) {
+    const fm = new Map();
+    for (let i = 3; i <= sigN - 1; i++) fm.set(sigT[1] + sigT[i], sigT[2] + sigT[i]);
+    const u = new Map();
+    const ua = [];
+    let fc = sigN - 3;
+    for (let i = 0; i < t.length; i++) {
+      const k = t[i];
+      if (fm.has(k)) { fc -= 1; fm.delete(k); }
+      else if (u.has(k)) {
+        const val = u.get(k);
+        if (typeof val === "number") u.set(k, val + 1);
+      } else if (k.length >= 4) {
+        ua.push(k);
+        u.set(k, 1);
+      }
+    }
+    ua.sort((a, b) => (b.length - 2) * (u.get(b) - 1) - (a.length - 2) * (u.get(a) - 1));
+    for (let i = fc; i < ua.length; i++) u.delete(ua[i]);
+    const fmEntries = Array.from(fm.entries());
+    let fmIdx = 0;
+    let r = fmEntries.length ? fmEntries[0][0] : undefined;
+    let s = fmEntries.length ? fmEntries[0][1] : undefined;
+    for (let i = 0; i < t.length; i++) {
+      const uk = u.get(t[i]);
+      if (uk === undefined) {
+        // unchanged
+      } else if (typeof uk === "string") {
+        t[i] = uk;
+      } else if (r !== undefined && uk > 1) {
+        u.set(t[i], r);
+        t[i] = t[i] + s;
+        fmIdx += 1;
+        if (fmIdx < fmEntries.length) { r = fmEntries[fmIdx][0]; s = fmEntries[fmIdx][1]; }
+        else { r = undefined; s = undefined; }
+      }
+    }
+    return t;
+  }
+
+  function serializeRing(tbl, sign) {
+    sign = sign || defaultSign;
+    const reg = buildRegMap();
+    const payload = tenc(venc(tbl, [], reg)).join("");
+    const body = sign + nenc(checksum(sign + payload), 7) + payload;
+    return body.replace(/(.{7})/g, "$1 ").replace(/ $/, ".");
+  }
+
+  function makeOps(ctx) {
+    const { s, pri, rt, r } = ctx;
+    function regGet(idx) { return r.has(idx) ? r.get(idx) : rt.get(idx); }
+    function regSet(idx, val) { r.set(idx, val); }
+    const ops = {};
+    ops[sigT[1]] = (d, pos) => { s[d + 1] = regGet(sigB[pri.charCodeAt(pos - 1)]); return [d + 1, pos + 1]; };
+    ops[sigT[2]] = (d, pos) => { regSet(sigB[pri.charCodeAt(pos - 1)], s[d]); return [d, pos + 1]; };
+    ops[sigT[3]] = (d, pos) => {
+      const n = sigB[pri.charCodeAt(pos - 1)];
+      const arr = [];
+      for (let i = 1; i <= n; i++) arr[i - 1] = s[d - i + 1];
+      s[d - n + 1] = arr;
+      return [d + 1 - n, pos + 1];
+    };
+    ops[sigT[4]] = (d, pos) => {
+      const table = s[d - 2], key = s[d], val = s[d - 1];
+      if (typeof key === "number" && Number.isInteger(key) && key >= 1) table[key - 1] = val;
+      else table[key] = val;
+      return [d - 2, pos];
+    };
+    ops[sigT[5]] = (d, pos) => { s[d + 1] = ndec(pri, pos, 4) - 1000000; return [d + 1, pos + 4]; };
+    ops[sigT[6]] = (d, pos) => {
+      const idx0 = pri.indexOf("9", pos - 1);
+      const raw = pri.slice(pos - 1, idx0);
+      s[d + 1] = unescapeStr(raw);
+      return [d + 1, idx0 + 2];
+    };
+    ops[sigT[7]] = (d, pos) => { s[d - 1] = s[d - 1] + s[d]; return [d - 1, pos]; };
+    ops[sigT[8]] = (d, pos) => { s[d - 1] = s[d - 1] * s[d]; return [d - 1, pos]; };
+    ops[sigT[9]] = (d, pos) => { s[d - 1] = s[d - 1] / s[d]; return [d - 1, pos]; };
+    ops[sigT[10]] = (d, pos) => { s[d - 1] = s[d - 1] - s[d]; return [d - 1, pos]; };
+    ops[sigT[11]] = (d, pos) => { s[d - 1] = Math.pow(s[d - 1], s[d]); return [d - 1, pos]; };
+    ops[sigT[12]] = (d, pos) => { s[d - 1] = s[d - 1] * Math.pow(2, s[d]); return [d - 1, pos]; };
+    ops[sigT[13]] = (d, pos) => {
+      s[d + 1] = Math.pow(2, ndec(pri, pos, 2) - 1500) * (ndec(pri, pos + 2, 9) * Math.pow(2, -52));
+      return [d + 1, pos + 11];
+    };
+    ops[sigT[14]] = (d, pos) => {
+      s[d + 1] = -Math.pow(2, ndec(pri, pos, 2) - 1500) * (ndec(pri, pos + 2, 9) * Math.pow(2, -52));
+      return [d + 1, pos + 11];
+    };
+    ops[sigT[15]] = (d, pos) => { s[d - 1] = regGet(s[d]); return [d - 1, pos]; };
+    ops[sigT[16]] = (d, pos) => { regSet(s[d], s[d - 1]); return [d - 1, pos]; };
+    return ops;
+  }
+
+  function unserializeRing(input) {
+    const cleaned = input.replace(/[^a-zA-Z0-9.]/g, "");
+    const m = cleaned.match(new RegExp("^(.{" + defaultSign.length + "})(.{7})([^.]+)"));
+    if (!m) return { error: "No se encontró un string OPie válido (debe empezar con 'oetohH7')." };
+    const [, ssign, hchars, pri] = m;
+    if (ssign !== defaultSign) return { error: "Firma desconocida: " + ssign };
+    const expected = nenc(checksum(ssign + pri), 7);
+    if (expected !== hchars) return { error: "Checksum inválido — el string está corrupto o incompleto." };
+    const rt = buildRT();
+    const ctx = { s: [], pri, rt, r: new Map() };
+    const ops = makeOps(ctx);
+    let depth = 0, pos = 1;
+    const len = pri.length;
+    try {
+      while (pos <= len) {
+        const opChar = pri[pos - 1];
+        const fn = ops[opChar];
+        if (!fn) return { error: "Opcode desconocido '" + opChar + "' en posición " + pos };
+        [depth, pos] = fn(depth, pos + 1);
+      }
+    } catch (e) {
+      return { error: "Error decodificando: " + e.message };
+    }
+    if (depth !== 1) return { error: "Estructura inválida tras decodificar (depth=" + depth + ")." };
+    return { value: ctx.s[1] };
+  }
+
+  return { serializeRing, unserializeRing, defaultSign };
+})();
+
+/* =========================================================================
+   Base de hechizos local + resolución por ID contra Wowhead
+   ========================================================================= */
+// Semilla de ejemplo nada más — verificá estos IDs en el juego. Lo normal es
+// que armes tu propia lista con "Buscar en Wowhead" desde el selector.
+const DEFAULT_SPELLS = [
+  {id:133,  name:"Fireball",           icon:"spell_fire_flamebolt"},
+  {id:116,  name:"Frostbolt",          icon:"spell_frost_frostbolt02"},
+  {id:118,  name:"Polymorph",          icon:"spell_nature_polymorph"},
+  {id:17,   name:"Power Word: Shield", icon:"spell_holy_powerwordshield"},
+  {id:589,  name:"Shadow Word: Pain",  icon:"spell_shadow_shadowwordpain"},
+  {id:774,  name:"Rejuvenation",       icon:"spell_nature_rejuvenation"},
+  {id:100,  name:"Charge",             icon:"ability_warrior_charge"},
+];
+let customSpells = [];
+try { customSpells = JSON.parse(localStorage.getItem('opieCustomSpells') || '[]'); } catch(e){ customSpells = []; }
+
+function getSpellDB(){
+  const map = new Map();
+  DEFAULT_SPELLS.forEach(s => map.set(s.id, s));
+  customSpells.forEach(s => map.set(s.id, s)); // tu lista pisa la semilla si repetís el ID
+  return Array.from(map.values()).sort((a,b)=>a.name.localeCompare(b.name));
+}
+function saveCustomSpells(){
+  try { localStorage.setItem('opieCustomSpells', JSON.stringify(customSpells)); } catch(e){}
+}
+function iconUrl(icon){
+  return icon ? `https://wow.zamimg.com/images/wow/icons/medium/${icon}.jpg` : '';
+}
+
+const previewCache = new Map(); // String(id) -> {name,icon} | null (null = resuelto sin éxito)
+const inflightLookups = new Set();
+
+async function wowheadLookup(id){
+  // Corre en el navegador del usuario (no en el sandbox de Claude), así que
+  // depende de que Wowhead permita la consulta cross-origin desde un archivo local.
+  const url = `https://nether.wowhead.com/tooltip/spell/${encodeURIComponent(id)}?dataEnv=0&locale=0`;
+  const res = await fetch(url);
+  if (!res.ok) throw new Error('HTTP ' + res.status);
+  const j = await res.json();
+  const name = j && (j.name || j.name_enus);
+  if (!name) throw new Error('Respuesta sin nombre');
+  return { name, icon: j.icon || j.tooltip_icon || '' };
+}
+
+function updatePreviewEl(el, idRaw){
+  if (!el) return;
+  const id = String(idRaw == null ? '' : idRaw).trim();
+  if (!id || isNaN(Number(id))) { el.innerHTML = ''; return; }
+  const cached = previewCache.get(id);
+  if (cached === null) { el.innerHTML = '<span>ID no encontrado en Wowhead — revisalo a mano.</span>'; return; }
+  if (cached) { el.innerHTML = `<img src="${iconUrl(cached.icon)}" onerror="this.style.visibility='hidden'"><span>${escapeHtmlText(cached.name)}</span>`; return; }
+  const local = getSpellDB().find(s => String(s.id) === id);
+  if (local) {
+    previewCache.set(id, { name: local.name, icon: local.icon });
+    el.innerHTML = `<img src="${iconUrl(local.icon)}" onerror="this.style.visibility='hidden'"><span>${escapeHtmlText(local.name)}</span>`;
+    return;
+  }
+  if (inflightLookups.has(id)) return;
+  inflightLookups.add(id);
+  el.innerHTML = '<span>buscando en Wowhead…</span>';
+  wowheadLookup(id).then(info => {
+    previewCache.set(id, info);
+    inflightLookups.delete(id);
+    el.innerHTML = `<img src="${iconUrl(info.icon)}" onerror="this.style.visibility='hidden'"><span>${escapeHtmlText(info.name)}</span>`;
+  }).catch(() => {
+    previewCache.set(id, null);
+    inflightLookups.delete(id);
+    el.innerHTML = '<span>No se pudo resolver (¿sin conexión con Wowhead?). El ID sigue siendo válido igual.</span>';
+  });
+}
+
+/* ---------- Modal selector de hechizos ---------- */
+let spellPickerCallback = null;
+function openSpellPicker(cb){
+  spellPickerCallback = cb;
+  document.getElementById('spellSearch').value = '';
+  renderSpellList('');
+  document.getElementById('spellLookupStatus').textContent = '';
+  document.getElementById('newSpellId').value = '';
+  document.getElementById('newSpellName').value = '';
+  document.getElementById('spellModal').classList.add('open');
+  document.getElementById('spellSearch').focus();
+}
+function closeSpellPicker(){
+  document.getElementById('spellModal').classList.remove('open');
+  spellPickerCallback = null;
+}
+function renderSpellList(filter){
+  const db = getSpellDB();
+  const f = filter.trim().toLowerCase();
+  const filtered = f ? db.filter(s => s.name.toLowerCase().includes(f) || String(s.id).includes(f)) : db;
+  const list = document.getElementById('spellList');
+  if (!filtered.length){
+    list.innerHTML = '<p class="hint">Sin resultados en tu lista local. Agregá uno abajo con su ID (usá "Buscar en Wowhead" para traer el nombre).</p>';
+    return;
+  }
+  list.innerHTML = filtered.map(s => `
+    <div class="spellRow" data-id="${s.id}">
+      <img src="${iconUrl(s.icon)}" onerror="this.replaceWith(Object.assign(document.createElement('div'),{className:'sp-icon-fallback',textContent:'?'}))">
+      <span class="sp-name">${escapeHtmlText(s.name)}</span>
+      <span class="sp-id">#${s.id}</span>
+    </div>`).join('');
+  list.querySelectorAll('.spellRow').forEach(row => {
+    row.addEventListener('click', () => {
+      const id = Number(row.dataset.id);
+      const s = db.find(x => x.id === id);
+      previewCache.set(String(id), { name: s.name, icon: s.icon });
+      if (spellPickerCallback) spellPickerCallback(id, s.name, s.icon);
+      closeSpellPicker();
+    });
+  });
+}
+document.getElementById('spellSearch').addEventListener('input', e => renderSpellList(e.target.value));
+document.getElementById('btnCloseSpellModal').addEventListener('click', closeSpellPicker);
+document.getElementById('spellModal').addEventListener('click', e => { if (e.target.id === 'spellModal') closeSpellPicker(); });
+document.getElementById('btnLookupSpell').addEventListener('click', async () => {
+  const idInput = document.getElementById('newSpellId');
+  const nameInput = document.getElementById('newSpellName');
+  const status = document.getElementById('spellLookupStatus');
+  const id = idInput.value.trim();
+  if (!id || isNaN(Number(id))) { status.textContent = 'Poné un ID numérico primero.'; status.className = 'hint err'; return; }
+  status.textContent = 'Buscando…'; status.className = 'hint';
+  try {
+    const info = await wowheadLookup(id);
+    nameInput.value = info.name;
+    previewCache.set(id, info);
+    status.textContent = `Encontrado: ${info.name}`; status.className = 'hint ok';
+  } catch (e) {
+    status.textContent = 'No se pudo consultar Wowhead (¿CORS o sin conexión?). Completá el nombre a mano y agregalo igual.';
+    status.className = 'hint err';
+  }
+});
+document.getElementById('btnAddSpell').addEventListener('click', () => {
+  const idInput = document.getElementById('newSpellId');
+  const nameInput = document.getElementById('newSpellName');
+  const id = Number(idInput.value.trim());
+  const name = nameInput.value.trim();
+  if (!id || isNaN(id)) { setStatus('ID de hechizo inválido.', 'err'); return; }
+  if (!name) { setStatus('Poné un nombre (o usá "Buscar en Wowhead" primero).', 'err'); return; }
+  const cached = previewCache.get(String(id));
+  const icon = cached && cached.icon ? cached.icon : '';
+  customSpells = customSpells.filter(s => s.id !== id);
+  customSpells.push({ id, name, icon });
+  saveCustomSpells();
+  idInput.value = ''; nameInput.value = '';
+  renderSpellList(document.getElementById('spellSearch').value);
+  setStatus(`"${name}" agregado a tu lista local de hechizos.`, 'ok');
+});
+
+/* =========================================================================
+   UI
+   ========================================================================= */
+let rings = []; // {raw, data, open}
+
+function setStatus(msg, cls){
+  const el = document.getElementById('status');
+  el.textContent = msg;
+  el.className = cls || '';
+}
+
+function splitInputStrings(text){
+  const cleaned = text.replace(/\s+/g,'');
+  const parts = cleaned.split('oetohH7').filter(p => p.length > 0);
+  return parts.map(p => 'oetohH7' + p);
+}
+
+document.getElementById('btnSample').addEventListener('click', () => {
+  document.getElementById('importBox').value =
+`oetohH7 dy93BGr q4itwws pecset9 2T32q4i tq1T32q 4it41T3 2q4it32 V1T3234 wMaster 06Ring0 B06Spec s91341V w18scv9 4.`;
+});
+
+document.getElementById('btnClear').addEventListener('click', () => {
+  document.getElementById('importBox').value = '';
+  rings = [];
+  render();
+  setStatus('');
+});
+
+document.getElementById('btnDecode').addEventListener('click', () => {
+  const text = document.getElementById('importBox').value;
+  if (!text.trim()){ setStatus('Pegá al menos un string para decodificar.', 'err'); return; }
+  const chunks = splitInputStrings(text);
+  if (!chunks.length){ setStatus('No se encontró ningún string oetohH7 en el texto pegado.', 'err'); return; }
+  let ok = 0, fail = 0;
+  const newRings = [];
+  chunks.forEach((c, i) => {
+    const res = OPieCodec.unserializeRing(c);
+    if (res.error){
+      fail++;
+      newRings.push({ raw:c, data:null, error:res.error, open:true, id:'r'+Date.now()+i });
+    } else {
+      ok++;
+      newRings.push({ raw:c, data:res.value, error:null, open: chunks.length===1, id:'r'+Date.now()+i });
+    }
+  });
+  rings = newRings;
+  render();
+  setStatus(`${ok} anillo(s) decodificado(s) correctamente` + (fail? `, ${fail} con error.` : '.'), fail ? 'err' : 'ok');
+  document.getElementById('ringsCard').style.display = rings.length ? 'block' : 'none';
+  document.getElementById('exportCard').style.display = 'none';
+});
+
+function fieldRow(labelText, inputHtml){
+  return `<div><label>${labelText}</label>${inputHtml}</div>`;
+}
+
+function ensureArrayShape(data){
+  // data should be an array (the ring's ordered slice list) possibly with extra named props.
+  if (!Array.isArray(data)) return [];
+  return data;
+}
+
+const SLICE_TYPES = ["", "spell", "item", "toy", "mount", "macro", "ring", "extrabutton",
+  "opie.databroker.launcher", "imptext", "quest"];
+
+const MACRO_TYPES = ["macro", "imptext"];
+
+function renderRadial(slices){
+  const n = slices.length;
+  const R = 85, CX = 110, CY = 110;
+  let slots = '';
+  for (let i=0;i<n;i++){
+    const sl = slices[i];
+    const isEmpty = !sl || (Array.isArray(sl) && sl.length===0 && Object.keys(sl).length===0);
+    const angle = (n<=1) ? -90 : (-90 + (360*i/n));
+    const rad = angle * Math.PI/180;
+    const x = CX + R*Math.cos(rad);
+    const y = CY + R*Math.sin(rad);
+    const type = (!isEmpty && sl[0]) || '';
+    const arg = (!isEmpty && sl[1]!==undefined && sl[1]!==null) ? sl[1] : '';
+    const label = isEmpty ? '—' : (type ? type.slice(0,4) : '?') + (arg!==''? '\n'+String(arg).slice(0,6):'');
+    slots += `<div class="radial-slot ${isEmpty?'empty':''}" draggable="true" data-idx="${i}"
+                 style="left:${x}px; top:${y}px;" title="Slice ${i+1}${type?': '+type:''}">${escapeHtmlText(label)}</div>`;
+  }
+  return `<div class="radial">${slots}</div>`;
+}
+
+function renderRingBody(ring){
+  const data = ring.data;
+  const name = data.name || '';
+  const hotkey = data.hotkey || '';
+  const limit = data.limit || '';
+  const slices = ensureArrayShape(data);
+
+  let slicesRows = slices.map((sl, i) => {
+    const type = (sl && sl[0]) || '';
+    const arg = (sl && sl[1] !== undefined && sl[1] !== null) ? sl[1] : '';
+    const icon = (sl && sl.icon !== undefined) ? sl.icon : '';
+    const caption = (sl && sl.caption !== undefined) ? sl.caption : '';
+    const isEmpty = !sl || (Object.keys(sl).length===0 && sl.length===0);
+    const isMacro = MACRO_TYPES.includes(type);
+    const isSpell = type === 'spell';
+    const argCell = isMacro
+      ? `<textarea class="sl-arg macroText" rows="3" placeholder="texto del macro / comando">${escapeHtmlText(String(arg))}</textarea>`
+      : isSpell
+        ? `<div class="sl-arg-row">
+             <input type="text" class="sl-arg" value="${escapeHtmlAttr(String(arg))}" placeholder="spell ID" ${isEmpty?'disabled':''}>
+             <button type="button" class="small sl-pick" ${isEmpty?'disabled':''}>Elegir…</button>
+           </div>
+           <div class="sl-preview" data-preview></div>`
+        : `<input type="text" class="sl-arg" value="${escapeHtmlAttr(String(arg))}" placeholder="${type==='ring'?'nombre del anillo':'id / nombre'}" ${isEmpty?'disabled':''}>`;
+    return `
+    <tr data-idx="${i}">
+      <td class="idx-col">${i+1}</td>
+      <td>
+        <select class="sl-type">
+          ${SLICE_TYPES.map(t=>`<option value="${t}" ${t===type?'selected':''}>${t===''?'(vacío)':t}</option>`).join('')}
+        </select>
+      </td>
+      <td>${argCell}</td>
+      <td><input type="text" class="sl-icon" value="${escapeHtmlAttr(String(icon))}" placeholder="icon id/path"></td>
+      <td><input type="text" class="sl-caption" value="${escapeHtmlAttr(String(caption))}" placeholder="texto"></td>
+      <td class="actions-col">
+        <button class="small sl-up" title="Subir">↑</button>
+        <button class="small sl-down" title="Bajar">↓</button>
+        <button class="small danger sl-del" title="Eliminar">✕</button>
+      </td>
+    </tr>`;
+  }).join('');
+
+  return `
+    <div class="fieldGrid">
+      ${fieldRow('Nombre del anillo', `<input type="text" class="ring-name" value="${escapeHtmlAttr(name)}">`)}
+      ${fieldRow('Hotkey', `<input type="text" class="ring-hotkey" value="${escapeHtmlAttr(hotkey)}">`)}
+      ${fieldRow('Limit (visibilidad)', `
+        <select class="ring-limit">
+          <option value="" ${!limit?'selected':''}>(sin límite)</option>
+          <option value="PLAYER" ${limit==='PLAYER'?'selected':''}>PLAYER</option>
+        </select>`)}
+    </div>
+    <div class="radialWrap">
+      ${renderRadial(slices)}
+      <div class="radialHint">
+        <b>Arrastrá</b> los cuadros para reordenar los slices del anillo (se reflejan abajo, y en el JSON al exportar).
+        Cada cuadro muestra el tipo y el valor del slice. Los slots vacíos (—) también se pueden usar como destino.
+      </div>
+    </div>
+    <table class="slices">
+      <thead><tr>
+        <th>#</th><th>Tipo</th><th>ID / Valor</th><th>Icon</th><th>Caption</th><th></th>
+      </tr></thead>
+      <tbody>${slicesRows || `<tr><td colspan="6" class="empty-msg">Sin slices. Agregá una abajo.</td></tr>`}</tbody>
+    </table>
+    <div class="row" style="margin-top:10px;">
+      <button class="small addSlice">+ Agregar slice</button>
+    </div>
+    <div class="jsonToggle">
+      <button class="small toggleJson">Ver / editar JSON crudo</button>
+      <div class="jsonBox">
+        <textarea class="rawJson">${escapeHtmlText(JSON.stringify(data, null, 2))}</textarea>
+        <div class="row" style="margin-top:8px;">
+          <button class="small applyJson">Aplicar JSON</button>
+          <span class="hint">Editá acá para campos avanzados (bundle de anillos anidados, show conditions, etc). "Aplicar JSON" reemplaza los datos del anillo.</span>
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+function escapeHtmlAttr(s){
+  return s.replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;');
+}
+function escapeHtmlText(s){
+  return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
+/* =========================================================================
+   Mapa de anillos: nodos = anillos, flechas = slices tipo "ring" que anidan
+   un anillo dentro de otro (referenciados por nombre, igual que OPie internamente).
+   ========================================================================= */
+const nodePositions = new Map(); // key -> {x,y}  (solo visual, no se exporta)
+let linkingFromKey = null;
+
+function getMapNodes(){
+  const nodes = [];
+  const realNames = new Set();
+  rings.forEach((r, i) => { if (!r.error && Array.isArray(r.data) && r.data.name) realNames.add(r.data.name); });
+  rings.forEach((r, i) => {
+    if (r.error) return;
+    const name = (Array.isArray(r.data) && r.data.name) ? r.data.name : ('Anillo #' + (i + 1));
+    nodes.push({ key: 'ring:' + r.id, name, isGhost: false, ringIndex: i });
+  });
+  const ghostNames = new Set();
+  rings.forEach(r => {
+    if (r.error || !Array.isArray(r.data)) return;
+    r.data.forEach(sl => { if (sl && sl[0] === 'ring' && sl[1] && !realNames.has(sl[1])) ghostNames.add(sl[1]); });
+  });
+  ghostNames.forEach(name => nodes.push({ key: 'ghost:' + name, name, isGhost: true }));
+  return nodes;
+}
+function getMapEdges(nodes){
+  const byName = new Map(nodes.map(n => [n.name, n]));
+  const edges = [];
+  rings.forEach((r, i) => {
+    if (r.error || !Array.isArray(r.data)) return;
+    const src = nodes.find(n => !n.isGhost && n.ringIndex === i);
+    if (!src) return;
+    r.data.forEach((sl, sIdx) => {
+      if (sl && sl[0] === 'ring' && sl[1]) {
+        const tgt = byName.get(sl[1]);
+        if (tgt) edges.push({ src, tgt, ringIndex: i, sliceIdx: sIdx });
+      }
+    });
+  });
+  return edges;
+}
+function ensureNodePositions(nodes){
+  const CELL_W = 200, CELL_H = 140, PAD = 40;
+  const cols = Math.max(1, Math.ceil(Math.sqrt(nodes.length)));
+  let placed = 0;
+  nodes.forEach(n => {
+    if (!nodePositions.has(n.key)) {
+      const col = placed % cols, row = Math.floor(placed / cols);
+      nodePositions.set(n.key, { x: PAD + col * CELL_W, y: PAD + row * CELL_H });
+      placed++;
+    }
+  });
+  // Grow the canvas so the whole grid fits (scrolls instead of squeezing nodes together)
+  const rows = Math.ceil(nodes.length / cols);
+  const neededW = PAD * 2 + cols * CELL_W;
+  const neededH = PAD * 2 + rows * CELL_H;
+  const wrap = document.getElementById('mapWrap');
+  const svg = document.getElementById('mapSvg');
+  const w = Math.max(neededW, wrap.clientWidth || 0);
+  const h = Math.max(neededH, wrap.clientHeight || 0);
+  svg.setAttribute('width', w);
+  svg.setAttribute('height', h);
+  return { w, h };
+}
+document.getElementById('btnReflowMap').addEventListener('click', () => {
+  nodePositions.clear();
+  renderMap();
+  setStatus('Mapa reorganizado en grilla.', 'ok');
+});
+function buildEdgesSvg(nodes){
+  const edges = getMapEdges(nodes);
+  let html = `<defs><marker id="arrowhead" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 Z" fill="#c9a24b"/></marker></defs>`;
+  edges.forEach((e, ei) => {
+    const p1 = nodePositions.get(e.src.key), p2 = nodePositions.get(e.tgt.key);
+    if (!p1 || !p2) return;
+    const x1 = p1.x + 70, y1 = p1.y + 28, x2 = p2.x + 10, y2 = p2.y + 28;
+    const mx = (x1 + x2) / 2;
+    html += `<path class="mapEdge ${e.tgt.isGhost ? 'mapEdgeGhost' : ''}" data-ei="${ei}" d="M${x1},${y1} C${mx},${y1} ${mx},${y2} ${x2},${y2}" marker-end="url(#arrowhead)"></path>`;
+  });
+  return { html, edges };
+}
+function wireEdgeClicks(edges){
+  document.querySelectorAll('#mapSvg path.mapEdge').forEach(p => {
+    const ei = Number(p.dataset.ei);
+    p.addEventListener('click', () => {
+      const e = edges[ei]; if (!e) return;
+      if (!confirm(`¿Quitar el anidamiento de "${e.tgt.name}" dentro de "${e.src.name}"?`)) return;
+      rings[e.ringIndex].data.splice(e.sliceIdx, 1);
+      render();
+    });
+  });
+}
+function redrawEdgesOnly(){
+  const svg = document.getElementById('mapSvg');
+  const nodes = getMapNodes();
+  const { html, edges } = buildEdgesSvg(nodes);
+  svg.innerHTML = html;
+  wireEdgeClicks(edges);
+}
+function startLinking(sourceNode){
+  const wrap = document.getElementById('mapWrap');
+  const svg = document.getElementById('mapSvg');
+  const preview = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+  preview.setAttribute('class', 'mapLinkPreview');
+  svg.appendChild(preview);
+  function onMove(e){
+    const rect = wrap.getBoundingClientRect();
+    const p1 = nodePositions.get(sourceNode.key);
+    const x1 = p1.x + 70, y1 = p1.y + 28;
+    preview.setAttribute('d', `M${x1},${y1} L${e.clientX - rect.left},${e.clientY - rect.top}`);
+  }
+  function onUp(e){
+    window.removeEventListener('mousemove', onMove);
+    window.removeEventListener('mouseup', onUp);
+    preview.remove();
+    const targetDiv = document.elementFromPoint(e.clientX, e.clientY)?.closest('.mapNode');
+    if (!targetDiv) return;
+    const nodes = getMapNodes();
+    const targetNode = nodes.find(n => n.key === targetDiv.dataset.key);
+    if (!targetNode || targetNode.key === sourceNode.key) return;
+    if (targetNode.name === sourceNode.name) { setStatus('Un anillo no puede anidarse a sí mismo.', 'err'); return; }
+    const srcRing = rings[sourceNode.ringIndex];
+    if (!srcRing || !Array.isArray(srcRing.data)) return;
+    srcRing.data.push(['ring', targetNode.name]);
+    srcRing.open = true;
+    setStatus(`Anidado "${targetNode.name}" dentro de "${sourceNode.name}".`, 'ok');
+    render();
+  }
+  window.addEventListener('mousemove', onMove);
+  window.addEventListener('mouseup', onUp);
+}
+function renderMap(){
+  const wrap = document.getElementById('mapWrap');
+  const svg = document.getElementById('mapSvg');
+  const nodes = getMapNodes();
+  wrap.querySelectorAll('.mapNode').forEach(n => n.remove());
+  if (!nodes.length) { svg.innerHTML = ''; return; }
+  ensureNodePositions(nodes);
+  const { html, edges } = buildEdgesSvg(nodes);
+  svg.innerHTML = html;
+  wireEdgeClicks(edges);
+
+  nodes.forEach(n => {
+    const pos = nodePositions.get(n.key);
+    const div = document.createElement('div');
+    div.className = 'mapNode' + (n.isGhost ? ' ghost' : '');
+    div.style.left = pos.x + 'px'; div.style.top = pos.y + 'px';
+    div.dataset.key = n.key;
+    const meta = n.isGhost ? 'no importado' : ((Array.isArray(rings[n.ringIndex].data) ? rings[n.ringIndex].data.length : 0) + ' slice(s)');
+    div.innerHTML = `
+      <div class="n-title">${escapeHtmlText(n.name)}</div>
+      <div class="n-meta">${meta}</div>
+      <div class="n-actions">
+        ${n.isGhost
+          ? `<button class="small mk-real">+ Crear</button>`
+          : `<button class="small go-edit">Editar</button><button class="small danger del-ring">Eliminar</button>`}
+      </div>
+      ${n.isGhost ? '' : '<div class="n-handle" title="Arrastrá para anidar este anillo dentro de otro"></div>'}
+    `;
+    wrap.appendChild(div);
+
+    let dragging = false, sx = 0, sy = 0, ox = 0, oy = 0;
+    div.addEventListener('mousedown', e => {
+      if (e.target.closest('.n-handle') || e.target.tagName === 'BUTTON') return;
+      dragging = true; sx = e.clientX; sy = e.clientY;
+      const p = nodePositions.get(n.key); ox = p.x; oy = p.y;
+      e.preventDefault();
+    });
+    window.addEventListener('mousemove', e => {
+      if (!dragging) return;
+      const p = nodePositions.get(n.key);
+      p.x = ox + (e.clientX - sx); p.y = oy + (e.clientY - sy);
+      div.style.left = p.x + 'px'; div.style.top = p.y + 'px';
+      redrawEdgesOnly();
+    });
+    window.addEventListener('mouseup', () => { dragging = false; });
+
+    div.querySelector('.go-edit')?.addEventListener('click', () => {
+      rings[n.ringIndex].open = true;
+      render();
+      document.querySelector(`.ringCard[data-ri="${n.ringIndex}"]`)?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    });
+    div.querySelector('.del-ring')?.addEventListener('click', () => {
+      if (!confirm(`¿Eliminar el anillo "${n.name}"? Esto no borra automáticamente los slices que lo referencian desde otros anillos.`)) return;
+      rings.splice(n.ringIndex, 1);
+      render();
+    });
+    div.querySelector('.mk-real')?.addEventListener('click', () => {
+      const arr = []; arr.name = n.name;
+      rings.push({ raw: '', data: arr, error: null, open: true, id: 'r' + Date.now() + Math.random() });
+      render();
+    });
+    div.querySelector('.n-handle')?.addEventListener('mousedown', e => {
+      e.stopPropagation(); e.preventDefault();
+      startLinking(n);
+    });
+  });
+}
+document.getElementById('btnNewRing').addEventListener('click', () => {
+  const name = prompt('Nombre del nuevo anillo:', 'Nuevo Anillo');
+  if (name === null || !name.trim()) return;
+  const arr = []; arr.name = name.trim();
+  rings.push({ raw: '', data: arr, error: null, open: true, id: 'r' + Date.now() + Math.random() });
+  document.getElementById('ringsCard').style.display = 'block';
+  render();
+  setStatus(`Anillo "${name.trim()}" creado.`, 'ok');
+});
+
+function render(){
+  const list = document.getElementById('ringsList');
+  document.getElementById('ringsCard').style.display = rings.length ? 'block' : 'none';
+  document.getElementById('mapCard').style.display = rings.some(r => !r.error) ? 'block' : 'none';
+  renderMap();
+  if (!rings.length){ list.innerHTML=''; return; }
+  list.innerHTML = rings.map((ring, ri) => {
+    if (ring.error){
+      return `<div class="ringCard" data-ri="${ri}">
+        <div class="ringHead"><span class="chev">▸</span>
+          <span class="title" style="color:#e2a396;">Anillo #${ri+1} — error</span>
+        </div>
+        <div class="ringBody open" style="padding:16px;">
+          <p class="hint" style="color:#e2a396;">${ring.error}</p>
+          <textarea readonly style="height:60px;">${escapeHtmlText(ring.raw)}</textarea>
+        </div>
+      </div>`;
+    }
+    const title = (ring.data && ring.data.name) ? ring.data.name : `Anillo #${ri+1}`;
+    const count = Array.isArray(ring.data) ? ring.data.length : 0;
+    return `<div class="ringCard" data-ri="${ri}">
+      <div class="ringHead">
+        <span class="chev">${ring.open?'▾':'▸'}</span>
+        <span class="title">${escapeHtmlText(title)}</span>
+        <span class="meta">${count} slice(s)</span>
+      </div>
+      <div class="ringBody ${ring.open?'open':''}">
+        ${renderRingBody(ring)}
+      </div>
+    </div>`;
+  }).join('');
+
+  // wire events
+  list.querySelectorAll('.ringCard').forEach(card => {
+    const ri = Number(card.dataset.ri);
+    const ring = rings[ri];
+    const head = card.querySelector('.ringHead');
+    head.addEventListener('click', () => { ring.open = !ring.open; render(); });
+    if (ring.error) return;
+
+    const body = card.querySelector('.ringBody');
+    body.querySelector('.ring-name')?.addEventListener('input', e => { ring.data.name = e.target.value; });
+    body.querySelector('.ring-hotkey')?.addEventListener('input', e => { ring.data.hotkey = e.target.value; });
+    body.querySelector('.ring-limit')?.addEventListener('change', e => {
+      if (e.target.value) ring.data.limit = e.target.value; else delete ring.data.limit;
+    });
+
+    body.querySelectorAll('table.slices tbody tr[data-idx]').forEach(row => {
+      const idx = Number(row.dataset.idx);
+      row.querySelector('.sl-type')?.addEventListener('change', e => {
+        const sl = ring.data[idx] || (ring.data[idx] = []);
+        sl[0] = e.target.value || undefined;
+        if (!e.target.value) { ring.data[idx] = []; }
+        render();
+      });
+      row.querySelector('.sl-arg')?.addEventListener('input', e => {
+        const sl = ring.data[idx]; if (!sl) return;
+        const num = Number(e.target.value);
+        sl[1] = (e.target.value.trim() !== '' && !isNaN(num)) ? num : e.target.value;
+      });
+      row.querySelector('.sl-arg')?.addEventListener('change', e => {
+        const previewEl = row.querySelector('[data-preview]');
+        if (previewEl) updatePreviewEl(previewEl, e.target.value);
+      });
+      row.querySelector('.sl-pick')?.addEventListener('click', () => {
+        openSpellPicker((id, name, icon) => {
+          const sl = ring.data[idx]; if (!sl) return;
+          sl[1] = id;
+          if (icon && (sl.icon === undefined || sl.icon === '')) sl.icon = icon;
+          render();
+        });
+      });
+      {
+        const previewEl = row.querySelector('[data-preview]');
+        const curSl = ring.data[idx];
+        if (previewEl && curSl && curSl[1] !== undefined) updatePreviewEl(previewEl, curSl[1]);
+      }
+      row.querySelector('.sl-icon')?.addEventListener('input', e => {
+        const sl = ring.data[idx]; if (!sl) return;
+        if (e.target.value.trim()==='') delete sl.icon;
+        else { const num = Number(e.target.value); sl.icon = isNaN(num) ? e.target.value : num; }
+      });
+      row.querySelector('.sl-caption')?.addEventListener('input', e => {
+        const sl = ring.data[idx]; if (!sl) return;
+        if (e.target.value.trim()==='') delete sl.caption; else sl.caption = e.target.value;
+      });
+      row.querySelector('.sl-up')?.addEventListener('click', () => {
+        if (idx===0) return;
+        const arr = ring.data;
+        [arr[idx-1], arr[idx]] = [arr[idx], arr[idx-1]];
+        render();
+      });
+      row.querySelector('.sl-down')?.addEventListener('click', () => {
+        const arr = ring.data;
+        if (idx>=arr.length-1) return;
+        [arr[idx+1], arr[idx]] = [arr[idx], arr[idx+1]];
+        render();
+      });
+      row.querySelector('.sl-del')?.addEventListener('click', () => {
+        ring.data.splice(idx,1);
+        render();
+      });
+    });
+
+    let dragSrcIdx = null;
+    body.querySelectorAll('.radial-slot').forEach(slot => {
+      slot.addEventListener('dragstart', e => {
+        dragSrcIdx = Number(slot.dataset.idx);
+        slot.classList.add('dragging');
+        e.dataTransfer.effectAllowed = 'move';
+      });
+      slot.addEventListener('dragend', () => slot.classList.remove('dragging'));
+      slot.addEventListener('dragover', e => { e.preventDefault(); slot.classList.add('dragover'); });
+      slot.addEventListener('dragleave', () => slot.classList.remove('dragover'));
+      slot.addEventListener('drop', e => {
+        e.preventDefault();
+        slot.classList.remove('dragover');
+        const targetIdx = Number(slot.dataset.idx);
+        if (dragSrcIdx === null || targetIdx === dragSrcIdx) return;
+        const arr = ring.data;
+        const [moved] = arr.splice(dragSrcIdx, 1);
+        arr.splice(targetIdx, 0, moved === undefined ? [] : moved);
+        dragSrcIdx = null;
+        render();
+      });
+    });
+
+    body.querySelector('.addSlice')?.addEventListener('click', () => {
+      if (!Array.isArray(ring.data)) return;
+      ring.data.push(["spell", 0]);
+      ring.open = true;
+      render();
+    });
+
+    body.querySelector('.toggleJson')?.addEventListener('click', (e) => {
+      body.querySelector('.jsonBox').classList.toggle('open');
+    });
+    body.querySelector('.applyJson')?.addEventListener('click', () => {
+      const ta = body.querySelector('.rawJson');
+      try {
+        const parsed = JSON.parse(ta.value);
+        ring.data = parsed;
+        setStatus('JSON aplicado al anillo #' + (ri+1) + '.', 'ok');
+        render();
+      } catch(e){
+        setStatus('JSON inválido: ' + e.message, 'err');
+      }
+    });
+  });
+}
+
+document.getElementById('btnExportAll').addEventListener('click', () => {
+  const exportList = document.getElementById('exportList');
+  const items = rings.filter(r => !r.error).map((ring, i) => {
+    try {
+      const str = OPieCodec.serializeRing(ring.data);
+      const verify = OPieCodec.unserializeRing(str);
+      const ok = !verify.error;
+      return { name: ring.data.name || ('Anillo ' + (i+1)), str, ok, err: verify.error };
+    } catch(e){
+      return { name: ring.data.name || ('Anillo ' + (i+1)), str: '', ok:false, err: e.message };
+    }
+  });
+  exportList.innerHTML = items.map((it,i) => `
+    <div class="exportItem">
+      <div class="lbl">
+        <span>${escapeHtmlText(it.name)} ${it.ok ? '<span style="color:var(--ok)">✓ válido</span>' : '<span style="color:#e2a396">✗ '+escapeHtmlText(it.err||'error')+'</span>'}</span>
+        <button class="small copyBtn" data-i="${i}">Copiar</button>
+      </div>
+      <textarea readonly>${escapeHtmlText(it.str)}</textarea>
+    </div>
+  `).join('');
+  exportList.querySelectorAll('.copyBtn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const ta = btn.closest('.exportItem').querySelector('textarea');
+      ta.select();
+      navigator.clipboard?.writeText(ta.value).then(()=>{
+        btn.textContent = 'Copiado ✓';
+        setTimeout(()=>btn.textContent='Copiar', 1200);
+      }).catch(()=>{ document.execCommand('copy'); });
+    });
+  });
+  document.getElementById('exportCard').style.display = 'block';
+  setStatus(`${items.filter(i=>i.ok).length}/${items.length} string(s) generados correctamente.`, items.every(i=>i.ok)?'ok':'err');
+});
+</script>
+</body>
+</html>

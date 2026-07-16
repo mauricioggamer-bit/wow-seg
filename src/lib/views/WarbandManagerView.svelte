@@ -20,6 +20,8 @@
   let showDescripciones = $state(getSessionPref('showDescripcionesWb'))
   let editingMotivo = $state<Record<string, string>>({})
   let editingWbDesc = $state<Record<string, string>>({})
+  let showInactive = $state(dataStore.getUIPref('wbShowInactive'))
+  $effect(() => { dataStore.setUIPref('wbShowInactive', showInactive) })
 
   let allChars = $derived(
     [...$personajesStore].sort((a, b) => a.nombre.localeCompare(b.nombre))
@@ -33,9 +35,12 @@
     $warbandsStore.filter(w => w.nombre !== 'nada').sort((a, b) => (a.orden ?? 0) - (b.orden ?? 0))
   )
 
-  let nadaChars = $derived(
-    allChars.filter(c => c.warband === 'nada')
-  )
+  let nadaChars = $derived.by(() => {
+    const nada = allChars.filter(c => c.warband === 'nada')
+    const filtered = nada.filter(c => showInactive || c.planeado_usar)
+    if (filtered.length > 0) return filtered
+    return nada
+  })
 
   function handleDragStart(e: DragEvent, charName: string) {
     if (e.dataTransfer) {
@@ -92,7 +97,10 @@
   }
 
   function getCharsInWb(wbName: string) {
-    return allChars.filter(c => c.warband === wbName)
+    const wbChars = allChars.filter(c => c.warband === wbName)
+    const filtered = wbChars.filter(c => showInactive || c.planeado_usar)
+    if (filtered.length > 0) return filtered
+    return wbChars
   }
 
   function openReorder() {
@@ -224,6 +232,9 @@
       <label class="wm-toggle">
         <input type="checkbox" bind:checked={showDescripciones} onchange={() => setSessionPref('showDescripcionesWb', showDescripciones)} />
         <span>Ver descripciones</span>
+      </label>
+      <label class="wm-toggle">
+        <input type="checkbox" bind:checked={showInactive} /> No activos
       </label>
     </div>
     <div class="wm-wbs-col">

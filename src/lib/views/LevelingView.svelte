@@ -23,13 +23,18 @@
   let showDungeonXp = $state(false)
   let showLevelChart = $state(false)
   let selectedChar = $state<string | null>(null)
+  let showInactive = $state(dataStore.getUIPref('levelingShowInactive'))
+  $effect(() => { dataStore.setUIPref('levelingShowInactive', showInactive) })
 
   let activeWarband = $derived($currentWarband && $currentWarband !== '' ? $currentWarband : null)
-  let personajes = $derived(
-    $personajesStore
-      .filter(p => p.planeado_usar)
+  let personajes = $derived.by(() => {
+    const filtered = $personajesStore
+      .filter(p => showInactive || p.planeado_usar)
       .filter(p => !activeWarband || p.warband === activeWarband)
-  )
+    if (filtered.length > 0) return filtered
+    return $personajesStore
+      .filter(p => !activeWarband || p.warband === activeWarband)
+  })
   let config = $derived($levelingStore)
   let count90 = $derived(personajes.filter(p => p.nivel >= 90).length)
   let warbandMentor8090 = $derived(getWarbandMentor8090FromRoster($personajesStore))
@@ -126,6 +131,12 @@
 
   let drawerOpen = $derived(!!selectedChar && !!selectedResult && !!selectedPersonaje)
 
+  let tablePersonajes = $derived.by(() => {
+    const filtered = $personajesStore.filter(p => showInactive || p.planeado_usar)
+    if (filtered.length > 0) return filtered
+    return $personajesStore
+  })
+
   function toggleConfig() { showConfig = !showConfig }
   function toggleDungeonXp() { showDungeonXp = !showDungeonXp }
   function toggleLevelChart() { showLevelChart = !showLevelChart }
@@ -185,13 +196,16 @@
       </div>
     </div>
     <div class="lvl-toolbar">
+      <label class="lvl-toggle-label">
+        <input type="checkbox" bind:checked={showInactive} /> No activos
+      </label>
       <button class="wow-btn wow-btn-sm" onclick={toggleDungeonXp}>🏰 XP Mazmorra</button>
       <button class="wow-btn wow-btn-sm" onclick={toggleLevelChart}>📊 Gráficos</button>
       <button class="wow-btn wow-btn-sm" onclick={toggleConfig}>{showConfig ? '✕ Cerrar' : '⚙ Config'}</button>
     </div>
   </div>
 
-  <CalculationTable {results} personajes={$personajesStore.filter(p => p.planeado_usar)} onSelect={selectChar} />
+  <CalculationTable {results} personajes={tablePersonajes} onSelect={selectChar} />
 </div>
 
 <Modal bind:open={showConfig} title="Configuración">
@@ -274,5 +288,15 @@
     display: flex;
     gap: 4px;
     flex-wrap: wrap;
+    align-items: center;
   }
+  .lvl-toggle-label {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 0.6rem;
+    cursor: pointer;
+    color: var(--text-muted, #888);
+  }
+  .lvl-toggle-label:hover { color: var(--text-primary); }
 </style>

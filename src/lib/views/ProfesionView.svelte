@@ -28,6 +28,8 @@
   let showExpansions = $state(getSessionPref('showExpansionsProf'))
   $effect(() => { setSessionPref('showExpansionsProf', showExpansions) })
 
+  const BAR_COLORS = ['#8d6e63', '#66bb6a', '#ffa726', '#42a5f5', '#ab47bc', '#ef5350', '#26c6da', '#ec407a', '#7e57c2', '#26a69a', '#d4e157']
+
   let editingMotivoChar = $state<string | null>(null)
   let editingMotivoProf = $state<string | null>(null)
   let editingMotivoValue = $state('')
@@ -322,10 +324,10 @@
               {/each}
             </div>
             <div class="prof-bar-track">
-              {#each PROFESIONES.filter(p => recoleccionIds.has(p.id)) as prof}
+              {#each PROFESIONES.filter(p => recoleccionIds.has(p.id)) as prof, i}
                 {@const count = allChars.reduce((s, c) => s + (c.profesiones ?? []).filter(sl => sl.id === prof.id).length, 0)}
                 {#if count > 0}
-                  <div class="prof-bar-fill prof-bar-sub-{prof.id}" style="width: {(count / recoSlots * 100).toFixed(1)}%"></div>
+                  <div class="prof-bar-fill" style="width: {(count / recoSlots * 100).toFixed(1)}%; background: {BAR_COLORS[i % BAR_COLORS.length]}"></div>
                 {/if}
               {/each}
             </div>
@@ -855,9 +857,6 @@
 
   .prof-bar-fill-reco { background: #4caf50; }
   .prof-bar-fill-art { background: #42a5f5; }
-  .prof-bar-sub-mineria { background: #8d6e63; }
-  .prof-bar-sub-herboristeria { background: #66bb6a; }
-  .prof-bar-sub-desuello { background: #ffa726; }
   .prof-motivo-text {
     font-size: 0.5rem;
     color: var(--text-muted, #888);

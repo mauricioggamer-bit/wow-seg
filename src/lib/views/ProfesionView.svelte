@@ -27,6 +27,7 @@
   let showMotivos = $state(getSessionPref('showMotivosProf'))
   let showExpansions = $state(getSessionPref('showExpansionsProf'))
   $effect(() => { setSessionPref('showExpansionsProf', showExpansions) })
+  let cardSort = $state<'expansion' | 'nombre' | 'rol'>('nombre')
 
   const BAR_COLORS = ['#8d6e63', '#66bb6a', '#ffa726', '#42a5f5', '#ab47bc', '#ef5350', '#26c6da', '#ec407a', '#7e57c2', '#26a69a', '#d4e157']
 
@@ -88,6 +89,42 @@
             : !recoleccionIds.has(p.id)
         )
   )
+
+  let profMaxExp = $derived(
+    new Map(PROFESIONES.map(p => [
+      p.id,
+      Math.max(-1, ...allChars.flatMap(c => {
+        const slot = (c.profesiones ?? []).find(s => s.id === p.id)
+        return slot ? slot.completadas.map(expId => EXPANSIONS.findIndex(e => e.id === expId)) : [-1]
+      }))
+    ]))
+  )
+
+  let displayProfesiones = $derived.by(() => {
+    const list = [...filteredProfesiones]
+    switch (cardSort) {
+      case 'nombre':
+        return list.sort((a, b) => a.nombre.localeCompare(b.nombre))
+      case 'expansion':
+        return list.sort((a, b) => {
+          const aIdx = profMaxExp.get(a.id) ?? -1
+          const bIdx = profMaxExp.get(b.id) ?? -1
+          return bIdx - aIdx
+        })
+      case 'rol':
+        return list.sort((a, b) => {
+          const a1 = rolCount(a.id, '1ro'), b1 = rolCount(b.id, '1ro')
+          if (a1 !== b1) return b1 - a1
+          const a2 = rolCount(a.id, '2do'), b2 = rolCount(b.id, '2do')
+          if (a2 !== b2) return b2 - a2
+          const a3 = rolCount(a.id, '3ro'), b3 = rolCount(b.id, '3ro')
+          if (a3 !== b3) return b3 - a3
+          const a4 = rolCount(a.id, '4to'), b4 = rolCount(b.id, '4to')
+          if (a4 !== b4) return b4 - a4
+          return a.nombre.localeCompare(b.nombre)
+        })
+    }
+  })
 
   function getCharsInProf(profId: string) {
     let chars = allChars.filter(c => (c.profesiones ?? []).some(s => s.id === profId))
@@ -404,13 +441,21 @@
         <label class="filter-check"><input type="checkbox" bind:checked={filterNone} /> Sin rol</label>
       </div>
       <div class="prof-filter-group">
+        <span class="filter-label">Orden:</span>
+        <select class="prof-sort-select" bind:value={cardSort}>
+          <option value="expansion">Expansión</option>
+          <option value="nombre">Apellido</option>
+          <option value="rol">1ro/2do/3ro/4to</option>
+        </select>
+      </div>
+      <div class="prof-filter-group">
         <label class="filter-check"><input type="checkbox" bind:checked={showMotivos} onchange={() => setSessionPref('showMotivosProf', showMotivos)} /> Ver motivos</label>
         <label class="filter-check"><input type="checkbox" bind:checked={showExpansions} onchange={() => setSessionPref('showExpansionsProf', showExpansions)} /> Ver expansiones</label>
       </div>
     </div>
 
     <div class="prof-grid">
-      {#each filteredProfesiones as prof}
+      {#each displayProfesiones as prof}
         {@const chars = getCharsInProf(prof.id)}
         {@const c1ro = rolCount(prof.id, '1ro')}
         {@const c2do = rolCount(prof.id, '2do')}
@@ -780,6 +825,15 @@
     cursor: pointer;
     flex-shrink: 0;
     max-width: 48px;
+  }
+  .prof-sort-select {
+    font-size: 0.55rem;
+    padding: 1px 4px;
+    border: 1px solid var(--border-subtle, #444);
+    border-radius: 3px;
+    background: var(--input-bg, #2a2a2a);
+    color: var(--text-primary, #e0e0e0);
+    cursor: pointer;
   }
   .prof-exp-row {
     display: flex;

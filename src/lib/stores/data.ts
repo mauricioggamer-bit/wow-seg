@@ -471,7 +471,7 @@ addTarea(nombrePersonaje: string, tarea: { nombre: string; tipoContenido?: TipoC
     exportFullBackup(): string {
       return exportFullBackupFn(get({ subscribe }))
     },
-    updateProfesionRol(nombre: string, profId: string, newRol: 'main' | 'cd' | undefined) {
+    updateProfesionRol(nombre: string, profId: string, newRol: '1ro' | '2do' | '3ro' | '4to' | undefined) {
       update(d => {
         const idx = d.personajes.findIndex(p => p.nombre === nombre)
         if (idx === -1) return d
@@ -481,31 +481,13 @@ addTarea(nombrePersonaje: string, tarea: { nombre: string; tipoContenido?: TipoC
 
         let newPersonajes = [...d.personajes]
 
-        if (newRol === 'main') {
+        if (newRol) {
           newPersonajes = newPersonajes.map(c => ({
             ...c,
             profesiones: (c.profesiones ?? []).map(s =>
-              s.id === profId && s.rol === 'main' ? { ...s, rol: undefined } : s
+              s.id === profId && s.rol === newRol ? { ...s, rol: undefined } : s
             )
           }))
-        } else if (newRol === 'cd') {
-          const cdCount = newPersonajes.filter(c =>
-            (c.profesiones ?? []).some(s => s.id === profId && s.rol === 'cd')
-          ).length
-          if (cdCount >= 3) {
-            for (let i = 0; i < newPersonajes.length; i++) {
-              const cdSlot = (newPersonajes[i].profesiones ?? []).find(s => s.id === profId && s.rol === 'cd')
-              if (cdSlot) {
-                newPersonajes[i] = {
-                  ...newPersonajes[i],
-                  profesiones: (newPersonajes[i].profesiones ?? []).map(s =>
-                    s.id === profId ? { ...s, rol: undefined } : s
-                  )
-                }
-                break
-              }
-            }
-          }
         }
 
         const targetIdx = newPersonajes.findIndex(c => c.nombre === nombre)

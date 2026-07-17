@@ -61,7 +61,7 @@ describe('tieneMainCrafter', () => {
   it('returns true when a character has rol=main', () => {
     const roster = [
       makePersonaje({
-        profesiones: [{ id: 'joyeria', completadas: [], rol: 'main' }],
+        profesiones: [{ id: 'joyeria', completadas: [], rol: '1ro' }],
       }),
     ]
     expect(tieneMainCrafter(roster, 'joyeria')).toBe(true)
@@ -70,7 +70,7 @@ describe('tieneMainCrafter', () => {
   it('returns false when rol=cd even with completadas', () => {
     const roster = [
       makePersonaje({
-        profesiones: [{ id: 'encantamiento', completadas: ['tww'], rol: 'cd' }],
+        profesiones: [{ id: 'encantamiento', completadas: ['tww'], rol: '2do' }],
       }),
     ]
     expect(tieneMainCrafter(roster, 'encantamiento')).toBe(false)

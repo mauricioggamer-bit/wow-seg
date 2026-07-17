@@ -48,8 +48,8 @@
     y: number
     nombre: string
     count: number
-    mains: number
-    cds: number
+    p1ro: number
+    p2do: number
     sinRol: number
     pct: string
   }
@@ -64,8 +64,8 @@
       y: rect.top - 4,
       nombre: p.nombre,
       count: p.count,
-      mains: p.mains,
-      cds: p.cds,
+      p1ro: p.p1ro,
+      p2do: p.p2do,
       sinRol: p.sinRol,
       pct,
     }
@@ -115,19 +115,19 @@
             rx="2"
           />
         {/if}
-        {#if p.cds > 0}
+        {#if p.p2do > 0}
           <rect
             x={xPos(p.sinRol)} y={y}
-            width={Math.max(1, barW(p.cds))}
+            width={Math.max(1, barW(p.p2do))}
             height={BAR_H}
             fill="#3a7bd5"
             rx="2"
           />
         {/if}
-        {#if p.mains > 0}
+        {#if p.p1ro > 0}
           <rect
-            x={xPos(p.sinRol + p.cds)} y={y}
-            width={Math.max(1, barW(p.mains))}
+            x={xPos(p.sinRol + p.p2do)} y={y}
+            width={Math.max(1, barW(p.p1ro))}
             height={BAR_H}
             fill="#d4af37"
             rx="2"
@@ -155,8 +155,8 @@
     <div class="bc-tooltip" style="left:{tooltip.x}px;top:{tooltip.y}px">
       <div class="bc-tt-header">{tooltip.nombre}</div>
       <div class="bc-tt-row"><span class="bc-tt-label">Total:</span> {tooltip.count} pj ({tooltip.pct}%)</div>
-      <div class="bc-tt-row"><span class="bc-tt-dot" style="background:#d4af37"></span> Main: {tooltip.mains}</div>
-      <div class="bc-tt-row"><span class="bc-tt-dot" style="background:#3a7bd5"></span> CD: {tooltip.cds}</div>
+      <div class="bc-tt-row"><span class="bc-tt-dot" style="background:#d4af37"></span> 1ro: {tooltip.p1ro}</div>
+      <div class="bc-tt-row"><span class="bc-tt-dot" style="background:#3a7bd5"></span> 2do: {tooltip.p2do}</div>
       <div class="bc-tt-row"><span class="bc-tt-dot" style="background:#555"></span> Sin rol: {tooltip.sinRol}</div>
     </div>
   {/if}

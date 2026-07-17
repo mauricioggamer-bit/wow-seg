@@ -29,8 +29,11 @@ function normalizeProfesiones(raw: any): ProfesionSlot[] {
       if (slot && typeof slot === 'object') {
         const id = typeof slot.id === 'string' ? (PROFESION_IDS.has(slot.id) ? slot.id : '') : ''
         const completadas = Array.isArray(slot.completadas) ? slot.completadas.filter((x: any) => typeof x === 'string') : []
-        let rol: 'main' | 'cd' | undefined = slot.rol === 'main' || slot.rol === 'cd' ? slot.rol : undefined
-        if (!rol && slot.esMainCrafter === true) rol = 'main'
+        let rawRol = slot.rol
+        if (rawRol === 'main') rawRol = '1ro'
+        else if (rawRol === 'cd') rawRol = '2do'
+        let rol: '1ro' | '2do' | '3ro' | '4to' | undefined = rawRol === '1ro' || rawRol === '2do' || rawRol === '3ro' || rawRol === '4to' ? rawRol : undefined
+        if (!rol && slot.esMainCrafter === true) rol = '1ro'
         const motivo = typeof slot.motivo === 'string' ? slot.motivo : undefined
         arr.push({ id, completadas, rol, motivo })
       } else if (typeof slot === 'string' && slot) {

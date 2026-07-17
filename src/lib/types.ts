@@ -29,7 +29,7 @@ export interface ProfesionSlot {
   id: string
   completadas: string[]
   esMainCrafter?: boolean
-  rol?: 'main' | 'cd'
+  rol?: '1ro' | '2do' | '3ro' | '4to'
   motivo?: string
 }
 

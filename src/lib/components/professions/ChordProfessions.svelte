@@ -92,7 +92,7 @@
     tooltip = {
       x: rect.left + rect.width / 2,
       y: rect.top - 4,
-      text: `${p.nombre} · ${p.count} pj · ${p.mains}⭐ main · ${p.cds}⏱️ cd`,
+      text: `${p.nombre} · ${p.count} pj · ${p.p1ro}⭐ 1ro · ${p.p2do}⏱️ 2do`,
     }
   }
 

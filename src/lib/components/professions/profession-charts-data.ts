@@ -9,14 +9,16 @@ export interface ProfCount {
   nombre: string
   icon: string
   count: number
-  mains: number
-  cds: number
+  p1ro: number
+  p2do: number
+  p3ro: number
+  p4to: number
   sinRol: number
   esRecoleccion: boolean
 }
 
 export interface CharProfCell {
-  rol: 'main' | 'cd' | 'none'
+  rol: '1ro' | '2do' | '3ro' | '4to' | 'none'
   slot: number
 }
 
@@ -40,22 +42,26 @@ export function computeProfCounts(personajes: Personaje[], profType: 'todas' | '
         chars = chars.filter(c => {
           const slot = (c.profesiones ?? []).find(s => s.id === p.id)
           const rol = slot?.rol ?? 'none'
-          if (filterMain && rol === 'main') return true
-          if (filterCD && rol === 'cd') return true
+          if (filterMain && rol === '1ro') return true
+          if (filterCD && (rol === '2do' || rol === '3ro' || rol === '4to')) return true
           if (filterNone && rol === 'none') return true
           return false
         })
       }
-      const mains = chars.filter(c => (c.profesiones ?? []).some(s => s.id === p.id && s.rol === 'main')).length
-      const cds = chars.filter(c => (c.profesiones ?? []).some(s => s.id === p.id && s.rol === 'cd')).length
-      const sinRol = chars.length - mains - cds
+      const p1ro = chars.filter(c => (c.profesiones ?? []).some(s => s.id === p.id && s.rol === '1ro')).length
+      const p2do = chars.filter(c => (c.profesiones ?? []).some(s => s.id === p.id && s.rol === '2do')).length
+      const p3ro = chars.filter(c => (c.profesiones ?? []).some(s => s.id === p.id && s.rol === '3ro')).length
+      const p4to = chars.filter(c => (c.profesiones ?? []).some(s => s.id === p.id && s.rol === '4to')).length
+      const sinRol = chars.length - p1ro - p2do - p3ro - p4to
       return {
         id: p.id,
         nombre: p.nombre,
         icon: profesionIcon(p.id),
         count: chars.length,
-        mains,
-        cds,
+        p1ro,
+        p2do,
+        p3ro,
+        p4to,
         sinRol,
         esRecoleccion: RECOLECCION_IDS.has(p.id),
       }

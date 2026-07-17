@@ -100,8 +100,8 @@
       chars = chars.filter(c => {
         const slot = (c.profesiones ?? []).find(s => s.id === profId)
         const rol = slot?.rol ?? 'none'
-        if (filterMain && rol === 'main') return true
-        if (filterCD && rol === 'cd') return true
+        if (filterMain && rol === '1ro') return true
+        if (filterCD && (rol === '2do' || rol === '3ro' || rol === '4to')) return true
         if (filterNone && rol === 'none') return true
         return false
       })
@@ -109,8 +109,8 @@
     chars.sort((a, b) => {
       const rolA = (a.profesiones ?? []).find(s => s.id === profId)?.rol ?? 'none'
       const rolB = (b.profesiones ?? []).find(s => s.id === profId)?.rol ?? 'none'
-      const order = { main: 0, cd: 1, none: 2 }
-      return (order[rolA] ?? 2) - (order[rolB] ?? 2)
+      const order = { '1ro': 0, '2do': 1, '3ro': 2, '4to': 3, none: 4 } as const
+      return (order[rolA] ?? 4) - (order[rolB] ?? 4)
     })
     return chars
   }
@@ -179,16 +179,16 @@
     dataStore.updatePersonaje(charName, { profesiones: base })
   }
 
-  function setRol(charName: string, profId: string, newRol: 'main' | 'cd' | 'none') {
+  function setRol(charName: string, profId: string, newRol: '1ro' | '2do' | '3ro' | '4to' | 'none') {
     dataStore.updateProfesionRol(charName, profId, newRol === 'none' ? undefined : newRol)
   }
 
-  function profRol(c: { profesiones?: ProfesionSlot[] }, profId: string): 'main' | 'cd' | 'none' {
+  function profRol(c: { profesiones?: ProfesionSlot[] }, profId: string): '1ro' | '2do' | '3ro' | '4to' | 'none' {
     const slot = (c.profesiones ?? []).find(s => s.id === profId)
     return slot?.rol ?? 'none'
   }
 
-  function rolCount(profId: string, rol: 'main' | 'cd'): number {
+  function rolCount(profId: string, rol: '1ro' | '2do' | '3ro' | '4to'): number {
     return getCharsInProf(profId).filter(c =>
       (c.profesiones ?? []).some(s => s.id === profId && s.rol === rol)
     ).length
@@ -399,9 +399,9 @@
       </div>
       <div class="prof-filter-group">
         <span class="filter-label">Rol:</span>
-        <label class="filter-check"><input type="checkbox" bind:checked={filterMain} /> Main</label>
-        <label class="filter-check"><input type="checkbox" bind:checked={filterCD} /> CD</label>
-        <label class="filter-check"><input type="checkbox" bind:checked={filterNone} /> None</label>
+        <label class="filter-check"><input type="checkbox" bind:checked={filterMain} /> 1ro</label>
+        <label class="filter-check"><input type="checkbox" bind:checked={filterCD} /> 2do+</label>
+        <label class="filter-check"><input type="checkbox" bind:checked={filterNone} /> Sin rol</label>
       </div>
       <div class="prof-filter-group">
         <label class="filter-check"><input type="checkbox" bind:checked={showMotivos} onchange={() => setSessionPref('showMotivosProf', showMotivos)} /> Ver motivos</label>
@@ -412,8 +412,10 @@
     <div class="prof-grid">
       {#each filteredProfesiones as prof}
         {@const chars = getCharsInProf(prof.id)}
-        {@const mainCount = rolCount(prof.id, 'main')}
-        {@const cdCount = rolCount(prof.id, 'cd')}
+        {@const c1ro = rolCount(prof.id, '1ro')}
+        {@const c2do = rolCount(prof.id, '2do')}
+        {@const c3ro = rolCount(prof.id, '3ro')}
+        {@const c4to = rolCount(prof.id, '4to')}
         <div
           class="prof-card"
           class:drag-over={dragOverProf === prof.id}
@@ -425,9 +427,11 @@
             <span class="prof-card-icon">{profesionIcon(prof.id)}</span>
             <span class="prof-card-name">{prof.nombre}</span>
             <span class="prof-card-counts">
-              <span class="rol-badge rol-badge-main" title="Main">⭐{mainCount}</span>
-              <span class="rol-badge rol-badge-cd" title="Cooldown">⏱️{cdCount}</span>
-              <span class="rol-badge rol-badge-none" title="Resto">{chars.length - mainCount - cdCount}</span>
+              <span class="rol-badge rol-badge-1ro" title="1ro">1ro {c1ro}</span>
+              <span class="rol-badge rol-badge-2do" title="2do">2do {c2do}</span>
+              <span class="rol-badge rol-badge-3ro" title="3ro">3ro {c3ro}</span>
+              <span class="rol-badge rol-badge-4to" title="4to">4to {c4to}</span>
+              <span class="rol-badge rol-badge-none" title="Sin rol">{chars.length - c1ro - c2do - c3ro - c4to}</span>
               <span class="text-xs text-muted">({chars.length})</span>
             </span>
           </div>
@@ -441,21 +445,21 @@
                 role="button"
                 tabindex="0"
               >
-                {#if slot?.rol === 'main'}
-                  <span class="rol-indicator rol-indicator-main" title="Main">⭐</span>
-                {:else if slot?.rol === 'cd'}
-                  <span class="rol-indicator rol-indicator-cd" title="Cooldown">⏱️</span>
+                {#if slot?.rol}
+                  <span class="rol-indicator rol-indicator-{slot.rol}" title={slot.rol}>{slot.rol}</span>
                 {/if}
                 <span class="prof-chip-name {clsClass(c.clase)}">{c.nombre}</span>
                 <select
                   class="prof-rol-select"
                   value={profRol(c, prof.id)}
-                  onchange={(e) => setRol(c.nombre, prof.id, (e.target as HTMLSelectElement).value as 'main' | 'cd' | 'none')}
+                  onchange={(e) => setRol(c.nombre, prof.id, (e.target as HTMLSelectElement).value as '1ro' | '2do' | '3ro' | '4to' | 'none')}
                   onclick={(e) => e.stopPropagation()}
                 >
                   <option value="none">—</option>
-                  <option value="main">Main</option>
-                  <option value="cd">CD</option>
+                  <option value="1ro">1ro</option>
+                  <option value="2do">2do</option>
+                  <option value="3ro">3ro</option>
+                  <option value="4to">4to</option>
                 </select>
                 <button
                   class="wow-btn wow-btn-icon prof-chip-edit"
@@ -684,13 +688,21 @@
     font-weight: 700;
     line-height: 1.2;
   }
-  .rol-badge-main {
+  .rol-badge-1ro {
     background: var(--gold, #d4af37);
     color: #1a1a1a;
   }
-  .rol-badge-cd {
+  .rol-badge-2do {
     background: #3a7bd5;
     color: #fff;
+  }
+  .rol-badge-3ro {
+    background: #5a9bd5;
+    color: #fff;
+  }
+  .rol-badge-4to {
+    background: #7abbf5;
+    color: #1a1a1a;
   }
   .rol-badge-none {
     background: var(--border-subtle, #3a3a3a);

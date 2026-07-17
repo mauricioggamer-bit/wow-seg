@@ -22,7 +22,7 @@
   let hasValues = $derived(Object.keys(profAvgValues).length > 0)
 
   let maxCount = $derived(Math.max(1, ...profCounts.map(p => p.count)))
-  let maxMains = $derived(Math.max(1, ...profCounts.map(p => p.mains)))
+  let maxMains = $derived(Math.max(1, ...profCounts.map(p => p.p1ro)))
 
   let counts = $derived(profCounts.map(p => p.count))
   let avgX = $derived(counts.reduce((s, c) => s + c, 0) / counts.length)
@@ -30,7 +30,7 @@
   let values = $derived(
     hasValues
       ? profCounts.map(p => profAvgValues[p.id] ?? 0)
-      : profCounts.map(p => p.mains)
+      : profCounts.map(p => p.p1ro)
   )
   let avgY = $derived(values.reduce((s, v) => s + v, 0) / values.length)
 
@@ -41,7 +41,7 @@
   function yPos(val: number): number {
     const maxVal = hasValues
       ? Math.max(0.1, ...Object.values(profAvgValues))
-      : Math.max(1, ...profCounts.map(p => p.mains))
+      : Math.max(1, ...profCounts.map(p => p.p1ro))
     return MARGIN.top + CHART_H - (val / (maxVal * 1.15)) * CHART_H
   }
 
@@ -64,8 +64,8 @@
     const list = profCounts.map(p => ({
       p,
       cx: xPos(p.count),
-      cy: yPos(hasValues ? (profAvgValues[p.id] ?? 0) : p.mains),
-      r: bubbleR(p.mains),
+      cy: yPos(hasValues ? (profAvgValues[p.id] ?? 0) : p.p1ro),
+      r: bubbleR(p.p1ro),
     }))
     for (let i = 1; i < list.length; i++) {
       for (let j = 0; j < i; j++) {
@@ -96,14 +96,14 @@
   function showBubbleTooltip(e: MouseEvent, p: ProfCount) {
     const val = hasValues
       ? (profAvgValues[p.id] ?? 0).toFixed(2)
-      : String(p.mains)
-    const valLabel = hasValues ? 'valor str.' : 'mains'
+      : String(p.p1ro)
+    const valLabel = hasValues ? 'valor str.' : '1ro'
     const rect = (e.currentTarget as SVGCircleElement).getBoundingClientRect()
     const pct = totalChars > 0 ? ((p.count / totalChars) * 100).toFixed(1) : '0'
     tooltip = {
       x: rect.left + rect.width / 2,
       y: rect.top - 4,
-      text: `${p.nombre} · ${p.count} pj · ${p.mains}⭐ main · ${valLabel} ${val} · ${pct}% roster`,
+      text: `${p.nombre} · ${p.count} pj · ${p.p1ro}⭐ main · ${valLabel} ${val} · ${pct}% roster`,
     }
   }
 

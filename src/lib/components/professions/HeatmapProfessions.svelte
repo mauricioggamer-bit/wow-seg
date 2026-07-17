@@ -53,14 +53,16 @@
 
   function cellColor(cell: CharProfCell | null): string {
     if (!cell) return '#222'
-    if (cell.rol === 'main') return '#d4af37'
-    if (cell.rol === 'cd') return '#3a7bd5'
+    if (cell.rol === '1ro') return '#d4af37'
+    if (cell.rol === '2do') return '#3a7bd5'
+    if (cell.rol === '3ro') return '#5a9bd5'
+    if (cell.rol === '4to') return '#7abbf5'
     return '#555'
   }
 
   function cellTitle(cell: CharProfCell | null, profName: string, charName: string): string {
     if (!cell) return `${charName} — ${profName}: vacío`
-    const rolLabel = cell.rol === 'main' ? 'Main' : cell.rol === 'cd' ? 'CD' : 'Sin rol'
+    const rolLabel = cell.rol === 'none' ? 'Sin rol' : cell.rol
     return `${charName} — ${profName}: slot ${cell.slot + 1}, ${rolLabel}`
   }
 
@@ -85,8 +87,10 @@
 </script>
 
 <ChartLegend items={[
-  { color: '#d4af37', label: 'Main' },
-  { color: '#3a7bd5', label: 'CD' },
+  { color: '#d4af37', label: '1ro' },
+  { color: '#3a7bd5', label: '2do' },
+  { color: '#5a9bd5', label: '3ro' },
+  { color: '#7abbf5', label: '4to' },
   { color: '#555', label: 'Sin rol' },
 ]} />
 

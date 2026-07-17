@@ -455,7 +455,7 @@
     </div>
 
     <div class="prof-grid">
-      {#each displayProfesiones as prof}
+      {#each displayProfesiones as prof (prof.id)}}
         {@const chars = getCharsInProf(prof.id)}
         {@const c1ro = rolCount(prof.id, '1ro')}
         {@const c2do = rolCount(prof.id, '2do')}

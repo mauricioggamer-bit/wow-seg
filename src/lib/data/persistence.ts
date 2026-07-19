@@ -339,6 +339,8 @@ export function normalizeData(data: WowData): WowData {
       nombre,
       personajes,
       orden: existing?.orden,
+      objetivoNivel: existing?.objetivoNivel,
+      descripcion: existing?.descripcion,
     }
   })
   let maxOrden = Math.max(0, ...data.warbands.map(w => w.orden ?? -1))

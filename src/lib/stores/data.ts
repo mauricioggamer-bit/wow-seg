@@ -346,7 +346,7 @@ addTarea(nombrePersonaje: string, tarea: { nombre: string; tipoContenido?: TipoC
             : w)
         const hasNewWb = d.warbands.some(w => w.nombre === newWarband)
         if (!hasNewWb) {
-          d.warbands = [...d.warbands, { nombre: newWarband, personajes: [charName] }]
+          d.warbands = [...d.warbands, { nombre: newWarband, personajes: [charName], descripcion: undefined } as Warband]
         }
         d._meta.total_personajes = d.personajes.length
         d._meta.total_activos = d.personajes.filter(p => p.planeado_usar).length
@@ -359,7 +359,7 @@ addTarea(nombrePersonaje: string, tarea: { nombre: string; tipoContenido?: TipoC
       update(d => {
         if (d.warbands.find(w => w.nombre === name)) return d
         const orden = d.warbands.filter(w => w.nombre !== 'nada').length
-        d.warbands = [...d.warbands, { nombre: name, personajes: [], orden }]
+        d.warbands = [...d.warbands, { nombre: name, personajes: [], orden, descripcion: undefined } as Warband]
         saveData(d)
         return { ...d }
       })
@@ -413,7 +413,10 @@ addTarea(nombrePersonaje: string, tarea: { nombre: string; tipoContenido?: TipoC
         d.personajes = d.personajes.map(p => p.warband === name ? { ...p, warband: 'nada' } : p)
         const hasNada = d.warbands.some(w => w.nombre === 'nada')
         if (!hasNada && d.personajes.some(p => p.warband === 'nada')) {
-          d.warbands = [...d.warbands, { nombre: 'nada', personajes: d.personajes.filter(p => p.warband === 'nada').map(p => p.nombre) }]
+          d.warbands = [...d.warbands, {
+            nombre: 'nada',
+            personajes: d.personajes.filter(p => p.warband === 'nada').map(p => p.nombre),
+          } as Warband]
         }
         d._meta.total_personajes = d.personajes.length
         d._meta.total_activos = d.personajes.filter(p => p.planeado_usar).length

@@ -36,14 +36,16 @@
 
   let tierTokens = $derived(tokensByTier(selectedTier))
 
-  let difficultyByToken = $state<Record<string, TokenDifficulty>>({})
-  $effect(() => {
-    difficultyByToken = {}
-    for (const t of TOKENS) {
-      const d = defaultDifficulty(t)
-      if (d) difficultyByToken[t.id] = d
-    }
-  })
+  let difficultyByToken = $state<Record<string, TokenDifficulty>>(
+    (() => {
+      const m: Record<string, TokenDifficulty> = {}
+      for (const t of TOKENS) {
+        const d = defaultDifficulty(t)
+        if (d) m[t.id] = d
+      }
+      return m
+    })()
+  )
 
   function diffOf(t: TokenDef): TokenDifficulty | undefined {
     return difficultyByToken[t.id] ?? defaultDifficulty(t)

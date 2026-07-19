@@ -240,7 +240,6 @@
             <th class="col-token">Token</th>
             <th class="col-slot">Slot</th>
             <th class="col-grupo">Grupo</th>
-            <th class="col-clases">Clases</th>
             <th class="col-fuente">Fuente</th>
             <th class="col-dif">Dificultad</th>
             <th class="col-count">Tokens</th>
@@ -259,13 +258,6 @@
               </td>
               <td class="col-slot">{SLOT_INFO[t.slot]}</td>
               <td class="col-grupo text-muted">{t.grupo}</td>
-              <td class="col-clases">
-                <div class="class-chips">
-                  {#each t.clases as c}
-                    <span class="class-chip {clsClass(c)}">{c}</span>
-                  {/each}
-                </div>
-              </td>
               <td class="col-fuente text-xs text-muted">{sourcesStr(t)}</td>
               <td class="col-dif">
                 {#if t.dificultades.length > 0}
@@ -462,7 +454,6 @@
   .col-token { min-width: 11rem; max-width: 16rem; }
   .col-slot { min-width: 4.5rem; }
   .col-grupo { min-width: 4rem; }
-  .col-clases { min-width: 9rem; max-width: 12rem; }
   .col-fuente { min-width: 12rem; max-width: 18rem; }
   .col-dif { min-width: 5rem; }
   .col-count { min-width: 5rem; }
@@ -482,18 +473,6 @@
   .tier-badge--wotlk { background: #1f4e7a; }
   .tier-badge--cata { background: #c2541a; }
   .tier-badge--mop { background: #2a7a4d; }
-
-  .class-chips {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 0.15rem;
-  }
-  .class-chip {
-    display: inline-block;
-    font-size: 0.6rem;
-    font-weight: 600;
-    white-space: nowrap;
-  }
 
   .diff-select {
     padding: 0.1rem 0.25rem;

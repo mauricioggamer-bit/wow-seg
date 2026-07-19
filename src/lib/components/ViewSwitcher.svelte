@@ -16,6 +16,7 @@
     { key: 'estrategia', label: 'Estrategia', icon: '⚙' },
     { key: 'opie', label: 'OPie Rings', icon: '💍' },
     { key: 'account-tasks', label: 'Tareas cuenta', icon: '📋' },
+    { key: 'tokens', label: 'Tokens', icon: '🎟' },
   ]
 </script>
 

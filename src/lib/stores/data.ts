@@ -931,6 +931,43 @@ addTarea(nombrePersonaje: string, tarea: { nombre: string; tipoContenido?: TipoC
         return { ...d }
       })
     },
+    getTokenUnlocks(): Record<string, string[]> {
+      return get({ subscribe }).tokenUnlocks ?? {}
+    },
+    isTokenUnlocked(tokenId: string, clase: string): boolean {
+      const v = get({ subscribe }).tokenUnlocks?.[tokenId] ?? []
+      return v.includes(clase)
+    },
+    toggleTokenUnlocked(tokenId: string, clase: string): boolean {
+      let nowUnlocked = false
+      update(d => {
+        const map = { ...(d.tokenUnlocks ?? {}) }
+        const arr = Array.isArray(map[tokenId]) ? [...map[tokenId]!] : []
+        const idx = arr.indexOf(clase)
+        if (idx === -1) { arr.push(clase); nowUnlocked = true }
+        else { arr.splice(idx, 1); nowUnlocked = false }
+        map[tokenId] = arr
+        d.tokenUnlocks = map
+        saveData(d)
+        return { ...d }
+      })
+      return nowUnlocked
+    },
+    resetTokenUnlocks(tierFilter?: string) {
+      update(d => {
+        if (!tierFilter) {
+          d.tokenUnlocks = {}
+        } else {
+          const map = { ...(d.tokenUnlocks ?? {}) }
+          for (const k of Object.keys(map)) {
+            if (k.toLowerCase().startsWith(tierFilter.toLowerCase())) delete map[k]
+          }
+          d.tokenUnlocks = map
+        }
+        saveData(d)
+        return { ...d }
+      })
+    },
   }
 
   if (typeof window !== 'undefined') {

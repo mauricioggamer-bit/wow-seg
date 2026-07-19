@@ -21,6 +21,7 @@
   import StrategicView from './lib/views/StrategicView.svelte'
   import OpieView from './lib/views/OpieView.svelte'
   import AccountTasksView from './lib/views/AccountTasksView.svelte'
+  import TokensView from './lib/views/TokensView.svelte'
   import EntityAssignments from './lib/components/strategic/EntityAssignments.svelte'
   import { authStore } from './lib/stores/auth'
   import { uiStore } from './lib/stores/ui'
@@ -55,7 +56,7 @@
 
   const VIEW_KEYS: Record<string, string> = {
     '1': 'warband', '2': 'tareas', '3': 'account-tasks',
-    '4': 'tasks', '6': 'personajes',
+    '4': 'tasks', '5': 'tokens', '6': 'personajes',
     '7': 'mapa', '8': 'fantasia', '9': 'profesion',
     '0': 'leveling',
   }
@@ -96,7 +97,7 @@
   let importText = $state('')
   let importResult = $state<'idle' | 'success' | 'error'>('idle')
   let importErrorMsg = $state('')
-  let exportSectionsState = $state<ExportSection[]>(['personajes', 'nombres_fantasia', 'profesiones', 'tareas', 'warbands', 'keybinds', 'config_leveling', 'opie_rings'])
+  let exportSectionsState = $state<ExportSection[]>(['personajes', 'nombres_fantasia', 'profesiones', 'tareas', 'warbands', 'keybinds', 'config_leveling', 'opie_rings', 'tokens'])
   let exportSelectAll = $state(true)
   let copied = $state(false)
 
@@ -109,6 +110,7 @@
     { key: 'keybinds', label: 'Keybinds' },
     { key: 'config_leveling', label: 'Config leveling' },
     { key: 'opie_rings', label: 'Anillos OPie' },
+    { key: 'tokens', label: 'Tokens desbloqueados' },
   ]
 
   function handleExportCopy() {
@@ -577,6 +579,8 @@
               <OpieView />
             {:else if $uiStore.currentView === 'account-tasks'}
               <AccountTasksView onRequestLuegoMotivo={(taskId, charName) => requestAccountTaskReason(taskId, charName, 'luego')} onRequestPasaMotivo={(taskId, charName) => requestAccountTaskReason(taskId, charName, 'pasa')} />
+            {:else if $uiStore.currentView === 'tokens'}
+              <TokensView />
             {/if}
           </div>
         {/key}

@@ -218,6 +218,15 @@ export function normalizeData(data: WowData): WowData {
   if (!data.strategicConfig.componentWeights) data.strategicConfig.componentWeights = {}
   if (!data.accountTasks) data.accountTasks = []
 
+  if (!data.tokenUnlocks || typeof data.tokenUnlocks !== 'object') data.tokenUnlocks = {}
+  else {
+    const clean: Record<string, string[]> = {}
+    for (const [k, v] of Object.entries(data.tokenUnlocks)) {
+      if (Array.isArray(v)) clean[k] = v.filter((x: any) => typeof x === 'string')
+    }
+    data.tokenUnlocks = clean
+  }
+
   // Migration: professionValue → profesionesCompletas (Jul 2026)
   if (data.strategicConfig.componentWeights.professionValue > 0) {
     data.strategicConfig.componentWeights.profesionesCompletas = data.strategicConfig.componentWeights.professionValue
@@ -536,6 +545,9 @@ export function exportSections(data: WowData, sections: ExportSection[]): string
   if (sections.includes('account-tasks')) {
     payload.data.accountTasks = data.accountTasks
   }
+  if (sections.includes('tokens')) {
+    payload.data.tokenUnlocks = data.tokenUnlocks
+  }
 
   return JSON.stringify(payload, null, 2)
 }
@@ -590,6 +602,9 @@ export function importSections(jsonStr: string, current: WowData): WowData {
     }
     if (sections.includes('account-tasks')) {
       result.accountTasks = incoming.accountTasks ?? []
+    }
+    if (sections.includes('tokens')) {
+      result.tokenUnlocks = incoming.tokenUnlocks ?? {}
     }
 
     return normalizeData(result)

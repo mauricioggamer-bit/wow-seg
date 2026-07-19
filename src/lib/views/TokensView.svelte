@@ -16,9 +16,9 @@
     type TokenDifficulty,
   } from '../data/tokens'
 
-  type Mode = 'tier' | 'global'
+  type Mode = 'tier' | 'global' | 'cantidad'
 
-  let mode = $state<Mode>(getSessionPrefStr('tokens_mode', 'tier') === 'global' ? 'global' : 'tier')
+  let mode = $state<Mode>(getSessionPrefStr('tokens_mode', 'tier') === 'global' ? 'global' : getSessionPrefStr('tokens_mode', 'tier') === 'cantidad' ? 'cantidad' : 'tier')
   let selectedTier = $state<TokenTier>(getSessionPrefStr('tokens_tier', 'T5') as TokenTier)
   let onlyElegibles = $state(getSessionPref('tokens_only_elegibles'))
   let onlyRoster = $state(getSessionPref('tokens_only_roster'))
@@ -63,6 +63,11 @@
       }
       return list
     }
+    if (mode === 'cantidad') {
+      const withCount = TOKENS.filter(t => getCount(t) > 0)
+      withCount.sort((a, b) => getCount(b) - getCount(a))
+      return withCount
+    }
     const q = searchQuery.trim().toLowerCase()
     if (!q) return TOKENS
     return TOKENS.filter(t => {
@@ -103,6 +108,11 @@
   function resetVisible() {
     if (mode === 'tier') dataStore.resetTokenState(selectedTier.toLowerCase())
     else dataStore.resetTokenState()
+  }
+
+  function resetVisibleLabel(): string {
+    if (mode === 'tier') return selectedTier
+    return 'todo'
   }
 
   function sourcesStr(t: TokenDef): string {
@@ -166,6 +176,10 @@
       <input type="radio" name="tokens-mode" value="global" bind:group={mode} />
       <span>Buscar en todos</span>
     </label>
+    <label class="mode-radio">
+      <input type="radio" name="tokens-mode" value="cantidad" bind:group={mode} />
+      <span>Ordenar por cantidad</span>
+    </label>
   </div>
 
   <div class="controls">
@@ -191,7 +205,7 @@
           Filtrar irrelevantes
         </label>
       </div>
-    {:else}
+    {:else if mode === 'global'}
       <div class="search-row">
         <input
           type="text"
@@ -205,7 +219,7 @@
       </div>
     {/if}
     <button class="wow-btn-sm wow-btn-ghost" onclick={resetVisible}>
-      Reset {#if mode === 'tier'}{selectedTier}{/if}
+      Reset {resetVisibleLabel()}
     </button>
   </div>
 
@@ -216,8 +230,10 @@
       <span>{TIER_INFO[selectedTier].expansion}</span>
       <span>·</span>
       <span>Raids: {TIER_INFO[selectedTier].raids.join(', ')}</span>
-    {:else}
+    {:else if mode === 'global'}
       <span>{visibleTokens.length} tokens encontrados</span>
+    {:else}
+      <span>Tokens con stock (mayor → menor)</span>
     {/if}
     <span>·</span>
     <span>Tokens disponibles: {totalUsed().count} · Clases que canjearon: {totalUsed().used}</span>
@@ -228,7 +244,9 @@
       <em class="text-muted text-xs">
         {mode === 'tier'
           ? 'Sin tokens elegibles para este tier con el roster actual.'
-          : 'Sin resultados. Probá con otro término.'}
+          : mode === 'global'
+          ? 'Sin resultados. Probá con otro término.'
+          : 'No tenés tokens con stock. Incrementá algún contador en otra vista.'}
       </em>
     </div>
   {:else}

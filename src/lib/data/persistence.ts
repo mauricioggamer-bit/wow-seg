@@ -218,13 +218,39 @@ export function normalizeData(data: WowData): WowData {
   if (!data.strategicConfig.componentWeights) data.strategicConfig.componentWeights = {}
   if (!data.accountTasks) data.accountTasks = []
 
-  if (!data.tokenUnlocks || typeof data.tokenUnlocks !== 'object') data.tokenUnlocks = {}
-  else {
-    const clean: Record<string, string[]> = {}
-    for (const [k, v] of Object.entries(data.tokenUnlocks)) {
-      if (Array.isArray(v)) clean[k] = v.filter((x: any) => typeof x === 'string')
+  // Tokens: migrate legacy `tokenUnlocks` (binary by class) to `tokenUsedBy`,
+  // then sanitize both `tokenCounts` and `tokenUsedBy`.
+  {
+    const d = data as any
+    if (d.tokenUnlocks && !data.tokenUsedBy) {
+      const used: Record<string, string[]> = {}
+      for (const [k, v] of Object.entries(d.tokenUnlocks)) {
+        if (Array.isArray(v)) used[k] = (v as any).filter((x: any) => typeof x === 'string')
+      }
+      data.tokenUsedBy = used
     }
-    data.tokenUnlocks = clean
+    delete d.tokenUnlocks
+
+    if (!data.tokenCounts || typeof data.tokenCounts !== 'object') {
+      data.tokenCounts = {}
+    } else {
+      const cleanC: Record<string, number> = {}
+      for (const [k, v] of Object.entries(data.tokenCounts)) {
+        const n = Number(v)
+        cleanC[k] = Number.isFinite(n) && n > 0 ? Math.floor(n) : 0
+      }
+      data.tokenCounts = cleanC
+    }
+
+    if (!data.tokenUsedBy || typeof data.tokenUsedBy !== 'object') {
+      data.tokenUsedBy = {}
+    } else {
+      const cleanU: Record<string, string[]> = {}
+      for (const [k, v] of Object.entries(data.tokenUsedBy)) {
+        if (Array.isArray(v)) cleanU[k] = (v as any).filter((x: any) => typeof x === 'string')
+      }
+      data.tokenUsedBy = cleanU
+    }
   }
 
   // Migration: professionValue → profesionesCompletas (Jul 2026)
@@ -546,7 +572,8 @@ export function exportSections(data: WowData, sections: ExportSection[]): string
     payload.data.accountTasks = data.accountTasks
   }
   if (sections.includes('tokens')) {
-    payload.data.tokenUnlocks = data.tokenUnlocks
+    payload.data.tokenCounts = data.tokenCounts
+    payload.data.tokenUsedBy = data.tokenUsedBy
   }
 
   return JSON.stringify(payload, null, 2)
@@ -604,7 +631,8 @@ export function importSections(jsonStr: string, current: WowData): WowData {
       result.accountTasks = incoming.accountTasks ?? []
     }
     if (sections.includes('tokens')) {
-      result.tokenUnlocks = incoming.tokenUnlocks ?? {}
+      result.tokenCounts = incoming.tokenCounts ?? {}
+      result.tokenUsedBy = incoming.tokenUsedBy ?? {}
     }
 
     return normalizeData(result)

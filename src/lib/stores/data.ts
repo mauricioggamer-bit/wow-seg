@@ -931,39 +931,49 @@ addTarea(nombrePersonaje: string, tarea: { nombre: string; tipoContenido?: TipoC
         return { ...d }
       })
     },
-    getTokenUnlocks(): Record<string, string[]> {
-      return get({ subscribe }).tokenUnlocks ?? {}
+    getTokenCount(tokenId: string): number {
+      return get({ subscribe }).tokenCounts?.[tokenId] ?? 0
     },
-    isTokenUnlocked(tokenId: string, clase: string): boolean {
-      const v = get({ subscribe }).tokenUnlocks?.[tokenId] ?? []
-      return v.includes(clase)
-    },
-    toggleTokenUnlocked(tokenId: string, clase: string): boolean {
-      let nowUnlocked = false
+    incTokenCount(tokenId: string, delta: number): void {
       update(d => {
-        const map = { ...(d.tokenUnlocks ?? {}) }
-        const arr = Array.isArray(map[tokenId]) ? [...map[tokenId]!] : []
-        const idx = arr.indexOf(clase)
-        if (idx === -1) { arr.push(clase); nowUnlocked = true }
-        else { arr.splice(idx, 1); nowUnlocked = false }
-        map[tokenId] = arr
-        d.tokenUnlocks = map
+        const map = { ...(d.tokenCounts ?? {}) }
+        const cur = Number(map[tokenId]) || 0
+        const next = Math.max(0, cur + delta)
+        map[tokenId] = next
+        d.tokenCounts = map
         saveData(d)
         return { ...d }
       })
-      return nowUnlocked
     },
-    resetTokenUnlocks(tierFilter?: string) {
+    isTokenUsedBy(tokenId: string, clase: string): boolean {
+      return (get({ subscribe }).tokenUsedBy?.[tokenId] ?? []).includes(clase)
+    },
+    toggleTokenUsedBy(tokenId: string, clase: string): void {
       update(d => {
-        if (!tierFilter) {
-          d.tokenUnlocks = {}
-        } else {
-          const map = { ...(d.tokenUnlocks ?? {}) }
-          for (const k of Object.keys(map)) {
-            if (k.toLowerCase().startsWith(tierFilter.toLowerCase())) delete map[k]
+        const map = { ...(d.tokenUsedBy ?? {}) }
+        const arr = Array.isArray(map[tokenId]) ? [...map[tokenId]!] : []
+        const idx = arr.indexOf(clase)
+        if (idx === -1) arr.push(clase)
+        else arr.splice(idx, 1)
+        map[tokenId] = arr
+        d.tokenUsedBy = map
+        saveData(d)
+        return { ...d }
+      })
+    },
+    resetTokenState(tierFilter?: string) {
+      update(d => {
+        const clearMap = <T>(m: Record<string, T> | undefined): Record<string, T> => {
+          if (!tierFilter) return {}
+          const out: Record<string, T> = {}
+          const prefix = tierFilter.toLowerCase()
+          for (const [k, v] of Object.entries(m ?? {})) {
+            if (!k.toLowerCase().startsWith(prefix)) out[k] = v
           }
-          d.tokenUnlocks = map
+          return out
         }
+        d.tokenCounts = clearMap(d.tokenCounts)
+        d.tokenUsedBy = clearMap(d.tokenUsedBy)
         saveData(d)
         return { ...d }
       })

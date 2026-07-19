@@ -108,7 +108,8 @@ export interface WowData {
   dungeonXpOverrides?: Record<number, number>
   opieRings?: OpieRing[]
   accountTasks?: AccountTask[]
-  tokenUnlocks?: Record<string, string[]>
+  tokenCounts?: Record<string, number>
+  tokenUsedBy?: Record<string, string[]>
 }
 
 export interface Stats {
